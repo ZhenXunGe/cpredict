@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example/schemas/economics-commercial-policy.schema.json",
+  "title": "Cpredict V1 commercial economics approval policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "policyId",
+    "maximumAssessmentValiditySeconds",
+    "bondDeterrence",
+    "microPoolRake",
+    "marketCaps",
+    "earlyBirdSybil",
+    "c2cLiquidity",
+    "launchGuardRetirement",
+    "extremeGasExit"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "policyId": { "type": "string", "minLength": 1 },
+    "maximumAssessmentValiditySeconds": { "$ref": "#/$defs/uintString" },
+    "bondDeterrence": { "$ref": "#/$defs/bond" },
+    "microPoolRake": { "$ref": "#/$defs/micro" },
+    "marketCaps": { "$ref": "#/$defs/caps" },
+    "earlyBirdSybil": { "$ref": "#/$defs/early" },
+    "c2cLiquidity": { "$ref": "#/$defs/c2c" },
+    "launchGuardRetirement": { "$ref": "#/$defs/guard" },
+    "extremeGasExit": { "$ref": "#/$defs/extreme" }
+  },
+  "$defs": {
+    "uintString": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "approval": {
+      "type": "object",
+      "required": ["approved", "approvalRef"],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvalRef": { "type": "string" }
+      }
+    },
+    "bond": {
+      "allOf": [
+        { "$ref": "#/$defs/approval" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "approved",
+            "approvalRef",
+            "minimumSamplesPerMode",
+            "minimumCoverageBps"
+          ],
+          "properties": {
+            "approved": { "type": "boolean" },
+            "approvalRef": { "type": "string" },
+            "minimumSamplesPerMode": { "$ref": "#/$defs/uintString" },
+            "minimumCoverageBps": { "$ref": "#/$defs/uintString" }
+          }
+        }
+      ]
+    },
+    "micro": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approved",
+        "approvalRef",
+        "minimumReceiptsPerOperation",
+        "minimumRakeCoverageBps",
+        "fundingScope",
+        "committedFundingShareBps"
+      ],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvalRef": { "type": "string" },
+        "minimumReceiptsPerOperation": { "$ref": "#/$defs/uintString" },
+        "minimumRakeCoverageBps": { "$ref": "#/$defs/uintString" },
+        "fundingScope": {
+          "enum": ["GROSS_RAKE", "PROTOCOL_FEE", "CREATOR_NET_AFTER_EARLY_BIRD"]
+        },
+        "committedFundingShareBps": { "$ref": "#/$defs/uintString" }
+      }
+    },
+    "caps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approved",
+        "approvalRef",
+        "minimumSamplesPerMode",
+        "minimumP95UtilizationBps",
+        "maximumCapDenialRateBps",
+        "fullRiskBudgetAtomic",
+        "cloneRiskBudgetAtomic",
+        "maximumUnrecoveredLossAtomic"
+      ],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvalRef": { "type": "string" },
+        "minimumSamplesPerMode": { "$ref": "#/$defs/uintString" },
+        "minimumP95UtilizationBps": { "$ref": "#/$defs/uintString" },
+        "maximumCapDenialRateBps": { "$ref": "#/$defs/uintString" },
+        "fullRiskBudgetAtomic": { "$ref": "#/$defs/uintString" },
+        "cloneRiskBudgetAtomic": { "$ref": "#/$defs/uintString" },
+        "maximumUnrecoveredLossAtomic": { "$ref": "#/$defs/uintString" }
+      }
+    },
+    "early": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approved",
+        "approvalRef",
+        "minimumWallets",
+        "maximumFlaggedWalletShareBps",
+        "maximumFlaggedRewardShareBps",
+        "maximumRewardAmplificationBps"
+      ],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvalRef": { "type": "string" },
+        "minimumWallets": { "$ref": "#/$defs/uintString" },
+        "maximumFlaggedWalletShareBps": { "$ref": "#/$defs/uintString" },
+        "maximumFlaggedRewardShareBps": { "$ref": "#/$defs/uintString" },
+        "maximumRewardAmplificationBps": { "$ref": "#/$defs/uintString" }
+      }
+    },
+    "c2c": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approved",
+        "approvalRef",
+        "minimumSamplesPerCohort",
+        "maximumRelativeFillRateDropBps",
+        "maximumMedianTimeIncreaseBps",
+        "minimumFillRateRetentionBps"
+      ],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvalRef": { "type": "string" },
+        "minimumSamplesPerCohort": { "$ref": "#/$defs/uintString" },
+        "maximumRelativeFillRateDropBps": { "$ref": "#/$defs/uintString" },
+        "maximumMedianTimeIncreaseBps": { "$ref": "#/$defs/uintString" },
+        "minimumFillRateRetentionBps": { "$ref": "#/$defs/uintString" }
+      }
+    },
+    "guard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approved",
+        "approvalRef",
+        "minimumObservationDays",
+        "minimumMarkets",
+        "maximumAccountingMismatches",
+        "maximumBypassIncidents",
+        "maximumUnrecoveredIncidents",
+        "maximumCapDenialRateBps",
+        "maximumP95ExposureUtilizationBps"
+      ],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvalRef": { "type": "string" },
+        "minimumObservationDays": { "$ref": "#/$defs/uintString" },
+        "minimumMarkets": { "$ref": "#/$defs/uintString" },
+        "maximumAccountingMismatches": { "$ref": "#/$defs/uintString" },
+        "maximumBypassIncidents": { "$ref": "#/$defs/uintString" },
+        "maximumUnrecoveredIncidents": { "$ref": "#/$defs/uintString" },
+        "maximumCapDenialRateBps": { "$ref": "#/$defs/uintString" },
+        "maximumP95ExposureUtilizationBps": { "$ref": "#/$defs/uintString" }
+      }
+    },
+    "extreme": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "approved",
+        "approvalRef",
+        "minimumGasPriceSamples",
+        "minimumReceiptsPerOperation",
+        "gasPricePercentileBps",
+        "receiptPercentileBps",
+        "gasPriceStressMultiplierBps",
+        "l1FeeStressMultiplierBps",
+        "maximumUserExitCostAtomic",
+        "minimumExitValueAtomic",
+        "maximumCostToExitValueBps",
+        "requiredOperations"
+      ],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "approvalRef": { "type": "string" },
+        "minimumGasPriceSamples": { "$ref": "#/$defs/uintString" },
+        "minimumReceiptsPerOperation": { "$ref": "#/$defs/uintString" },
+        "gasPricePercentileBps": { "$ref": "#/$defs/uintString" },
+        "receiptPercentileBps": { "$ref": "#/$defs/uintString" },
+        "gasPriceStressMultiplierBps": { "$ref": "#/$defs/uintString" },
+        "l1FeeStressMultiplierBps": { "$ref": "#/$defs/uintString" },
+        "maximumUserExitCostAtomic": { "$ref": "#/$defs/uintString" },
+        "minimumExitValueAtomic": { "$ref": "#/$defs/uintString" },
+        "maximumCostToExitValueBps": { "$ref": "#/$defs/uintString" },
+        "requiredOperations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "RESOLVE",
+              "CREATOR_VOID",
+              "TIMEOUT_VOID",
+              "BOND_SETTLE",
+              "WINNER_CLAIM",
+              "REFUND_CLAIM",
+              "LISTING_CANCEL",
+              "TERMINAL_RETURN",
+              "TIMEOUT_BONUS_CLAIM"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

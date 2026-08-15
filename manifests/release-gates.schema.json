@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example.invalid/schemas/release-gates-v2.json",
+  "title": "Cpredict release gate result index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "sourceManifestSha256", "gates"],
+  "properties": {
+    "schemaVersion": { "const": 2 },
+    "sourceManifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "gates": {
+      "type": "array",
+      "minItems": 22,
+      "maxItems": 22,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "resultPath", "sha256"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "resultPath": {
+            "type": "string",
+            "pattern": "^reports/release/gates/[a-z][a-z0-9-]*\\.json$"
+          },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  }
+}

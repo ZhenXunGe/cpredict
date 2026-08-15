@@ -1,0 +1,81 @@
+{
+  "$schema": "../../../manifests/economics-commercial-policy.schema.json",
+  "schemaVersion": 1,
+  "policyId": "commercial-economics-thresholds-awaiting-approval",
+  "maximumAssessmentValiditySeconds": "86400",
+  "bondDeterrence": {
+    "approved": false,
+    "approvalRef": "",
+    "minimumSamplesPerMode": "30",
+    "minimumCoverageBps": "10000"
+  },
+  "microPoolRake": {
+    "approved": false,
+    "approvalRef": "",
+    "minimumReceiptsPerOperation": "30",
+    "minimumRakeCoverageBps": "10000",
+    "fundingScope": "PROTOCOL_FEE",
+    "committedFundingShareBps": "10000"
+  },
+  "marketCaps": {
+    "approved": false,
+    "approvalRef": "",
+    "minimumSamplesPerMode": "30",
+    "minimumP95UtilizationBps": "2000",
+    "maximumCapDenialRateBps": "500",
+    "fullRiskBudgetAtomic": "5000000000",
+    "cloneRiskBudgetAtomic": "500000000",
+    "maximumUnrecoveredLossAtomic": "0"
+  },
+  "earlyBirdSybil": {
+    "approved": false,
+    "approvalRef": "",
+    "minimumWallets": "100",
+    "maximumFlaggedWalletShareBps": "1000",
+    "maximumFlaggedRewardShareBps": "1000",
+    "maximumRewardAmplificationBps": "12500"
+  },
+  "c2cLiquidity": {
+    "approved": false,
+    "approvalRef": "",
+    "minimumSamplesPerCohort": "100",
+    "maximumRelativeFillRateDropBps": "1000",
+    "maximumMedianTimeIncreaseBps": "2000",
+    "minimumFillRateRetentionBps": "9000"
+  },
+  "launchGuardRetirement": {
+    "approved": false,
+    "approvalRef": "",
+    "minimumObservationDays": "90",
+    "minimumMarkets": "1000",
+    "maximumAccountingMismatches": "0",
+    "maximumBypassIncidents": "0",
+    "maximumUnrecoveredIncidents": "0",
+    "maximumCapDenialRateBps": "100",
+    "maximumP95ExposureUtilizationBps": "7000"
+  },
+  "extremeGasExit": {
+    "approved": false,
+    "approvalRef": "",
+    "minimumGasPriceSamples": "100",
+    "minimumReceiptsPerOperation": "30",
+    "gasPricePercentileBps": "9900",
+    "receiptPercentileBps": "9900",
+    "gasPriceStressMultiplierBps": "30000",
+    "l1FeeStressMultiplierBps": "30000",
+    "maximumUserExitCostAtomic": "1000000",
+    "minimumExitValueAtomic": "10000000",
+    "maximumCostToExitValueBps": "1000",
+    "requiredOperations": [
+      "RESOLVE",
+      "CREATOR_VOID",
+      "TIMEOUT_VOID",
+      "BOND_SETTLE",
+      "WINNER_CLAIM",
+      "REFUND_CLAIM",
+      "LISTING_CANCEL",
+      "TERMINAL_RETURN",
+      "TIMEOUT_BONUS_CLAIM"
+    ]
+  }
+}

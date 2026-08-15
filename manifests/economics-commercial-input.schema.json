@@ -1,0 +1,454 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example/schemas/economics-commercial-input.schema.json",
+  "title": "Cpredict V1 commercial economics evidence input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "assessmentId",
+    "assessmentTime",
+    "validUntil",
+    "subject",
+    "deploymentBinding",
+    "configurationEvidence",
+    "ethUsdEvidence",
+    "baseReceipts",
+    "gasPriceEvidence",
+    "bondEvidence",
+    "microPoolEvidence",
+    "marketCapEvidence",
+    "earlyBirdEvidence",
+    "c2cEvidence",
+    "launchGuardEvidence"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "assessmentId": { "type": "string", "minLength": 1 },
+    "assessmentTime": { "type": "string", "format": "date-time" },
+    "validUntil": { "type": "string", "format": "date-time" },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chainId", "usdcDecimals", "v1"],
+      "properties": {
+        "chainId": { "enum": [8453, 84532] },
+        "usdcDecimals": { "const": 6 },
+        "v1": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "minimumCreatorBondAtomic",
+            "creatorBondRateBps",
+            "fullMarketCapAtomic",
+            "cloneMarketCapAtomic",
+            "creatorRakeBps",
+            "protocolShareBps",
+            "earlyBirdShareBps",
+            "platformC2CFeeBps",
+            "creatorC2CFeeBps"
+          ],
+          "properties": {
+            "minimumCreatorBondAtomic": { "const": "10000000" },
+            "creatorBondRateBps": { "const": "200" },
+            "fullMarketCapAtomic": { "const": "5000000000" },
+            "cloneMarketCapAtomic": { "const": "500000000" },
+            "creatorRakeBps": { "$ref": "#/$defs/uintString" },
+            "protocolShareBps": { "$ref": "#/$defs/uintString" },
+            "earlyBirdShareBps": { "$ref": "#/$defs/uintString" },
+            "platformC2CFeeBps": { "$ref": "#/$defs/uintString" },
+            "creatorC2CFeeBps": { "$ref": "#/$defs/uintString" }
+          }
+        }
+      }
+    },
+    "deploymentBinding": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": ["sourceManifestSha256", "auditCommit", "deployments"],
+          "properties": {
+            "sourceManifestSha256": { "type": "string" },
+            "auditCommit": { "type": "string" },
+            "deployments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["component", "address", "runtimeCodeHash"],
+                "properties": {
+                  "component": { "type": "string", "minLength": 1 },
+                  "address": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$"
+                  },
+                  "runtimeCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "configurationEvidence": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": ["observedBlockNumber", "rpcVerified", "marketSnapshots"],
+          "properties": {
+            "observedBlockNumber": { "$ref": "#/$defs/positiveUintString" },
+            "rpcVerified": { "type": "boolean" },
+            "marketSnapshots": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "mode",
+                  "vaultAddress",
+                  "runtimeCodeHash",
+                  "marketPrimaryCapAtomic",
+                  "creatorRakeBps",
+                  "protocolShareBps",
+                  "earlyBirdShareBps",
+                  "platformC2CFeeBps",
+                  "creatorC2CFeeBps"
+                ],
+                "properties": {
+                  "mode": { "$ref": "#/$defs/mode" },
+                  "vaultAddress": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{40}$"
+                  },
+                  "runtimeCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[0-9a-fA-F]{64}$"
+                  },
+                  "marketPrimaryCapAtomic": { "$ref": "#/$defs/uintString" },
+                  "creatorRakeBps": { "$ref": "#/$defs/uintString" },
+                  "protocolShareBps": { "$ref": "#/$defs/uintString" },
+                  "earlyBirdShareBps": { "$ref": "#/$defs/uintString" },
+                  "platformC2CFeeBps": { "$ref": "#/$defs/uintString" },
+                  "creatorC2CFeeBps": { "$ref": "#/$defs/uintString" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "ethUsdEvidence": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": ["ethUsdE8", "observedAt", "validUntil"],
+          "properties": {
+            "ethUsdE8": { "$ref": "#/$defs/uintString" },
+            "observedAt": { "type": "string" },
+            "validUntil": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "baseReceipts": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": ["receipts"],
+          "properties": {
+            "receipts": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/baseReceipt" }
+            }
+          }
+        }
+      ]
+    },
+    "gasPriceEvidence": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": ["samplesWei"],
+          "properties": {
+            "samplesWei": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/positiveUintString" }
+            }
+          }
+        }
+      ]
+    },
+    "bondEvidence": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": ["cohorts"],
+          "properties": {
+            "cohorts": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/bondCohort" }
+            }
+          }
+        }
+      ]
+    },
+    "microPoolEvidence": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": [
+            "mode",
+            "principalAtomic",
+            "expectedClaimantCount",
+            "paymasterSponsoredShareBps",
+            "earlyBirdEnabled"
+          ],
+          "properties": {
+            "mode": { "$ref": "#/$defs/mode" },
+            "principalAtomic": { "$ref": "#/$defs/uintString" },
+            "expectedClaimantCount": { "$ref": "#/$defs/uintString" },
+            "paymasterSponsoredShareBps": { "$ref": "#/$defs/uintString" },
+            "earlyBirdEnabled": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "marketCapEvidence": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": ["cohorts"],
+          "properties": {
+            "cohorts": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/capCohort" }
+            }
+          }
+        }
+      ]
+    },
+    "earlyBirdEvidence": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": [
+            "walletCount",
+            "flaggedWalletCount",
+            "totalEarlyPrincipalAtomic",
+            "flaggedEarlyPrincipalAtomic",
+            "totalEarlyRewardAtomic",
+            "flaggedEarlyRewardAtomic"
+          ],
+          "properties": {
+            "walletCount": { "$ref": "#/$defs/uintString" },
+            "flaggedWalletCount": { "$ref": "#/$defs/uintString" },
+            "totalEarlyPrincipalAtomic": { "$ref": "#/$defs/uintString" },
+            "flaggedEarlyPrincipalAtomic": { "$ref": "#/$defs/uintString" },
+            "totalEarlyRewardAtomic": { "$ref": "#/$defs/uintString" },
+            "flaggedEarlyRewardAtomic": { "$ref": "#/$defs/uintString" }
+          }
+        }
+      ]
+    },
+    "c2cEvidence": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": ["matchedCohorts", "baseline", "candidate"],
+          "properties": {
+            "matchedCohorts": { "type": "boolean" },
+            "baseline": { "$ref": "#/$defs/c2cCohort" },
+            "candidate": { "$ref": "#/$defs/c2cCohort" }
+          }
+        }
+      ]
+    },
+    "launchGuardEvidence": {
+      "allOf": [
+        { "$ref": "#/$defs/evidenceHeader" },
+        {
+          "type": "object",
+          "required": [
+            "observationDays",
+            "marketCount",
+            "accountingMismatchCount",
+            "guardBypassIncidentCount",
+            "unrecoveredIncidentCount",
+            "capDeniedOrders",
+            "eligibleOrders",
+            "p95ExposureUtilizationBps"
+          ],
+          "properties": {
+            "observationDays": { "$ref": "#/$defs/uintString" },
+            "marketCount": { "$ref": "#/$defs/uintString" },
+            "accountingMismatchCount": { "$ref": "#/$defs/uintString" },
+            "guardBypassIncidentCount": { "$ref": "#/$defs/uintString" },
+            "unrecoveredIncidentCount": { "$ref": "#/$defs/uintString" },
+            "capDeniedOrders": { "$ref": "#/$defs/uintString" },
+            "eligibleOrders": { "$ref": "#/$defs/uintString" },
+            "p95ExposureUtilizationBps": { "$ref": "#/$defs/uintString" }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "uintString": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "positiveUintString": { "type": "string", "pattern": "^[1-9][0-9]*$" },
+    "mode": { "enum": ["FULL", "CLONE"] },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "datasetSha256",
+        "collectionStart",
+        "collectionEnd",
+        "verifier",
+        "verificationRef"
+      ],
+      "properties": {
+        "datasetSha256": { "type": "string" },
+        "collectionStart": { "type": "string" },
+        "collectionEnd": { "type": "string" },
+        "verifier": { "type": "string" },
+        "verificationRef": { "type": "string" }
+      }
+    },
+    "evidenceHeader": {
+      "type": "object",
+      "required": ["evidenceStatus", "provenance"],
+      "properties": {
+        "evidenceStatus": { "enum": ["MISSING", "PROVIDED"] },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "baseReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "transactionHash",
+        "contractAddress",
+        "runtimeCodeHash",
+        "chainId",
+        "blockNumber",
+        "operation",
+        "deploymentMode",
+        "gasUsed",
+        "effectiveGasPriceWei",
+        "l1FeeWei",
+        "externalChargeAtomic",
+        "coveredClaims",
+        "success",
+        "synthetic",
+        "rpcVerified"
+      ],
+      "properties": {
+        "transactionHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$"
+        },
+        "contractAddress": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{40}$"
+        },
+        "runtimeCodeHash": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{64}$"
+        },
+        "chainId": { "enum": [8453, 84532] },
+        "blockNumber": { "$ref": "#/$defs/positiveUintString" },
+        "operation": {
+          "enum": [
+            "RESOLVE",
+            "CREATOR_VOID",
+            "TIMEOUT_VOID",
+            "BOND_SETTLE",
+            "WINNER_CLAIM",
+            "REFUND_CLAIM",
+            "LISTING_CANCEL",
+            "TERMINAL_RETURN",
+            "TIMEOUT_BONUS_CLAIM",
+            "PAYMASTER_OVERHEAD"
+          ]
+        },
+        "deploymentMode": { "enum": ["FULL", "CLONE", "NA"] },
+        "gasUsed": { "$ref": "#/$defs/positiveUintString" },
+        "effectiveGasPriceWei": { "$ref": "#/$defs/positiveUintString" },
+        "l1FeeWei": { "$ref": "#/$defs/uintString" },
+        "externalChargeAtomic": { "$ref": "#/$defs/uintString" },
+        "coveredClaims": { "$ref": "#/$defs/positiveUintString" },
+        "success": { "const": true },
+        "synthetic": { "const": false },
+        "rpcVerified": { "const": true }
+      }
+    },
+    "bondCohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "sampleCount",
+        "observedAttackProfitP95Atomic",
+        "incidentResponseCostP95Atomic"
+      ],
+      "properties": {
+        "mode": { "$ref": "#/$defs/mode" },
+        "sampleCount": { "$ref": "#/$defs/uintString" },
+        "observedAttackProfitP95Atomic": { "$ref": "#/$defs/uintString" },
+        "incidentResponseCostP95Atomic": { "$ref": "#/$defs/uintString" }
+      }
+    },
+    "capCohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "sampleCount",
+        "p95PeakPrincipalAtomic",
+        "capDeniedOrders",
+        "eligibleOrders",
+        "unrecoveredLossAtomic"
+      ],
+      "properties": {
+        "mode": { "$ref": "#/$defs/mode" },
+        "sampleCount": { "$ref": "#/$defs/uintString" },
+        "p95PeakPrincipalAtomic": { "$ref": "#/$defs/uintString" },
+        "capDeniedOrders": { "$ref": "#/$defs/uintString" },
+        "eligibleOrders": { "$ref": "#/$defs/uintString" },
+        "unrecoveredLossAtomic": { "$ref": "#/$defs/uintString" }
+      }
+    },
+    "c2cCohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "feeBps",
+        "sampleCount",
+        "quotedUnits",
+        "filledUnits",
+        "medianTimeToFillSeconds"
+      ],
+      "properties": {
+        "feeBps": { "$ref": "#/$defs/uintString" },
+        "sampleCount": { "$ref": "#/$defs/uintString" },
+        "quotedUnits": { "$ref": "#/$defs/uintString" },
+        "filledUnits": { "$ref": "#/$defs/uintString" },
+        "medianTimeToFillSeconds": { "$ref": "#/$defs/uintString" }
+      }
+    }
+  }
+}

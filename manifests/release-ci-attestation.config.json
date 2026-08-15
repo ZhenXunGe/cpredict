@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "repository": "ZhenXunGe/cpredict",
+  "workflowPath": ".github/workflows/release-audit.yml",
+  "workflowRef": "refs/heads/main",
+  "workflowEvent": "workflow_dispatch",
+  "signerJob": "attest-release-gates",
+  "certificateIdentity": "https://github.com/ZhenXunGe/cpredict/.github/workflows/release-audit.yml@refs/heads/main",
+  "oidcIssuer": "https://token.actions.githubusercontent.com",
+  "signerWorkflow": "github.com/ZhenXunGe/cpredict/.github/workflows/release-audit.yml",
+  "predicateType": "https://github.com/ZhenXunGe/cpredict/attestations/release-gates/v2",
+  "subjectName": "manifests/release-gates.json",
+  "attestAction": {
+    "repository": "actions/attest",
+    "version": "v4.2.1",
+    "commit": "508db95dd578ae2727ebd6217d5ba78e4fbda05d"
+  }
+}

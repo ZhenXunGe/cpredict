@@ -1,0 +1,63 @@
+groups:
+  - name: cpredict-protocol
+    rules:
+      - alert: CpredictIndexerLagHigh
+        expr: cpredict_indexer_l2_blocks_behind > 2
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "Cpredict indexer is more than two L2 blocks behind"
+      - alert: CpredictLiabilityCoverageLow
+        expr: cpredict_vault_asset_atomic < cpredict_vault_liability_atomic
+        for: 0m
+        labels: { severity: critical }
+        annotations:
+          summary: "A market vault reports assets below liabilities"
+      - alert: CpredictUnexpectedTerminalTransition
+        expr: increase(cpredict_invalid_terminal_transition_total[5m]) > 0
+        for: 0m
+        labels: { severity: critical }
+        annotations:
+          summary: "Indexer observed an invalid terminal transition"
+      - alert: CpredictSponsorDenialSpike
+        expr: rate(cpredict_sponsor_requests_total{outcome="rejected"}[5m]) > 5
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Sponsorship policy denials are elevated"
+      - alert: CpredictRpcDivergence
+        expr: cpredict_rpc_head_divergence_blocks > 1
+        for: 1m
+        labels: { severity: page }
+        annotations:
+          summary: "Configured RPC providers disagree on the L2 head"
+      - alert: CpredictRuntimeCodehashDrift
+        expr: cpredict_runtime_codehash_match == 0
+        for: 0m
+        labels: { severity: critical }
+        annotations:
+          summary: "A deployed dependency runtime code hash differs from the finalized manifest"
+      - alert: CpredictTimelockRoleDrift
+        expr: cpredict_timelock_role_manifest_match == 0
+        for: 0m
+        labels: { severity: critical }
+        annotations:
+          summary: "Timelock roles differ from the finalized role-event reconstruction"
+      - alert: CpredictExitPathSyntheticFailed
+        expr: cpredict_exit_path_synthetic_success == 0
+        for: 2m
+        labels: { severity: page }
+        annotations:
+          summary: "Cancel, claim, or refund exit-path simulation is failing"
+      - alert: CpredictPaymasterDepositLow
+        expr: cpredict_paymaster_entrypoint_deposit_wei < cpredict_paymaster_minimum_deposit_wei
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Paymaster EntryPoint deposit is below the configured operating floor"
+      - alert: CpredictIndexerBackupStale
+        expr: time() - cpredict_indexer_last_successful_backup_timestamp_seconds > 86400
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "Indexer database has no successful backup in the last 24 hours"

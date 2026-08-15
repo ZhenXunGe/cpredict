@@ -1,0 +1,47 @@
+# Security gate tool lock (2026-08-08)
+# Official release archives are fetched into a temporary directory, SHA-256 verified, executed,
+# and deleted. No global PATH, shell configuration, or machine runtime is changed.
+
+# name | version/revision | installation scope/evidence
+slither-analyzer | 0.11.6 | project-local .tools/slither virtualenv
+slither-analyzer-record-sha256 | 1a60e3eb9e7e7b5697a19cc3a59fddd0e22a5e4540aee5c95908f1e1d5c412ec
+slither-launcher-sha256 | b250afc857097d248ce0bdf515b8ac7774b205b6ce805bea177139dd3c174834
+slither-mutate-launcher-sha256 | 571171d30274975c3f62122a41bb814e7d1969886ede245bfb911bffe54e2f3c
+crytic-compile | 0.4.2 | transitive project-local dependency
+crytic-compile-record-sha256 | d4e37d6e763c747b5d4d48a3fa834bb358b7b48caaf1d84fa780e50dd0384de7
+solc-select | 1.2.0 | transitive project-local dependency
+solc-select-record-sha256 | c7c49dece16640d325251412df53f533ec722d7250c2f67e8a632f2b344ccf60
+foundry | v1.7.1 / 4072e48705af9d93e3c0f6e29e93b5e9a40caed8 | project-local .tools/foundry
+foundry-darwin-arm64-url | https://github.com/foundry-rs/foundry/releases/download/v1.7.1/foundry_v1.7.1_darwin_arm64.tar.gz
+foundry-darwin-arm64-archive-sha256 | eacdc67718fac857cad9e19c7f6729dd80de731d09df81856391d093cfcab547
+foundry-linux-amd64-url | https://github.com/foundry-rs/foundry/releases/download/v1.7.1/foundry_v1.7.1_linux_amd64.tar.gz
+foundry-linux-amd64-archive-sha256 | cf7e688ed0c4c48adffca788b496076e31060b67ac5afe1e43dbb5499c20c88b
+forge-sha256 | e729589084ca2f1479354353d1ec3d4789451b577f4cdee4e7dc57cae64a38fa
+cast-sha256 | eb9a9dc730a0f178556b90d39a30212375ee6e7c754fee96fa95b2723878e220
+anvil-sha256 | 5c9f9aad323062b1c0421a63595741430acaea150da3611e38c45071e4cf4e28
+chisel-sha256 | 401c4ee50a66c2ac145eb01ffbc74cb7d68e474d733dc55b2c83b2197a7083f4
+
+aderyn | 0.6.8 | tag aderyn-v0.6.8 / commit a288420403cb1ae5f38ce606c3a6d4e605b9c81d | aarch64-apple-darwin | GPL-3.0
+aderyn-url | https://github.com/Cyfrin/aderyn/releases/download/aderyn-v0.6.8/aderyn-aarch64-apple-darwin.tar.xz
+aderyn-archive-sha256 | 624c6652bb9478b38ddc255c27819cd5c6cb0448f5deb72036cc9cf5a27d4aac
+
+echidna | 2.3.3 | tag v2.3.3 / commit 4454f3a337ed58e89a3be488b8eac03e83cd40f2 | aarch64-macos | AGPL-3.0
+echidna-url | https://github.com/crytic/echidna/releases/download/v2.3.3/echidna-2.3.3-aarch64-macos.tar.gz
+echidna-archive-sha256 | 8e16a43d8c37b74365ef259ea986e074b8a717309f770c7ff3d1f9fb891a7902
+echidna-x86_64-macos-url | https://github.com/crytic/echidna/releases/download/v2.3.3/echidna-2.3.3-x86_64-macos.tar.gz
+echidna-x86_64-macos-archive-sha256 | 8fa994e6589ce00b548b0aa183e60b5e123e9d9ce7aae6a6228ea667eb5c0194
+
+medusa | 1.5.1 | tag v1.5.1 / commit 540a483b7a2a35b0a6d210aeb6ae6015aa7a0f62 | mac-arm64 | AGPL-3.0
+medusa-url | https://github.com/crytic/medusa/releases/download/v1.5.1/medusa-mac-arm64.tar.gz
+medusa-archive-sha256 | a8b38bbd07a60f51e1b96304db58dba441b5053d7a61d1749458f3f7eaf5d3ce
+
+solidity-smtchecker | solc 0.8.36+commit.8a079791.Darwin.appleclang
+solidity-smtchecker-binary-sha256 | d4abcf0b3e24b7948ddfd64c374d26c3214648717777790ecb936979054a129d
+
+halmos | 0.3.3 | project-local .tools/halmos venv | AGPL-3.0
+halmos-python | bundled CPython 3.12.13 | no global runtime or PATH change
+halmos-pypi-wheel-sha256 | 3967291bdd4aaac96a4c42dd18bf25bd76215acad53697d98f02b986ac8d3f67
+halmos-record-sha256 | 24f6dc420fc4e41bdae91d96babad9e549187b2784a3f7df1e9438893498c1ff
+halmos-dependency-lock | manifests/halmos-wheels.lock
+halmos-solver | z3-solver 4.12.6.0
+halmos-z3-binary-sha256 | 6a445d914dce13d8bc6ef0d7c39fb88582ff2258a28e031975b798cd62cf7af5

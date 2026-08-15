@@ -1,0 +1,8 @@
+source=https://github.com/trailofbits/skills
+commit=7b9bd5f950f89a9ba71b249b9801c1a95be3928e
+github_signature_verified=true
+license=CC-BY-SA-4.0
+installer=/Users/undef1ned/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py
+installed=guidelines-advisor,secure-workflow-guide,audit-prep-assistant,code-maturity-assessor,token-integration-analyzer
+audit_note=All 22 target files inspected; Markdown, YAML, and static SVG only; no symlinks, executable files, or install hooks.
+

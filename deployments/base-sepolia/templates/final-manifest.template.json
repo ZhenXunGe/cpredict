@@ -1,0 +1,20 @@
+{
+  "_notice": "TEMPLATE_NOT_RUNTIME_EVIDENCE. Copy to a separate evidence workspace, remove _notice, populate only from receipts/RPC/explorer, then run both validators. Never rename this template to final.json.",
+  "schemaVersion": "cpredict.base-sepolia.deployment.v1",
+  "evidenceClass": "TEMPLATE_NOT_RUNTIME_EVIDENCE",
+  "status": "BLOCKED_NOT_DEPLOYED",
+  "chainId": 84532,
+  "network": "base-sepolia",
+  "generatedAt": null,
+  "source": null,
+  "referenceBlock": null,
+  "actors": null,
+  "externalContracts": null,
+  "contracts": null,
+  "transactions": null,
+  "bootstrap": null,
+  "configuration": null,
+  "roles": null,
+  "sourceVerification": null,
+  "canaryEvidence": null
+}

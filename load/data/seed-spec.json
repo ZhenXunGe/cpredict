@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "markets": 100,
+  "listingsPerMarket": 1000,
+  "totalListings": 100000,
+  "marketIdRange": [0, 99],
+  "listingIndexRangePerMarket": [0, 999],
+  "outcomes": 2,
+  "generation": "deterministic; no randomness, wall-clock time, or remote dependency"
+}

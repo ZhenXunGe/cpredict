@@ -1,0 +1,6 @@
+# path | bytes | sha256 | normalization
+reports/performance/full-20260808T013000Z-final/anvil.log | 13764695 | 57cfc5dcf04555326a20e9b5f98375193fefa0848fe48b801ca0b36c5bf968e3 | remove-nul-padding
+
+# The historical Anvil PTY log contains deterministic NUL padding from the retained run. The raw
+# file is preserved byte-for-byte. Secret scanning may remove only NUL bytes, and only while this
+# exact path, length, and SHA-256 match; any drift fails closed.

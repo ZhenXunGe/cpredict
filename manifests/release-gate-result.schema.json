@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example.invalid/schemas/release-gate-result-v1.json",
+  "title": "Cpredict semantic release gate result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "gateId",
+    "runnerId",
+    "command",
+    "executionProfile",
+    "result",
+    "exitCode",
+    "sourceManifestSha256",
+    "rawEvidence"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "gateId": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "runnerId": { "const": "cpredict-release-gate-runner-v1" },
+    "command": { "type": "string", "minLength": 1 },
+    "executionProfile": { "const": "FULL" },
+    "result": { "const": "PASS" },
+    "exitCode": { "const": 0 },
+    "sourceManifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "rawEvidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "path", "sha256"],
+        "properties": {
+          "role": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  }
+}

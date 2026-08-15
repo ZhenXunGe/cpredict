@@ -1,0 +1,16 @@
+# PostgreSQL integration-gate tool lock (2026-08-08)
+# Built project-locally from the verified official source archive. No global PATH,
+# shell configuration, package manager, or machine runtime was changed.
+
+postgresql | 17.10 | project-local .tools/postgresql-17.10 | source build
+postgresql-source-url | https://ftp.postgresql.org/pub/source/v17.10/postgresql-17.10.tar.bz2
+postgresql-source-archive | .tools/postgresql-src/postgresql-17.10.tar.bz2
+postgresql-archive-sha256 | 078a03516dcdbdb705fecaf415ea3d13a956c589e46f09fed68a06fb00598c90
+postgresql-reported-version | postgres (PostgreSQL) 17.10
+postgresql-build-platform | Darwin arm64
+postgresql-postgres-binary-sha256 | 4f11ae3d583b906fbc6a1714ef2d2ed274db68e39b1cd73f26f0e1fd7ce370f8
+postgresql-initdb-binary-sha256 | 63403763142d8cd0db886e8f6150a36d1e91891834ee37951f4add55dad13d66
+postgresql-pg_ctl-binary-sha256 | 7e2ccf8c98769c55c81557fca87f3f619c38ea7b3f5d3ed4752a98aae60d9596
+postgresql-psql-binary-sha256 | 47cb5d8f75a684f8fd29e8c5ec043b8b522d26cff600b2237cb0ae01335be77d
+postgresql-pg_isready-binary-sha256 | afa04098aa3b6dd65b175585410e21295ed2a5ca543e612b72701ff2a44a3f2e
+postgresql-integration-gate | scripts/postgres-integration.sh

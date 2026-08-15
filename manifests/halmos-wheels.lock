@@ -1,0 +1,26 @@
+# Halmos 0.3.3 project-local wheelhouse lock (darwin-arm64, CPython 3.12)
+# Downloaded from official PyPI over TLS on 2026-08-08, then installed offline.
+# safe-pysha3 has no compatible binary wheel; its verified sdist was compiled locally.
+
+certifi==2026.7.22 | certifi-2026.7.22-py3-none-any.whl | sha256:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775
+charset-normalizer==3.4.9 | charset_normalizer-3.4.9-cp312-cp312-macosx_10_13_universal2.whl | sha256:45b0cc4e3556cd875e09102988d1ab8356c998b596c9fced84547c8138b487a0
+eth-hash==0.8.0 | eth_hash-0.8.0-py3-none-any.whl | sha256:523718a51b369ab89866b929a5c93c52978cd866ea309192ad980dd8271f9fac
+halmos==0.3.3 | halmos-0.3.3-py3-none-any.whl | sha256:3967291bdd4aaac96a4c42dd18bf25bd76215acad53697d98f02b986ac8d3f67
+idna==3.18 | idna-3.18-py3-none-any.whl | sha256:7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2
+markdown-it-py==4.2.0 | markdown_it_py-4.2.0-py3-none-any.whl | sha256:9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a
+mdurl==0.1.2 | mdurl-0.1.2-py3-none-any.whl | sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8
+psutil==7.2.2 | psutil-7.2.2-cp36-abi3-macosx_11_0_arm64.whl | sha256:1a7b04c10f32cc88ab39cbf606e117fd74721c831c98a27dc04578deb0c16979
+pygments==2.20.0 | pygments-2.20.0-py3-none-any.whl | sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176
+python-dotenv==1.2.2 | python_dotenv-1.2.2-py3-none-any.whl | sha256:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a
+requests==2.34.2 | requests-2.34.2-py3-none-any.whl | sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0
+rich==14.0.0 | rich-14.0.0-py3-none-any.whl | sha256:1c9491e1951aac09caffd42f448ee3d04e58923ffe14993f6e83068dc395d7e0
+safe-pysha3==1.0.5 | safe_pysha3-1.0.5.tar.gz | sha256:88ceaad6af4b6bdecd2f54b31ad0e5e5e210d4f5ecabb1bd1fd3539ad61b7bf1
+safe-pysha3==1.0.5 | local cp312 darwin-arm64 wheel | sha256:25e6b4c37cf6ac56bf379e54abe7de054006b88974622242291dc34323cbfaab
+setuptools==80.9.0 | setuptools-80.9.0-py3-none-any.whl | sha256:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922
+sortedcontainers==2.4.0 | sortedcontainers-2.4.0-py2.py3-none-any.whl | sha256:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0
+toml==0.10.2 | toml-0.10.2-py2.py3-none-any.whl | sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b
+urllib3==2.7.0 | urllib3-2.7.0-py3-none-any.whl | sha256:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897
+wheel==0.45.1 | wheel-0.45.1-py3-none-any.whl | sha256:708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248
+xxhash==3.8.1 | xxhash-3.8.1-cp312-cp312-macosx_11_0_arm64.whl | sha256:220d68130f83f7cc86d6edfdeab176adc73d7200bf3a8ec10c629e8cf605c215
+yices-solver==2.6.4.post23 | yices_solver-2.6.4.post23-py3-none-macosx_14_0_arm64.whl | sha256:979e6644de090269f89e8c0a2286b8eaf38df00773d1832cf42861928c140cac
+z3-solver==4.12.6.0 | z3_solver-4.12.6.0-py2.py3-none-macosx_11_0_arm64.whl | sha256:9347c9c4f966c97c807f73b1b4365d11dbb25e390b3908b1c3a6e3bceff62e6d

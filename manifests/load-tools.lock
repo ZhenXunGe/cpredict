@@ -1,0 +1,16 @@
+# Load-gate tool lock (2026-08-08)
+# No global PATH, shell configuration, or machine runtime was changed.
+
+k6 | v1.8.0 / 23d89b9b7c | project-local .tools/k6/k6 | darwin-arm64
+k6-release | https://github.com/grafana/k6/releases/tag/v1.8.0
+k6-archive | https://github.com/grafana/k6/releases/download/v1.8.0/k6-v1.8.0-macos-arm64.zip
+k6-archive-sha256 | 6869e9ebdf51f7450c9ba160b5d0aa0d7224186d976bc0bc8e7ead91a7104cce
+k6-binary-sha256 | 99e584cda860798dbe830f05be3f79fded7da275cd9bf669b7482cdca458423f
+k6-reported-build | go1.26.4 / darwin-arm64
+k6-installer | scripts/load/install-k6.sh
+
+anvil | v1.7.1 / 4072e48705af9d93e3c0f6e29e93b5e9a40caed8 | project-local .tools/foundry/bin/anvil
+anvil-binary-sha256 | 5c9f9aad323062b1c0421a63595741430acaea150da3611e38c45071e4cf4e28
+anvil-lock-source | manifests/security-tools.lock
+
+node | v22.22.2 | existing workspace runtime, not installed by load gate

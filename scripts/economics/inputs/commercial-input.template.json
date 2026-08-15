@@ -1,0 +1,179 @@
+{
+  "$schema": "../../../manifests/economics-commercial-input.schema.json",
+  "schemaVersion": 1,
+  "assessmentId": "commercial-economics-awaiting-real-evidence",
+  "assessmentTime": "1970-01-01T00:00:00Z",
+  "validUntil": "1970-01-01T00:00:00Z",
+  "subject": {
+    "chainId": 8453,
+    "usdcDecimals": 6,
+    "v1": {
+      "minimumCreatorBondAtomic": "10000000",
+      "creatorBondRateBps": "200",
+      "fullMarketCapAtomic": "5000000000",
+      "cloneMarketCapAtomic": "500000000",
+      "creatorRakeBps": "500",
+      "protocolShareBps": "2000",
+      "earlyBirdShareBps": "2000",
+      "platformC2CFeeBps": "100",
+      "creatorC2CFeeBps": "100"
+    }
+  },
+  "deploymentBinding": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "sourceManifestSha256": "",
+    "auditCommit": "",
+    "deployments": []
+  },
+  "configurationEvidence": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "observedBlockNumber": "1",
+    "rpcVerified": false,
+    "marketSnapshots": []
+  },
+  "ethUsdEvidence": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "ethUsdE8": "0",
+    "observedAt": "",
+    "validUntil": ""
+  },
+  "baseReceipts": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "receipts": []
+  },
+  "gasPriceEvidence": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "samplesWei": []
+  },
+  "bondEvidence": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "cohorts": []
+  },
+  "microPoolEvidence": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "mode": "CLONE",
+    "principalAtomic": "0",
+    "expectedClaimantCount": "0",
+    "paymasterSponsoredShareBps": "0",
+    "earlyBirdEnabled": false
+  },
+  "marketCapEvidence": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "cohorts": []
+  },
+  "earlyBirdEvidence": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "walletCount": "0",
+    "flaggedWalletCount": "0",
+    "totalEarlyPrincipalAtomic": "0",
+    "flaggedEarlyPrincipalAtomic": "0",
+    "totalEarlyRewardAtomic": "0",
+    "flaggedEarlyRewardAtomic": "0"
+  },
+  "c2cEvidence": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "matchedCohorts": false,
+    "baseline": {
+      "feeBps": "0",
+      "sampleCount": "0",
+      "quotedUnits": "0",
+      "filledUnits": "0",
+      "medianTimeToFillSeconds": "0"
+    },
+    "candidate": {
+      "feeBps": "200",
+      "sampleCount": "0",
+      "quotedUnits": "0",
+      "filledUnits": "0",
+      "medianTimeToFillSeconds": "0"
+    }
+  },
+  "launchGuardEvidence": {
+    "evidenceStatus": "MISSING",
+    "provenance": {
+      "datasetSha256": "",
+      "collectionStart": "",
+      "collectionEnd": "",
+      "verifier": "",
+      "verificationRef": ""
+    },
+    "observationDays": "0",
+    "marketCount": "0",
+    "accountingMismatchCount": "0",
+    "guardBypassIncidentCount": "0",
+    "unrecoveredIncidentCount": "0",
+    "capDeniedOrders": "0",
+    "eligibleOrders": "0",
+    "p95ExposureUtilizationBps": "0"
+  }
+}

@@ -1,0 +1,441 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example/schemas/base-sepolia-final-manifest-v1.json",
+  "title": "Cpredict Base Sepolia finalized deployment manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "evidenceClass",
+    "status",
+    "chainId",
+    "network",
+    "generatedAt",
+    "source",
+    "referenceBlock",
+    "actors",
+    "externalContracts",
+    "contracts",
+    "transactions",
+    "bootstrap",
+    "configuration",
+    "roles",
+    "sourceVerification",
+    "canaryEvidence"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "cpredict.base-sepolia.deployment.v1" },
+    "evidenceClass": { "const": "BASE_SEPOLIA_RUNTIME" },
+    "status": { "const": "FINALIZED_VERIFIED" },
+    "chainId": { "const": 84532 },
+    "network": { "const": "base-sepolia" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "source": { "$ref": "#/$defs/source" },
+    "referenceBlock": { "$ref": "#/$defs/referenceBlock" },
+    "actors": { "$ref": "#/$defs/actors" },
+    "externalContracts": { "$ref": "#/$defs/externalContracts" },
+    "contracts": { "$ref": "#/$defs/contracts" },
+    "transactions": { "$ref": "#/$defs/transactions" },
+    "bootstrap": { "$ref": "#/$defs/bootstrap" },
+    "configuration": { "$ref": "#/$defs/configuration" },
+    "roles": { "$ref": "#/$defs/roles" },
+    "sourceVerification": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": { "$ref": "#/$defs/sourceVerification" }
+    },
+    "canaryEvidence": { "$ref": "#/$defs/canaryEvidence" }
+  },
+  "$defs": {
+    "addressAny": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" },
+    "address": {
+      "allOf": [
+        { "$ref": "#/$defs/addressAny" },
+        { "not": { "const": "0x0000000000000000000000000000000000000000" } }
+      ]
+    },
+    "hash": { "type": "string", "pattern": "^0x[0-9a-fA-F]{64}$" },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "not": {
+        "const": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    "decimal": { "type": "string", "pattern": "^(0|[1-9][0-9]*)$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit",
+        "tag",
+        "sourceManifestSha256",
+        "compiler",
+        "foundry",
+        "optimizer",
+        "optimizerRuns",
+        "viaIR",
+        "evmVersion"
+      ],
+      "properties": {
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "tag": { "type": "string", "minLength": 1 },
+        "sourceManifestSha256": { "$ref": "#/$defs/sha256" },
+        "compiler": { "const": "0.8.36" },
+        "foundry": { "const": "1.7.1" },
+        "optimizer": { "const": true },
+        "optimizerRuns": { "type": "integer", "minimum": 1 },
+        "viaIR": { "const": true },
+        "evmVersion": { "type": "string", "minLength": 1 }
+      }
+    },
+    "referenceBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "number",
+        "hash",
+        "timestamp",
+        "confirmations",
+        "rpcEvidenceSha256"
+      ],
+      "properties": {
+        "number": { "type": "integer", "minimum": 1 },
+        "hash": { "$ref": "#/$defs/hash" },
+        "timestamp": { "type": "integer", "minimum": 1 },
+        "confirmations": { "type": "integer", "minimum": 1 },
+        "rpcEvidenceSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "constructorArg": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "value"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "type": "string", "minLength": 1 },
+        "value": {
+          "oneOf": [
+            { "type": ["string", "number", "boolean"] },
+            {
+              "type": "array",
+              "items": { "type": ["string", "number", "boolean"] }
+            }
+          ]
+        }
+      }
+    },
+    "codeRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "address",
+        "runtimeCodehash",
+        "deploymentTx",
+        "deploymentBlock",
+        "deploymentBlockHash",
+        "constructorArgs",
+        "receiptStatus"
+      ],
+      "properties": {
+        "address": { "$ref": "#/$defs/address" },
+        "runtimeCodehash": { "$ref": "#/$defs/hash" },
+        "deploymentTx": { "$ref": "#/$defs/hash" },
+        "deploymentBlock": { "type": "integer", "minimum": 1 },
+        "deploymentBlockHash": { "$ref": "#/$defs/hash" },
+        "constructorArgs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/constructorArg" }
+        },
+        "receiptStatus": { "const": 1 }
+      }
+    },
+    "externalCodeRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "address",
+        "runtimeCodehash",
+        "deploymentTx",
+        "deploymentBlock",
+        "deploymentBlockHash"
+      ],
+      "properties": {
+        "address": { "$ref": "#/$defs/address" },
+        "runtimeCodehash": { "$ref": "#/$defs/hash" },
+        "deploymentTx": { "$ref": "#/$defs/hash" },
+        "deploymentBlock": { "type": "integer", "minimum": 1 },
+        "deploymentBlockHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "safe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "address",
+        "owners",
+        "threshold",
+        "runtimeCodehash",
+        "deploymentTx",
+        "deploymentBlock",
+        "deploymentBlockHash"
+      ],
+      "properties": {
+        "address": { "$ref": "#/$defs/address" },
+        "owners": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/address" }
+        },
+        "threshold": { "type": "integer", "minimum": 2, "maximum": 4 },
+        "runtimeCodehash": { "$ref": "#/$defs/hash" },
+        "deploymentTx": { "$ref": "#/$defs/hash" },
+        "deploymentBlock": { "type": "integer", "minimum": 1 },
+        "deploymentBlockHash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "actors": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "deployer",
+        "governanceSafe",
+        "emergencySafe",
+        "protocolTreasury",
+        "sponsorSigner"
+      ],
+      "properties": {
+        "deployer": { "$ref": "#/$defs/address" },
+        "governanceSafe": { "$ref": "#/$defs/safe" },
+        "emergencySafe": { "$ref": "#/$defs/safe" },
+        "protocolTreasury": { "$ref": "#/$defs/address" },
+        "sponsorSigner": { "$ref": "#/$defs/address" }
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timelock",
+        "config",
+        "emergencyController",
+        "exposureGuard",
+        "feeVault",
+        "bondEscrow",
+        "cloneImplementation",
+        "fullMarketDeployer",
+        "factory",
+        "marketplace",
+        "paymaster"
+      ],
+      "properties": {
+        "timelock": { "$ref": "#/$defs/codeRecord" },
+        "config": { "$ref": "#/$defs/codeRecord" },
+        "emergencyController": { "$ref": "#/$defs/codeRecord" },
+        "exposureGuard": { "$ref": "#/$defs/codeRecord" },
+        "feeVault": { "$ref": "#/$defs/codeRecord" },
+        "bondEscrow": { "$ref": "#/$defs/codeRecord" },
+        "cloneImplementation": { "$ref": "#/$defs/codeRecord" },
+        "fullMarketDeployer": { "$ref": "#/$defs/codeRecord" },
+        "factory": { "$ref": "#/$defs/codeRecord" },
+        "marketplace": { "$ref": "#/$defs/codeRecord" },
+        "paymaster": { "$ref": "#/$defs/codeRecord" }
+      }
+    },
+    "externalContracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["usdc", "permit2", "entryPoint"],
+      "properties": {
+        "usdc": { "$ref": "#/$defs/externalCodeRecord" },
+        "permit2": { "$ref": "#/$defs/externalCodeRecord" },
+        "entryPoint": { "$ref": "#/$defs/externalCodeRecord" }
+      }
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["txHash", "status", "blockNumber", "blockHash", "timestamp"],
+      "properties": {
+        "txHash": { "$ref": "#/$defs/hash" },
+        "status": { "const": 1 },
+        "blockNumber": { "type": "integer", "minimum": 1 },
+        "blockHash": { "$ref": "#/$defs/hash" },
+        "timestamp": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "transactions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["deployment", "bootstrapSchedule", "bootstrapFinalize"],
+      "properties": {
+        "deployment": { "$ref": "#/$defs/receipt" },
+        "bootstrapSchedule": { "$ref": "#/$defs/receipt" },
+        "bootstrapFinalize": { "$ref": "#/$defs/receipt" }
+      }
+    },
+    "bootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "minimumDelaySeconds",
+        "operationId",
+        "salt",
+        "factoryActivationFingerprint",
+        "scheduledAt",
+        "executedAt"
+      ],
+      "properties": {
+        "minimumDelaySeconds": { "const": 3600 },
+        "operationId": { "$ref": "#/$defs/hash" },
+        "salt": { "$ref": "#/$defs/hash" },
+        "factoryActivationFingerprint": { "$ref": "#/$defs/hash" },
+        "scheduledAt": { "type": "integer", "minimum": 1 },
+        "executedAt": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "initialExposureCap",
+        "creationFee",
+        "protocolShareBps",
+        "earlyBirdShareBps",
+        "platformC2CFeeBps",
+        "maxCreatorRakeBps",
+        "maxCreatorC2CFeeBps",
+        "maxFullMarketCap",
+        "maxCloneMarketCap",
+        "maxPerUserPrimaryCap",
+        "paymasterMaxCostPerOperation",
+        "paymasterMaxCostPerUserDay",
+        "paymasterMaxCostGlobalDay",
+        "paymasterPolicyVersion"
+      ],
+      "properties": {
+        "initialExposureCap": { "const": "50000000000" },
+        "creationFee": { "$ref": "#/$defs/decimal" },
+        "protocolShareBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "earlyBirdShareBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000
+        },
+        "platformC2CFeeBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        },
+        "maxCreatorRakeBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "maxCreatorC2CFeeBps": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 200
+        },
+        "maxFullMarketCap": { "$ref": "#/$defs/decimal" },
+        "maxCloneMarketCap": { "$ref": "#/$defs/decimal" },
+        "maxPerUserPrimaryCap": { "$ref": "#/$defs/decimal" },
+        "paymasterMaxCostPerOperation": { "$ref": "#/$defs/decimal" },
+        "paymasterMaxCostPerUserDay": { "$ref": "#/$defs/decimal" },
+        "paymasterMaxCostGlobalDay": { "$ref": "#/$defs/decimal" },
+        "paymasterPolicyVersion": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "defaultAdmin",
+        "proposer",
+        "canceller",
+        "executor",
+        "temporaryDeployerRolesCleared",
+        "roleEventsSha256"
+      ],
+      "properties": {
+        "defaultAdmin": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/address" }
+        },
+        "proposer": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/address" }
+        },
+        "canceller": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/address" }
+        },
+        "executor": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/addressAny" }
+        },
+        "temporaryDeployerRolesCleared": { "const": true },
+        "roleEventsSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "sourceVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract",
+        "address",
+        "status",
+        "explorerUrl",
+        "constructorArgsVerified",
+        "runtimeBytecodeVerified"
+      ],
+      "properties": {
+        "contract": {
+          "type": "string",
+          "enum": [
+            "timelock",
+            "config",
+            "emergencyController",
+            "exposureGuard",
+            "feeVault",
+            "bondEscrow",
+            "cloneImplementation",
+            "fullMarketDeployer",
+            "factory",
+            "marketplace",
+            "paymaster"
+          ]
+        },
+        "address": { "$ref": "#/$defs/address" },
+        "status": { "const": "VERIFIED" },
+        "explorerUrl": { "type": "string", "pattern": "^https://" },
+        "constructorArgsVerified": { "const": true },
+        "runtimeBytecodeVerified": { "const": true }
+      }
+    },
+    "canaryEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidenceSha256", "status"],
+      "properties": {
+        "evidenceSha256": { "$ref": "#/$defs/sha256" },
+        "status": { "const": "COMPLETE" }
+      }
+    }
+  }
+}

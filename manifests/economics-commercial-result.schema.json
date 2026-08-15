@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example/schemas/economics-commercial-result.schema.json",
+  "title": "Cpredict V1 commercial economics gate result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "generatedBy",
+    "assessmentId",
+    "assessmentTime",
+    "validUntil",
+    "policyId",
+    "inputSha256",
+    "policySha256",
+    "overallStatus",
+    "roundingPolicy",
+    "gates",
+    "proofBoundary"
+  ],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "generatedBy": {
+      "const": "scripts/economics/run-commercial-economics-gate.mjs"
+    },
+    "assessmentId": { "type": "string", "minLength": 1 },
+    "assessmentTime": { "type": "string", "format": "date-time" },
+    "validUntil": { "type": "string", "format": "date-time" },
+    "policyId": { "type": "string", "minLength": 1 },
+    "inputSha256": { "$ref": "#/$defs/sha256" },
+    "policySha256": { "$ref": "#/$defs/sha256" },
+    "overallStatus": { "$ref": "#/$defs/status" },
+    "roundingPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revenue",
+        "costsAndRequiredCoverage",
+        "percentiles",
+        "ratios",
+        "arithmetic"
+      ],
+      "properties": {
+        "revenue": { "type": "string" },
+        "costsAndRequiredCoverage": { "type": "string" },
+        "percentiles": { "type": "string" },
+        "ratios": { "type": "string" },
+        "arithmetic": { "type": "string" }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "status", "reasons", "metrics"],
+        "properties": {
+          "id": {
+            "enum": [
+              "bond_deterrence",
+              "micro_pool_rake",
+              "full_clone_caps",
+              "early_bird_sybil",
+              "c2c_fee_liquidity",
+              "launch_guard_retirement",
+              "extreme_gas_exit"
+            ]
+          },
+          "title": { "type": "string", "minLength": 1 },
+          "status": { "$ref": "#/$defs/status" },
+          "reasons": { "type": "array", "items": { "type": "string" } },
+          "metrics": { "type": ["object", "array"] }
+        }
+      }
+    },
+    "proofBoundary": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "status": { "enum": ["PASS", "FAIL", "NOT_VERIFIED"] }
+  }
+}

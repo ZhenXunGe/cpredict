@@ -1,0 +1,1727 @@
+{
+  "schemaVersion": 1,
+  "legalConclusion": false,
+  "disclaimer": "Inventory of declared SPDX expressions and lock metadata only; obtain legal advice for distribution decisions.",
+  "packages": [
+    {
+      "identity": "npm:@adraffy/ens-normalize@1.11.1:node_modules/@adraffy/ens-normalize",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@adraffy/ens-normalize\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@fastify/ajv-compiler@4.0.5:node_modules/@fastify/ajv-compiler",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@fastify/ajv-compiler\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@fastify/error@4.2.0:node_modules/@fastify/error",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@fastify/error\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@fastify/fast-json-stringify-compiler@5.1.0:node_modules/@fastify/fast-json-stringify-compiler",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@fastify/fast-json-stringify-compiler\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@fastify/forwarded@3.0.2:node_modules/@fastify/forwarded",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@fastify/forwarded\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@fastify/helmet@13.1.0:node_modules/@fastify/helmet",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@fastify/helmet\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@fastify/merge-json-schemas@0.2.1:node_modules/@fastify/merge-json-schemas",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@fastify/merge-json-schemas\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@fastify/proxy-addr@5.1.0:node_modules/@fastify/proxy-addr",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@fastify/proxy-addr\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@fastify/rate-limit@11.2.0:node_modules/@fastify/rate-limit",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@fastify/rate-limit\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@jridgewell/sourcemap-codec@1.5.5:node_modules/@jridgewell/sourcemap-codec",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@jridgewell/sourcemap-codec\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@lukeed/ms@2.0.2:node_modules/@lukeed/ms",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@lukeed/ms\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@noble/ciphers@1.3.0:node_modules/@noble/ciphers",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@noble/ciphers\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@noble/curves@1.9.1:node_modules/@noble/curves",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@noble/curves\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@noble/hashes@1.8.0:node_modules/@noble/hashes",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@noble/hashes\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@opentelemetry/api@1.9.1:node_modules/@opentelemetry/api",
+      "kind": "runtime",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@opentelemetry/api\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@oxc-project/types@0.143.0:node_modules/@oxc-project/types",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@oxc-project/types\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@pinojs/redact@0.4.0:node_modules/@pinojs/redact",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@pinojs/redact\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-android-arm64@1.2.3:node_modules/@rolldown/binding-android-arm64",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-android-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-darwin-arm64@1.2.3:node_modules/@rolldown/binding-darwin-arm64",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-darwin-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-darwin-x64@1.2.3:node_modules/@rolldown/binding-darwin-x64",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-darwin-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-freebsd-x64@1.2.3:node_modules/@rolldown/binding-freebsd-x64",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-freebsd-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-linux-arm-gnueabihf@1.2.3:node_modules/@rolldown/binding-linux-arm-gnueabihf",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-linux-arm-gnueabihf\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-linux-arm64-gnu@1.2.3:node_modules/@rolldown/binding-linux-arm64-gnu",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-linux-arm64-gnu\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-linux-arm64-musl@1.2.3:node_modules/@rolldown/binding-linux-arm64-musl",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-linux-arm64-musl\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-linux-ppc64-gnu@1.2.3:node_modules/@rolldown/binding-linux-ppc64-gnu",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-linux-ppc64-gnu\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-linux-s390x-gnu@1.2.3:node_modules/@rolldown/binding-linux-s390x-gnu",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-linux-s390x-gnu\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-linux-x64-gnu@1.2.3:node_modules/@rolldown/binding-linux-x64-gnu",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-linux-x64-gnu\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-linux-x64-musl@1.2.3:node_modules/@rolldown/binding-linux-x64-musl",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-linux-x64-musl\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-openharmony-arm64@1.2.3:node_modules/@rolldown/binding-openharmony-arm64",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-openharmony-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-win32-arm64-msvc@1.2.3:node_modules/@rolldown/binding-win32-arm64-msvc",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-win32-arm64-msvc\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/binding-win32-x64-msvc@1.2.3:node_modules/@rolldown/binding-win32-x64-msvc",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/binding-win32-x64-msvc\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@rolldown/pluginutils@1.0.1:node_modules/@rolldown/pluginutils",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@rolldown/pluginutils\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@scure/base@1.2.6:node_modules/@scure/base",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@scure/base\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@scure/bip32@1.7.0:node_modules/@scure/bip32",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@scure/bip32\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@scure/bip39@1.6.0:node_modules/@scure/bip39",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@scure/bip39\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@standard-schema/spec@1.1.0:node_modules/@standard-schema/spec",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@standard-schema/spec\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@types/chai@5.2.3:node_modules/@types/chai",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@types/chai\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@types/deep-eql@4.0.2:node_modules/@types/deep-eql",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@types/deep-eql\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@types/estree@1.0.9:node_modules/@types/estree",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@types/estree\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@types/node@22.20.1:node_modules/@types/node",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@types/node\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@types/react-dom@19.2.4:node_modules/@types/react-dom",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@types/react-dom\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@types/react@19.2.18:node_modules/@types/react",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@types/react\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@types/ws@8.18.1:node_modules/@types/ws",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@types/ws\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-aix-ppc64@7.0.2:node_modules/@typescript/typescript-aix-ppc64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-aix-ppc64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-darwin-arm64@7.0.2:node_modules/@typescript/typescript-darwin-arm64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-darwin-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-darwin-x64@7.0.2:node_modules/@typescript/typescript-darwin-x64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-darwin-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-freebsd-arm64@7.0.2:node_modules/@typescript/typescript-freebsd-arm64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-freebsd-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-freebsd-x64@7.0.2:node_modules/@typescript/typescript-freebsd-x64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-freebsd-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-linux-arm64@7.0.2:node_modules/@typescript/typescript-linux-arm64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-linux-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-linux-arm@7.0.2:node_modules/@typescript/typescript-linux-arm",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-linux-arm\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-linux-loong64@7.0.2:node_modules/@typescript/typescript-linux-loong64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-linux-loong64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-linux-mips64el@7.0.2:node_modules/@typescript/typescript-linux-mips64el",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-linux-mips64el\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-linux-ppc64@7.0.2:node_modules/@typescript/typescript-linux-ppc64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-linux-ppc64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-linux-riscv64@7.0.2:node_modules/@typescript/typescript-linux-riscv64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-linux-riscv64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-linux-s390x@7.0.2:node_modules/@typescript/typescript-linux-s390x",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-linux-s390x\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-linux-x64@7.0.2:node_modules/@typescript/typescript-linux-x64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-linux-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-netbsd-arm64@7.0.2:node_modules/@typescript/typescript-netbsd-arm64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-netbsd-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-netbsd-x64@7.0.2:node_modules/@typescript/typescript-netbsd-x64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-netbsd-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-openbsd-arm64@7.0.2:node_modules/@typescript/typescript-openbsd-arm64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-openbsd-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-openbsd-x64@7.0.2:node_modules/@typescript/typescript-openbsd-x64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-openbsd-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-sunos-x64@7.0.2:node_modules/@typescript/typescript-sunos-x64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-sunos-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-win32-arm64@7.0.2:node_modules/@typescript/typescript-win32-arm64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-win32-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@typescript/typescript-win32-x64@7.0.2:node_modules/@typescript/typescript-win32-x64",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@typescript/typescript-win32-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@vitest/expect@4.1.10:node_modules/@vitest/expect",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@vitest/expect\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@vitest/mocker@4.1.10:node_modules/@vitest/mocker",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@vitest/mocker\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@vitest/pretty-format@4.1.10:node_modules/@vitest/pretty-format",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@vitest/pretty-format\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@vitest/runner@4.1.10:node_modules/@vitest/runner",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@vitest/runner\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@vitest/snapshot@4.1.10:node_modules/@vitest/snapshot",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@vitest/snapshot\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@vitest/spy@4.1.10:node_modules/@vitest/spy",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@vitest/spy\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@vitest/utils@4.1.10:node_modules/@vitest/utils",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@vitest/utils\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:abitype@1.2.3:node_modules/abitype",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/abitype\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:abstract-logging@2.0.1:node_modules/abstract-logging",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/abstract-logging\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:ajv-formats@3.0.1:node_modules/ajv-formats",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ajv-formats\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:ajv@8.20.0:node_modules/ajv",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ajv\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:assertion-error@2.0.1:node_modules/assertion-error",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/assertion-error\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:atomic-sleep@1.0.0:node_modules/atomic-sleep",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/atomic-sleep\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:avvio@9.3.0:node_modules/avvio",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/avvio\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:bintrees@1.0.2:node_modules/bintrees",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/bintrees\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:chai@6.2.2:node_modules/chai",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/chai\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:convert-source-map@2.0.0:node_modules/convert-source-map",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/convert-source-map\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:cookie@1.1.1:node_modules/cookie",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/cookie\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:csstype@3.2.3:node_modules/csstype",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/csstype\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:dequal@2.0.3:node_modules/dequal",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/dequal\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:detect-libc@2.1.2:node_modules/detect-libc",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/detect-libc\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:es-module-lexer@2.3.1:node_modules/es-module-lexer",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/es-module-lexer\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:estree-walker@3.0.3:node_modules/estree-walker",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/estree-walker\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:eventemitter3@5.0.1:node_modules/eventemitter3",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/eventemitter3\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:expect-type@1.4.0:node_modules/expect-type",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/expect-type\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:fast-decode-uri-component@1.0.1:node_modules/fast-decode-uri-component",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fast-decode-uri-component\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fast-deep-equal@3.1.3:node_modules/fast-deep-equal",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fast-deep-equal\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fast-json-stringify@7.0.1:node_modules/fast-json-stringify",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fast-json-stringify\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fast-querystring@1.1.2:node_modules/fast-querystring",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fast-querystring\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fast-uri@3.1.5:node_modules/fast-uri",
+      "kind": "runtime",
+      "declared": "BSD-3-Clause",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fast-uri\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fast-uri@4.1.2:node_modules/fast-json-stringify/node_modules/fast-uri",
+      "kind": "runtime",
+      "declared": "BSD-3-Clause",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fast-json-stringify/node_modules/fast-uri\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fastify-plugin@6.0.0:node_modules/fastify-plugin",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fastify-plugin\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fastify@5.10.0:node_modules/fastify",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fastify\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fastq@1.20.1:node_modules/fastq",
+      "kind": "runtime",
+      "declared": "ISC",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fastq\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fdir@6.5.0:node_modules/fdir",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fdir\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:find-my-way@9.7.0:node_modules/find-my-way",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/find-my-way\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:fsevents@2.3.3:node_modules/fsevents",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/fsevents\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:helmet@8.3.0:node_modules/helmet",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/helmet\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:ip-address@10.4.0:node_modules/ip-address",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ip-address\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:ipaddr.js@2.5.0:node_modules/ipaddr.js",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ipaddr.js\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:isows@1.0.7:node_modules/isows",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/isows\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:json-schema-ref-resolver@3.0.0:node_modules/json-schema-ref-resolver",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/json-schema-ref-resolver\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:json-schema-traverse@1.0.0:node_modules/json-schema-traverse",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/json-schema-traverse\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:light-my-request@6.6.0:node_modules/light-my-request",
+      "kind": "runtime",
+      "declared": "BSD-3-Clause",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/light-my-request\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:lightningcss-android-arm64@1.33.0:node_modules/lightningcss-android-arm64",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-android-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-darwin-arm64@1.33.0:node_modules/lightningcss-darwin-arm64",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-darwin-arm64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-darwin-x64@1.33.0:node_modules/lightningcss-darwin-x64",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-darwin-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-freebsd-x64@1.33.0:node_modules/lightningcss-freebsd-x64",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-freebsd-x64\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-linux-arm-gnueabihf@1.33.0:node_modules/lightningcss-linux-arm-gnueabihf",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-linux-arm-gnueabihf\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-linux-arm64-gnu@1.33.0:node_modules/lightningcss-linux-arm64-gnu",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-linux-arm64-gnu\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-linux-arm64-musl@1.33.0:node_modules/lightningcss-linux-arm64-musl",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-linux-arm64-musl\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-linux-x64-gnu@1.33.0:node_modules/lightningcss-linux-x64-gnu",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-linux-x64-gnu\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-linux-x64-musl@1.33.0:node_modules/lightningcss-linux-x64-musl",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-linux-x64-musl\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-win32-arm64-msvc@1.33.0:node_modules/lightningcss-win32-arm64-msvc",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-win32-arm64-msvc\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss-win32-x64-msvc@1.33.0:node_modules/lightningcss-win32-x64-msvc",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss-win32-x64-msvc\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:lightningcss@1.33.0:node_modules/lightningcss",
+      "kind": "development",
+      "declared": "MPL-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/lightningcss\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:magic-string@0.30.21:node_modules/magic-string",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/magic-string\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:nanoid@3.3.18:node_modules/nanoid",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/nanoid\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:obug@2.1.4:node_modules/obug",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/obug\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:on-exit-leak-free@2.1.2:node_modules/on-exit-leak-free",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/on-exit-leak-free\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:ox@0.14.32:node_modules/ox",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ox\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:pathe@2.0.3:node_modules/pathe",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/pathe\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:picocolors@1.1.1:node_modules/picocolors",
+      "kind": "development",
+      "declared": "ISC",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/picocolors\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:picomatch@4.0.5:node_modules/picomatch",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/picomatch\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:pino-abstract-transport@3.0.0:node_modules/pino-abstract-transport",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/pino-abstract-transport\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:pino-std-serializers@7.1.0:node_modules/pino-std-serializers",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/pino-std-serializers\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:pino@10.3.1:node_modules/pino",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/pino\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:postcss@8.5.26:node_modules/postcss",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/postcss\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:postgres@3.4.9:node_modules/postgres",
+      "kind": "runtime",
+      "declared": "Unlicense",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/postgres\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:process-warning@4.0.1:node_modules/light-my-request/node_modules/process-warning",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/light-my-request/node_modules/process-warning\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:process-warning@5.1.0:node_modules/process-warning",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/process-warning\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:prom-client@15.1.3:node_modules/prom-client",
+      "kind": "runtime",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/prom-client\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:quick-format-unescaped@4.0.4:node_modules/quick-format-unescaped",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/quick-format-unescaped\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:react-dom@19.2.8:node_modules/react-dom",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/react-dom\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:react@19.2.8:node_modules/react",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/react\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:real-require@0.2.0:node_modules/real-require",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/real-require\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:real-require@1.0.0:node_modules/thread-stream/node_modules/real-require",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/thread-stream/node_modules/real-require\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:require-from-string@2.0.2:node_modules/require-from-string",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/require-from-string\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:ret@0.5.0:node_modules/ret",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ret\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:reusify@1.1.0:node_modules/reusify",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/reusify\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:rfdc@1.4.1:node_modules/rfdc",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/rfdc\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:rolldown@1.2.3:node_modules/rolldown",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/rolldown\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:safe-regex2@5.1.1:node_modules/safe-regex2",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/safe-regex2\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:safe-stable-stringify@2.5.0:node_modules/safe-stable-stringify",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/safe-stable-stringify\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:scheduler@0.27.0:node_modules/scheduler",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/scheduler\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:secure-json-parse@4.1.0:node_modules/secure-json-parse",
+      "kind": "runtime",
+      "declared": "BSD-3-Clause",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/secure-json-parse\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:semver@7.8.5:node_modules/semver",
+      "kind": "runtime",
+      "declared": "ISC",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/semver\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:set-cookie-parser@2.7.2:node_modules/set-cookie-parser",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/set-cookie-parser\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:siginfo@2.0.0:node_modules/siginfo",
+      "kind": "development",
+      "declared": "ISC",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/siginfo\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:sonic-boom@4.2.1:node_modules/sonic-boom",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/sonic-boom\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:source-map-js@1.2.1:node_modules/source-map-js",
+      "kind": "development",
+      "declared": "BSD-3-Clause",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/source-map-js\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:split2@4.2.0:node_modules/split2",
+      "kind": "runtime",
+      "declared": "ISC",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/split2\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:stackback@0.0.2:node_modules/stackback",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/stackback\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:std-env@4.2.0:node_modules/std-env",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/std-env\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:tdigest@0.1.2:node_modules/tdigest",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/tdigest\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:thread-stream@4.2.0:node_modules/thread-stream",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/thread-stream\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:tinybench@2.9.0:node_modules/tinybench",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/tinybench\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:tinyexec@1.3.0:node_modules/tinyexec",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/tinyexec\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:tinyglobby@0.2.17:node_modules/tinyglobby",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/tinyglobby\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:tinyrainbow@3.1.1:node_modules/tinyrainbow",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/tinyrainbow\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:toad-cache@3.7.4:node_modules/toad-cache",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/toad-cache\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:typescript@7.0.2:node_modules/typescript",
+      "kind": "runtime",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/typescript\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:undici-types@6.21.0:node_modules/undici-types",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/undici-types\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:viem@2.55.8:node_modules/viem",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/viem\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:vite@8.2.1:node_modules/vite",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/vite\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:vitest@4.1.10:node_modules/vitest",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/vitest\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:why-is-node-running@2.3.0:node_modules/why-is-node-running",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/why-is-node-running\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:ws@8.21.0:node_modules/ws",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ws\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:zod@4.4.3:node_modules/zod",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/zod\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "python-wheel:certifi@2026.7.22:62f22742b58a1a33014a2b6b706588a8d7e2a88ae7bd1a6ebe8c992928483775",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:charset-normalizer@3.4.9:45b0cc4e3556cd875e09102988d1ab8356c998b596c9fced84547c8138b487a0",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:eth-hash@0.8.0:523718a51b369ab89866b929a5c93c52978cd866ea309192ad980dd8271f9fac",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:halmos@0.3.3:3967291bdd4aaac96a4c42dd18bf25bd76215acad53697d98f02b986ac8d3f67",
+      "kind": "tool",
+      "declared": "AGPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:idna@3.18:7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:markdown-it-py@4.2.0:9f7ebbcd14fe59494226453aed97c1070d83f8d24b6fc3a3bcf9a38092641c4a",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:mdurl@0.1.2:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:psutil@7.2.2:1a7b04c10f32cc88ab39cbf606e117fd74721c831c98a27dc04578deb0c16979",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:pygments@2.20.0:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:python-dotenv@1.2.2:1d8214789a24de455a8b8bd8ae6fe3c6b69a5e3d64aa8a8e5d68e694bbcb285a",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:requests@2.34.2:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:rich@14.0.0:1c9491e1951aac09caffd42f448ee3d04e58923ffe14993f6e83068dc395d7e0",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:safe-pysha3@1.0.5:25e6b4c37cf6ac56bf379e54abe7de054006b88974622242291dc34323cbfaab",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:safe-pysha3@1.0.5:88ceaad6af4b6bdecd2f54b31ad0e5e5e210d4f5ecabb1bd1fd3539ad61b7bf1",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:setuptools@80.9.0:062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:sortedcontainers@2.4.0:a163dcaede0f1c021485e957a39245190e74249897e2ae4b2aa38595db237ee0",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:toml@0.10.2:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:urllib3@2.7.0:9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:wheel@0.45.1:708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:xxhash@3.8.1:220d68130f83f7cc86d6edfdeab176adc73d7200bf3a8ec10c629e8cf605c215",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:yices-solver@2.6.4.post23:979e6644de090269f89e8c0a2286b8eaf38df00773d1832cf42861928c140cac",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "python-wheel:z3-solver@4.12.6.0:9347c9c4f966c97c807f73b1b4365d11dbb25e390b3908b1c3a6e3bceff62e6d",
+      "kind": "tool",
+      "declared": "NOASSERTION",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/halmos-wheels.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "solidity:account-abstraction@4cbc06072cdc19fd60f285c5997f4f7f57a588de",
+      "kind": "source",
+      "declared": "GPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/dependencies.lock",
+      "sourceScope": "compiled imports are SPDX-MIT lib/account-abstraction/contracts/interfaces/{IEntryPoint.sol,IPaymaster.sol,PackedUserOperation.sol,IStakeManager.sol,IAggregator.sol,INonceManager.sol,ISenderCreator.sol}; repository LICENSE is GPL-3.0"
+    },
+    {
+      "identity": "solidity:forge-std@8e40513d678f392f398620b3ef2b418648b33e89",
+      "kind": "tool",
+      "declared": "MIT OR Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/dependencies.lock",
+      "sourceScope": "lib/forge-std/src/** (test and deployment tooling)"
+    },
+    {
+      "identity": "solidity:foundry@4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+      "kind": "tool",
+      "declared": "MIT OR Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/dependencies.lock",
+      "sourceScope": "build/test toolchain only"
+    },
+    {
+      "identity": "solidity:openzeppelin-contracts@cab19933c33c2ad1d4c7a84864a3601dddfd16f3",
+      "kind": "source",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/dependencies.lock",
+      "sourceScope": "lib/openzeppelin-contracts/contracts/**"
+    },
+    {
+      "identity": "solidity:permit2@cc56ad0f3439c502c246fc5cfcc3db92bb8b7219",
+      "kind": "source",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/dependencies.lock",
+      "sourceScope": "production: lib/permit2/src/interfaces/ISignatureTransfer.sol and IEIP712.sol; test deployment: lib/permit2/src/**"
+    },
+    {
+      "identity": "solidity:solidity@0.8.36",
+      "kind": "tool",
+      "declared": "GPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/dependencies.lock",
+      "sourceScope": "compiler binary only"
+    },
+    {
+      "identity": "solidity:solmate-permit2-submodule@8d910d876f51c3b2585c9109409d601f600e68e1",
+      "kind": "source",
+      "declared": "AGPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/dependencies.lock",
+      "sourceScope": "test Permit2 deployment closure: lib/permit2/lib/solmate/src/tokens/ERC20.sol and utils/SafeTransferLib.sol"
+    },
+    {
+      "identity": "tool:aderyn@0.6.8",
+      "kind": "tool",
+      "declared": "GPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/security-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:anvil@v1.7.1 / 4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+      "kind": "tool",
+      "declared": "MIT OR Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/load-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:crytic-compile@0.4.2",
+      "kind": "tool",
+      "declared": "AGPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/security-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:echidna@2.3.3",
+      "kind": "tool",
+      "declared": "AGPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/security-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:foundry@v1.7.1 / 4072e48705af9d93e3c0f6e29e93b5e9a40caed8",
+      "kind": "tool",
+      "declared": "MIT OR Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/security-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:halmos@0.3.3",
+      "kind": "tool",
+      "declared": "AGPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/security-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:k6@v1.8.0 / 23d89b9b7c",
+      "kind": "tool",
+      "declared": "AGPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/load-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:medusa@1.5.1",
+      "kind": "tool",
+      "declared": "AGPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/security-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:node@v22.22.2",
+      "kind": "tool",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/load-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:postgresql@17.10",
+      "kind": "tool",
+      "declared": "PostgreSQL",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/postgresql-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:slither-analyzer@0.11.6",
+      "kind": "tool",
+      "declared": "AGPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/security-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:solc-select@1.2.0",
+      "kind": "tool",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/security-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:solidity-smtchecker@solc 0.8.36+commit.8a079791.Darwin.appleclang",
+      "kind": "tool",
+      "declared": "GPL-3.0-only",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/security-tools.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    },
+    {
+      "identity": "tool:trailofbits-solidity-skills@7b9bd5f950f89a9ba71b249b9801c1a95be3928e",
+      "kind": "tool",
+      "declared": "CC-BY-SA-4.0",
+      "concluded": "NOASSERTION",
+      "provenance": "manifests/solidity-skills.lock",
+      "sourceScope": "build, test, analysis, or operational tooling; not linked into deployed contract runtime"
+    }
+  ]
+}

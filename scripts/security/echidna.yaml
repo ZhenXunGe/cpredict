@@ -1,0 +1,14 @@
+testMode: property
+testLimit: 1000000
+seqLen: 128
+workers: 1
+timeout: 1800
+shrinkLimit: 5000
+coverage: true
+corpusDir: reports/security/echidna-corpus
+dictFreq: 0.40
+excludeViewPure: true
+maxTimeDelay: 604800
+maxBlockDelay: 60480
+stopOnFail: true
+allContracts: false

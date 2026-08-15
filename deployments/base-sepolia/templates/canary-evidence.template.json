@@ -1,0 +1,13 @@
+{
+  "_notice": "TEMPLATE_NOT_RUNTIME_EVIDENCE. Populate from Base Sepolia receipts only after the finalized deployment validator passes.",
+  "schemaVersion": "cpredict.base-sepolia.canary.v1",
+  "evidenceClass": "TEMPLATE_NOT_RUNTIME_EVIDENCE",
+  "status": "BLOCKED_NOT_EXECUTED",
+  "chainId": 84532,
+  "generatedAt": null,
+  "deploymentIdentity": null,
+  "referenceBlock": null,
+  "steps": [],
+  "timeoutCanary": null,
+  "zeroParticipantTimeoutCanary": null
+}

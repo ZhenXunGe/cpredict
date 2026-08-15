@@ -1,0 +1,181 @@
+{
+  "schemaVersion": 2,
+  "requiredGates": [
+    {
+      "id": "requirements",
+      "resultPath": "reports/release/gates/requirements.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "npm run check:requirements -- --source $CPREDICT_REQUIREMENTS_SOURCE",
+      "validator": "requirements",
+      "evidenceGate": "requirements"
+    },
+    {
+      "id": "sbom",
+      "resultPath": "reports/release/gates/sbom.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "npm run check:sbom",
+      "validator": "sbom",
+      "evidenceGate": "sbom"
+    },
+    {
+      "id": "generated-artifacts",
+      "resultPath": "reports/release/gates/generated-artifacts.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "npm run check:artifacts",
+      "validator": "generated",
+      "evidenceGate": "generated-artifacts"
+    },
+    {
+      "id": "solidity-viair",
+      "resultPath": "reports/release/gates/solidity-viair.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/test-all.sh",
+      "validator": "command",
+      "evidenceGate": "solidity-viair"
+    },
+    {
+      "id": "solidity-nonir",
+      "resultPath": "reports/release/gates/solidity-nonir.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/test-non-ir.sh",
+      "validator": "command",
+      "evidenceGate": "solidity-nonir"
+    },
+    {
+      "id": "coverage",
+      "resultPath": "reports/release/gates/coverage.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/coverage-full.sh",
+      "validator": "coverage",
+      "evidenceGate": "coverage"
+    },
+    {
+      "id": "gas-size",
+      "resultPath": "reports/release/gates/gas-size.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/gas-gates.sh",
+      "validator": "gas",
+      "evidenceGate": "gas-size"
+    },
+    {
+      "id": "offchain",
+      "resultPath": "reports/release/gates/offchain.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "npm run check:offchain && npm run test:offchain -- --maxWorkers=1 && npm run build:offchain",
+      "validator": "command",
+      "evidenceGate": "offchain"
+    },
+    {
+      "id": "postgresql",
+      "resultPath": "reports/release/gates/postgresql.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/postgres-integration.sh",
+      "validator": "postgresql",
+      "evidenceGate": "postgresql"
+    },
+    {
+      "id": "commercial-load",
+      "resultPath": "reports/release/gates/commercial-load.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "node scripts/release/record-commercial-load.mjs --bundle \"$CPREDICT_COMMERCIAL_LOAD_BUNDLE\" --trusted-public-key \"$CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY\" --trusted-public-key-sha256 \"$CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY_SHA256\" --evidence-root \"$CPREDICT_RELEASE_EVIDENCE_ROOT\"",
+      "validator": "commercial-load",
+      "evidenceGate": "commercial-load"
+    },
+    {
+      "id": "commercial-economics",
+      "resultPath": "reports/release/gates/commercial-economics.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "node scripts/economics/run-commercial-economics-gate.mjs --input \"$CPREDICT_ECONOMICS_INPUT\" --policy \"$CPREDICT_ECONOMICS_POLICY\" --output-json \"$CPREDICT_ECONOMICS_OUTPUT_JSON\" --output-md \"$CPREDICT_ECONOMICS_OUTPUT_MD\"",
+      "validator": "economics",
+      "evidenceGate": "commercial-economics"
+    },
+    {
+      "id": "deployment-tooling",
+      "resultPath": "reports/release/gates/deployment-tooling.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "npm run test:deployment-tools",
+      "validator": "deployment",
+      "evidenceGate": "deployment-tooling"
+    },
+    {
+      "id": "secret-scan",
+      "resultPath": "reports/release/gates/secret-scan.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "npm run scan:secrets",
+      "validator": "command",
+      "evidenceGate": "secret-scan"
+    },
+    {
+      "id": "history-secret-scan",
+      "resultPath": "reports/release/gates/history-secret-scan.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "trufflesecurity/trufflehog@6f3c981e7b77f235fd2702dd74af25fc4b72bf11 version=3.96.0 full-history",
+      "validator": "history",
+      "evidenceGate": "history-secret-scan"
+    },
+    {
+      "id": "slither",
+      "resultPath": "reports/release/gates/slither.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/security/run-slither.sh",
+      "validator": "security",
+      "evidenceGate": "slither"
+    },
+    {
+      "id": "aderyn",
+      "resultPath": "reports/release/gates/aderyn.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/security/run-aderyn.sh",
+      "validator": "security",
+      "evidenceGate": "aderyn"
+    },
+    {
+      "id": "echidna",
+      "resultPath": "reports/release/gates/echidna.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/security/run-echidna.sh",
+      "validator": "security",
+      "evidenceGate": "echidna"
+    },
+    {
+      "id": "medusa",
+      "resultPath": "reports/release/gates/medusa.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/security/run-medusa.sh",
+      "validator": "security",
+      "evidenceGate": "medusa"
+    },
+    {
+      "id": "halmos",
+      "resultPath": "reports/release/gates/halmos.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/security/run-halmos.sh",
+      "validator": "security",
+      "evidenceGate": "halmos"
+    },
+    {
+      "id": "smt",
+      "resultPath": "reports/release/gates/smt.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/security/run-smt.sh",
+      "validator": "security",
+      "evidenceGate": "solidity-smtchecker"
+    },
+    {
+      "id": "mutation",
+      "resultPath": "reports/release/gates/mutation.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "bash scripts/security/run-mutation-full.sh",
+      "validator": "security",
+      "evidenceGate": "mutation-full"
+    },
+    {
+      "id": "release-tools",
+      "resultPath": "reports/release/gates/release-tools.json",
+      "runnerId": "cpredict-release-gate-runner-v1",
+      "command": "npm run test:release-tools",
+      "validator": "command",
+      "evidenceGate": "release-tools"
+    }
+  ]
+}
