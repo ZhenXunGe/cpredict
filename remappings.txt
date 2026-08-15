@@ -1,0 +1,5 @@
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@account-abstraction/=lib/account-abstraction/contracts/
+permit2/=lib/permit2/src/
+forge-std/=lib/forge-std/src/
+

@@ -1,0 +1,36 @@
+# Read-only documentation-format references. Never used as a design source.
+ref/
+
+# Foundry
+cache/
+out/
+broadcast/
+lcov.info
+lib/
+
+# Project-local tools and generated artifacts
+.tools/
+artifacts/
+/coverage/
+/test/coverage/
+reports/generated/
+deployments/local/
+crytic-export/
+scripts/security/crytic-export/
+
+# Node / TypeScript
+node_modules/
+dist/
+.turbo/
+playwright-report/
+test-results/
+
+# Environment and credentials
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
