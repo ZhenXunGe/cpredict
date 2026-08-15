@@ -1,0 +1,30 @@
+Warning: unused option: maxGasPerBlock
+Warning: unused option: maxGasPerTx
+[2026-08-08 09:02:20.07] Compiling `test/security/EchidnaMarketAccounting.sol`... WARNING: Slither was explicitly disabled. Echidna uses Slither (https://github.com/crytic/slither) to perform source analysis, which makes fuzzing more effective. You should enable it.
+Done! (6.667875s)
+Analyzing contract: /Users/undef1ned/Work/local/cpredict/test/security/EchidnaMarketAccounting.sol:EchidnaMarketAccounting
+Loaded 0 transaction sequences from reports/security/echidna-corpus/reproducers
+Loaded 0 transaction sequences from reports/security/echidna-corpus/coverage
+[2026-08-08 09:02:27.07] [Worker 0] Crashed:
+
+Set.elemAt: index out of range
+CallStack (from HasCallStack):
+  error, called at libraries/containers/containers/src/Data/Set/Internal.hs:1401:17 in containers-0.6.8-c971:Data.Set.Internal
+
+Please report it to https://github.com/crytic/echidna/issues
+[2026-08-08 09:02:27.07] [status] tests: 0/4, fuzzing: 0/1000, values: [], cov: 0, corpus: 0, gas/s: 0
+echidna_vault_assets_cover_liabilities: passing
+echidna_guard_is_conservative: passing
+echidna_fee_and_bond_vaults_are_solvent: passing
+echidna_supply_is_conserved: passing
+
+Unique instructions: 0
+Unique codehashes: 0
+Corpus size: 0
+Seed: 5223417084340353165
+Total calls: 0
+
+[2026-08-08 09:02:27.07] Saving test reproducers... Done! (0.000002s)
+[2026-08-08 09:02:27.07] Saving corpus... Done! (0.000001s)
+[2026-08-08 09:02:27.07] Saving foundry reproducers... Done! (0.000037s)
+[2026-08-08 09:02:27.07] Saving coverage... Done! (0.000307s)

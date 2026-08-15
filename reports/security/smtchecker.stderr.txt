@@ -1,0 +1,120 @@
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:27:9:
+   |
+27 |         assert(protocolFee + creatorFee + earlyBirdPool == rake);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:28:9:
+   |
+28 |         assert(winnerPool + rake == principal);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:29:9:
+   |
+29 |         assert(protocolFee <= rake);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:30:9:
+   |
+30 |         assert(earlyBirdPool <= creatorNet);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:47:9:
+   |
+47 |         assert(payout <= remainingPool);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:48:9:
+   |
+48 |         assert(nextPool + payout == remainingPool);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:49:9:
+   |
+49 |         assert(nextUnits + claimUnits == remainingUnits);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:50:29:
+   |
+50 |         if (nextUnits == 0) assert(nextPool == 0);
+   |                             ^^^^^^^^^^^^^^^^^^^^^
+
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:68:9:
+   |
+68 |         assert(sellerProceeds + platformFee + creatorFee == gross);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: CHC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:69:9:
+   |
+69 |         assert(sellerProceeds <= gross);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:27:9:
+   |
+27 |         assert(protocolFee + creatorFee + earlyBirdPool == rake);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:28:9:
+   |
+28 |         assert(winnerPool + rake == principal);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:29:9:
+   |
+29 |         assert(protocolFee <= rake);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:30:9:
+   |
+30 |         assert(earlyBirdPool <= creatorNet);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:47:9:
+   |
+47 |         assert(payout <= remainingPool);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:48:9:
+   |
+48 |         assert(nextPool + payout == remainingPool);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:49:9:
+   |
+49 |         assert(nextUnits + claimUnits == remainingUnits);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:50:29:
+   |
+50 |         if (nextUnits == 0) assert(nextPool == 0);
+   |                             ^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:68:9:
+   |
+68 |         assert(sellerProceeds + platformFee + creatorFee == gross);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Info: BMC: Assertion violation check is safe!
+  --> test/security/ProtocolMath.smt.sol:69:9:
+   |
+69 |         assert(sellerProceeds <= gross);
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+

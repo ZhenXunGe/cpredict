@@ -1,0 +1,9 @@
+{
+  "installedAt": "2026-08-08T01:03:00Z",
+  "scope": "project-local .tools/k6/k6; no global PATH change",
+  "source": "https://github.com/grafana/k6/releases/tag/v1.8.0",
+  "asset": "k6-v1.8.0-macos-arm64.zip",
+  "assetSha256": "6869e9ebdf51f7450c9ba160b5d0aa0d7224186d976bc0bc8e7ead91a7104cce",
+  "binarySha256": "99e584cda860798dbe830f05be3f79fded7da275cd9bf669b7482cdca458423f",
+  "reportedVersion": "k6 v1.8.0 (commit/23d89b9b7c, go1.26.4, darwin/arm64)"
+}

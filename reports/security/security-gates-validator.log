@@ -1,0 +1,120 @@
+TAP version 13
+# Subtest: detects credential classes without returning secret values
+ok 1 - detects credential classes without returning secret values
+  ---
+  duration_ms: 1.730209
+  type: 'test'
+  ...
+# Subtest: allows explicit placeholders but flags a material generic assignment
+ok 2 - allows explicit placeholders but flags a material generic assignment
+  ---
+  duration_ms: 0.651041
+  type: 'test'
+  ...
+# Subtest: CLI scans the Git delivery inventory and redacts matched values
+ok 3 - CLI scans the Git delivery inventory and redacts matched values
+  ---
+  duration_ms: 196.506583
+  type: 'test'
+  ...
+# Subtest: CLI counts an allowlisted normalized payload within the inventory total
+ok 4 - CLI counts an allowlisted normalized payload within the inventory total
+  ---
+  duration_ms: 68.6035
+  type: 'test'
+  ...
+# Subtest: CLI fails closed when an allowlisted binary size or hash drifts
+ok 5 - CLI fails closed when an allowlisted binary size or hash drifts
+  ---
+  duration_ms: 122.278208
+  type: 'test'
+  ...
+# Subtest: CLI rejects unused allowlist rows and unsupported normalization
+ok 6 - CLI rejects unused allowlist rows and unsupported normalization
+  ---
+  duration_ms: 108.965375
+  type: 'test'
+  ...
+# Subtest: CLI scans normalized content and still redacts a detected secret
+ok 7 - CLI scans normalized content and still redacts a detected secret
+  ---
+  duration_ms: 67.168833
+  type: 'test'
+  ...
+# Subtest: retained parseable security evidence matches its exact inventories
+ok 8 - retained parseable security evidence matches its exact inventories
+  ---
+  duration_ms: 10.277166
+  type: 'test'
+  ...
+# Subtest: retained Echidna failure and synthetic SMT violations remain failures
+ok 9 - retained Echidna failure and synthetic SMT violations remain failures
+  ---
+  duration_ms: 2.5945
+  type: 'test'
+  ...
+# Subtest: zero-result symbolic and fuzz summaries fail closed
+ok 10 - zero-result symbolic and fuzz summaries fail closed
+  ---
+  duration_ms: 1.182959
+  type: 'test'
+  ...
+# Subtest: k6 summaries require explicit p99 and full WebSocket inventory
+ok 11 - k6 summaries require explicit p99 and full WebSocket inventory
+  ---
+  duration_ms: 1.734667
+  type: 'test'
+  ...
+# Subtest: retained passing load lanes match their exact inventories
+ok 12 - retained passing load lanes match their exact inventories
+  ---
+  duration_ms: 2.011125
+  type: 'test'
+  ...
+# Subtest: load stage manifest schema 2 fails closed across completed and aborted runs
+ok 13 - load stage manifest schema 2 fails closed across completed and aborted runs
+  ---
+  duration_ms: 0.950042
+  type: 'test'
+  ...
+# Subtest: unexpected Slither High or Medium findings fail the reviewed baseline
+ok 14 - unexpected Slither High or Medium findings fail the reviewed baseline
+  ---
+  duration_ms: 4.616917
+  type: 'test'
+  ...
+# Subtest: binds a passing gate to exact input and evidence hashes
+ok 15 - binds a passing gate to exact input and evidence hashes
+  ---
+  duration_ms: 52.061209
+  type: 'test'
+  ...
+# Subtest: verifier detects source, raw evidence, sidecar, and PASS-status drift
+ok 16 - verifier detects source, raw evidence, sidecar, and PASS-status drift
+  ---
+  duration_ms: 121.9925
+  type: 'test'
+  ...
+# Subtest: records crashes and validator failures as FAIL without losing hashes
+ok 17 - records crashes and validator failures as FAIL without losing hashes
+  ---
+  duration_ms: 1.464958
+  type: 'test'
+  ...
+# Subtest: fails closed on missing, escaping, symlinked, or empty inventories
+ok 18 - fails closed on missing, escaping, symlinked, or empty inventories
+  ---
+  duration_ms: 1.486875
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 625.900916
+verified security evidence aderyn: PASS
+security evidence verification failed: security gate is not PASS: echidna

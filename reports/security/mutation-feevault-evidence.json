@@ -1,0 +1,176 @@
+{
+  "schemaVersion": 1,
+  "gate": "mutation-feevault",
+  "result": "FAIL",
+  "tool": {
+    "name": "slither-mutate",
+    "version": "0.11.6",
+    "artifactSha256": "1a60e3eb9e7e7b5697a19cc3a59fddd0e22a5e4540aee5c95908f1e1d5c412ec",
+    "rawExitCode": 143,
+    "acceptedExitCodes": [
+      0
+    ]
+  },
+  "validatorExitCode": 0,
+  "platform": "darwin-arm64",
+  "sourceSnapshotSha256": "1ddb1956d6a5a9294b12b6e7fb8021757c52ba43380e44f4a3f22a977fb3fcf3",
+  "inputs": [
+    {
+      "path": "foundry.toml",
+      "bytes": 1164,
+      "sha256": "006e3f5e2e36ca80b04bb25568f4c2b6d07806ac81de29b4451d1eb2d202b539"
+    },
+    {
+      "path": "manifests/security-tools.lock",
+      "bytes": 3604,
+      "sha256": "cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc"
+    },
+    {
+      "path": "remappings.txt",
+      "bytes": 177,
+      "sha256": "c03068e82f0a3616d4b3549c380f964426f7d3dc6f440baee1aa6fce15499dd1"
+    },
+    {
+      "path": "scripts/forge.sh",
+      "bytes": 189,
+      "sha256": "0f378e68a17a193417c4db33f17eeca9d22e41a2e8490d00a986bd25c9ff4ba0"
+    },
+    {
+      "path": "scripts/security/parse-mutation-summary.mjs",
+      "bytes": 4383,
+      "sha256": "5c0714155e3bd316c508d3efea065ea44eee9c58009469087306a0057e779ac9"
+    },
+    {
+      "path": "scripts/security/parse-mutation-summary.test.mjs",
+      "bytes": 2582,
+      "sha256": "396c3eac75345949aae09f6ac4d357a4517a831ec28c5f2f76e16f22a1cdc849"
+    },
+    {
+      "path": "scripts/security/refinalize-mutation-feevault-evidence.sh",
+      "bytes": 4532,
+      "sha256": "5cd91278de4d4ab37e8f39a45e326632bcdac2202adad9d6953c3d3d067cb186"
+    },
+    {
+      "path": "scripts/security/run-mutation-feevault.sh",
+      "bytes": 8739,
+      "sha256": "7f60dd53f2931ea872d1f78b63dd4c670179bb670abb50061e67f50434f09ca7"
+    },
+    {
+      "path": "scripts/security/verify-gate-evidence.mjs",
+      "bytes": 4400,
+      "sha256": "62533fa6fc77ae42c74081a835264339e61c4a390b189fb123bac466defc10e9"
+    },
+    {
+      "path": "scripts/security/verify-python-record.mjs",
+      "bytes": 2098,
+      "sha256": "bbf7122c87a17f819012cebd1cacb28b268dda794680880878849bb85b46eb6b"
+    },
+    {
+      "path": "scripts/security/verify-slither-install.sh",
+      "bytes": 1518,
+      "sha256": "c3423442d7b1b0ae3a9032a51ebc5d4e6501881e651e0150296bedf31055d356"
+    },
+    {
+      "path": "scripts/security/write-gate-evidence.mjs",
+      "bytes": 6272,
+      "sha256": "73aeb00b53374c52fd2150d0a875e87408eeff2c29128328dddd75aa44fcf7c0"
+    },
+    {
+      "path": "src/core/FeeVaultV1.sol",
+      "bytes": 3571,
+      "sha256": "3809c803815804fd44351df94a99529a045c566edf1da23b0636da474045c289"
+    },
+    {
+      "path": "test/unit/CoverageCompleteness.t.sol",
+      "bytes": 1425,
+      "sha256": "faa8126a88665cc946e71024fa6e71596f93f39f59b3d514ea2203184cf713d0"
+    },
+    {
+      "path": "test/unit/FactoryValidation.t.sol",
+      "bytes": 22353,
+      "sha256": "cdbf1a4a4dd743ecdc8a42285e5cc2c552bf3b41bbb2367b27bdec14bc0ff375"
+    },
+    {
+      "path": "test/unit/FeeVaultMutationResistance.t.sol",
+      "bytes": 5547,
+      "sha256": "61ce21f459ac892a8b7b4ae2f6aae26fc64fde2e46d3b873f58638fe997a7a70"
+    },
+    {
+      "path": "test/unit/MarketVaultEdges.t.sol",
+      "bytes": 25598,
+      "sha256": "fca74a960144bc6342b39b7088011d076a9b16d8a615b3ee2e9fb8c5271a198e"
+    },
+    {
+      "path": "test/unit/MarketVaultInternalHarness.t.sol",
+      "bytes": 6199,
+      "sha256": "dab894746bdd70288e3b199d476958f8e665e1e20155e2f318b0ab0575c37e19"
+    },
+    {
+      "path": "test/unit/MarketplaceEdges.t.sol",
+      "bytes": 11730,
+      "sha256": "8e392ad115de64cd3ea87a8ab984f0949c20daad093a45d25b4ead99eda06d98"
+    },
+    {
+      "path": "test/unit/PaymasterEdges.t.sol",
+      "bytes": 18608,
+      "sha256": "c8fadc7e5d3e92bcddffe8619bf8832705fbf7269cfc7c8246f8c9b609882c35"
+    },
+    {
+      "path": "test/unit/Permit2Flows.t.sol",
+      "bytes": 20050,
+      "sha256": "60c03665c4aec105b620428aed3b2b25a376f734a2d00707f15f1e805bc1a5ac"
+    },
+    {
+      "path": "test/unit/ProtocolControls.t.sol",
+      "bytes": 19530,
+      "sha256": "0212da914b02a026ef0318efa01394f9c241fb69e9419b987e7968246eb34669"
+    },
+    {
+      "path": "test/unit/ProtocolFlows.t.sol",
+      "bytes": 17001,
+      "sha256": "211e9f89da0481e725fe48b6d479689c5fc5c644639c56023e2e2f3e32426054"
+    },
+    {
+      "path": "test/unit/SponsorshipPaymaster.t.sol",
+      "bytes": 8687,
+      "sha256": "f2bd4005e709b3954b7a65e0a02d2702d2b86ff2945dda81658791ad569648f5"
+    },
+    {
+      "path": "test/unit/TokenTransferIntegrity.t.sol",
+      "bytes": 15230,
+      "sha256": "43352a3a10ca68cbd9ec82fa87e0692039d880e7711eb824357b5413aa392ada"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "reports/security/mutation-feevault-pre-refinalization-evidence.json",
+      "bytes": 4529,
+      "sha256": "c0fde4c914d11b0a31b4bf3751f699e93fd528bf6878a89767c330b974d83604"
+    },
+    {
+      "path": "reports/security/mutation-feevault-pre-refinalization-evidence.json.sha256",
+      "bytes": 117,
+      "sha256": "984a2ea18028b0036b1eb70b5f51e63d780803b2d1cf6deda2e6b8e35c9c1c7e"
+    },
+    {
+      "path": "reports/security/mutation-feevault-pre-refinalization-summary.txt",
+      "bytes": 58,
+      "sha256": "9dd0fda63d8bc5747319103ddce94d5da9fbf567cb8c1df7464064d9c4259df5"
+    },
+    {
+      "path": "reports/security/mutation-feevault-refinalization.md",
+      "bytes": 1576,
+      "sha256": "eae3d68952725b8f4db040343ddca6ef74d50fa2215a63c0ae27a6ad435f0965"
+    },
+    {
+      "path": "reports/security/mutation-feevault-summary.txt",
+      "bytes": 246,
+      "sha256": "13b9a15c285e49b60cc6884493aa038182ed25a4f24898322932458fb316c884"
+    },
+    {
+      "path": "reports/security/mutation-feevault.log",
+      "bytes": 75969,
+      "sha256": "2d0bc7743cb2742ef96fcb421b3a18eec5a92f3e47aeed677140f4e8b01e329f"
+    }
+  ]
+}

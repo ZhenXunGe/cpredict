@@ -1,0 +1,74 @@
+
+-------------------------------------------------
+# Configuration
+-------------------------------------------------
+Root - /Users/undef1ned/Work/local/cpredict
+Source - /Users/undef1ned/Work/local/cpredict/src
+Remappings - [
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "@account-abstraction/=lib/account-abstraction/contracts/",
+    "permit2/=lib/permit2/src/",
+    "forge-std/=lib/forge-std/src/",
+    "account-abstraction/=lib/account-abstraction/contracts/",
+    "openzeppelin-contracts/=lib/openzeppelin-contracts/",
+    "solmate/=lib/permit2/lib/solmate/",
+]
+EVM version - cancun
+-------------------------------------------------
+# Source Scope
+-------------------------------------------------
+Include Filepaths Containing - No specific criteria.
+Exclude Filepaths Containing - [
+    "lib",
+    "test",
+    "script",
+    "ref",
+    "node_modules",
+    "out",
+    "cache",
+]
+Auto Excluding - No Files.
+-------------------------------------------------
+# Compiling Abstract Syntax Trees
+-------------------------------------------------
+Ingesting 20 compiled files [solc : v0.8.36]
+-------------------------------------------------
+# Scanning Contracts
+-------------------------------------------------
+Running 88 detectors
+Detectors run, printing report.
+Report printed to reports/security/aderyn.json
+error: Fatal compiler bug!
+
+This is a fatal bug in Aderyn, sorry!
+
+Please report this crash to https://github.com/cyfrin/aderyn/issues/new and include this error message with your report.
+
+Panic: /Users/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/system-configuration-0.6.1/src/dynamic_store.rs:154
+	Attempted to create a NULL object.
+Aderyn version: 0.6.8
+Operating system: macos
+
+If you can also share your code and say what file you were editing or any
+steps to reproduce the crash that would be a great help.
+
+You may also want to try again with the `ADERYN_LOG=trace` environment
+variable set.
+
+error: Fatal compiler bug!
+
+This is a fatal bug in Aderyn, sorry!
+
+Please report this crash to https://github.com/cyfrin/aderyn/issues/new and include this error message with your report.
+
+Panic: /Users/runner/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/reqwest-0.12.28/src/blocking/client.rs:1523
+	event loop thread panicked
+Aderyn version: 0.6.8
+Operating system: macos
+
+If you can also share your code and say what file you were editing or any
+steps to reproduce the crash that would be a great help.
+
+You may also want to try again with the `ADERYN_LOG=trace` environment
+variable set.
+

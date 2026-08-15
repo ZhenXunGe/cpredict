@@ -1,0 +1,626 @@
+{
+  "files_summary": {
+    "total_source_units": 21,
+    "total_sloc": 2574
+  },
+  "files_details": {
+    "files_details": [
+      {
+        "file_path": "src/core/BondEscrowV1.sol",
+        "n_sloc": 110
+      },
+      {
+        "file_path": "src/core/EmergencyControllerV1.sol",
+        "n_sloc": 64
+      },
+      {
+        "file_path": "src/core/FeeVaultV1.sol",
+        "n_sloc": 85
+      },
+      {
+        "file_path": "src/core/FullMarketDeployerV1.sol",
+        "n_sloc": 25
+      },
+      {
+        "file_path": "src/core/LaunchExposureGuardV1.sol",
+        "n_sloc": 93
+      },
+      {
+        "file_path": "src/core/MarketFactoryV1.sol",
+        "n_sloc": 416
+      },
+      {
+        "file_path": "src/core/ProtocolConfigV1.sol",
+        "n_sloc": 143
+      },
+      {
+        "file_path": "src/interfaces/IBondEscrowV1.sol",
+        "n_sloc": 7
+      },
+      {
+        "file_path": "src/interfaces/IEmergencyControllerV1.sol",
+        "n_sloc": 5
+      },
+      {
+        "file_path": "src/interfaces/IFeeVaultV1.sol",
+        "n_sloc": 10
+      },
+      {
+        "file_path": "src/interfaces/IFixedPriceMarketplaceV1.sol",
+        "n_sloc": 8
+      },
+      {
+        "file_path": "src/interfaces/IFullMarketDeployerV1.sol",
+        "n_sloc": 6
+      },
+      {
+        "file_path": "src/interfaces/ILaunchExposureGuardV1.sol",
+        "n_sloc": 10
+      },
+      {
+        "file_path": "src/interfaces/IMarketFactoryV1.sol",
+        "n_sloc": 7
+      },
+      {
+        "file_path": "src/interfaces/IMarketVaultV1.sol",
+        "n_sloc": 24
+      },
+      {
+        "file_path": "src/interfaces/IProtocolConfigV1.sol",
+        "n_sloc": 20
+      },
+      {
+        "file_path": "src/market/CloneMarketVaultV1.sol",
+        "n_sloc": 5
+      },
+      {
+        "file_path": "src/market/FullMarketVaultV1.sol",
+        "n_sloc": 5
+      },
+      {
+        "file_path": "src/market/MarketVaultCoreV1.sol",
+        "n_sloc": 749
+      },
+      {
+        "file_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+        "n_sloc": 408
+      },
+      {
+        "file_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+        "n_sloc": 374
+      }
+    ]
+  },
+  "issue_count": {
+    "high": 2,
+    "low": 8
+  },
+  "high_issues": {
+    "issues": [
+      {
+        "title": "Contract locks Ether without a withdraw function",
+        "description": "It appears that the contract includes a payable function to accept Ether but lacks a corresponding function to withdraw it, which leads to the Ether being locked in the contract. To resolve this issue, please implement a public or external function that allows for the withdrawal of Ether from the contract.",
+        "detector_name": "contract-locks-ether",
+        "instances": [
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 25,
+            "src": "1121:22",
+            "src_char": "1121:22"
+          }
+        ]
+      },
+      {
+        "title": "Reentrancy: State change after external call",
+        "description": "Changing state after an external call can lead to re-entrancy attacks.Use the checks-effects-interactions pattern to avoid this issue.",
+        "detector_name": "reentrancy-state-change",
+        "instances": [
+          {
+            "contract_path": "src/core/BondEscrowV1.sol",
+            "line_no": 73,
+            "src": "2932:55",
+            "src_char": "2932:55",
+            "hint": "State is changed at: `bondOf[market] = Bond({ creator: creator, amount: amount.toUint128(), settled: false })`, `totalLocked = nextLocked`"
+          },
+          {
+            "contract_path": "src/core/BondEscrowV1.sol",
+            "line_no": 88,
+            "src": "3717:70",
+            "src_char": "3717:70",
+            "hint": "State is changed at: `bond.settled = true`, `totalLocked -= amount`, `creditOf[bond.creator] += amount`, `totalCredits += amount`"
+          },
+          {
+            "contract_path": "src/core/BondEscrowV1.sol",
+            "line_no": 96,
+            "src": "3993:113",
+            "src_char": "3993:113",
+            "hint": "State is changed at: `creditOf[bond.creator] += amount`, `totalCredits += amount`"
+          },
+          {
+            "contract_path": "src/core/FeeVaultV1.sol",
+            "line_no": 73,
+            "src": "2620:55",
+            "src_char": "2620:55",
+            "hint": "State is changed at: `totalCredits = nextCredits`, `creditOf[beneficiary] += amount`"
+          },
+          {
+            "contract_path": "src/core/LaunchExposureGuardV1.sol",
+            "line_no": 88,
+            "src": "3327:56",
+            "src_char": "3327:56",
+            "hint": "State is changed at: `reportedExposure[market] = currentExposure`, `totalReportedExposure = totalReportedExposure - previousExposure + currentExposure`"
+          },
+          {
+            "contract_path": "src/core/MarketFactoryV1.sol",
+            "line_no": 107,
+            "src": "4492:64",
+            "src_char": "4492:64",
+            "hint": "State is changed at: `emergencyController = IEmergencyControllerV1(emergencyController_)`, `exposureGuard = ILaunchExposureGuardV1(exposureGuard_)`, `bondEscrow = IBondEscrowV1(bondEscrow_)`, `feeVault = IFeeVaultV1(feeVault_)`, `fullMarketDeployer = IFullMarketDeployerV1(fullMarketDeployer_)`, `cloneImplementation = cloneImplementation_`, `permit2 = permit2_`"
+          },
+          {
+            "contract_path": "src/core/MarketFactoryV1.sol",
+            "line_no": 129,
+            "src": "5377:65",
+            "src_char": "5377:65",
+            "hint": "State is changed at: `creatorNonce[msg.sender] = nonce + 1`, `isMarket[market] = true`, `deploymentModeOf[market] = params.deploymentMode`, `deploymentSaltOf[market] = salt`"
+          },
+          {
+            "contract_path": "src/core/MarketFactoryV1.sol",
+            "line_no": 152,
+            "src": "6249:40",
+            "src_char": "6249:40",
+            "hint": "State is changed at: `isMarket[market] = true`, `deploymentModeOf[market] = params.deploymentMode`, `deploymentSaltOf[market] = salt`"
+          },
+          {
+            "contract_path": "src/core/MarketFactoryV1.sol",
+            "line_no": 153,
+            "src": "6303:39",
+            "src_char": "6303:39",
+            "hint": "State is changed at: `isMarket[market] = true`, `deploymentModeOf[market] = params.deploymentMode`, `deploymentSaltOf[market] = salt`"
+          },
+          {
+            "contract_path": "src/core/MarketFactoryV1.sol",
+            "line_no": 156,
+            "src": "6448:39",
+            "src_char": "6448:39",
+            "hint": "State is changed at: `isMarket[market] = true`, `deploymentModeOf[market] = params.deploymentMode`, `deploymentSaltOf[market] = salt`"
+          },
+          {
+            "contract_path": "src/core/ProtocolConfigV1.sol",
+            "line_no": 53,
+            "src": "2480:45",
+            "src_char": "2480:45",
+            "hint": "State is changed at: `governance = governance_`, `paymentToken = paymentToken_`, `protocolTreasury = treasury_`, `earlyBirdShareBps = 2000`"
+          },
+          {
+            "contract_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+            "line_no": 140,
+            "src": "5169:64",
+            "src_char": "5169:64",
+            "hint": "State is changed at: `sellerNonce[msg.sender] = nonce + 1`, `listings[listingId] = Listing({\n            vault: vault,\n            seller: msg.sender,\n            remainingUnits: amount.toUint128(),\n            unitPrice: unitPrice.toUint128(),\n            expiresAt: expiresAt,\n            outcomeId: outcomeId.toUint8(),\n            active: true\n        })`, `_expectedReceipt = keccak256(abi.encode(vault, msg.sender, outcomeId, amount, listingId))`, `_expectedReceipt = bytes32(0)`"
+          },
+          {
+            "contract_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+            "line_no": 143,
+            "src": "5327:24",
+            "src_char": "5327:24",
+            "hint": "State is changed at: `sellerNonce[msg.sender] = nonce + 1`, `listings[listingId] = Listing({\n            vault: vault,\n            seller: msg.sender,\n            remainingUnits: amount.toUint128(),\n            unitPrice: unitPrice.toUint128(),\n            expiresAt: expiresAt,\n            outcomeId: outcomeId.toUint8(),\n            active: true\n        })`, `_expectedReceipt = keccak256(abi.encode(vault, msg.sender, outcomeId, amount, listingId))`, `_expectedReceipt = bytes32(0)`"
+          },
+          {
+            "contract_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+            "line_no": 145,
+            "src": "5455:19",
+            "src_char": "5455:19",
+            "hint": "State is changed at: `sellerNonce[msg.sender] = nonce + 1`, `listings[listingId] = Listing({\n            vault: vault,\n            seller: msg.sender,\n            remainingUnits: amount.toUint128(),\n            unitPrice: unitPrice.toUint128(),\n            expiresAt: expiresAt,\n            outcomeId: outcomeId.toUint8(),\n            active: true\n        })`, `_expectedReceipt = keccak256(abi.encode(vault, msg.sender, outcomeId, amount, listingId))`, `_expectedReceipt = bytes32(0)`"
+          },
+          {
+            "contract_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+            "line_no": 146,
+            "src": "5513:34",
+            "src_char": "5513:34",
+            "hint": "State is changed at: `sellerNonce[msg.sender] = nonce + 1`, `listings[listingId] = Listing({\n            vault: vault,\n            seller: msg.sender,\n            remainingUnits: amount.toUint128(),\n            unitPrice: unitPrice.toUint128(),\n            expiresAt: expiresAt,\n            outcomeId: outcomeId.toUint8(),\n            active: true\n        })`, `_expectedReceipt = keccak256(abi.encode(vault, msg.sender, outcomeId, amount, listingId))`, `_expectedReceipt = bytes32(0)`"
+          },
+          {
+            "contract_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+            "line_no": 147,
+            "src": "5563:55",
+            "src_char": "5563:55",
+            "hint": "State is changed at: `sellerNonce[msg.sender] = nonce + 1`, `listings[listingId] = Listing({\n            vault: vault,\n            seller: msg.sender,\n            remainingUnits: amount.toUint128(),\n            unitPrice: unitPrice.toUint128(),\n            expiresAt: expiresAt,\n            outcomeId: outcomeId.toUint8(),\n            active: true\n        })`, `_expectedReceipt = keccak256(abi.encode(vault, msg.sender, outcomeId, amount, listingId))`, `_expectedReceipt = bytes32(0)`"
+          },
+          {
+            "contract_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+            "line_no": 149,
+            "src": "5642:63",
+            "src_char": "5642:63",
+            "hint": "State is changed at: `sellerNonce[msg.sender] = nonce + 1`, `listings[listingId] = Listing({\n            vault: vault,\n            seller: msg.sender,\n            remainingUnits: amount.toUint128(),\n            unitPrice: unitPrice.toUint128(),\n            expiresAt: expiresAt,\n            outcomeId: outcomeId.toUint8(),\n            active: true\n        })`, `_expectedReceipt = keccak256(abi.encode(vault, msg.sender, outcomeId, amount, listingId))`, `_expectedReceipt = bytes32(0)`"
+          },
+          {
+            "contract_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+            "line_no": 150,
+            "src": "5721:57",
+            "src_char": "5721:57",
+            "hint": "State is changed at: `sellerNonce[msg.sender] = nonce + 1`, `listings[listingId] = Listing({\n            vault: vault,\n            seller: msg.sender,\n            remainingUnits: amount.toUint128(),\n            unitPrice: unitPrice.toUint128(),\n            expiresAt: expiresAt,\n            outcomeId: outcomeId.toUint8(),\n            active: true\n        })`, `_expectedReceipt = keccak256(abi.encode(vault, msg.sender, outcomeId, amount, listingId))`, `_expectedReceipt = bytes32(0)`"
+          },
+          {
+            "contract_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+            "line_no": 171,
+            "src": "6598:114",
+            "src_char": "6598:114",
+            "hint": "State is changed at: `_expectedReceipt = bytes32(0)`"
+          },
+          {
+            "contract_path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+            "line_no": 287,
+            "src": "11277:43",
+            "src_char": "11277:43",
+            "hint": "State is changed at: `listing.active = false`, `listing.remainingUnits = 0`"
+          }
+        ]
+      }
+    ]
+  },
+  "low_issues": {
+    "issues": [
+      {
+        "title": "Costly operations inside loop",
+        "description": "Invoking `SSTORE` operations in loops may waste gas. Use a local variable to hold the loop computation result.",
+        "detector_name": "costly-loop",
+        "instances": [
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 699,
+            "src": "28322:195",
+            "src_char": "28322:195"
+          }
+        ]
+      },
+      {
+        "title": "Large Numeric Literal",
+        "description": "Large literal values multiples of 10000 can be replaced with scientific notation.Use `e` notation, for example: `1e18`, instead of its full numeric value.",
+        "detector_name": "large-numeric-literal",
+        "instances": [
+          {
+            "contract_path": "src/core/MarketFactoryV1.sol",
+            "line_no": 46,
+            "src": "2042:6",
+            "src_char": "2042:6"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 68,
+            "src": "2643:7",
+            "src_char": "2643:7"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 69,
+            "src": "2719:7",
+            "src_char": "2719:7"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 70,
+            "src": "2790:7",
+            "src_char": "2790:7"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 71,
+            "src": "2861:7",
+            "src_char": "2861:7"
+          }
+        ]
+      },
+      {
+        "title": "Literal Instead of Constant",
+        "description": "Define and use `constant` variables instead of using literals. If the same constant literal value is used multiple times, create a constant state variable and reference it throughout the contract.",
+        "detector_name": "literal-instead-of-constant",
+        "instances": [
+          {
+            "contract_path": "src/core/MarketFactoryV1.sol",
+            "line_no": 340,
+            "src": "13705:2",
+            "src_char": "13705:2"
+          },
+          {
+            "contract_path": "src/core/MarketFactoryV1.sol",
+            "line_no": 341,
+            "src": "13786:2",
+            "src_char": "13786:2"
+          },
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 233,
+            "src": "8693:3",
+            "src_char": "8693:3"
+          },
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 241,
+            "src": "8981:3",
+            "src_char": "8981:3"
+          },
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 519,
+            "src": "20355:3",
+            "src_char": "20355:3"
+          },
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 553,
+            "src": "21623:1",
+            "src_char": "21623:1"
+          },
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 557,
+            "src": "21806:1",
+            "src_char": "21806:1"
+          },
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 557,
+            "src": "21827:1",
+            "src_char": "21827:1"
+          },
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 558,
+            "src": "21851:1",
+            "src_char": "21851:1"
+          },
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 663,
+            "src": "26919:3",
+            "src_char": "26919:3"
+          },
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 836,
+            "src": "34273:3",
+            "src_char": "34273:3"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 195,
+            "src": "8029:1",
+            "src_char": "8029:1"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 196,
+            "src": "8089:1",
+            "src_char": "8089:1"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 196,
+            "src": "8091:2",
+            "src_char": "8091:2"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 197,
+            "src": "8151:2",
+            "src_char": "8151:2"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 197,
+            "src": "8154:2",
+            "src_char": "8154:2"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 198,
+            "src": "8218:2",
+            "src_char": "8218:2"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 198,
+            "src": "8221:2",
+            "src_char": "8221:2"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 210,
+            "src": "8924:2",
+            "src_char": "8924:2"
+          }
+        ]
+      },
+      {
+        "title": "Local Variable Shadows State Variable",
+        "description": "Rename the local variable that shadows another state variable.",
+        "detector_name": "local-variable-shadowing",
+        "instances": [
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 54,
+            "src": "2144:13",
+            "src_char": "2144:13"
+          },
+          {
+            "contract_path": "src/paymaster/SponsorshipPaymasterV1.sol",
+            "line_no": 59,
+            "src": "2251:13",
+            "src_char": "2251:13"
+          }
+        ]
+      },
+      {
+        "title": "Missing Inheritance",
+        "description": "There is an interface / abstract contract that is potentially missing (not included in) the inheritance of this contract.",
+        "detector_name": "missing-inheritance",
+        "instances": [
+          {
+            "contract_path": "src/core/EmergencyControllerV1.sol",
+            "line_no": 15,
+            "src": "404:21",
+            "src_char": "404:21",
+            "hint": "Is this contract supposed to implement an interface? Consider extending one of the following: IEmergencyControllerV1"
+          },
+          {
+            "contract_path": "src/core/FullMarketDeployerV1.sol",
+            "line_no": 10,
+            "src": "418:20",
+            "src_char": "418:20",
+            "hint": "Is this contract supposed to implement an interface? Consider extending one of the following: IFullMarketDeployerV1"
+          },
+          {
+            "contract_path": "src/core/LaunchExposureGuardV1.sol",
+            "line_no": 17,
+            "src": "509:21",
+            "src_char": "509:21",
+            "hint": "Is this contract supposed to implement an interface? Consider extending one of the following: ILaunchExposureGuardV1"
+          },
+          {
+            "contract_path": "src/core/ProtocolConfigV1.sol",
+            "line_no": 15,
+            "src": "521:16",
+            "src_char": "521:16",
+            "hint": "Is this contract supposed to implement an interface? Consider extending one of the following: IProtocolConfigV1"
+          }
+        ]
+      },
+      {
+        "title": "Modifier Invoked Only Once",
+        "description": "Consider removing the modifier or inlining the logic into the calling function.",
+        "detector_name": "modifier-used-only-once",
+        "instances": [
+          {
+            "contract_path": "src/core/BondEscrowV1.sol",
+            "line_no": 54,
+            "src": "2032:14",
+            "src_char": "2032:14"
+          },
+          {
+            "contract_path": "src/core/FeeVaultV1.sol",
+            "line_no": 45,
+            "src": "1528:14",
+            "src_char": "1528:14"
+          }
+        ]
+      },
+      {
+        "title": "`nonReentrant` is Not the First Modifier",
+        "description": "To protect against reentrancy in other modifiers, the `nonReentrant` modifier should be the first modifier in the list of modifiers.",
+        "detector_name": "non-reentrant-not-first",
+        "instances": [
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 566,
+            "src": "22375:12",
+            "src_char": "22375:12"
+          }
+        ]
+      },
+      {
+        "title": "Loop Contains `require`/`revert`",
+        "description": "Avoid `require` / `revert` statements in a loop because a single bad item can cause the whole transaction to fail. It's better to forgive on fail and return failed elements post processing of the loop",
+        "detector_name": "require-revert-in-loop",
+        "instances": [
+          {
+            "contract_path": "src/market/MarketVaultCoreV1.sol",
+            "line_no": 699,
+            "src": "28389:128",
+            "src_char": "28389:128"
+          }
+        ]
+      }
+    ]
+  },
+  "detectors_used": [
+    "abi-encode-packed-hash-collision",
+    "arbitrary-transfer-from",
+    "assert-state-change",
+    "block-timestamp-deadline",
+    "boolean-equality",
+    "builtin-symbol-shadowing",
+    "centralization-risk",
+    "constant-function-changes-state",
+    "constant-function-contains-assembly",
+    "contract-locks-ether",
+    "costly-loop",
+    "dangerous-unary-operator",
+    "dead-code",
+    "delegate-call-unchecked-address",
+    "delegatecall-in-loop",
+    "delete-nested-mapping",
+    "deprecated-oz-function",
+    "division-before-multiplication",
+    "dynamic-array-length-assignment",
+    "ecrecover",
+    "empty-block",
+    "empty-require-revert",
+    "enumerable-loop-removal",
+    "eth-send-unchecked-address",
+    "experimental-encoder",
+    "function-initializing-state",
+    "function-pointer-in-constructor",
+    "function-selector-collision",
+    "inconsistent-type-names",
+    "incorrect-caret-operator",
+    "incorrect-erc20-interface",
+    "incorrect-erc721-interface",
+    "incorrect-shift-order",
+    "incorrect-use-of-modifier",
+    "internal-function-used-once",
+    "large-numeric-literal",
+    "literal-instead-of-constant",
+    "local-variable-shadowing",
+    "missing-inheritance",
+    "misused-boolean",
+    "modifier-used-only-once",
+    "msg-value-in-loop",
+    "multiple-constructors",
+    "multiple-placeholders",
+    "nested-struct-in-mapping",
+    "non-reentrant-not-first",
+    "out-of-order-retryable",
+    "pre-declared-local-variable-usage",
+    "push-zero-opcode",
+    "redundant-statement",
+    "reentrancy-state-change",
+    "require-revert-in-loop",
+    "return-bomb",
+    "reused-contract-name",
+    "rtlo",
+    "selfdestruct",
+    "signed-integer-storage-array",
+    "solmate-safe-transfer-lib",
+    "state-change-without-event",
+    "state-no-address-check",
+    "state-variable-could-be-constant",
+    "state-variable-could-be-immutable",
+    "state-variable-init-order",
+    "state-variable-read-external",
+    "state-variable-shadowing",
+    "storage-array-length-not-cached",
+    "storage-array-memory-edit",
+    "strict-equality-contract-balance",
+    "tautological-compare",
+    "tautology-or-contradiction",
+    "todo",
+    "tx-origin-used-for-auth",
+    "unchecked-low-level-call",
+    "unchecked-return",
+    "unchecked-send",
+    "uninitialized-local-variable",
+    "unprotected-initializer",
+    "unsafe-casting",
+    "unsafe-erc20-operation",
+    "unsafe-oz-erc721-mint",
+    "unspecific-solidity-pragma",
+    "unused-error",
+    "unused-import",
+    "unused-public-function",
+    "unused-state-variable",
+    "void-constructor",
+    "weak-randomness",
+    "yul-return"
+  ]
+}

@@ -1,0 +1,301 @@
+{
+  "schemaVersion": 1,
+  "gate": "mutation-full",
+  "result": "FAIL",
+  "tool": {
+    "name": "slither-mutate",
+    "version": "0.11.6",
+    "artifactSha256": "1a60e3eb9e7e7b5697a19cc3a59fddd0e22a5e4540aee5c95908f1e1d5c412ec",
+    "rawExitCode": 255,
+    "acceptedExitCodes": [
+      0
+    ]
+  },
+  "validatorExitCode": 1,
+  "platform": "darwin-arm64",
+  "sourceSnapshotSha256": "9cb9008744984309fa4bc3d73eb950da3328f67af3cd9e69c3e39e0cf399164c",
+  "inputs": [
+    {
+      "path": "foundry.toml",
+      "bytes": 1164,
+      "sha256": "006e3f5e2e36ca80b04bb25568f4c2b6d07806ac81de29b4451d1eb2d202b539"
+    },
+    {
+      "path": "manifests/security-tools.lock",
+      "bytes": 3604,
+      "sha256": "cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc"
+    },
+    {
+      "path": "remappings.txt",
+      "bytes": 177,
+      "sha256": "c03068e82f0a3616d4b3549c380f964426f7d3dc6f440baee1aa6fce15499dd1"
+    },
+    {
+      "path": "scripts/forge.sh",
+      "bytes": 189,
+      "sha256": "0f378e68a17a193417c4db33f17eeca9d22e41a2e8490d00a986bd25c9ff4ba0"
+    },
+    {
+      "path": "scripts/security/parse-mutation-summary.mjs",
+      "bytes": 4383,
+      "sha256": "5c0714155e3bd316c508d3efea065ea44eee9c58009469087306a0057e779ac9"
+    },
+    {
+      "path": "scripts/security/parse-mutation-summary.test.mjs",
+      "bytes": 3385,
+      "sha256": "f240700d03a4c06878f984e76645236016b73e808f00930c772d348bd015c8c4"
+    },
+    {
+      "path": "scripts/security/run-mutation-full.sh",
+      "bytes": 9881,
+      "sha256": "e78095b2e79d57c0e3fafd00d57b8bee530ee0e758be76b2a82ef12f00ecfdd7"
+    },
+    {
+      "path": "scripts/security/verify-gate-evidence.mjs",
+      "bytes": 4400,
+      "sha256": "62533fa6fc77ae42c74081a835264339e61c4a390b189fb123bac466defc10e9"
+    },
+    {
+      "path": "scripts/security/verify-python-record.mjs",
+      "bytes": 2098,
+      "sha256": "bbf7122c87a17f819012cebd1cacb28b268dda794680880878849bb85b46eb6b"
+    },
+    {
+      "path": "scripts/security/verify-slither-install.sh",
+      "bytes": 1518,
+      "sha256": "c3423442d7b1b0ae3a9032a51ebc5d4e6501881e651e0150296bedf31055d356"
+    },
+    {
+      "path": "scripts/security/write-gate-evidence.mjs",
+      "bytes": 6272,
+      "sha256": "73aeb00b53374c52fd2150d0a875e87408eeff2c29128328dddd75aa44fcf7c0"
+    },
+    {
+      "path": "scripts/test-all.sh",
+      "bytes": 228,
+      "sha256": "493f71d275d9ae9b47963173d0679322b2229d220faf1a2fe00fe522385293d3"
+    },
+    {
+      "path": "src/core/BondEscrowV1.sol",
+      "bytes": 5259,
+      "sha256": "0ad1524032048957963c7676e374fdc1b25db0bafa59cf30851de617bae98c10"
+    },
+    {
+      "path": "src/core/EmergencyControllerV1.sol",
+      "bytes": 2830,
+      "sha256": "2efb5a4baf906df076c7e41ed6519154d81fbc0e659d5240a18c67b2c71ef60d"
+    },
+    {
+      "path": "src/core/FeeVaultV1.sol",
+      "bytes": 3571,
+      "sha256": "3809c803815804fd44351df94a99529a045c566edf1da23b0636da474045c289"
+    },
+    {
+      "path": "src/core/FullMarketDeployerV1.sol",
+      "bytes": 1378,
+      "sha256": "2bc6320300255d4caf976206d3aa205047f0303eb3f668a992c2c572550f39ff"
+    },
+    {
+      "path": "src/core/LaunchExposureGuardV1.sol",
+      "bytes": 4155,
+      "sha256": "45ab1f242cfaa74b64b02042aa9a7df2efc1545d1e062a371646c241d230361b"
+    },
+    {
+      "path": "src/core/MarketFactoryV1.sol",
+      "bytes": 20075,
+      "sha256": "981ba91b77e341c58fa9d6f5f5f17988ddd03c815a0be3e97091a036e3f2c434"
+    },
+    {
+      "path": "src/core/ProtocolConfigV1.sol",
+      "bytes": 7212,
+      "sha256": "ef354663cdafab05ba1ad3957dd418197774fb71098d2e6cd867cf3abf2179b5"
+    },
+    {
+      "path": "src/interfaces/IBondEscrowV1.sol",
+      "bytes": 342,
+      "sha256": "0b39066dd12085021aaea3bc600912a94cd7be97390bf9a7bb3ad07c1ac309dd"
+    },
+    {
+      "path": "src/interfaces/IEmergencyControllerV1.sol",
+      "bytes": 219,
+      "sha256": "1ac9d81e7f3987b76922fdade8ff0edcbd342a50dcdbfb1d58eac0963be6664f"
+    },
+    {
+      "path": "src/interfaces/IFeeVaultV1.sol",
+      "bytes": 507,
+      "sha256": "012bcf604eae7946ad0baa85dfba573fe856a254f8f6ce53f88195796a9c64e0"
+    },
+    {
+      "path": "src/interfaces/IFixedPriceMarketplaceV1.sol",
+      "bytes": 481,
+      "sha256": "f717ac0bd3a24274dc598617066f1545b45fb7fa51764f204beb5063a7216441"
+    },
+    {
+      "path": "src/interfaces/IFullMarketDeployerV1.sol",
+      "bytes": 277,
+      "sha256": "e2e27b6e167968b1ca1a9ed8e191c2d8e4eb5fc11073307dc15d5c23264f8aae"
+    },
+    {
+      "path": "src/interfaces/ILaunchExposureGuardV1.sol",
+      "bytes": 430,
+      "sha256": "f5264fd44b63db04d953b32bd2ec7f5ca4ab0a788470117f222edaa2234c9fbf"
+    },
+    {
+      "path": "src/interfaces/IMarketFactoryV1.sol",
+      "bytes": 381,
+      "sha256": "cb83ec6153d04ef3070c665850a8b5a054b720d62ad817b22cc243c5fb8d0347"
+    },
+    {
+      "path": "src/interfaces/IMarketVaultV1.sol",
+      "bytes": 1917,
+      "sha256": "b86ad4057afb462bee3596a1d2f23fecf6e8b831760db4922d49968de4e5b026"
+    },
+    {
+      "path": "src/interfaces/IProtocolConfigV1.sol",
+      "bytes": 1082,
+      "sha256": "2a89d2c237a88cd609f54ffd6cfcaafa55f22ae298793665a7b38495ccdf837e"
+    },
+    {
+      "path": "src/libraries/ProtocolErrors.sol",
+      "bytes": 2695,
+      "sha256": "d39bf99a3c77e910bd04c9abbc8287043b3740e25d745476a0aa1677ee97f359"
+    },
+    {
+      "path": "src/libraries/ProtocolTypes.sol",
+      "bytes": 2821,
+      "sha256": "3f6b8a88337d5ca66ba84f3066a461c0f82e37a3061441200e3ebe8c2fe94a64"
+    },
+    {
+      "path": "src/market/CloneMarketVaultV1.sol",
+      "bytes": 326,
+      "sha256": "414c017877d97133a4d4db9597fc21f1d0b185d1f55116e7cc8b3572a5b9ed0d"
+    },
+    {
+      "path": "src/market/FullMarketVaultV1.sol",
+      "bytes": 399,
+      "sha256": "e8985694384abff3fdd2883b93b6f328692d1c96bec9595ba969b6adf49211e8"
+    },
+    {
+      "path": "src/market/MarketVaultCoreV1.sol",
+      "bytes": 34453,
+      "sha256": "fff58b5e35752899701013eb57a030f955c27c71635b70c088314d282626d23e"
+    },
+    {
+      "path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+      "bytes": 17342,
+      "sha256": "4cad16fc35b6ca673768f15541b39dd6ad06fcfad65e2759e0fee3c7feed2724"
+    },
+    {
+      "path": "src/paymaster/SponsorshipPaymasterV1.sol",
+      "bytes": 17346,
+      "sha256": "e0bcad2a5c93764b1bd0c4053079ec7c0a07ee8ae79b8894ae73d9e882ddb8a6"
+    },
+    {
+      "path": "test/gas/ProtocolGasGates.t.sol",
+      "bytes": 10029,
+      "sha256": "481a84f3851b24612969dd1f6aa1db01f5f2eed915fc43cf41248ad5c0a5fb71"
+    },
+    {
+      "path": "test/helpers/ProtocolTestBase.sol",
+      "bytes": 5609,
+      "sha256": "f38f0d5605a3134f5dc3292fec3b52a145dd1c0acbb553cecaa677b54e7c8ff5"
+    },
+    {
+      "path": "test/invariant/MarketAccounting.invariant.t.sol",
+      "bytes": 9109,
+      "sha256": "d7cef3b6c8126dbb830af3e22006b92db1d52428e2bc9fdc4c8b27042b4cdfed"
+    },
+    {
+      "path": "test/mocks/MockUSDC.sol",
+      "bytes": 390,
+      "sha256": "10429e52c82a4dc132b47a2aa42ad1e45fd2d72c5cffb673ee9975ed8d77c077"
+    },
+    {
+      "path": "test/security/EchidnaMarketAccounting.sol",
+      "bytes": 11850,
+      "sha256": "1aec72aa46304ae0d839f4f719f4bc26ad97e729e8f1ccc0c8f6e0b74ff92241"
+    },
+    {
+      "path": "test/security/ProtocolMath.smt.sol",
+      "bytes": 2671,
+      "sha256": "60a6382c1ec980413c5552bfa01df9ca590b6327d7b3c03a0a3ad0d245f64040"
+    },
+    {
+      "path": "test/unit/CoverageCompleteness.t.sol",
+      "bytes": 1425,
+      "sha256": "faa8126a88665cc946e71024fa6e71596f93f39f59b3d514ea2203184cf713d0"
+    },
+    {
+      "path": "test/unit/FactoryValidation.t.sol",
+      "bytes": 22353,
+      "sha256": "cdbf1a4a4dd743ecdc8a42285e5cc2c552bf3b41bbb2367b27bdec14bc0ff375"
+    },
+    {
+      "path": "test/unit/FeeVaultMutationResistance.t.sol",
+      "bytes": 5547,
+      "sha256": "61ce21f459ac892a8b7b4ae2f6aae26fc64fde2e46d3b873f58638fe997a7a70"
+    },
+    {
+      "path": "test/unit/MarketVaultEdges.t.sol",
+      "bytes": 25598,
+      "sha256": "fca74a960144bc6342b39b7088011d076a9b16d8a615b3ee2e9fb8c5271a198e"
+    },
+    {
+      "path": "test/unit/MarketVaultInternalHarness.t.sol",
+      "bytes": 6199,
+      "sha256": "dab894746bdd70288e3b199d476958f8e665e1e20155e2f318b0ab0575c37e19"
+    },
+    {
+      "path": "test/unit/MarketplaceEdges.t.sol",
+      "bytes": 11730,
+      "sha256": "8e392ad115de64cd3ea87a8ab984f0949c20daad093a45d25b4ead99eda06d98"
+    },
+    {
+      "path": "test/unit/PaymasterEdges.t.sol",
+      "bytes": 18608,
+      "sha256": "c8fadc7e5d3e92bcddffe8619bf8832705fbf7269cfc7c8246f8c9b609882c35"
+    },
+    {
+      "path": "test/unit/Permit2Flows.t.sol",
+      "bytes": 20050,
+      "sha256": "60c03665c4aec105b620428aed3b2b25a376f734a2d00707f15f1e805bc1a5ac"
+    },
+    {
+      "path": "test/unit/ProtocolControls.t.sol",
+      "bytes": 19530,
+      "sha256": "0212da914b02a026ef0318efa01394f9c241fb69e9419b987e7968246eb34669"
+    },
+    {
+      "path": "test/unit/ProtocolFlows.t.sol",
+      "bytes": 17001,
+      "sha256": "211e9f89da0481e725fe48b6d479689c5fc5c644639c56023e2e2f3e32426054"
+    },
+    {
+      "path": "test/unit/SponsorshipPaymaster.t.sol",
+      "bytes": 8687,
+      "sha256": "f2bd4005e709b3954b7a65e0a02d2702d2b86ff2945dda81658791ad569648f5"
+    },
+    {
+      "path": "test/unit/TokenTransferIntegrity.t.sol",
+      "bytes": 15230,
+      "sha256": "43352a3a10ca68cbd9ec82fa87e0692039d880e7711eb824357b5413aa392ada"
+    },
+    {
+      "path": "test/viair/SponsorshipDigest.t.sol",
+      "bytes": 4385,
+      "sha256": "23e74ac18a6382b2b32143e403c262c4afdb78f6d0a3342e34a185cb8ecd2a07"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "reports/security/mutation-full-summary.txt",
+      "bytes": 64,
+      "sha256": "a407b7474cfd44f4564c93b3851227152a5502ca5ce060df3ede9182dce1765a"
+    },
+    {
+      "path": "reports/security/mutation-full.log",
+      "bytes": 27538,
+      "sha256": "4a9e84711afd31d9a883e7cec6d4840c87a373294b37a8a8a1446520ac031af0"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+# Cpredict V1 当前候选状态（唯一总表）
+
+状态日期：2026-08-12。权威需求：`/Users/undef1ned/Downloads/product-framework.md` v0.21；
+原始文件 31,449 bytes，SHA-256
+`5a76a9e0d98691ccc20a1faa37b1607a1d4afd2ca5b17563641cad707ff9aca4`，锁定于
+`manifests/requirements.lock`。
+
+> 本表是当前候选状态的唯一人工汇总。其他文档中的历史执行数字不得覆盖本表；历史报告只保留
+> 复盘价值。当前候选不是 Release Candidate、未达商用发布条件，禁止承载真实资金。
+
+## 证明边界
+
+| 级别                          | 含义                                               | 当前结论                                                                                      |
+| ----------------------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| static verified               | 当前源码、配置、文档或确定性生成器的静态证据       | 多数仓库交付已静态验证，但发布门禁未全部通过                                                  |
+| local runtime verified        | 本机 EVM、Node 或真实本地 PostgreSQL 的实际执行    | Foundry、链下测试及独立 PostgreSQL 9/9 有本地证据；历史同机商业负载失败，正式分布式验收未运行 |
+| Base Sepolia runtime verified | 指定地址、交易、区块、角色、codehash 与 E2E/canary | **BLOCKED / 未部署**                                                                          |
+| externally audited            | 独立审计报告及修复复审                             | **NOT RUN**                                                                                   |
+| production/mainnet verified   | 主网、生产 Safe/Timelock/provider/监控及真实资金   | **NOT RUN**                                                                                   |
+
+## 当前候选门禁总表
+
+| 门禁                               | 当前结果                                    | 当前证据与边界                                                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Solidity coverage                  | **PASS**                                    | 20 suites、121/121 tests；`src/**` line 100%、function 100%、branch 99.13%。原始未过滤 LCOV 为 line 80.29%、function 81.07%、branch 76.83%，包含部署脚本、安全 harness 和测试辅助代码，不是生产 `src/**` 门禁分母                                                                                                                                              |
+| Production gas/size                | **PASS**                                    | 10/10 production-context 门禁通过；精确操作值及体积见 `reports/gas-and-size.md`。这是本地 production-viaIR 证据，不是 Base receipt                                                                                                                                                                                                                             |
+| Foundry invariant                  | **PASS**                                    | CI 与 nightly 证据分别保留；nightly 4 属性各 10,000 runs × depth 256，0 revert                                                                                                                                                                                                                                                                                 |
+| Off-chain unit/build               | **PASS（本地）**                            | 最近全量链下 lane：79 tests PASS；其中 5 个真实 PostgreSQL 用例在普通命令中条件跳过，不能把该命令单独写成数据库验收                                                                                                                                                                                                                                            |
+| Real PostgreSQL                    | **PASS（本地）**                            | 独立 disposable PostgreSQL 17.10：Paymaster 2/2、Indexer 3/3、readiness 4/4，共 9/9，0 skip；不证明生产 TLS、备份、复制或恢复演练                                                                                                                                                                                                                              |
+| Slither                            | **PASS（本地工具门禁）**                    | 当前 source-bound 报告和已审查 High/Medium baseline validator 通过；不是外审                                                                                                                                                                                                                                                                                   |
+| Aderyn                             | **PASS（本地工具门禁）**                    | 官方固定版本正常退出，报告 inventory validator 通过；不是外审                                                                                                                                                                                                                                                                                                  |
+| Halmos                             | **PASS（限定范围）**                        | 3/3 协议数学性质；不等于全协议形式化证明                                                                                                                                                                                                                                                                                                                       |
+| Solidity SMTChecker                | **PASS（限定范围）**                        | CHC 与 BMC 各证明 10 个预期 assertion；不覆盖完整授权图和跨合约回调                                                                                                                                                                                                                                                                                            |
+| Medusa                             | **PASS**                                    | 1,024,046 calls，27/27 properties PASS                                                                                                                                                                                                                                                                                                                         |
+| Echidna arm64                      | **PASS**                                    | 官方 2.3.3 正式执行 1,000,053 calls，4/4 properties、24,373 unique instructions、23 codehashes；tool/validator/evidence verifier 均为 0                                                                                                                                                                                                                        |
+| Echidna x86_64/Rosetta             | **PARTIAL / FAIL**                          | harness 修复后诊断实际执行 1,032 calls、4/4 passing，已消除 0-call crash；但最终卡在 `Saving coverage...`，未完成百万调用和正常生命周期                                                                                                                                                                                                                        |
+| Security aggregate                 | **FAIL**                                    | arm64 百万调用已闭合；x86_64 corroboration、whole-protocol mutation 和外部审计仍未闭合                                                                                                                                                                                                                                                                         |
+| Mutation                           | **ABORTED / PARTIAL / FAIL**                | 旧 FeeVault 数值为 133/135（98.52%）但生命周期 FAIL；全协议旧 campaign 0/12 完成。2026-08-12 已修复精确目标、进程组清理、原子证据及 12/12 摘要绑定，30/30 parser/lifecycle tests PASS；fresh FeeVault 和全协议 campaign 均 NOT RUN                                                                                                                             |
+| Requirements traceability          | **PARTIAL**                                 | 131 个原子 ID：52 `implemented_static`、19 `partial`、44 `external_required`、10 `deferred`、4 `implemented_deviation`、1 `decision_required`、1 `not_implemented`                                                                                                                                                                                             |
+| Micro-pool economics               | **PASS（静态模型）/ 需求仍 PARTIAL**        | 整数定点模型和 go/no-go 公式通过；只证明模型可复现，不证明当前 Base 成本或商业参数可行；`PF-CHAIN-005` 仍需 Base receipt、价格策略和批量赞助验收                                                                                                                                                                                                               |
+| Commercial economics               | **NOT_VERIFIED（7/7）**                     | fail-closed 商业评估器及聚焦测试已实现；bond 威慑、微池资金覆盖、Full/Clone cap、早鸟 Sybil、C2C fee、LaunchGuard 退休和极端 gas 退出均缺已批准阈值、真实 Base receipt 或独立业务数据。微池资金必须由 policy 明确选择 gross rake/protocol fee/扣早鸟后 creator net 及承诺比例，不默认把全部 rake 当预算；详见 `reports/economics/commercial-economics-gate.md` |
+| Distributed commercial load        | **STATIC/fixture VERIFIED；FORMAL NOT RUN** | schema-v4 SUT/load/chain 三角色、不同 host/machine fingerprint、release binding、≤100ms 时钟偏移、≥300s 重叠窗口、telemetry/reorg/event-latency 和 Ed25519 聚合门禁已实现；未在三个独立主机执行，详见 `reports/performance/distributed-commercial-load-system-2026-08-12.md`                                                                                   |
+| Historical schema-v3 API load      | **FAIL**                                    | 保留的同机正式组合运行：269,682 个 2xx、319 drops、p95 332.99ms、p99 751.55ms；不满足 0 drops、p95<300ms、p99<750ms，且不能关闭 schema-v4 分布式门禁                                                                                                                                                                                                           |
+| Historical calibration load        | **FAIL（runner）/ 服务指标改善**            | 两次诊断校准均 0 drops/0 errors，p95/p99 分别 24.89/89.29ms 与 176.13/367.13ms，但旧阶段计数规则令 runner 以 99 退出；最终计数修复后按 stop-loss 未第三次运行，不能升级为 PASS                                                                                                                                                                                 |
+| WebSocket 10k × 60s                | **NOT RUN（schema-v4 formal）**             | focused 20-session smoke PASS 仅证明低强度路径；没有三个独立主机绑定证据中的 10,000 实际同时保持连接结果                                                                                                                                                                                                                                                       |
+| Controlled chain 50 tx/s × 10min   | **NOT RUN（schema-v4 formal）**             | 当前正式分布式 chain role 未运行；历史不同 harness 或未完成 schema-v3 阶段不属于当前验收                                                                                                                                                                                                                                                                       |
+| Deployment readiness               | **PASS（静态工具）**                        | 18/18 部署工具测试、静态角色/codehash/canary 验证器及 10 条告警规则有证据；没有远程写入                                                                                                                                                                                                                                                                        |
+| Base Sepolia + 24h canary          | **BLOCKED / NOT RUN**                       | 缺授权部署环境、资金账户/Safe、双 RPC、KMS/HSM、不可变证据存储及真实 24 小时时间窗                                                                                                                                                                                                                                                                             |
+| Release provenance/SBOM            | **STATIC VERIFIED / RELEASE BLOCKED**       | 确定性 SPDX 2.3 inventory 共 216 packages；release tooling 39/39 PASS。固定 22-gate runner、`release-audit.yml`、GitHub OIDC attestation、signed-tag 外部 evidence 下载/验签和 `--attested-gates-root` 接线已静态实现；真实 GitHub OIDC/CI 未运行，且安全/负载门禁仍失败，因此无 attested index、bundle、审计 commit 或签名 tag                                |
+| External audits/fix reviews/bounty | **NOT RUN**                                 | 两轮独立外审、修复复审和 funded public bounty 均未发生                                                                                                                                                                                                                                                                                                         |
+| Mainnet/production                 | **NOT RUN**                                 | 未部署、未验证、未批准                                                                                                                                                                                                                                                                                                                                         |
+
+## 范围结论
+
+链上 MVP 核心和链下集成骨架已经实现：单池多桶、每市场 ERC-1155、一级购买、早鸟、creator
+终局、permissionless timeout、退款、bond、固定价 C2C、Permit2、分账、受限暂停、Launch Guard、
+Full/Clone、ERC-4337 Paymaster，以及 SDK、React 示例、Indexer/API、worker、赞助服务和监控规则。
+
+这不等于完整旗舰前端、LLM 标注、信誉评分、入出金、OBS、生产 KMS/数据库/RPC/Bundler/
+Paymaster 供应商、法务和运营系统已经交付。需求原子矩阵中的 `external_required`、`partial`、
+`not_implemented` 和 `deferred` 不得被“仓库代码已写”掩盖。
+
+## 当前发布阻断项
+
+至少包括：Echidna x86_64 百万调用/生命周期未完成、fresh whole-protocol mutation 无可用全协议分数、schema-v4 正式三机商业负载未运行、10k WS 与
+当前 50 tx/s 链上档未完成、商业经济参数 7/7 未验证、两轮外审与复审未执行、未创建冻结审计 commit/sign tag、Base Sepolia
+未部署、24 小时 timeout canary 未执行、Safe/Timelock/USDC/Permit2/EntryPoint/codehash 未实链核对、
+Paymaster/监控/故障演练无真实环境证据，以及主网法务和发布审批未完成。
+
+## 不得误读
+
+- coverage 与 gas PASS 是当前本地候选证据，不是外审或实链安全证明。
+- 普通链下测试中的 5 个 PostgreSQL conditional skip 不否定独立真实 PostgreSQL 9/9；二者是不同 lane。
+- focused 20-session WS smoke 不是 10k WS；静态 load profile 也不是容量证明。
+- schema-v4 工具/fixture PASS 不是三台独立主机、生产等价容量、真实 PostgreSQL/reorg 或正式签名证据 PASS。
+- 商业经济评估器测试 PASS 不是参数 PASS；当前 7 项都必须保持 `NOT_VERIFIED`。数据 provenance
+  不得晚于评估时点，部署 inventory 必须精确绑定 source/audit commit/address/codehash；评估器不会
+  自动修改 Solidity、配置或永久退休 LaunchGuard。
+- deployment/canary/role validator 是静态准备工具，不是 Base Sepolia 地址、交易或 24 小时结果。
+- 旧报告的 106 tests、99.50% line、PostgreSQL skipped、旧 gas FAIL、1,008,355 Medusa calls、
+  旧负载数字只描述历史候选；凡与本表冲突，以本表和所链接的当前证据报告为准。

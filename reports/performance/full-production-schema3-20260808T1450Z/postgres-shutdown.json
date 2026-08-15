@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "runId": "production-schema3-20260808T1450Z",
+  "pgCtlStopExit": 0,
+  "pgCtlStatusAfterStop": 3,
+  "pgIsReadyAfterStop": 2,
+  "dataDirectoryRemoved": true,
+  "postmasterPid": 97506
+}

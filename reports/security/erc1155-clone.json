@@ -1,0 +1,101 @@
+{
+  "success": true,
+  "error": null,
+  "results": {
+    "erc-conformance": {
+      "missing_function": [
+        {
+          "elements": [
+            {
+              "type": "contract",
+              "name": "CloneMarketVaultV1",
+              "source_mapping": {
+                "start": 226,
+                "length": 98,
+                "filename_relative": "src/market/CloneMarketVaultV1.sol",
+                "filename_absolute": "/Users/undef1ned/Work/local/cpredict/src/market/CloneMarketVaultV1.sol",
+                "filename_short": "src/market/CloneMarketVaultV1.sol",
+                "is_dependency": false,
+                "lines": [
+                  8,
+                  9,
+                  10
+                ],
+                "starting_column": 1,
+                "ending_column": 2
+              }
+            }
+          ],
+          "description": "[ ] onERC1155Received(address,address,uint256,uint256,bytes) is missing (optional)",
+          "markdown": "[ ] onERC1155Received(address,address,uint256,uint256,bytes) is missing (optional)",
+          "first_markdown_element": "src/market/CloneMarketVaultV1.sol#L8-L10",
+          "id": "ce6ce1a69329da8105f297ebcf8d394095b0abed44d014b24bbd43ba070a6e91",
+          "additional_fields": {
+            "function": "onERC1155Received(address,address,uint256,uint256,bytes)",
+            "required": false
+          }
+        },
+        {
+          "elements": [
+            {
+              "type": "contract",
+              "name": "CloneMarketVaultV1",
+              "source_mapping": {
+                "start": 226,
+                "length": 98,
+                "filename_relative": "src/market/CloneMarketVaultV1.sol",
+                "filename_absolute": "/Users/undef1ned/Work/local/cpredict/src/market/CloneMarketVaultV1.sol",
+                "filename_short": "src/market/CloneMarketVaultV1.sol",
+                "is_dependency": false,
+                "lines": [
+                  8,
+                  9,
+                  10
+                ],
+                "starting_column": 1,
+                "ending_column": 2
+              }
+            }
+          ],
+          "description": "[ ] onERC1155BatchReceived(address,address,uint256[],uint256[],bytes) is missing (optional)",
+          "markdown": "[ ] onERC1155BatchReceived(address,address,uint256[],uint256[],bytes) is missing (optional)",
+          "first_markdown_element": "src/market/CloneMarketVaultV1.sol#L8-L10",
+          "id": "de444cab7605dc43896546642b55dc7d3b64f34a2f1d0809353304a15ed3e0d3",
+          "additional_fields": {
+            "function": "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)",
+            "required": false
+          }
+        }
+      ],
+      "erroneous_erc1155_safeBatchTransferFrom_event": [
+        {
+          "elements": [
+            {
+              "type": "contract",
+              "name": "CloneMarketVaultV1",
+              "source_mapping": {
+                "start": 226,
+                "length": 98,
+                "filename_relative": "src/market/CloneMarketVaultV1.sol",
+                "filename_absolute": "/Users/undef1ned/Work/local/cpredict/src/market/CloneMarketVaultV1.sol",
+                "filename_short": "src/market/CloneMarketVaultV1.sol",
+                "is_dependency": false,
+                "lines": [
+                  8,
+                  9,
+                  10
+                ],
+                "starting_column": 1,
+                "ending_column": 2
+              }
+            }
+          ],
+          "description": "[ ] safeBatchTransferFrom must emit TransferSingle or TransferBatch",
+          "markdown": "[ ] safeBatchTransferFrom must emit TransferSingle or TransferBatch",
+          "first_markdown_element": "src/market/CloneMarketVaultV1.sol#L8-L10",
+          "id": "2059aee4f4fb47d16d606419fce2fff04c153102abd8d042245acef340c8b6ca"
+        }
+      ]
+    }
+  }
+}

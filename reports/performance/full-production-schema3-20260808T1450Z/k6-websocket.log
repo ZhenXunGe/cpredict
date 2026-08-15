@@ -1,0 +1,117 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: load/k6/read-connections.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 10000 max VUs, 2m15s max duration (incl. graceful stop):
+              * read_connections: 1 iterations for each of 10000 VUs (maxDuration: 1m45s, gracefulStop: 30s)
+
+
+running (0m00.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m00.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m01.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m01.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m02.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m02.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m03.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m03.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m04.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m04.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m05.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m05.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m06.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m06.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m07.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m07.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m08.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m08.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m09.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m09.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m10.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m10.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m11.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m11.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m12.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m12.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m13.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m13.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m14.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m14.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m15.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m15.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m16.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m16.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m17.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m17.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m18.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m18.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m19.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m19.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m20.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m20.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m21.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m21.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m22.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m22.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m23.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m23.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m24.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m24.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m25.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m25.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m26.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m26.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m27.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m27.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m28.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m28.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m29.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m29.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m30.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m30.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m31.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m31.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m32.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m32.3s/1m45s  00000/10000 iters, 1 per VU
+
+running (0m33.3s), 10000/10000 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 10000 VUs  0m33.3s/1m45s  00000/10000 iters, 1 per VU

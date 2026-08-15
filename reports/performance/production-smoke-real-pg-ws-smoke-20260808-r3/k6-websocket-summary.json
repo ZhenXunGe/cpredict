@@ -1,0 +1,112 @@
+{
+    "root_group": {
+        "groups": {},
+        "checks": {
+                "WebSocket upgrade is 101": {
+                    "name": "WebSocket upgrade is 101",
+                    "path": "::WebSocket upgrade is 101",
+                    "id": "94c50ca3a71b7211ec76787b0f8a0501",
+                    "passes": 20,
+                    "fails": 0
+                },
+                "WebSocket connection held target duration": {
+                    "id": "355ad2784ca041ed531675ee0be91ffd",
+                    "passes": 20,
+                    "fails": 0,
+                    "name": "WebSocket connection held target duration",
+                    "path": "::WebSocket connection held target duration"
+                }
+            },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "metrics": {
+        "cpredict_ws_hold_failures": {
+            "passes": 0,
+            "fails": 20,
+            "thresholds": {
+                "rate<0.005": false
+            },
+            "value": 0
+        },
+        "cpredict_ws_protocol_ready_failures": {
+            "passes": 0,
+            "fails": 20,
+            "thresholds": {
+                "rate<0.005": false
+            },
+            "value": 0
+        },
+        "ws_connecting": {
+            "avg": 3.8316438000000006,
+            "min": 1.328458,
+            "med": 4.2361664999999995,
+            "max": 5.354833,
+            "p(90)": 5.3227708,
+            "p(95)": 5.353408,
+            "p(99)": 5.354548
+        },
+        "vus": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        },
+        "checks": {
+            "passes": 40,
+            "fails": 0,
+            "value": 1
+        },
+        "ws_msgs_received": {
+            "rate": 6.652746902564202,
+            "count": 20
+        },
+        "ws_session_duration": {
+            "p(99)": 3005.4326443100003,
+            "avg": 3004.1520333000008,
+            "min": 3001.8695,
+            "med": 3004.402458,
+            "max": 3005.433167,
+            "p(90)": 3005.4230666000003,
+            "p(95)": 3005.4305535500002
+        },
+        "data_sent": {
+            "count": 5300,
+            "rate": 1762.9779291795135
+        },
+        "ws_sessions": {
+            "count": 20,
+            "rate": 6.652746902564202
+        },
+        "vus_max": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        },
+        "data_received": {
+            "count": 4740,
+            "rate": 1576.7010159077158
+        },
+        "cpredict_ws_upgrade_failures": {
+            "passes": 0,
+            "fails": 20,
+            "thresholds": {
+                "rate<0.005": false
+            },
+            "value": 0
+        },
+        "iteration_duration": {
+            "p(99)": 3005.53625973,
+            "avg": 3004.36313335,
+            "min": 3002.302584,
+            "med": 3004.600375,
+            "max": 3005.546583,
+            "p(90)": 3005.4801377999997,
+            "p(95)": 3005.4949666499997
+        },
+        "iterations": {
+            "count": 20,
+            "rate": 6.652746902564202
+        }
+    }
+}

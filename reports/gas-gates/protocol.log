@@ -1,0 +1,34 @@
+No files changed, compilation skipped
+
+Ran 7 tests for test/gas/ProtocolGasGates.t.sol:ProtocolGasGatesTest
+[PASS] testGasGateAllowanceBuy() (gas: 5735839)
+Logs:
+  allowance primary buy transaction gas: 278005
+
+[PASS] testGasGateAllowanceFill() (gas: 6109717)
+Logs:
+  allowance listing fill transaction gas: 225074
+
+[PASS] testGasGateCloneDeploymentAndInitialization() (gas: 936581)
+Logs:
+  clone deployment and initialization gas: 542400
+
+[PASS] testGasGateFullCreate2Deployment() (gas: 5526234)
+Logs:
+  full CREATE2 deployment transaction gas: 5433892
+
+[PASS] testGasGateListingCreate() (gas: 5922690)
+Logs:
+  listing create transaction gas: 224354
+
+[PASS] testGasGatePrincipalRefund() (gas: 5752793)
+Logs:
+  principal refund transaction gas: 80987
+
+[PASS] testGasGateWinnerClaim() (gas: 6025116)
+Logs:
+  winner claim transaction gas: 86856
+
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 10.43ms (8.74ms CPU time)
+
+Ran 1 test suite in 17.63ms (10.43ms CPU time): 7 tests passed, 0 failed, 0 skipped (7 total tests)

@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "runId": "calibration-fix-20260812T0120Z",
+  "lane": "production-indexer-Fastify-PostgreSQL-smoke",
+  "generatedAt": "2026-08-12T01:20:45.473Z",
+  "exclusions": [
+    "evidence-index.json",
+    "stage-exit-codes.json"
+  ],
+  "files": [
+    {
+      "name": "anvil.log",
+      "bytes": 5748,
+      "sha256": "4191c7205db30aee22239a59756d7afeac2ccc6a25f0b10007520c548ef3c250"
+    },
+    {
+      "name": "api-load-stage.json",
+      "bytes": 85,
+      "sha256": "35d57b0a9c4f1d5bacbc7beb17e915c6a0e32e5b42ed16d58efcfd0e18b8dfa3"
+    },
+    {
+      "name": "indexer-service.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "k6-api-summary.json",
+      "bytes": 8292,
+      "sha256": "eef46e3109209a66c31d98a3e9f247908a465401a71cca0e03234af52e5d822a"
+    },
+    {
+      "name": "k6-api.log",
+      "bytes": 13800,
+      "sha256": "7afad1c7252a500b8bdd2ac6441e8e15ce1d7e687c9861c041fc4cbe7e117d01"
+    },
+    {
+      "name": "postgres-initdb.log",
+      "bytes": 924,
+      "sha256": "2c40c7284605b083cc44e81810b34a99e60350098b459cd56b630ab26ee69717"
+    },
+    {
+      "name": "postgres-shutdown.log",
+      "bytes": 112,
+      "sha256": "f81dcc4623f8b1cc83389fd6dbf17d0225b611061e74fbf30e435030a363df48"
+    },
+    {
+      "name": "postgres-start.log",
+      "bytes": 52,
+      "sha256": "66afd0411ccc09366e99fdd99b85f21899c8d2d064f5835126859618802153ad"
+    },
+    {
+      "name": "postgres.log",
+      "bytes": 1740,
+      "sha256": "eadf15b4d910adfe519ae1fe5cbe78463e7c1536f88802391d29b2a1d170a0fc"
+    },
+    {
+      "name": "preflight.json",
+      "bytes": 870,
+      "sha256": "1f9afeb4108ffff925002e60445a90c1fdbc8d288039ed6717e437c58f54f2f8"
+    },
+    {
+      "name": "preflight.log",
+      "bytes": 904,
+      "sha256": "3bb1f71a3e5bc7d56968fca45636f037b657749ead25327d345111d9aba5c347"
+    },
+    {
+      "name": "production-api-smoke.json",
+      "bytes": 972,
+      "sha256": "32b396fc4ea92b8e3d3ada3e99e95ecf52df3ce372248c618f06312f7b62e3f2"
+    },
+    {
+      "name": "production-api-smoke.log",
+      "bytes": 972,
+      "sha256": "32b396fc4ea92b8e3d3ada3e99e95ecf52df3ce372248c618f06312f7b62e3f2"
+    },
+    {
+      "name": "production-seed.json",
+      "bytes": 1898,
+      "sha256": "2f8fc0483eef5793082b22b13161a004fd39a42d2c3599cd4ab0459038ac3312"
+    },
+    {
+      "name": "production-seed.json.query-plans.json",
+      "bytes": 5681,
+      "sha256": "d6d7f109782eb5f2a33a172c83ac22500b5e32030d1c52d29ff8f8e92d13fa73"
+    },
+    {
+      "name": "production-seed.log",
+      "bytes": 1898,
+      "sha256": "2f8fc0483eef5793082b22b13161a004fd39a42d2c3599cd4ab0459038ac3312"
+    },
+    {
+      "name": "typescript.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

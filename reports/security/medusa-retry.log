@@ -1,0 +1,19 @@
+[1m[32m⇾[0m[0m Reading the configuration file at: [1m/private/tmp/cpredict-medusa-smoke.json[0m
+⇾ Compiling targets with crytic-compile
+⇾ Running command:
+/Users/undef1ned/Work/local/cpredict/.tools/slither/bin/crytic-compile test/security/EchidnaMarketAccounting.sol --export-format solc
+error Failed to compile target
+‣ error while executing crytic-compile:
+OUTPUT:
+Traceback (most recent call last):
+  File "/Users/undef1ned/Work/local/cpredict/.tools/slither/bin/crytic-compile", line 6, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/undef1ned/Work/local/cpredict/.tools/slither/lib/python3.14/site-packages/crytic_compile/__main__.py", line 222, in main
+    compilations = compile_all(**vars(args))
+  File "/Users/undef1ned/Work/local/cpredict/.tools/slither/lib/python3.14/site-packages/crytic_compile/crytic_compile.py", line 897, in compile_all
+    raise ValueError(f"{str(target)} is not a file or directory.")
+ValueError: test/security/EchidnaMarketAccounting.sol is not a file or directory.
+
+ERROR: exit status 1
+

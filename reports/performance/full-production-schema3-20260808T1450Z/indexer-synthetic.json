@@ -1,0 +1,24 @@
+{
+  "lane": "real-ChainIndexer-synthetic-client-counting-store",
+  "profile": "full",
+  "markets": 100,
+  "listings": 100000,
+  "totalEvents": 100100,
+  "eventsPerBlock": 100,
+  "batches": 11,
+  "ingestedEvents": 100100,
+  "elapsedSeconds": 0.534,
+  "eventsPerSecond": 187468.894,
+  "batchLatencyMs": {
+    "p50": 51.122,
+    "p95": 69.634,
+    "p99": 69.634,
+    "max": 69.634
+  },
+  "syntheticProvisionalLagBlocks": 0,
+  "integrity": {
+    "exactEventCount": true,
+    "lagAtMostTwoBlocks": true
+  },
+  "proofBoundary": "Executes the repository ChainIndexer logic, but the deterministic client and counting store do not validate PostgreSQL throughput, RPC limits, Base reorgs, or production lag."
+}

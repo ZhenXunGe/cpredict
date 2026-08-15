@@ -1,0 +1,9 @@
+[1m[32m⇾[0m[0m Reading the configuration file at: [1m/private/tmp/cpredict-medusa-smoke.json[0m
+⇾ Compiling targets with crytic-compile
+⇾ Running command:
+/Users/undef1ned/Work/local/cpredict/.tools/slither/bin/crytic-compile . --export-format solc
+⇾ Finished compiling targets in 0s
+⇾ Running with a timeout of 120 seconds
+⇾ Setting up test chain
+error Failed to initialize the test chain
+‣ EchidnaMarketAccounting was specified in the target contracts but was not found in the compilation artifacts

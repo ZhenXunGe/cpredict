@@ -1,0 +1,278 @@
+{
+  "$schema": "../../manifests/economics-commercial-result.schema.json",
+  "schemaVersion": 1,
+  "generatedBy": "scripts/economics/run-commercial-economics-gate.mjs",
+  "assessmentId": "commercial-economics-awaiting-real-evidence",
+  "assessmentTime": "1970-01-01T00:00:00Z",
+  "validUntil": "1970-01-01T00:00:00Z",
+  "policyId": "commercial-economics-thresholds-awaiting-approval",
+  "inputSha256": "sha256:bb4488f1e6b51b7ca9f974a73b454af888d732867e32ccda5eec765c028e930e",
+  "policySha256": "sha256:7ecfb71df3c16495216be7e95ce6eddab3199f25dd3d7383fbc93760a4d62036",
+  "overallStatus": "NOT_VERIFIED",
+  "roundingPolicy": {
+    "revenue": "floor",
+    "costsAndRequiredCoverage": "ceil",
+    "percentiles": "nearest-rank with rank=ceil(n*p), sorted ascending",
+    "ratios": "adverse ratios use ceil; available coverage uses floor",
+    "arithmetic": "BigInt integer fixed-point only; USDC has 6 decimals and ETH/USD has 1e8 scale"
+  },
+  "gates": [
+    {
+      "id": "bond_deterrence",
+      "title": "V1 creator bond deterrence",
+      "status": "NOT_VERIFIED",
+      "reasons": [
+        "policy threshold is not approved",
+        "policy approval reference is missing",
+        "required evidence is marked MISSING",
+        "evidence provenance or independent verification is incomplete",
+        "source manifest, audit commit, or required deployment address/codehash binding is incomplete",
+        "RPC-verified Full/Clone market configuration does not match the assessed V1 parameters",
+        "missing FULL bond cohort",
+        "missing CLONE bond cohort"
+      ],
+      "metrics": []
+    },
+    {
+      "id": "micro_pool_rake",
+      "title": "Micro-pool rake covers claim and Paymaster",
+      "status": "NOT_VERIFIED",
+      "reasons": [
+        "policy threshold is not approved",
+        "policy approval reference is missing",
+        "required evidence is marked MISSING",
+        "evidence provenance or independent verification is incomplete",
+        "source manifest, audit commit, or required deployment address/codehash binding is incomplete",
+        "RPC-verified Full/Clone market configuration does not match the assessed V1 parameters",
+        "ETH/USD evidence is zero, expired, or outside the assessment time",
+        "insufficient verified WINNER_CLAIM Base receipts",
+        "insufficient verified PAYMASTER_OVERHEAD Base receipts",
+        "expected claimant count is zero",
+        "sponsored claimant count is zero"
+      ],
+      "metrics": {
+        "sponsoredClaimants": "0",
+        "claimCostP95AtomicCeil": "0",
+        "paymasterCostP95AtomicCeil": "0",
+        "requiredCostAtomicCeil": "0",
+        "grossRakeAtomicFloor": "0",
+        "protocolFeeAtomicFloor": "0",
+        "earlyBirdPoolAtomicFloor": "0",
+        "fundingScope": "PROTOCOL_FEE",
+        "fundingBaseAtomicFloor": "0",
+        "committedFundingAtomicFloor": "0",
+        "rakeCoverageBps": "0"
+      }
+    },
+    {
+      "id": "full_clone_caps",
+      "title": "Full 5,000 / Clone 500 cap suitability",
+      "status": "NOT_VERIFIED",
+      "reasons": [
+        "policy threshold is not approved",
+        "policy approval reference is missing",
+        "required evidence is marked MISSING",
+        "evidence provenance or independent verification is incomplete",
+        "source manifest, audit commit, or required deployment address/codehash binding is incomplete",
+        "RPC-verified Full/Clone market configuration does not match the assessed V1 parameters",
+        "missing FULL cap cohort",
+        "missing CLONE cap cohort"
+      ],
+      "metrics": []
+    },
+    {
+      "id": "early_bird_sybil",
+      "title": "Early-bird Sybil concentration",
+      "status": "NOT_VERIFIED",
+      "reasons": [
+        "policy threshold is not approved",
+        "policy approval reference is missing",
+        "required evidence is marked MISSING",
+        "evidence provenance or independent verification is incomplete",
+        "source manifest, audit commit, or required deployment address/codehash binding is incomplete",
+        "RPC-verified Full/Clone market configuration does not match the assessed V1 parameters",
+        "wallet sample below approved minimum",
+        "total early principal is zero",
+        "total early reward is zero"
+      ],
+      "metrics": {
+        "flaggedWalletShareBps": "10001",
+        "flaggedPrincipalShareBps": "0",
+        "flaggedRewardShareBps": "10001",
+        "rewardAmplificationBps": "10001"
+      }
+    },
+    {
+      "id": "c2c_fee_liquidity",
+      "title": "C2C fee and liquidity sensitivity",
+      "status": "NOT_VERIFIED",
+      "reasons": [
+        "policy threshold is not approved",
+        "policy approval reference is missing",
+        "required evidence is marked MISSING",
+        "evidence provenance or independent verification is incomplete",
+        "source manifest, audit commit, or required deployment address/codehash binding is incomplete",
+        "RPC-verified Full/Clone market configuration does not match the assessed V1 parameters",
+        "baseline and candidate cohorts are not matched",
+        "baseline sample below approved minimum",
+        "candidate sample below approved minimum",
+        "quoted units are zero",
+        "baseline median fill time is zero",
+        "baseline fill rate is zero"
+      ],
+      "metrics": {
+        "configuredFeeBps": "200",
+        "baselineFillRateBps": "0",
+        "candidateFillRateBps": "0",
+        "relativeFillRateDropBps": "0",
+        "fillRateRetentionBps": "0",
+        "medianTimeIncreaseBps": "0"
+      }
+    },
+    {
+      "id": "launch_guard_retirement",
+      "title": "LaunchGuard retirement eligibility",
+      "status": "NOT_VERIFIED",
+      "reasons": [
+        "policy threshold is not approved",
+        "policy approval reference is missing",
+        "required evidence is marked MISSING",
+        "evidence provenance or independent verification is incomplete",
+        "source manifest, audit commit, or required deployment address/codehash binding is incomplete",
+        "RPC-verified Full/Clone market configuration does not match the assessed V1 parameters",
+        "observation window below approved minimum",
+        "market sample below approved minimum",
+        "eligible order count is zero"
+      ],
+      "metrics": {
+        "observationDays": "0",
+        "marketCount": "0",
+        "accountingMismatchCount": "0",
+        "guardBypassIncidentCount": "0",
+        "unrecoveredIncidentCount": "0",
+        "capDenialRateBps": "10001",
+        "p95ExposureUtilizationBps": "0"
+      }
+    },
+    {
+      "id": "extreme_gas_exit",
+      "title": "Extreme-gas exit economic feasibility",
+      "status": "NOT_VERIFIED",
+      "reasons": [
+        "policy threshold is not approved",
+        "policy approval reference is missing",
+        "required evidence is marked MISSING",
+        "evidence provenance or independent verification is incomplete",
+        "source manifest, audit commit, or required deployment address/codehash binding is incomplete",
+        "RPC-verified Full/Clone market configuration does not match the assessed V1 parameters",
+        "ETH/USD evidence is zero, expired, or outside the assessment time",
+        "insufficient verified gas-price samples",
+        "insufficient verified RESOLVE Base receipts",
+        "insufficient verified RESOLVE FULL Base receipts",
+        "insufficient verified RESOLVE CLONE Base receipts",
+        "insufficient verified CREATOR_VOID Base receipts",
+        "insufficient verified CREATOR_VOID FULL Base receipts",
+        "insufficient verified CREATOR_VOID CLONE Base receipts",
+        "insufficient verified TIMEOUT_VOID Base receipts",
+        "insufficient verified TIMEOUT_VOID FULL Base receipts",
+        "insufficient verified TIMEOUT_VOID CLONE Base receipts",
+        "insufficient verified BOND_SETTLE Base receipts",
+        "insufficient verified WINNER_CLAIM Base receipts",
+        "insufficient verified WINNER_CLAIM FULL Base receipts",
+        "insufficient verified WINNER_CLAIM CLONE Base receipts",
+        "insufficient verified REFUND_CLAIM Base receipts",
+        "insufficient verified REFUND_CLAIM FULL Base receipts",
+        "insufficient verified REFUND_CLAIM CLONE Base receipts",
+        "insufficient verified LISTING_CANCEL Base receipts",
+        "insufficient verified TERMINAL_RETURN Base receipts",
+        "insufficient verified TIMEOUT_BONUS_CLAIM Base receipts",
+        "insufficient verified TIMEOUT_BONUS_CLAIM FULL Base receipts",
+        "insufficient verified TIMEOUT_BONUS_CLAIM CLONE Base receipts"
+      ],
+      "metrics": {
+        "gasPricePercentileWei": "0",
+        "stressedGasPriceWeiCeil": "0",
+        "operations": [
+          {
+            "operation": "RESOLVE",
+            "receiptGasPercentile": "0",
+            "l1FeeWeiPercentile": "0",
+            "stressedCostAtomicCeil": "0",
+            "costToMinimumExitValueBps": "0",
+            "sufficient": false
+          },
+          {
+            "operation": "CREATOR_VOID",
+            "receiptGasPercentile": "0",
+            "l1FeeWeiPercentile": "0",
+            "stressedCostAtomicCeil": "0",
+            "costToMinimumExitValueBps": "0",
+            "sufficient": false
+          },
+          {
+            "operation": "TIMEOUT_VOID",
+            "receiptGasPercentile": "0",
+            "l1FeeWeiPercentile": "0",
+            "stressedCostAtomicCeil": "0",
+            "costToMinimumExitValueBps": "0",
+            "sufficient": false
+          },
+          {
+            "operation": "BOND_SETTLE",
+            "receiptGasPercentile": "0",
+            "l1FeeWeiPercentile": "0",
+            "stressedCostAtomicCeil": "0",
+            "costToMinimumExitValueBps": "0",
+            "sufficient": false
+          },
+          {
+            "operation": "WINNER_CLAIM",
+            "receiptGasPercentile": "0",
+            "l1FeeWeiPercentile": "0",
+            "stressedCostAtomicCeil": "0",
+            "costToMinimumExitValueBps": "0",
+            "sufficient": false
+          },
+          {
+            "operation": "REFUND_CLAIM",
+            "receiptGasPercentile": "0",
+            "l1FeeWeiPercentile": "0",
+            "stressedCostAtomicCeil": "0",
+            "costToMinimumExitValueBps": "0",
+            "sufficient": false
+          },
+          {
+            "operation": "LISTING_CANCEL",
+            "receiptGasPercentile": "0",
+            "l1FeeWeiPercentile": "0",
+            "stressedCostAtomicCeil": "0",
+            "costToMinimumExitValueBps": "0",
+            "sufficient": false
+          },
+          {
+            "operation": "TERMINAL_RETURN",
+            "receiptGasPercentile": "0",
+            "l1FeeWeiPercentile": "0",
+            "stressedCostAtomicCeil": "0",
+            "costToMinimumExitValueBps": "0",
+            "sufficient": false
+          },
+          {
+            "operation": "TIMEOUT_BONUS_CLAIM",
+            "receiptGasPercentile": "0",
+            "l1FeeWeiPercentile": "0",
+            "stressedCostAtomicCeil": "0",
+            "costToMinimumExitValueBps": "0",
+            "sufficient": false
+          }
+        ]
+      }
+    }
+  ],
+  "proofBoundary": [
+    "PASS requires approved policy and provenance-complete supplied Base/business evidence; estimates never satisfy evidence readiness.",
+    "Receipt provenance is validated structurally offline but transaction inclusion is not queried by this tool.",
+    "Extreme-gas PASS proves only economic feasibility under the approved stress vector, not sequencer, RPC, bundler, or USDC availability.",
+    "LaunchGuard PASS means evidence-backed retirement eligibility only; this tool never sends the irreversible governance transaction."
+  ]
+}

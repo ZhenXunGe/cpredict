@@ -1,0 +1,17 @@
+Compiling 12 files with Solc 0.8.17
+Solc 0.8.17 finished in 2.82s
+Compiler run successful!
+No files changed, compilation skipped
+
+Ran 2 tests for test/unit/Permit2Flows.t.sol:Permit2FlowsTest
+[PASS] testGasGateMarketplacePermit2FillUnder430k() (gas: 834516)
+Logs:
+  Permit2 listing fill transaction gas: 293555
+
+[PASS] testGasGatePrimaryPermit2BuyUnder370k() (gas: 408300)
+Logs:
+  Permit2 primary buy transaction gas: 329233
+
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 7.07ms (7.41ms CPU time)
+
+Ran 1 test suite in 7.46ms (7.07ms CPU time): 2 tests passed, 0 failed, 0 skipped (2 total tests)

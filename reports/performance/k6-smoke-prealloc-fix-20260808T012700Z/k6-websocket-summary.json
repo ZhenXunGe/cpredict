@@ -1,0 +1,86 @@
+{
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "WebSocket upgrade is 101": {
+                    "name": "WebSocket upgrade is 101",
+                    "path": "::WebSocket upgrade is 101",
+                    "id": "94c50ca3a71b7211ec76787b0f8a0501",
+                    "passes": 20,
+                    "fails": 0
+                }
+            }
+    },
+    "metrics": {
+        "vus_max": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        },
+        "ws_sessions": {
+            "count": 20,
+            "rate": 19.908619436785155
+        },
+        "checks": {
+            "passes": 20,
+            "fails": 0,
+            "value": 1
+        },
+        "ws_session_duration": {
+            "avg": 1003.90084985,
+            "min": 1003.549875,
+            "med": 1003.948771,
+            "max": 1004.313542,
+            "p(90)": 1004.1565289,
+            "p(95)": 1004.18849825
+        },
+        "iteration_duration": {
+            "max": 1004.37625,
+            "p(90)": 1004.1861339000001,
+            "p(95)": 1004.2730163499999,
+            "avg": 1003.96653545,
+            "min": 1003.68,
+            "med": 1003.9788125
+        },
+        "ws_connecting": {
+            "max": 4.156333,
+            "p(90)": 3.9869542,
+            "p(95)": 4.0110627999999995,
+            "avg": 3.53893115,
+            "min": 2.3465,
+            "med": 3.77325
+        },
+        "ws_msgs_received": {
+            "rate": 19.908619436785155,
+            "count": 20
+        },
+        "data_sent": {
+            "count": 4251,
+            "rate": 4231.5770612886845
+        },
+        "data_received": {
+            "count": 3200,
+            "rate": 3185.3791098856245
+        },
+        "iterations": {
+            "count": 20,
+            "rate": 19.908619436785155
+        },
+        "cpredict_ws_upgrade_failures": {
+            "passes": 0,
+            "fails": 20,
+            "thresholds": {
+                "rate<0.005": false
+            },
+            "value": 0
+        },
+        "vus": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        }
+    }
+}

@@ -1,0 +1,107 @@
+[1m[32m⇾[0m[0m Reading the configuration file at: [1mscripts/security/medusa.json[0m
+⇾ Compiling targets with crytic-compile
+⇾ Running command:
+/Users/undef1ned/Work/local/cpredict/.tools/slither/bin/crytic-compile ../.. --export-format solc --foundry-compile-all
+⇾ Finished compiling targets in 51s
+⇾ artifacts: Medusa is running against a new set of build artifacts
+⇾ Running with a timeout of 1800 seconds
+⇾ Setting up test chain
+⇾ Finished setting up test chain
+⇾ Creating corpus...
+⇾ Fuzzing with 4 workers
+⇾ [NOT STARTED] Property Test: EchidnaMarketAccounting.property_guard_is_conservative()
+⇾ [NOT STARTED] Property Test: EchidnaMarketAccounting.property_supply_is_conserved()
+⇾ [NOT STARTED] Property Test: EchidnaMarketAccounting.property_fee_and_bond_vaults_are_solvent()
+⇾ [NOT STARTED] Property Test: EchidnaMarketAccounting.property_vault_assets_cover_liabilities()
+⇾ fuzz: elapsed:       0s, calls:          0 (     0/sec), seq/s:      0, branches:   1599, corpus:     0, failures: 0/0, gas/s:            0
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.settleBond()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.burnLosing(uint256,uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.buy(uint256,uint256,uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimCreatorFee()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.market()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.refund(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.timeoutVoid()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.transfer(uint256,uint256,uint256,uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.bondEscrow()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimCreatorBond()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimEarlyBird(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimTimeoutBonus(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.echidna_guard_is_conservative()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.echidna_supply_is_conserved()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.guard()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.echidna_fee_and_bond_vaults_are_solvent()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.syncGuard()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.usdc()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimWinner(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.creatorResolve(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.creatorVoid()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.echidna_vault_assets_cover_liabilities()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.feeVault()
+⇾ fuzz: elapsed:       3s, calls:      23275 (  7755/sec), seq/s:     59, branches:   2856, corpus:    46, failures: 0/179, gas/s:    338013152
+⇾ fuzz: elapsed:       6s, calls:      55658 ( 10792/sec), seq/s:     84, branches:   2943, corpus:    52, failures: 0/432, gas/s:    464984495
+⇾ fuzz: elapsed:       9s, calls:      85780 ( 10035/sec), seq/s:     78, branches:   3215, corpus:    67, failures: 0/667, gas/s:    433063821
+⇾ fuzz: elapsed:      12s, calls:     117982 ( 10730/sec), seq/s:     84, branches:   3219, corpus:    69, failures: 0/920, gas/s:    470012657
+⇾ fuzz: elapsed:      15s, calls:     149369 ( 10459/sec), seq/s:     81, branches:   3219, corpus:    69, failures: 0/1165, gas/s:    456827756
+⇾ fuzz: elapsed:      18s, calls:     178699 (  9772/sec), seq/s:     76, branches:   3219, corpus:    69, failures: 0/1394, gas/s:    425626864
+⇾ fuzz: elapsed:      21s, calls:     212298 ( 11194/sec), seq/s:     87, branches:   3239, corpus:    70, failures: 0/1657, gas/s:    490216404
+⇾ fuzz: elapsed:      24s, calls:     236729 (  8142/sec), seq/s:     63, branches:   3239, corpus:    70, failures: 0/1848, gas/s:    356852984
+⇾ fuzz: elapsed:      27s, calls:     267851 ( 10373/sec), seq/s:     80, branches:   3239, corpus:    70, failures: 0/2091, gas/s:    456882395
+⇾ fuzz: elapsed:      30s, calls:     297842 (  9993/sec), seq/s:     77, branches:   3239, corpus:    70, failures: 0/2325, gas/s:    441016279
+⇾ fuzz: elapsed:      33s, calls:     323411 (  8517/sec), seq/s:     66, branches:   3239, corpus:    70, failures: 0/2525, gas/s:    374365591
+⇾ fuzz: elapsed:      36s, calls:     354689 ( 10424/sec), seq/s:     81, branches:   3239, corpus:    70, failures: 0/2769, gas/s:    460958079
+⇾ fuzz: elapsed:      39s, calls:     382453 (  9251/sec), seq/s:     72, branches:   3239, corpus:    70, failures: 0/2986, gas/s:    406255332
+⇾ fuzz: elapsed:      42s, calls:     413620 ( 10386/sec), seq/s:     80, branches:   3239, corpus:    70, failures: 0/3229, gas/s:    455611580
+⇾ fuzz: elapsed:      45s, calls:     442539 (  9633/sec), seq/s:     75, branches:   3250, corpus:    71, failures: 0/3455, gas/s:    421085297
+⇾ fuzz: elapsed:      48s, calls:     471188 (  9543/sec), seq/s:     74, branches:   3250, corpus:    71, failures: 0/3679, gas/s:    416095211
+⇾ fuzz: elapsed:      51s, calls:     503647 ( 10816/sec), seq/s:     84, branches:   3250, corpus:    71, failures: 0/3934, gas/s:    470898470
+⇾ fuzz: elapsed:      54s, calls:     535750 ( 10700/sec), seq/s:     83, branches:   3250, corpus:    71, failures: 0/4184, gas/s:    466515479
+⇾ fuzz: elapsed:      57s, calls:     566879 ( 10375/sec), seq/s:     80, branches:   3250, corpus:    71, failures: 0/4426, gas/s:    451697476
+⇾ fuzz: elapsed:    1m00s, calls:     587944 (  7017/sec), seq/s:     54, branches:   3250, corpus:    71, failures: 0/4591, gas/s:    305704377
+⇾ fuzz: elapsed:    1m03s, calls:     612504 (  8185/sec), seq/s:     64, branches:   3250, corpus:    71, failures: 0/4784, gas/s:    355524993
+⇾ fuzz: elapsed:    1m06s, calls:     640449 (  9309/sec), seq/s:     72, branches:   3250, corpus:    71, failures: 0/5002, gas/s:    404635236
+⇾ fuzz: elapsed:    1m09s, calls:     662739 (  7427/sec), seq/s:     57, branches:   3250, corpus:    71, failures: 0/5176, gas/s:    323618828
+⇾ fuzz: elapsed:    1m12s, calls:     691518 (  9590/sec), seq/s:     74, branches:   3250, corpus:    71, failures: 0/5401, gas/s:    417665444
+⇾ fuzz: elapsed:    1m15s, calls:     722244 ( 10241/sec), seq/s:     79, branches:   3250, corpus:    71, failures: 0/5640, gas/s:    445388683
+⇾ fuzz: elapsed:    1m18s, calls:     750009 (  9254/sec), seq/s:     72, branches:   3250, corpus:    71, failures: 0/5858, gas/s:    402853350
+⇾ fuzz: elapsed:    1m21s, calls:     777562 (  9183/sec), seq/s:     71, branches:   3250, corpus:    71, failures: 0/6072, gas/s:    399259856
+⇾ fuzz: elapsed:    1m24s, calls:     797135 (  6523/sec), seq/s:     50, branches:   3250, corpus:    71, failures: 0/6225, gas/s:    283853991
+⇾ fuzz: elapsed:    1m27s, calls:     819104 (  7318/sec), seq/s:     57, branches:   3250, corpus:    71, failures: 0/6397, gas/s:    318486529
+⇾ fuzz: elapsed:    1m30s, calls:     842802 (  7891/sec), seq/s:     61, branches:   3250, corpus:    71, failures: 0/6583, gas/s:    342544032
+⇾ fuzz: elapsed:    1m33s, calls:     863664 (  6952/sec), seq/s:     53, branches:   3250, corpus:    71, failures: 0/6745, gas/s:    302249692
+⇾ fuzz: elapsed:    1m36s, calls:     891800 (  9375/sec), seq/s:     73, branches:   3250, corpus:    71, failures: 0/6966, gas/s:    407536767
+⇾ fuzz: elapsed:    1m39s, calls:     917958 (  8714/sec), seq/s:     67, branches:   3250, corpus:    71, failures: 0/7170, gas/s:    378825323
+⇾ fuzz: elapsed:    1m42s, calls:     947774 (  9934/sec), seq/s:     77, branches:   3250, corpus:    71, failures: 0/7403, gas/s:    430531541
+⇾ fuzz: elapsed:    1m45s, calls:     971730 (  7979/sec), seq/s:     62, branches:   3250, corpus:    71, failures: 0/7590, gas/s:    346911935
+⇾ fuzz: elapsed:    1m48s, calls:     998552 (  8940/sec), seq/s:     69, branches:   3250, corpus:    71, failures: 0/7800, gas/s:    389250269
+⇾ fuzz: elapsed:    1m51s, calls:    1024046 (  8494/sec), seq/s:     65, branches:   3250, corpus:    71, failures: 0/7998, gas/s:    369117257
+⇾ Transaction test limit reached, halting now...
+⇾ Fuzzer stopped, test results follow below ...
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.bondEscrow()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.burnLosing(uint256,uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.buy(uint256,uint256,uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimCreatorBond()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimCreatorFee()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimEarlyBird(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimTimeoutBonus(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimWinner(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.creatorResolve(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.creatorVoid()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.echidna_fee_and_bond_vaults_are_solvent()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.echidna_guard_is_conservative()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.echidna_supply_is_conserved()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.echidna_vault_assets_cover_liabilities()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.feeVault()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.guard()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.market()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.refund(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.settleBond()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.syncGuard()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.timeoutVoid()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.transfer(uint256,uint256,uint256,uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.usdc()
+⇾ [PASSED] Property Test: EchidnaMarketAccounting.property_fee_and_bond_vaults_are_solvent()
+⇾ [PASSED] Property Test: EchidnaMarketAccounting.property_guard_is_conservative()
+⇾ [PASSED] Property Test: EchidnaMarketAccounting.property_supply_is_conserved()
+⇾ [PASSED] Property Test: EchidnaMarketAccounting.property_vault_assets_cover_liabilities()
+⇾ Test summary: 27 test(s) passed, 0 test(s) failed
+⇾ lcov report(s) saved to: ../../reports/security/medusa-corpus/coverage/lcov.info

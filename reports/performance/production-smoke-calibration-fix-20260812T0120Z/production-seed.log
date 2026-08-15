@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "lane": "production-Fastify-PostgreSQL17-seed",
+  "runId": "calibration-fix-20260812T0120Z",
+  "observedAt": "2026-08-12T01:19:42.036Z",
+  "chainId": 31337,
+  "postgres": {
+    "serverVersion": "17.10",
+    "databaseName": "postgres",
+    "port": 19432,
+    "listenAddresses": "127.0.0.1",
+    "dataDirectory": "/private/tmp/cpredict-load-postgres.Z3hATQ/data",
+    "postmasterStartTime": "2026-08-12T01:19:41.196Z",
+    "systemIdentifier": "7672948684197383442",
+    "checkpointTimeout": "10min"
+  },
+  "migrations": [
+    {
+      "name": "001_indexer.sql",
+      "sha256": "afcfe5886202b8c059bd30ab04d5677447cbfba35cd86d50672f711cdc3bc0af"
+    },
+    {
+      "name": "002_settlement_evidence.sql",
+      "sha256": "f7ec65a60a59321093dda64130f5419b4ac087c437d63ebc1a43f683e34db174"
+    },
+    {
+      "name": "003_read_api_indexes.sql",
+      "sha256": "881207676165623bac8a87db64d1410240aa5aeee4adff636289096f7b2719c2"
+    }
+  ],
+  "dataset": {
+    "markets": 100,
+    "listings": 100000,
+    "listingsPerMarket": 1000
+  },
+  "availableIndexes": [
+    "fills_listing_block_idx",
+    "listings_chain_active_updated_idx",
+    "listings_vault_active_idx",
+    "markets_chain_created_idx",
+    "positions_owner_updated_idx"
+  ],
+  "representativeQueryIndexes": {
+    "markets": [
+      "markets_chain_created_idx"
+    ],
+    "listings": [
+      "listings_vault_active_idx"
+    ],
+    "market": []
+  },
+  "thresholds": {
+    "freshPostgresIdentity": true,
+    "exactDataset": true,
+    "requiredReadIndexesPresent": true,
+    "largeListingQueryUsesIndex": true,
+    "bulkSeedCheckpointCompleted": true
+  },
+  "bulkSeedCheckpointCompletedAt": "2026-08-12T01:19:42.025Z",
+  "proofBoundary": "Fresh loopback PostgreSQL 17.10 with the production Indexer schema and query store; the one-off fixture seed was checkpointed before timing; not Base RPC or deployed infrastructure."
+}

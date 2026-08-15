@@ -1,0 +1,133 @@
+
+Detector: reentrancy-balance
+Reentrancy in MarketVaultCoreV1._pullWithPermit2(address,uint256,ISignatureTransfer.PermitTransferFrom,bytes32,bytes) (src/market/MarketVaultCoreV1.sol#461-478):
+	External call allowing reentrancy:
+	- permit2.permitWitnessTransferFrom(permit,details,owner,witness,BUY_WITNESS_TYPE_STRING,signature) (src/market/MarketVaultCoreV1.sol#473-475)
+	Balance read before the call:
+	- beforeBalance = _paymentToken.balanceOf(address(this)) (src/market/MarketVaultCoreV1.sol#468)
+	Possible stale balance used after the call in a condition:
+	- received != amount (src/market/MarketVaultCoreV1.sol#477)
+		- stale variable `received`
+Reentrancy in FixedPriceMarketplaceV1._pullWithPermit2(address,uint256,ISignatureTransfer.PermitTransferFrom,bytes32,bytes) (src/marketplace/FixedPriceMarketplaceV1.sol#254-271):
+	External call allowing reentrancy:
+	- permit2.permitWitnessTransferFrom(permit,details,buyer,witness,FILL_WITNESS_TYPE_STRING,signature) (src/marketplace/FixedPriceMarketplaceV1.sol#266-268)
+	Balance read before the call:
+	- beforeBalance = paymentToken.balanceOf(address(this)) (src/marketplace/FixedPriceMarketplaceV1.sol#261)
+	Possible stale balance used after the call in a condition:
+	- received != amount (src/marketplace/FixedPriceMarketplaceV1.sol#270)
+		- stale variable `received`
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities
+
+Detector: missing-zero-check
+MarketFactoryV1.constructor(address,address,address,address,address,address,address,address,address).permit2_ (src/core/MarketFactoryV1.sol#97) lacks a zero-check on :
+		- permit2 = permit2_ (src/core/MarketFactoryV1.sol#114)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
+
+Detector: reentrancy-benign
+Reentrancy in MarketVaultCoreV1._completeBuy(address,uint256,uint256,uint256) (src/market/MarketVaultCoreV1.sol#508-542):
+	External calls:
+	- exposureGuard.reserve(filledUnits) (src/market/MarketVaultCoreV1.sol#514)
+	State variables written after the call(s):
+	- _packedBuyerAccounting[buyer] = _packUint128Pair(nextCumulative,nextBuyerScore) (src/market/MarketVaultCoreV1.sol#528)
+	- _setMarketAccounting(nextPrincipal,nextTotalScore) (src/market/MarketVaultCoreV1.sol#527)
+		- _packedMarketAccounting = _packUint128Pair(principal,earlyScore) (src/market/MarketVaultCoreV1.sol#840)
+	- principalByOutcome[outcomeId] += filledUnits (src/market/MarketVaultCoreV1.sol#529)
+Reentrancy in FixedPriceMarketplaceV1.createListing(address,uint256,uint256,uint256,uint64) (src/marketplace/FixedPriceMarketplaceV1.sol#133-177):
+	External calls:
+	- IERC1155(vault).safeTransferFrom(msg.sender,address(this),outcomeId,amount,abi.encode(listingId)) (src/marketplace/FixedPriceMarketplaceV1.sol#171-172)
+	State variables written after the call(s):
+	- _expectedReceipt = bytes32(0) (src/marketplace/FixedPriceMarketplaceV1.sol#173)
+Reentrancy in MarketFactoryV1.createMarket(ProtocolTypes.CreateMarketParams,bytes32) (src/core/MarketFactoryV1.sol#122-180):
+	External calls:
+	- market = fullMarketDeployer.deploy(salt) (src/core/MarketFactoryV1.sol#152)
+	- IMarketVaultV1(market).initialize(init) (src/core/MarketFactoryV1.sol#153)
+	- IMarketVaultV1(market).initialize(init) (src/core/MarketFactoryV1.sol#156)
+	State variables written after the call(s):
+	- deploymentModeOf[market] = params.deploymentMode (src/core/MarketFactoryV1.sol#161)
+	- deploymentSaltOf[market] = salt (src/core/MarketFactoryV1.sol#162)
+	- isMarket[market] = true (src/core/MarketFactoryV1.sol#160)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
+
+Detector: reentrancy-events
+Reentrancy in SponsorshipPaymasterV1.addStake(uint32) (src/paymaster/SponsorshipPaymasterV1.sol#284-287):
+	External calls:
+	- entryPoint.addStake{value: msg.value}(unstakeDelaySec) (src/paymaster/SponsorshipPaymasterV1.sol#285)
+	Event emitted after the call(s):
+	- EntryPointStakeAdded(unstakeDelaySec,msg.value) (src/paymaster/SponsorshipPaymasterV1.sol#286)
+Reentrancy in SponsorshipPaymasterV1.deposit() (src/paymaster/SponsorshipPaymasterV1.sol#273-276):
+	External calls:
+	- entryPoint.depositTo{value: msg.value}(address(this)) (src/paymaster/SponsorshipPaymasterV1.sol#274)
+	Event emitted after the call(s):
+	- EntryPointDepositAdded(msg.sender,msg.value) (src/paymaster/SponsorshipPaymasterV1.sol#275)
+Reentrancy in MarketFactoryV1.setMarketplace(address) (src/core/MarketFactoryV1.sol#206-212):
+	External calls:
+	- feeVault.registerAccruer(marketplace_) (src/core/MarketFactoryV1.sol#210)
+	Event emitted after the call(s):
+	- MarketplaceConfigured(marketplace_) (src/core/MarketFactoryV1.sol#211)
+Reentrancy in SponsorshipPaymasterV1.unlockStake() (src/paymaster/SponsorshipPaymasterV1.sol#289-292):
+	External calls:
+	- entryPoint.unlockStake() (src/paymaster/SponsorshipPaymasterV1.sol#290)
+	Event emitted after the call(s):
+	- EntryPointStakeUnlocked() (src/paymaster/SponsorshipPaymasterV1.sol#291)
+Reentrancy in SponsorshipPaymasterV1.withdrawDepositTo(address,uint256) (src/paymaster/SponsorshipPaymasterV1.sol#278-282):
+	External calls:
+	- entryPoint.withdrawTo(recipient,amount) (src/paymaster/SponsorshipPaymasterV1.sol#280)
+	Event emitted after the call(s):
+	- EntryPointDepositWithdrawn(recipient,amount) (src/paymaster/SponsorshipPaymasterV1.sol#281)
+Reentrancy in SponsorshipPaymasterV1.withdrawStake(address) (src/paymaster/SponsorshipPaymasterV1.sol#294-298):
+	External calls:
+	- entryPoint.withdrawStake(recipient) (src/paymaster/SponsorshipPaymasterV1.sol#296)
+	Event emitted after the call(s):
+	- EntryPointStakeWithdrawn(recipient) (src/paymaster/SponsorshipPaymasterV1.sol#297)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-4
+
+Detector: timestamp
+EmergencyControllerV1.isPaused(uint256) (src/core/EmergencyControllerV1.sol#42-44) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < pauseExpiresAt && (pausedFlags & flag) != 0 (src/core/EmergencyControllerV1.sol#43)
+EmergencyControllerV1.resetEpoch() (src/core/EmergencyControllerV1.sol#62-69) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < pauseExpiresAt (src/core/EmergencyControllerV1.sol#63)
+MarketFactoryV1._validate(ProtocolTypes.CreateMarketParams) (src/core/MarketFactoryV1.sol#327-381) uses timestamp for comparisons
+	Dangerous comparisons:
+	- params.closeAt < block.timestamp + 300 || params.closeAt > block.timestamp + 7776000 || params.earlyBirdStart < block.timestamp || params.earlyBirdStart >= params.closeAt (src/core/MarketFactoryV1.sol#344-347)
+MarketVaultCoreV1.updateBeforeFirstBuy(bytes32,string,bytes32,string,uint64,uint64,address,uint256) (src/market/MarketVaultCoreV1.sol#358-402) uses timestamp for comparisons
+	Dangerous comparisons:
+	- newCloseAt <= block.timestamp (src/market/MarketVaultCoreV1.sol#382)
+MarketVaultCoreV1._prepareBuy(address,uint256,uint256,uint256,uint256,uint64) (src/market/MarketVaultCoreV1.sol#480-506) uses timestamp for comparisons
+	Dangerous comparisons:
+	- marketState != ProtocolTypes.MarketState.OPEN || block.timestamp >= closeAt (src/market/MarketVaultCoreV1.sol#489)
+	- block.timestamp > deadline (src/market/MarketVaultCoreV1.sol#495)
+MarketVaultCoreV1._earlyBirdWeight(uint256) (src/market/MarketVaultCoreV1.sol#551-560) uses timestamp for comparisons
+	Dangerous comparisons:
+	- timestamp < earlyBirdStart (src/market/MarketVaultCoreV1.sol#553)
+	- timestamp >= closeAt (src/market/MarketVaultCoreV1.sol#554)
+	- offset * 3 < duration (src/market/MarketVaultCoreV1.sol#557)
+	- offset * 3 < duration * 2 (src/market/MarketVaultCoreV1.sol#558)
+MarketVaultCoreV1.resolve(uint256,bytes32) (src/market/MarketVaultCoreV1.sol#566-610) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < closeAt (src/market/MarketVaultCoreV1.sol#568)
+	- block.timestamp >= resolutionDeadline() (src/market/MarketVaultCoreV1.sol#569)
+MarketVaultCoreV1.creatorVoid(bytes32) (src/market/MarketVaultCoreV1.sol#616-620) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp >= resolutionDeadline() (src/market/MarketVaultCoreV1.sol#618)
+MarketVaultCoreV1.voidAfterDeadline() (src/market/MarketVaultCoreV1.sol#624-628) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp < resolutionDeadline() (src/market/MarketVaultCoreV1.sol#626)
+FixedPriceMarketplaceV1.createListing(address,uint256,uint256,uint256,uint64) (src/marketplace/FixedPriceMarketplaceV1.sol#133-177) uses timestamp for comparisons
+	Dangerous comparisons:
+	- expiresAt <= block.timestamp (src/marketplace/FixedPriceMarketplaceV1.sol#155)
+FixedPriceMarketplaceV1._prepareFill(bytes32,uint256,uint256,uint256,uint64) (src/marketplace/FixedPriceMarketplaceV1.sol#297-347) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > deadline (src/marketplace/FixedPriceMarketplaceV1.sol#307)
+	- block.timestamp >= stored.expiresAt (src/marketplace/FixedPriceMarketplaceV1.sol#310)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
+
+Detector: cyclomatic-complexity
+MarketFactoryV1._validate(ProtocolTypes.CreateMarketParams) (src/core/MarketFactoryV1.sol#327-381) has a high cyclomatic complexity (13).
+FixedPriceMarketplaceV1._prepareFill(bytes32,uint256,uint256,uint256,uint64) (src/marketplace/FixedPriceMarketplaceV1.sol#297-347) has a high cyclomatic complexity (13).
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
+. analyzed (66 contracts with 102 detectors), 25 result(s) found
+'forge clean' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.bGdVOf/repo)
+'forge config --json' running
+'forge build --build-info --deny never --skip ./test/** ./script/** --force' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.bGdVOf/repo)

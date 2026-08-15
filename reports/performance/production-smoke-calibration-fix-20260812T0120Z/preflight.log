@@ -1,0 +1,33 @@
+{
+  "observedAt": "2026-08-12T01:19:39.686Z",
+  "platform": "darwin-arm64",
+  "logicalCpuCount": 10,
+  "totalMemoryBytes": 17179869184,
+  "freeMemoryBytes": 81215488,
+  "availableMemoryBytes": 3393028096,
+  "systemMemoryFreePercent": 41,
+  "loadAverage": [
+    3.71435546875,
+    4.97509765625,
+    4.8115234375
+  ],
+  "cpuIdlePercent": 75.37,
+  "cpuIdleSource": "macos-top",
+  "fileDescriptorLimit": 1048575,
+  "commands": {
+    "k6": "k6 v1.8.0 (commit/23d89b9b7c, go1.26.4, darwin/arm64)",
+    "anvil": "anvil Version: 1.7.1",
+    "node": "v22.22.2"
+  },
+  "fullProfileReadiness": {
+    "k6Present": true,
+    "anvilPresent": true,
+    "logicalCpuAtLeast8": true,
+    "totalMemoryAtLeast16GiB": true,
+    "systemMemoryFreePercentAtLeast20": true,
+    "cpuCapacityAvailable": true,
+    "fileDescriptorLimitAtLeast20000": true,
+    "safeToStartFullProfile": true
+  }
+}
+validated load-preflight evidence

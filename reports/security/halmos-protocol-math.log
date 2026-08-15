@@ -1,0 +1,130 @@
+Compiling 70 files with Solc 0.8.36
+Solc 0.8.36 finished in 4.88s
+Compiler run successful!
+2026-08-08T14:45:13.655481Z  WARN evm::traces: failed to flush signature cache err=failed to create file "/Users/undef1ned/.foundry/cache/signatures": Operation not permitted (os error 1)
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+   ╭▸ src/core/EmergencyControllerV1.sol:43:16
+   │
+43 │         return block.timestamp < pauseExpiresAt && (pausedFlags & flag) != 0;
+   │                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/marketplace/FixedPriceMarketplaceV1.sol:155:13
+    │
+155 │         if (expiresAt <= block.timestamp) revert InvalidListingExpiry();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/core/MarketFactoryV1.sol:344:13
+    │
+344 │             params.closeAt < block.timestamp + 5 minutes
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/core/MarketFactoryV1.sol:345:20
+    │
+345 │                 || params.closeAt > block.timestamp + 90 days
+    │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/core/MarketFactoryV1.sol:346:20
+    │
+346 │                 || params.earlyBirdStart < block.timestamp
+    │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+   ╭▸ src/core/EmergencyControllerV1.sol:63:13
+   │
+63 │         if (block.timestamp < pauseExpiresAt) revert EmergencyPauseStillActive(pauseExpiresAt);
+   │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:382:13
+    │
+382 │         if (newCloseAt <= block.timestamp) revert MarketNotOpen();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/marketplace/FixedPriceMarketplaceV1.sol:307:13
+    │
+307 │         if (block.timestamp > deadline) revert DeadlineExpired(deadline, block.timestamp);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/marketplace/FixedPriceMarketplaceV1.sol:310:13
+    │
+310 │         if (block.timestamp >= stored.expiresAt) revert ListingExpired(listingId);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:489:62
+    │
+489 │         if (marketState != ProtocolTypes.MarketState.OPEN || block.timestamp >= closeAt) {
+    │                                                              ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:495:13
+    │
+495 │         if (block.timestamp > deadline) revert DeadlineExpired(deadline, block.timestamp);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:568:13
+    │
+568 │         if (block.timestamp < closeAt) revert MarketNotClosed();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:569:13
+    │
+569 │         if (block.timestamp >= resolutionDeadline()) revert ResolutionWindowExpired();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:618:13
+    │
+618 │         if (block.timestamp >= resolutionDeadline()) revert ResolutionWindowExpired();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:626:13
+    │
+626 │         if (block.timestamp < resolutionDeadline()) revert TimeoutNotReached();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+
+Running 3 tests for test/security/ProtocolMath.smt.sol:ProtocolMathSmt
+[32m[PASS][0m check_C2CConservation(uint128,uint128,uint16,uint16) (paths: 16, time: 0.59s, bounds: [])
+[32m[PASS][0m check_RakeConservation(uint128,uint16,uint16,uint16,bool) (paths: 22, time: 0.94s, bounds: [])
+[32m[PASS][0m check_RemainingPoolStep(uint128,uint128,uint128) (paths: 13, time: 0.15s, bounds: [])
+Symbolic test result: 3 passed; 0 failed; time: 1.69s

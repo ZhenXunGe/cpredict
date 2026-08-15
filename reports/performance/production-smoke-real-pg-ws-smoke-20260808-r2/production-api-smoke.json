@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "lane": "production-indexer-Fastify-PostgreSQL-smoke",
+  "runId": "real-pg-ws-smoke-20260808-r2",
+  "observedAt": "2026-08-08T14:02:00.360Z",
+  "target": "http://127.0.0.1:19080",
+  "chainId": 31337,
+  "datasetChecks": {
+    "marketsReturned": 20,
+    "listingsReturned": 20,
+    "market": "0x0000000000000000000000000000000000000001"
+  },
+  "websocket": {
+    "upgradeAndReadyLatencyMs": 8.051,
+    "message": {
+      "type": "ready",
+      "protocolVersion": 1,
+      "chainId": 31337,
+      "market": "0x0000000000000000000000000000000000000001"
+    }
+  },
+  "observability": {
+    "requiredMetricsPresent": true
+  },
+  "thresholds": {
+    "liveness": true,
+    "readiness": true,
+    "seededReads": true,
+    "websocketProtocolReady": true,
+    "metricsPresent": true
+  },
+  "proofBoundary": "Real production Fastify API and WebSocket composition over fresh local PostgreSQL and Anvil; focused smoke, not the commercial-duration k6 gate."
+}

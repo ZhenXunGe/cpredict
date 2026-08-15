@@ -1,0 +1,73 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: load/k6/read-connections.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 20 max VUs, 1m18s max duration (incl. graceful stop):
+              * read_connections: 1 iterations for each of 20 VUs (maxDuration: 48s, gracefulStop: 30s)
+
+
+running (0m01.0s), 20/20 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 20 VUs  01.0s/48s  00/20 iters, 1 per VU
+
+running (0m02.0s), 20/20 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 20 VUs  02.0s/48s  00/20 iters, 1 per VU
+
+running (0m03.0s), 20/20 VUs, 0 complete and 0 interrupted iterations
+read_connections   [   0% ] 20 VUs  03.0s/48s  00/20 iters, 1 per VU
+
+
+  █ THRESHOLDS 
+
+    cpredict_ws_hold_failures
+    ✓ 'rate<0.005' rate=0.00%
+
+    cpredict_ws_protocol_ready_failures
+    ✓ 'rate<0.005' rate=0.00%
+
+    cpredict_ws_upgrade_failures
+    ✓ 'rate<0.005' rate=0.00%
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 40      13.311033/s
+    checks_succeeded...: 100.00% 40 out of 40
+    checks_failed......: 0.00%   0 out of 40
+
+    ✓ WebSocket upgrade is 101
+    ✓ WebSocket connection held target duration
+
+    CUSTOM
+    cpredict_ws_hold_failures.............: 0.00%  0 out of 20
+    cpredict_ws_protocol_ready_failures...: 0.00%  0 out of 20
+    cpredict_ws_upgrade_failures..........: 0.00%  0 out of 20
+
+    EXECUTION
+    iteration_duration....................: avg=3s     min=3s       med=3s     max=3s     p(90)=3s     p(95)=3s     p(99)=3s    
+    iterations............................: 20     6.655516/s
+    vus...................................: 20     min=20      max=20
+    vus_max...............................: 20     min=20      max=20
+
+    NETWORK
+    data_received.........................: 4.8 kB 1.6 kB/s
+    data_sent.............................: 5.4 kB 1.8 kB/s
+
+    WEBSOCKET
+    ws_connecting.........................: avg=2.76ms min=725.41µs med=3.09ms max=4.42ms p(90)=4.36ms p(95)=4.41ms p(99)=4.42ms
+    ws_msgs_received......................: 20     6.655516/s
+    ws_session_duration...................: avg=3s     min=3s       med=3s     max=3s     p(90)=3s     p(95)=3s     p(99)=3s    
+    ws_sessions...........................: 20     6.655516/s
+
+
+
+
+running (0m03.0s), 00/20 VUs, 20 complete and 0 interrupted iterations
+read_connections ✓ [ 100% ] 20 VUs  03.0s/48s  20/20 iters, 1 per VU

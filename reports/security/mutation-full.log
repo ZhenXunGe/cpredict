@@ -1,0 +1,385 @@
+INFO:Slither-Mutate:Starting mutation campaign in src
+INFO:Slither-Mutate:Preparing to mutate files:
+- src/core/FeeVaultV1.sol
+- src/core/FullMarketDeployerV1.sol
+- src/core/BondEscrowV1.sol
+- src/core/MarketFactoryV1.sol
+- src/core/ProtocolConfigV1.sol
+- src/core/EmergencyControllerV1.sol
+- src/core/LaunchExposureGuardV1.sol
+- src/marketplace/FixedPriceMarketplaceV1.sol
+- src/libraries/ProtocolTypes.sol
+- src/libraries/ProtocolErrors.sol
+- src/paymaster/SponsorshipPaymasterV1.sol
+- src/market/MarketVaultCoreV1.sol
+- src/market/CloneMarketVaultV1.sol
+- src/market/FullMarketVaultV1.sol
+- src/interfaces/IEmergencyControllerV1.sol
+- src/interfaces/IFullMarketDeployerV1.sol
+- src/interfaces/IBondEscrowV1.sol
+- src/interfaces/ILaunchExposureGuardV1.sol
+- src/interfaces/IMarketVaultV1.sol
+- src/interfaces/IMarketFactoryV1.sol
+- src/interfaces/IFixedPriceMarketplaceV1.sol
+- src/interfaces/IFeeVaultV1.sol
+- src/interfaces/IProtocolConfigV1.sol
+INFO:Slither-Mutate:Timing tests..
+INFO:Slither-Mutate:Test suite passes in 63 seconds, commencing mutation campaign with a timeout of 600 seconds
+
+INFO:Slither-Mutate:Mutating contract FeeVaultV1
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 106.90ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Warning (5740): Unreachable code.
+stderr:   --> src/core/FeeVaultV1.sol:42:9:
+stderr:    |
+stderr: 42 |         paymentToken = IERC20(paymentToken_);
+stderr:    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+stderr: 
+stderr: Error (1284): Some immutables were read from but never assigned, possibly because of optimization.
+stderr:   --> src/core/FeeVaultV1.sol:17:1:
+stderr:    |
+stderr: 17 | contract FeeVaultV1 is ReentrancyGuard {
+stderr:    | ^ (Relevant source part starts here and spans across multiple lines).
+INFO:Slither-Mutate:[RR] Line 41: 'governance = governance_' ==> 'revert()' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 100.85ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (1284): Some immutables were read from but never assigned, possibly because of optimization.
+stderr:   --> src/core/FeeVaultV1.sol:17:1:
+stderr:    |
+stderr: 17 | contract FeeVaultV1 is ReentrancyGuard {
+stderr:    | ^ (Relevant source part starts here and spans across multiple lines).
+INFO:Slither-Mutate:[RR] Line 42: 'paymentToken = IERC20(paymentToken_)' ==> 'revert()' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 8.71ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (7920): Identifier not found or not unique.
+stderr:   --> src/core/FeeVaultV1.sol:50:52:
+stderr:    |
+stderr: 50 |     function setFactory(address factory_) external revert() {
+stderr:    |                                                    ^^^^^^
+INFO:Slither-Mutate:[RR] Line 50: 'onlyGovernance' ==> 'revert()' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 53: 'factory = factory_' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 54: 'authorizedAccruer[factory_] = true' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 55: 'emit FactoryConfigured(factory_)' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 56: 'emit AccruerRegistered(factory_)' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 62: 'authorizedAccruer[account] = true' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 63: 'emit AccruerRegistered(account)' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 9.18ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (2314): Expected ';' but got 'uint256'
+stderr:   --> src/core/FeeVaultV1.sol:72:9:
+stderr:    |
+stderr: 72 |         uint256 nextCredits = totalCredits + amount;
+stderr:    |         ^^^^^^^
+INFO:Slither-Mutate:[RR] Line 71: 'return;' ==> 'revert()' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 8.61ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:74:23:
+stderr:    |
+stderr: 74 |         if (balance < nextCredits) revert Insolvent(balance, nextCredits);
+stderr:    |                       ^^^^^^^^^^^
+stderr: 
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:74:62:
+stderr:    |
+stderr: 74 |         if (balance < nextCredits) revert Insolvent(balance, nextCredits);
+stderr:    |                                                              ^^^^^^^^^^^
+stderr: 
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:75:24:
+stderr:    |
+stderr: 75 |         totalCredits = nextCredits;
+stderr:    |                        ^^^^^^^^^^^
+INFO:Slither-Mutate:[RR] Line 72: 'uint256 nextCredits = totalCredits + amount' ==> 'revert()' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 8.57ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:74:13:
+stderr:    |
+stderr: 74 |         if (balance < nextCredits) revert Insolvent(balance, nextCredits);
+stderr:    |             ^^^^^^^
+stderr: 
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:74:53:
+stderr:    |
+stderr: 74 |         if (balance < nextCredits) revert Insolvent(balance, nextCredits);
+stderr:    |                                                     ^^^^^^^
+INFO:Slither-Mutate:[RR] Line 73: 'uint256 balance = paymentToken.balanceOf(address(this))' ==> 'revert()' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 75: 'totalCredits = nextCredits' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 76: 'creditOf[beneficiary] += amount' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 77: 'emit FeeAccrued(beneficiary, msg.sender, feeKind, feeReference, amount)' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 81: 'return _claim(msg.sender, msg.sender)' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 85: 'return _claim(beneficiary, msg.sender)' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 36.98ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (7920): Identifier not found or not unique.
+stderr:   --> src/core/FeeVaultV1.sol:90:9:
+stderr:    |
+stderr: 90 |         revert()
+stderr:    |         ^^^^^^
+INFO:Slither-Mutate:[RR] Line 90: 'nonReentrant' ==> 'revert()' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 93: 'amount = creditOf[beneficiary]' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 95: 'creditOf[beneficiary] = 0' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 96: 'totalCredits -= amount' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 97: 'paymentToken.safeTransfer(beneficiary, amount)' ==> 'revert()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[RR] Line 98: 'emit FeeClaimed(beneficiary, caller, amount)' ==> 'revert()' --> CAUGHT
+INFO:Slither-Mutate:Mutator RR found 16 caught revert mutants (out of 16 that compile)
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 28.78ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (2314): Expected ')' but got ';'
+stderr:   --> src/core/FeeVaultV1.sol:41:33:
+stderr:    |
+stderr: 41 |         governance = governance_;
+stderr:    |                                 ^
+INFO:Slither-Mutate:[CR] Line 40: 'governance_ == address(0) || paymentToken_ == address(0)' ==> '//governance_ == address(0) || paymentToken_ == address(0)' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 40: 'revert ZeroAddress()' ==> '//revert ZeroAddress()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 41: 'governance = governance_' ==> '//governance = governance_' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 42: 'paymentToken = IERC20(paymentToken_)' ==> '//paymentToken = IERC20(paymentToken_)' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 9.97ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (2314): Expected ')' but got ';'
+stderr:   --> src/core/FeeVaultV1.sol:47:10:
+stderr:    |
+stderr: 47 |         _;
+stderr:    |          ^
+INFO:Slither-Mutate:[CR] Line 46: 'msg.sender != governance' ==> '//msg.sender != governance' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 46: 'revert Unauthorized(msg.sender)' ==> '//revert Unauthorized(msg.sender)' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 8.95ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (2883): Modifier body does not contain '_'.
+stderr:   --> src/core/FeeVaultV1.sol:45:31:
+stderr:    |
+stderr: 45 |     modifier onlyGovernance() {
+stderr:    |                               ^ (Relevant source part starts here and spans across multiple lines).
+INFO:Slither-Mutate:[CR] Line 47: '_' ==> '//_' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 9.03ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (2314): Expected '{' but got 'if'
+stderr:   --> src/core/FeeVaultV1.sol:51:9:
+stderr:    |
+stderr: 51 |         if (factory_ == address(0)) revert ZeroAddress();
+stderr:    |         ^^
+INFO:Slither-Mutate:[CR] Line 50: 'onlyGovernance' ==> '//onlyGovernance' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 7.05ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (6933): Expected primary expression.
+stderr:   --> src/core/FeeVaultV1.sol:52:9:
+stderr:    |
+stderr: 52 |         if (factory != address(0)) revert AlreadyConfigured();
+stderr:    |         ^^
+INFO:Slither-Mutate:[CR] Line 51: 'factory_ == address(0)' ==> '//factory_ == address(0)' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 51: 'revert ZeroAddress()' ==> '//revert ZeroAddress()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 21.80ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (2314): Expected ')' but got ';'
+stderr:   --> src/core/FeeVaultV1.sol:53:27:
+stderr:    |
+stderr: 53 |         factory = factory_;
+stderr:    |                           ^
+INFO:Slither-Mutate:[CR] Line 52: 'factory != address(0)' ==> '//factory != address(0)' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 52: 'revert AlreadyConfigured()' ==> '//revert AlreadyConfigured()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 53: 'factory = factory_' ==> '//factory = factory_' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 54: 'authorizedAccruer[factory_] = true' ==> '//authorizedAccruer[factory_] = true' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 55: 'emit FactoryConfigured(factory_)' ==> '//emit FactoryConfigured(factory_)' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 56: 'emit AccruerRegistered(factory_)' ==> '//emit AccruerRegistered(factory_)' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 20.73ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (6933): Expected primary expression.
+stderr:   --> src/core/FeeVaultV1.sol:61:9:
+stderr:    |
+stderr: 61 |         if (account == address(0)) revert ZeroAddress();
+stderr:    |         ^^
+INFO:Slither-Mutate:[CR] Line 60: 'msg.sender != factory' ==> '//msg.sender != factory' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 60: 'revert Unauthorized(msg.sender)' ==> '//revert Unauthorized(msg.sender)' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 49.42ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (2314): Expected ')' but got ';'
+stderr:   --> src/core/FeeVaultV1.sol:62:42:
+stderr:    |
+stderr: 62 |         authorizedAccruer[account] = true;
+stderr:    |                                          ^
+INFO:Slither-Mutate:[CR] Line 61: 'account == address(0)' ==> '//account == address(0)' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 61: 'revert ZeroAddress()' ==> '//revert ZeroAddress()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 62: 'authorizedAccruer[account] = true' ==> '//authorizedAccruer[account] = true' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 63: 'emit AccruerRegistered(account)' ==> '//emit AccruerRegistered(account)' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 20.67ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (6933): Expected primary expression.
+stderr:   --> src/core/FeeVaultV1.sol:70:9:
+stderr:    |
+stderr: 70 |         if (beneficiary == address(0)) revert ZeroAddress();
+stderr:    |         ^^
+INFO:Slither-Mutate:[CR] Line 69: '!authorizedAccruer[msg.sender]' ==> '//!authorizedAccruer[msg.sender]' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 69: 'revert AccruerNotAuthorized(msg.sender)' ==> '//revert AccruerNotAuthorized(msg.sender)' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 21.94ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (6933): Expected primary expression.
+stderr:   --> src/core/FeeVaultV1.sol:71:9:
+stderr:    |
+stderr: 71 |         if (amount == 0) return;
+stderr:    |         ^^
+INFO:Slither-Mutate:[CR] Line 70: 'beneficiary == address(0)' ==> '//beneficiary == address(0)' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 70: 'revert ZeroAddress()' ==> '//revert ZeroAddress()' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 32.22ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (2314): Expected ')' but got identifier
+stderr:   --> src/core/FeeVaultV1.sol:72:17:
+stderr:    |
+stderr: 72 |         uint256 nextCredits = totalCredits + amount;
+stderr:    |                 ^^^^^^^^^^^
+INFO:Slither-Mutate:[CR] Line 71: 'amount == 0' ==> '//amount == 0' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 10.39ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (9079): Variable declarations can only be used inside blocks.
+stderr:   --> src/core/FeeVaultV1.sol:72:9:
+stderr:    |
+stderr: 72 |         uint256 nextCredits = totalCredits + amount;
+stderr:    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+INFO:Slither-Mutate:[CR] Line 71: 'return;' ==> '//return;' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 7.73ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:74:23:
+stderr:    |
+stderr: 74 |         if (balance < nextCredits) revert Insolvent(balance, nextCredits);
+stderr:    |                       ^^^^^^^^^^^
+stderr: 
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:74:62:
+stderr:    |
+stderr: 74 |         if (balance < nextCredits) revert Insolvent(balance, nextCredits);
+stderr:    |                                                              ^^^^^^^^^^^
+stderr: 
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:75:24:
+stderr:    |
+stderr: 75 |         totalCredits = nextCredits;
+stderr:    |                        ^^^^^^^^^^^
+INFO:Slither-Mutate:[CR] Line 72: 'uint256 nextCredits = totalCredits + amount' ==> '//uint256 nextCredits = totalCredits + amount' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 8.19ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:74:13:
+stderr:    |
+stderr: 74 |         if (balance < nextCredits) revert Insolvent(balance, nextCredits);
+stderr:    |             ^^^^^^^
+stderr: 
+stderr: Error (7576): Undeclared identifier.
+stderr:   --> src/core/FeeVaultV1.sol:74:53:
+stderr:    |
+stderr: 74 |         if (balance < nextCredits) revert Insolvent(balance, nextCredits);
+stderr:    |                                                     ^^^^^^^
+INFO:Slither-Mutate:[CR] Line 73: 'uint256 balance = paymentToken.balanceOf(address(this))' ==> '//uint256 balance = paymentToken.balanceOf(address(this))' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+ERROR:CryticCompile:'forge' returned non-zero exit code 1
+ERROR:CryticCompile:Compiling 12 files with Solc 0.8.36
+stdout: Solc 0.8.36 finished in 7.24ms
+ERROR:CryticCompile:Error: Compiler run failed:
+stderr: Error (2314): Expected ')' but got ';'
+stderr:   --> src/core/FeeVaultV1.sol:75:35:
+stderr:    |
+stderr: 75 |         totalCredits = nextCredits;
+stderr:    |                                   ^
+INFO:Slither-Mutate:[CR] Line 74: 'balance < nextCredits' ==> '//balance < nextCredits' --> COMPILATION FAILURE
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 74: 'revert Insolvent(balance, nextCredits)' ==> '//revert Insolvent(balance, nextCredits)' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 75: 'totalCredits = nextCredits' ==> '//totalCredits = nextCredits' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.
+INFO:Slither-Mutate:[CR] Line 76: 'creditOf[beneficiary] += amount' ==> '//creditOf[beneficiary] += amount' --> CAUGHT
+WARNING:CryticCompile:Multiple frameworks detected: Foundry, solc, Solc-json. Using Foundry (highest priority). Use --compile-force-framework to override.

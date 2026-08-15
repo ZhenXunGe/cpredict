@@ -1,0 +1,77 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: load/k6/api-read.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 100 max VUs, 33s max duration (incl. graceful stop):
+              * safe_smoke: 20.00 iterations/s for 3s (maxVUs: 10-100, gracefulStop: 30s)
+
+
+running (01.0s), 000/010 VUs, 20 complete and 0 interrupted iterations
+safe_smoke   [  33% ] 000/010 VUs  1.0s/3s  20.00 iters/s
+
+running (02.0s), 000/010 VUs, 40 complete and 0 interrupted iterations
+safe_smoke   [  67% ] 000/010 VUs  2.0s/3s  20.00 iters/s
+
+running (03.0s), 000/010 VUs, 60 complete and 0 interrupted iterations
+safe_smoke   [ 100% ] 000/010 VUs  3.0s/3s  20.00 iters/s
+
+
+  █ THRESHOLDS 
+
+    cpredict_server_errors
+    ✓ 'rate<0.005' rate=0.00%
+
+    cpredict_transport_errors
+    ✓ 'rate<0.005' rate=0.00%
+
+    dropped_iterations
+    ✓ 'count==0' count=0
+
+    http_req_duration
+    ✓ 'p(95)<300' p(95)=3.04ms
+    ✓ 'p(99)<750' p(99)=3.88ms
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 61     20.315496/s
+    checks_succeeded...: 95.08% 58 out of 61
+    checks_failed......: 4.91%  3 out of 61
+
+    ✗ HTTP response is 2xx
+      ↳  95% — ✓ 58 / ✗ 3
+
+    CUSTOM
+    cpredict_server_errors.........: 0.00%  0 out of 61
+    cpredict_transport_errors......: 0.00%  0 out of 61
+
+    HTTP
+    http_req_duration..............: avg=1.49ms min=655µs   med=1.28ms max=4.2ms  p(90)=2.22ms p(95)=3.04ms p(99)=3.88ms
+      { expected_response:true }...: avg=1.53ms min=655µs   med=1.29ms max=4.2ms  p(90)=2.23ms p(95)=3.08ms p(99)=3.9ms 
+    http_req_failed................: 4.91%  3 out of 61
+    http_reqs......................: 61     20.315496/s
+
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: avg=1.73ms min=772.2µs med=1.52ms max=5.01ms p(90)=2.47ms p(95)=3.46ms p(99)=4.31ms
+    iterations.....................: 61     20.315496/s
+    vus............................: 0      min=0       max=0 
+    vus_max........................: 10     min=10      max=10
+
+    NETWORK
+    data_received..................: 373 kB 124 kB/s
+    data_sent......................: 9.7 kB 3.2 kB/s
+
+
+
+
+running (03.0s), 000/010 VUs, 61 complete and 0 interrupted iterations
+safe_smoke ✓ [ 100% ] 000/010 VUs  3s  20.00 iters/s

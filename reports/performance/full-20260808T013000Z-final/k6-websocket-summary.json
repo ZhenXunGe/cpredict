@@ -1,0 +1,86 @@
+{
+    "root_group": {
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {},
+        "checks": {
+                "WebSocket upgrade is 101": {
+                    "name": "WebSocket upgrade is 101",
+                    "path": "::WebSocket upgrade is 101",
+                    "id": "94c50ca3a71b7211ec76787b0f8a0501",
+                    "passes": 9351,
+                    "fails": 649
+                }
+            },
+        "name": ""
+    },
+    "metrics": {
+        "data_received": {
+            "count": 23374170,
+            "rate": 354424.46307373996
+        },
+        "ws_connecting": {
+            "avg": 1612.7526720273006,
+            "min": 343.545,
+            "med": 781.866625,
+            "max": 8428.88425,
+            "p(90)": 3958.9865956,
+            "p(95)": 8308.455549999999
+        },
+        "checks": {
+            "passes": 9351,
+            "fails": 649,
+            "value": 0.9351
+        },
+        "iterations": {
+            "count": 10000,
+            "rate": 151.63082285862555
+        },
+        "ws_session_duration": {
+            "p(95)": 63955.9019226,
+            "avg": 57811.32683879987,
+            "min": 7923.790375,
+            "med": 60809.5175415,
+            "max": 65937.091667,
+            "p(90)": 62076.1922419
+        },
+        "vus_max": {
+            "max": 10000,
+            "value": 10000,
+            "min": 10000
+        },
+        "iteration_duration": {
+            "p(90)": 62076.7301292,
+            "p(95)": 63956.4779958,
+            "avg": 57964.51158089766,
+            "min": 7946.713125,
+            "med": 61212.061707999994,
+            "max": 65939.596916
+        },
+        "cpredict_ws_upgrade_failures": {
+            "passes": 649,
+            "fails": 9351,
+            "thresholds": {
+                "rate<0.005": true
+            },
+            "value": 0.0649
+        },
+        "ws_sessions": {
+            "count": 10000,
+            "rate": 151.63082285862555
+        },
+        "ws_msgs_received": {
+            "count": 542513,
+            "rate": 8226.169260150153
+        },
+        "vus": {
+            "value": 141,
+            "min": 141,
+            "max": 10000
+        },
+        "data_sent": {
+            "count": 1990826,
+            "rate": 30187.058454834605
+        }
+    }
+}

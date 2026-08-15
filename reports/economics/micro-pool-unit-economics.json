@@ -1,0 +1,3860 @@
+{
+  "schemaVersion": 1,
+  "requirementId": "PF-CHAIN-005",
+  "generatedBy": "scripts/economics/generate-report.mjs",
+  "disclaimer": "Deterministic trial inputs only. This file contains no current or forecast Base gas/ETH price.",
+  "gasEvidence": {
+    "formalGatePolicy": "Strict executable gate threshold minus one gas, representing the largest passing integer.",
+    "source": "test/gas/ProtocolGasGates.t.sol, test/unit/Permit2Flows.t.sol, test/unit/PaymasterEdges.t.sol",
+    "unverifiedInputs": [
+      "resolve gas",
+      "creator/timeout void finalize gas",
+      "bond settlement gas",
+      "timeout bonus claim gas"
+    ]
+  },
+  "trials": [
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "10000000",
+        "ethUsdE8": "300000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "1487995",
+          "ceil": "1487996",
+          "exactNumerator": "148799577000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "7499",
+          "ceil": "7500",
+          "exactNumerator": "749997000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "391498",
+          "aggregateCeil": "391499",
+          "budgetedComponentCeil": "391499"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "391499",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "391499",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "13086"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "7499",
+          "ceil": "7500",
+          "exactNumerator": "749997000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "775496",
+          "aggregateCeil": "775497",
+          "budgetedComponentCeil": "775497"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "775497",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "775497",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "13086"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "7499",
+            "ceil": "7500",
+            "exactNumerator": "749997000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "782996",
+            "aggregateCeil": "782997",
+            "budgetedComponentCeil": "782997"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "782997",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "782997",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "13085"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "7499",
+            "ceil": "7500",
+            "exactNumerator": "749997000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "767996",
+            "aggregateCeil": "767997",
+            "budgetedComponentCeil": "767997"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "767997",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "767997",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "13087"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "1550992",
+          "aggregateCeil": "1550994",
+          "budgetedComponentCeil": "1550994"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "1550994",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "1550994",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "13085",
+          "maximumBonusClaimsIfExclusivelyFunded": "13087"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "6385712",
+        "resolvedLifecycleRakeCoverageBps": "1330144",
+        "minimumBreakEvenSettlementPoolAtomic": "7829980",
+        "minimumBreakEvenLifecyclePoolAtomic": "37589900",
+        "resolvedLifecycleCostAtomicCeil": "1879495",
+        "voidLifecycleCostAtomicCeil": "2263493",
+        "timeoutVoidLifecycleCostAtomicCeil": "3038990",
+        "resolvedNetAfterSettlementAtomic": "249608501",
+        "resolvedNetAfterLifecycleAtomic": "248120505"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "10000000",
+        "ethUsdE8": "300000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "284999",
+          "ceil": "285000",
+          "exactNumerator": "28499907000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "7499",
+          "ceil": "7500",
+          "exactNumerator": "749997000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "86999",
+          "aggregateCeil": "87000",
+          "budgetedComponentCeil": "87000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "87000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "87000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "3270"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "7499",
+          "ceil": "7500",
+          "exactNumerator": "749997000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "161999",
+          "aggregateCeil": "162000",
+          "budgetedComponentCeil": "162000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "162000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "162000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "3270"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "7499",
+            "ceil": "7500",
+            "exactNumerator": "749997000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "169499",
+            "aggregateCeil": "169500",
+            "budgetedComponentCeil": "169500"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "169500",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "169500",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "3269"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "7499",
+            "ceil": "7500",
+            "exactNumerator": "749997000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "154499",
+            "aggregateCeil": "154500",
+            "budgetedComponentCeil": "154500"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "154500",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "154500",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "3271"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "323998",
+          "aggregateCeil": "324000",
+          "budgetedComponentCeil": "324000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "324000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "324000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "3269",
+          "maximumBonusClaimsIfExclusivelyFunded": "3271"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "2873563",
+        "resolvedLifecycleRakeCoverageBps": "672043",
+        "minimumBreakEvenSettlementPoolAtomic": "1740000",
+        "minimumBreakEvenLifecyclePoolAtomic": "7440000",
+        "resolvedLifecycleCostAtomicCeil": "372000",
+        "voidLifecycleCostAtomicCeil": "447000",
+        "timeoutVoidLifecycleCostAtomicCeil": "609000",
+        "resolvedNetAfterSettlementAtomic": "24913000",
+        "resolvedNetAfterLifecycleAtomic": "24628000"
+      }
+    }
+  ],
+  "sensitivity": [
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "1000000",
+        "ethUsdE8": "100000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "49599",
+          "ceil": "49600",
+          "exactNumerator": "4959985900000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "249",
+          "ceil": "250",
+          "exactNumerator": "24999900000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "13049",
+          "aggregateCeil": "13050",
+          "budgetedComponentCeil": "13050"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "13050",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "13050",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "392638"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "249",
+          "ceil": "250",
+          "exactNumerator": "24999900000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "25849",
+          "aggregateCeil": "25850",
+          "budgetedComponentCeil": "25850"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "25850",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "25850",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "392638"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "249",
+            "ceil": "250",
+            "exactNumerator": "24999900000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "26099",
+            "aggregateCeil": "26100",
+            "budgetedComponentCeil": "26100"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "26100",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "26100",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "392637"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "249",
+            "ceil": "250",
+            "exactNumerator": "24999900000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "25599",
+            "aggregateCeil": "25600",
+            "budgetedComponentCeil": "25600"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "25600",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "25600",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "392639"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "51698",
+          "aggregateCeil": "51700",
+          "budgetedComponentCeil": "51700"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "51700",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "51700",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "392637",
+          "maximumBonusClaimsIfExclusivelyFunded": "392639"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "191570881",
+        "resolvedLifecycleRakeCoverageBps": "39904229",
+        "minimumBreakEvenSettlementPoolAtomic": "261000",
+        "minimumBreakEvenLifecyclePoolAtomic": "1253000",
+        "resolvedLifecycleCostAtomicCeil": "62650",
+        "voidLifecycleCostAtomicCeil": "75450",
+        "timeoutVoidLifecycleCostAtomicCeil": "101300",
+        "resolvedNetAfterSettlementAtomic": "249986950",
+        "resolvedNetAfterLifecycleAtomic": "249937350"
+      }
+    },
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "1000000",
+        "ethUsdE8": "300000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "148799",
+          "ceil": "148800",
+          "exactNumerator": "14879957700000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "749",
+          "ceil": "750",
+          "exactNumerator": "74999700000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "39149",
+          "aggregateCeil": "39150",
+          "budgetedComponentCeil": "39150"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "39150",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "39150",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "130878"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "749",
+          "ceil": "750",
+          "exactNumerator": "74999700000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "77549",
+          "aggregateCeil": "77550",
+          "budgetedComponentCeil": "77550"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "77550",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "77550",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "130878"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "749",
+            "ceil": "750",
+            "exactNumerator": "74999700000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "78299",
+            "aggregateCeil": "78300",
+            "budgetedComponentCeil": "78300"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "78300",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "78300",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "130877"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "749",
+            "ceil": "750",
+            "exactNumerator": "74999700000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "76799",
+            "aggregateCeil": "76800",
+            "budgetedComponentCeil": "76800"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "76800",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "76800",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "130879"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "155098",
+          "aggregateCeil": "155100",
+          "budgetedComponentCeil": "155100"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "155100",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "155100",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "130877",
+          "maximumBonusClaimsIfExclusivelyFunded": "130879"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "63856960",
+        "resolvedLifecycleRakeCoverageBps": "13301409",
+        "minimumBreakEvenSettlementPoolAtomic": "783000",
+        "minimumBreakEvenLifecyclePoolAtomic": "3759000",
+        "resolvedLifecycleCostAtomicCeil": "187950",
+        "voidLifecycleCostAtomicCeil": "226350",
+        "timeoutVoidLifecycleCostAtomicCeil": "303900",
+        "resolvedNetAfterSettlementAtomic": "249960850",
+        "resolvedNetAfterLifecycleAtomic": "249812050"
+      }
+    },
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "1000000",
+        "ethUsdE8": "600000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "297599",
+          "ceil": "297600",
+          "exactNumerator": "29759915400000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "1499",
+          "ceil": "1500",
+          "exactNumerator": "149999400000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "78299",
+          "aggregateCeil": "78300",
+          "budgetedComponentCeil": "78300"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "78300",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "78300",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "65438"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "1499",
+          "ceil": "1500",
+          "exactNumerator": "149999400000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "155099",
+          "aggregateCeil": "155100",
+          "budgetedComponentCeil": "155100"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "155100",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "155100",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "65438"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "1499",
+            "ceil": "1500",
+            "exactNumerator": "149999400000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "156599",
+            "aggregateCeil": "156600",
+            "budgetedComponentCeil": "156600"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "156600",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "156600",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "65437"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "1499",
+            "ceil": "1500",
+            "exactNumerator": "149999400000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "153599",
+            "aggregateCeil": "153600",
+            "budgetedComponentCeil": "153600"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "153600",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "153600",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "65439"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "310198",
+          "aggregateCeil": "310200",
+          "budgetedComponentCeil": "310200"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "310200",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "310200",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "65437",
+          "maximumBonusClaimsIfExclusivelyFunded": "65439"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "31928480",
+        "resolvedLifecycleRakeCoverageBps": "6650704",
+        "minimumBreakEvenSettlementPoolAtomic": "1566000",
+        "minimumBreakEvenLifecyclePoolAtomic": "7518000",
+        "resolvedLifecycleCostAtomicCeil": "375900",
+        "voidLifecycleCostAtomicCeil": "452700",
+        "timeoutVoidLifecycleCostAtomicCeil": "607800",
+        "resolvedNetAfterSettlementAtomic": "249921700",
+        "resolvedNetAfterLifecycleAtomic": "249624100"
+      }
+    },
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "10000000",
+        "ethUsdE8": "100000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "495998",
+          "ceil": "495999",
+          "exactNumerator": "49599859000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "2499",
+          "ceil": "2500",
+          "exactNumerator": "249999000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "130499",
+          "aggregateCeil": "130500",
+          "budgetedComponentCeil": "130500"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "130500",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "130500",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "39262"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "2499",
+          "ceil": "2500",
+          "exactNumerator": "249999000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "258498",
+          "aggregateCeil": "258499",
+          "budgetedComponentCeil": "258499"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "258499",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "258499",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "39262"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "2499",
+            "ceil": "2500",
+            "exactNumerator": "249999000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "260998",
+            "aggregateCeil": "260999",
+            "budgetedComponentCeil": "260999"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "260999",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "260999",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "39261"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "2499",
+            "ceil": "2500",
+            "exactNumerator": "249999000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "255998",
+            "aggregateCeil": "255999",
+            "budgetedComponentCeil": "255999"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "255999",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "255999",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "39263"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "516996",
+          "aggregateCeil": "516998",
+          "budgetedComponentCeil": "516998"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "516998",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "516998",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "39261",
+          "maximumBonusClaimsIfExclusivelyFunded": "39263"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "19157088",
+        "resolvedLifecycleRakeCoverageBps": "3990429",
+        "minimumBreakEvenSettlementPoolAtomic": "2610000",
+        "minimumBreakEvenLifecyclePoolAtomic": "12529980",
+        "resolvedLifecycleCostAtomicCeil": "626499",
+        "voidLifecycleCostAtomicCeil": "754498",
+        "timeoutVoidLifecycleCostAtomicCeil": "1012997",
+        "resolvedNetAfterSettlementAtomic": "249869500",
+        "resolvedNetAfterLifecycleAtomic": "249373501"
+      }
+    },
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "10000000",
+        "ethUsdE8": "300000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "1487995",
+          "ceil": "1487996",
+          "exactNumerator": "148799577000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "7499",
+          "ceil": "7500",
+          "exactNumerator": "749997000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "391498",
+          "aggregateCeil": "391499",
+          "budgetedComponentCeil": "391499"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "391499",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "391499",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "13086"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "7499",
+          "ceil": "7500",
+          "exactNumerator": "749997000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "775496",
+          "aggregateCeil": "775497",
+          "budgetedComponentCeil": "775497"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "775497",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "775497",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "13086"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "7499",
+            "ceil": "7500",
+            "exactNumerator": "749997000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "782996",
+            "aggregateCeil": "782997",
+            "budgetedComponentCeil": "782997"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "782997",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "782997",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "13085"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "7499",
+            "ceil": "7500",
+            "exactNumerator": "749997000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "767996",
+            "aggregateCeil": "767997",
+            "budgetedComponentCeil": "767997"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "767997",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "767997",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "13087"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "1550992",
+          "aggregateCeil": "1550994",
+          "budgetedComponentCeil": "1550994"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "1550994",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "1550994",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "13085",
+          "maximumBonusClaimsIfExclusivelyFunded": "13087"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "6385712",
+        "resolvedLifecycleRakeCoverageBps": "1330144",
+        "minimumBreakEvenSettlementPoolAtomic": "7829980",
+        "minimumBreakEvenLifecyclePoolAtomic": "37589900",
+        "resolvedLifecycleCostAtomicCeil": "1879495",
+        "voidLifecycleCostAtomicCeil": "2263493",
+        "timeoutVoidLifecycleCostAtomicCeil": "3038990",
+        "resolvedNetAfterSettlementAtomic": "249608501",
+        "resolvedNetAfterLifecycleAtomic": "248120505"
+      }
+    },
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "10000000",
+        "ethUsdE8": "600000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "2975991",
+          "ceil": "2975992",
+          "exactNumerator": "297599154000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "14999",
+          "ceil": "15000",
+          "exactNumerator": "1499994000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "782996",
+          "aggregateCeil": "782997",
+          "budgetedComponentCeil": "782997"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "782997",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "782997",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "6542"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "14999",
+          "ceil": "15000",
+          "exactNumerator": "1499994000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "1550993",
+          "aggregateCeil": "1550994",
+          "budgetedComponentCeil": "1550994"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "1550994",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "1550994",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "6542"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "14999",
+            "ceil": "15000",
+            "exactNumerator": "1499994000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "1565993",
+            "aggregateCeil": "1565994",
+            "budgetedComponentCeil": "1565994"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "1565994",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "1565994",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "6541"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "14999",
+            "ceil": "15000",
+            "exactNumerator": "1499994000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "1535993",
+            "aggregateCeil": "1535994",
+            "budgetedComponentCeil": "1535994"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "1535994",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "1535994",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "6543"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "3101986",
+          "aggregateCeil": "3101988",
+          "budgetedComponentCeil": "3101988"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "3101988",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "3101988",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "6541",
+          "maximumBonusClaimsIfExclusivelyFunded": "6543"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "3192860",
+        "resolvedLifecycleRakeCoverageBps": "665072",
+        "minimumBreakEvenSettlementPoolAtomic": "15659940",
+        "minimumBreakEvenLifecyclePoolAtomic": "75179780",
+        "resolvedLifecycleCostAtomicCeil": "3758989",
+        "voidLifecycleCostAtomicCeil": "4526986",
+        "timeoutVoidLifecycleCostAtomicCeil": "6077980",
+        "resolvedNetAfterSettlementAtomic": "249217003",
+        "resolvedNetAfterLifecycleAtomic": "246241011"
+      }
+    },
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "100000000",
+        "ethUsdE8": "100000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "4959985",
+          "ceil": "4959986",
+          "exactNumerator": "495998590000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "24999",
+          "ceil": "25000",
+          "exactNumerator": "2499990000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "1304994",
+          "aggregateCeil": "1304995",
+          "budgetedComponentCeil": "1304995"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "1304995",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "1304995",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "3925"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "24999",
+          "ceil": "25000",
+          "exactNumerator": "2499990000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "2584989",
+          "aggregateCeil": "2584990",
+          "budgetedComponentCeil": "2584990"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "2584990",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "2584990",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "3925"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "24999",
+            "ceil": "25000",
+            "exactNumerator": "2499990000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "2609989",
+            "aggregateCeil": "2609990",
+            "budgetedComponentCeil": "2609990"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "2609990",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "2609990",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "3924"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "24999",
+            "ceil": "25000",
+            "exactNumerator": "2499990000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "2559989",
+            "aggregateCeil": "2559990",
+            "budgetedComponentCeil": "2559990"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "2559990",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "2559990",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "3926"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "5169978",
+          "aggregateCeil": "5169980",
+          "budgetedComponentCeil": "5169980"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "5169980",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "5169980",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "3924",
+          "maximumBonusClaimsIfExclusivelyFunded": "3926"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "1915716",
+        "resolvedLifecycleRakeCoverageBps": "399043",
+        "minimumBreakEvenSettlementPoolAtomic": "26099900",
+        "minimumBreakEvenLifecyclePoolAtomic": "125299620",
+        "resolvedLifecycleCostAtomicCeil": "6264981",
+        "voidLifecycleCostAtomicCeil": "7544976",
+        "timeoutVoidLifecycleCostAtomicCeil": "10129966",
+        "resolvedNetAfterSettlementAtomic": "248695005",
+        "resolvedNetAfterLifecycleAtomic": "243735019"
+      }
+    },
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "100000000",
+        "ethUsdE8": "300000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "14879957",
+          "ceil": "14879958",
+          "exactNumerator": "1487995770000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "74999",
+          "ceil": "75000",
+          "exactNumerator": "7499970000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "3914984",
+          "aggregateCeil": "3914985",
+          "budgetedComponentCeil": "3914985"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "3914985",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "3914985",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "1307"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "74999",
+          "ceil": "75000",
+          "exactNumerator": "7499970000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "7754968",
+          "aggregateCeil": "7754969",
+          "budgetedComponentCeil": "7754969"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "7754969",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "7754969",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "1307"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "74999",
+            "ceil": "75000",
+            "exactNumerator": "7499970000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "7829968",
+            "aggregateCeil": "7829969",
+            "budgetedComponentCeil": "7829969"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "7829969",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "7829969",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "1306"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "74999",
+            "ceil": "75000",
+            "exactNumerator": "7499970000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "7679968",
+            "aggregateCeil": "7679969",
+            "budgetedComponentCeil": "7679969"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "7679969",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "7679969",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "1308"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "15509936",
+          "aggregateCeil": "15509938",
+          "budgetedComponentCeil": "15509938"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "15509938",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "15509938",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "1306",
+          "maximumBonusClaimsIfExclusivelyFunded": "1308"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "638572",
+        "resolvedLifecycleRakeCoverageBps": "133014",
+        "minimumBreakEvenSettlementPoolAtomic": "78299700",
+        "minimumBreakEvenLifecyclePoolAtomic": "375898860",
+        "resolvedLifecycleCostAtomicCeil": "18794943",
+        "voidLifecycleCostAtomicCeil": "22634927",
+        "timeoutVoidLifecycleCostAtomicCeil": "30389896",
+        "resolvedNetAfterSettlementAtomic": "246085015",
+        "resolvedNetAfterLifecycleAtomic": "231205057"
+      }
+    },
+    {
+      "id": "trial-full-5000",
+      "marketMode": "FULL",
+      "assumptions": {
+        "gasPriceWei": "100000000",
+        "ethUsdE8": "600000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "5000000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "100000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "250000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "49599859",
+        "costAtomic": {
+          "floor": "29759915",
+          "ceil": "29759916",
+          "exactNumerator": "2975991540000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "50",
+        "sponsoredClaims": "50",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "2",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "12499950",
+          "paymasterBatches": "299998",
+          "total": "13049947"
+        },
+        "perClaimCostAtomic": {
+          "floor": "149999",
+          "ceil": "150000",
+          "exactNumerator": "14999940000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "7829968",
+          "aggregateCeil": "7829969",
+          "budgetedComponentCeil": "7829969"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "7829969",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "7829969",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "653"
+        }
+      },
+      "voided": {
+        "claimantCount": "100",
+        "sponsoredClaims": "100",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "4",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "24999900",
+          "paymasterBatches": "599996",
+          "total": "25849895"
+        },
+        "perClaimCostAtomic": {
+          "floor": "149999",
+          "ceil": "150000",
+          "exactNumerator": "14999940000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "15509937",
+          "aggregateCeil": "15509937",
+          "budgetedComponentCeil": "15509938"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "15509938",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "15509938",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "653"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "26099894"
+          },
+          "perClaimCostAtomic": {
+            "floor": "149999",
+            "ceil": "150000",
+            "exactNumerator": "14999940000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "15659936",
+            "aggregateCeil": "15659937",
+            "budgetedComponentCeil": "15659937"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "15659937",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "15659937",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "652"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "100",
+          "sponsoredClaims": "100",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "4",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "24999900",
+            "paymasterBatches": "599996",
+            "total": "25599896"
+          },
+          "perClaimCostAtomic": {
+            "floor": "149999",
+            "ceil": "150000",
+            "exactNumerator": "14999940000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "15359937",
+            "aggregateCeil": "15359938",
+            "budgetedComponentCeil": "15359938"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "15359938",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "15359938",
+            "availableAtomic": "100000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "654"
+          }
+        },
+        "gasUnits": "51699790",
+        "totalCostAtomic": {
+          "aggregateFloor": "31019873",
+          "aggregateCeil": "31019875",
+          "budgetedComponentCeil": "31019875"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "31019875",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "31019875",
+          "availableAtomic": "100000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "652",
+          "maximumBonusClaimsIfExclusivelyFunded": "654"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "319286",
+        "resolvedLifecycleRakeCoverageBps": "66507",
+        "minimumBreakEvenSettlementPoolAtomic": "156599380",
+        "minimumBreakEvenLifecyclePoolAtomic": "751797700",
+        "resolvedLifecycleCostAtomicCeil": "37589885",
+        "voidLifecycleCostAtomicCeil": "45269854",
+        "timeoutVoidLifecycleCostAtomicCeil": "60779791",
+        "resolvedNetAfterSettlementAtomic": "242170031",
+        "resolvedNetAfterLifecycleAtomic": "212410115"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "1000000",
+        "ethUsdE8": "100000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "9499",
+          "ceil": "9500",
+          "exactNumerator": "949996900000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "249",
+          "ceil": "250",
+          "exactNumerator": "24999900000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "2899",
+          "aggregateCeil": "2900",
+          "budgetedComponentCeil": "2900"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "2900",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "2900",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "98158"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "249",
+          "ceil": "250",
+          "exactNumerator": "24999900000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "5399",
+          "aggregateCeil": "5400",
+          "budgetedComponentCeil": "5400"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "5400",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "5400",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "98158"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "249",
+            "ceil": "250",
+            "exactNumerator": "24999900000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "5649",
+            "aggregateCeil": "5650",
+            "budgetedComponentCeil": "5650"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "5650",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "5650",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "98157"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "249",
+            "ceil": "250",
+            "exactNumerator": "24999900000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "5149",
+            "aggregateCeil": "5150",
+            "budgetedComponentCeil": "5150"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "5150",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "5150",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "98159"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "10798",
+          "aggregateCeil": "10800",
+          "budgetedComponentCeil": "10800"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "10800",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "10800",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "98157",
+          "maximumBonusClaimsIfExclusivelyFunded": "98159"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "86206896",
+        "resolvedLifecycleRakeCoverageBps": "20161290",
+        "minimumBreakEvenSettlementPoolAtomic": "58000",
+        "minimumBreakEvenLifecyclePoolAtomic": "248000",
+        "resolvedLifecycleCostAtomicCeil": "12400",
+        "voidLifecycleCostAtomicCeil": "14900",
+        "timeoutVoidLifecycleCostAtomicCeil": "20300",
+        "resolvedNetAfterSettlementAtomic": "24997100",
+        "resolvedNetAfterLifecycleAtomic": "24987600"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "1000000",
+        "ethUsdE8": "300000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "28499",
+          "ceil": "28500",
+          "exactNumerator": "2849990700000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "749",
+          "ceil": "750",
+          "exactNumerator": "74999700000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "8699",
+          "aggregateCeil": "8700",
+          "budgetedComponentCeil": "8700"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "8700",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "8700",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "32718"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "749",
+          "ceil": "750",
+          "exactNumerator": "74999700000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "16199",
+          "aggregateCeil": "16200",
+          "budgetedComponentCeil": "16200"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "16200",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "16200",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "32718"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "749",
+            "ceil": "750",
+            "exactNumerator": "74999700000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "16949",
+            "aggregateCeil": "16950",
+            "budgetedComponentCeil": "16950"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "16950",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "16950",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "32717"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "749",
+            "ceil": "750",
+            "exactNumerator": "74999700000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "15449",
+            "aggregateCeil": "15450",
+            "budgetedComponentCeil": "15450"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "15450",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "15450",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "32719"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "32398",
+          "aggregateCeil": "32400",
+          "budgetedComponentCeil": "32400"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "32400",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "32400",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "32717",
+          "maximumBonusClaimsIfExclusivelyFunded": "32719"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "28735632",
+        "resolvedLifecycleRakeCoverageBps": "6720430",
+        "minimumBreakEvenSettlementPoolAtomic": "174000",
+        "minimumBreakEvenLifecyclePoolAtomic": "744000",
+        "resolvedLifecycleCostAtomicCeil": "37200",
+        "voidLifecycleCostAtomicCeil": "44700",
+        "timeoutVoidLifecycleCostAtomicCeil": "60900",
+        "resolvedNetAfterSettlementAtomic": "24991300",
+        "resolvedNetAfterLifecycleAtomic": "24962800"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "1000000",
+        "ethUsdE8": "600000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "56999",
+          "ceil": "57000",
+          "exactNumerator": "5699981400000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "1499",
+          "ceil": "1500",
+          "exactNumerator": "149999400000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "17399",
+          "aggregateCeil": "17400",
+          "budgetedComponentCeil": "17400"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "17400",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "17400",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "16358"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "1499",
+          "ceil": "1500",
+          "exactNumerator": "149999400000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "32399",
+          "aggregateCeil": "32400",
+          "budgetedComponentCeil": "32400"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "32400",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "32400",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "16358"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "1499",
+            "ceil": "1500",
+            "exactNumerator": "149999400000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "33899",
+            "aggregateCeil": "33900",
+            "budgetedComponentCeil": "33900"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "33900",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "33900",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "16357"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "1499",
+            "ceil": "1500",
+            "exactNumerator": "149999400000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "30899",
+            "aggregateCeil": "30900",
+            "budgetedComponentCeil": "30900"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "30900",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "30900",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "16359"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "64798",
+          "aggregateCeil": "64800",
+          "budgetedComponentCeil": "64800"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "64800",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "64800",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "16357",
+          "maximumBonusClaimsIfExclusivelyFunded": "16359"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "14367816",
+        "resolvedLifecycleRakeCoverageBps": "3360215",
+        "minimumBreakEvenSettlementPoolAtomic": "348000",
+        "minimumBreakEvenLifecyclePoolAtomic": "1488000",
+        "resolvedLifecycleCostAtomicCeil": "74400",
+        "voidLifecycleCostAtomicCeil": "89400",
+        "timeoutVoidLifecycleCostAtomicCeil": "121800",
+        "resolvedNetAfterSettlementAtomic": "24982600",
+        "resolvedNetAfterLifecycleAtomic": "24925600"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "10000000",
+        "ethUsdE8": "100000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "94999",
+          "ceil": "95000",
+          "exactNumerator": "9499969000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "2499",
+          "ceil": "2500",
+          "exactNumerator": "249999000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "28999",
+          "aggregateCeil": "29000",
+          "budgetedComponentCeil": "29000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "29000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "29000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "9814"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "2499",
+          "ceil": "2500",
+          "exactNumerator": "249999000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "53999",
+          "aggregateCeil": "54000",
+          "budgetedComponentCeil": "54000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "54000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "54000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "9814"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "2499",
+            "ceil": "2500",
+            "exactNumerator": "249999000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "56499",
+            "aggregateCeil": "56500",
+            "budgetedComponentCeil": "56500"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "56500",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "56500",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "9813"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "2499",
+            "ceil": "2500",
+            "exactNumerator": "249999000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "51499",
+            "aggregateCeil": "51500",
+            "budgetedComponentCeil": "51500"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "51500",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "51500",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "9815"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "107998",
+          "aggregateCeil": "108000",
+          "budgetedComponentCeil": "108000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "108000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "108000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "9813",
+          "maximumBonusClaimsIfExclusivelyFunded": "9815"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "8620689",
+        "resolvedLifecycleRakeCoverageBps": "2016129",
+        "minimumBreakEvenSettlementPoolAtomic": "580000",
+        "minimumBreakEvenLifecyclePoolAtomic": "2480000",
+        "resolvedLifecycleCostAtomicCeil": "124000",
+        "voidLifecycleCostAtomicCeil": "149000",
+        "timeoutVoidLifecycleCostAtomicCeil": "203000",
+        "resolvedNetAfterSettlementAtomic": "24971000",
+        "resolvedNetAfterLifecycleAtomic": "24876000"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "10000000",
+        "ethUsdE8": "300000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "284999",
+          "ceil": "285000",
+          "exactNumerator": "28499907000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "7499",
+          "ceil": "7500",
+          "exactNumerator": "749997000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "86999",
+          "aggregateCeil": "87000",
+          "budgetedComponentCeil": "87000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "87000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "87000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "3270"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "7499",
+          "ceil": "7500",
+          "exactNumerator": "749997000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "161999",
+          "aggregateCeil": "162000",
+          "budgetedComponentCeil": "162000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "162000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "162000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "3270"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "7499",
+            "ceil": "7500",
+            "exactNumerator": "749997000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "169499",
+            "aggregateCeil": "169500",
+            "budgetedComponentCeil": "169500"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "169500",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "169500",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "3269"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "7499",
+            "ceil": "7500",
+            "exactNumerator": "749997000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "154499",
+            "aggregateCeil": "154500",
+            "budgetedComponentCeil": "154500"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "154500",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "154500",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "3271"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "323998",
+          "aggregateCeil": "324000",
+          "budgetedComponentCeil": "324000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "324000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "324000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "3269",
+          "maximumBonusClaimsIfExclusivelyFunded": "3271"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "2873563",
+        "resolvedLifecycleRakeCoverageBps": "672043",
+        "minimumBreakEvenSettlementPoolAtomic": "1740000",
+        "minimumBreakEvenLifecyclePoolAtomic": "7440000",
+        "resolvedLifecycleCostAtomicCeil": "372000",
+        "voidLifecycleCostAtomicCeil": "447000",
+        "timeoutVoidLifecycleCostAtomicCeil": "609000",
+        "resolvedNetAfterSettlementAtomic": "24913000",
+        "resolvedNetAfterLifecycleAtomic": "24628000"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "10000000",
+        "ethUsdE8": "600000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "569998",
+          "ceil": "569999",
+          "exactNumerator": "56999814000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "14999",
+          "ceil": "15000",
+          "exactNumerator": "1499994000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "173999",
+          "aggregateCeil": "174000",
+          "budgetedComponentCeil": "174000"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "174000",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "174000",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "1634"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "14999",
+          "ceil": "15000",
+          "exactNumerator": "1499994000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "323998",
+          "aggregateCeil": "323999",
+          "budgetedComponentCeil": "323999"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "323999",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "323999",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "1634"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "14999",
+            "ceil": "15000",
+            "exactNumerator": "1499994000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "338998",
+            "aggregateCeil": "338999",
+            "budgetedComponentCeil": "338999"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "338999",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "338999",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "1633"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "14999",
+            "ceil": "15000",
+            "exactNumerator": "1499994000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "308998",
+            "aggregateCeil": "308999",
+            "budgetedComponentCeil": "308999"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "308999",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "308999",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "1635"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "647996",
+          "aggregateCeil": "647998",
+          "budgetedComponentCeil": "647998"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "647998",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "647998",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "1633",
+          "maximumBonusClaimsIfExclusivelyFunded": "1635"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "1436781",
+        "resolvedLifecycleRakeCoverageBps": "336021",
+        "minimumBreakEvenSettlementPoolAtomic": "3480000",
+        "minimumBreakEvenLifecyclePoolAtomic": "14879980",
+        "resolvedLifecycleCostAtomicCeil": "743999",
+        "voidLifecycleCostAtomicCeil": "893998",
+        "timeoutVoidLifecycleCostAtomicCeil": "1217997",
+        "resolvedNetAfterSettlementAtomic": "24826000",
+        "resolvedNetAfterLifecycleAtomic": "24256001"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "100000000",
+        "ethUsdE8": "100000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "949996",
+          "ceil": "949997",
+          "exactNumerator": "94999690000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "24999",
+          "ceil": "25000",
+          "exactNumerator": "2499990000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "289998",
+          "aggregateCeil": "289999",
+          "budgetedComponentCeil": "289999"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "289999",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "289999",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "980"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "24999",
+          "ceil": "25000",
+          "exactNumerator": "2499990000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "539997",
+          "aggregateCeil": "539998",
+          "budgetedComponentCeil": "539998"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "539998",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "539998",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "980"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "24999",
+            "ceil": "25000",
+            "exactNumerator": "2499990000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "564997",
+            "aggregateCeil": "564998",
+            "budgetedComponentCeil": "564998"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "564998",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "564998",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "979"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "24999",
+            "ceil": "25000",
+            "exactNumerator": "2499990000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "514997",
+            "aggregateCeil": "514998",
+            "budgetedComponentCeil": "514998"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "514998",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "514998",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "981"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "1079994",
+          "aggregateCeil": "1079996",
+          "budgetedComponentCeil": "1079996"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "1079996",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "1079996",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "979",
+          "maximumBonusClaimsIfExclusivelyFunded": "981"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "862071",
+        "resolvedLifecycleRakeCoverageBps": "201613",
+        "minimumBreakEvenSettlementPoolAtomic": "5799980",
+        "minimumBreakEvenLifecyclePoolAtomic": "24799920",
+        "resolvedLifecycleCostAtomicCeil": "1239996",
+        "voidLifecycleCostAtomicCeil": "1489995",
+        "timeoutVoidLifecycleCostAtomicCeil": "2029993",
+        "resolvedNetAfterSettlementAtomic": "24710001",
+        "resolvedNetAfterLifecycleAtomic": "23760004"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "100000000",
+        "ethUsdE8": "300000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "2849990",
+          "ceil": "2849991",
+          "exactNumerator": "284999070000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "74999",
+          "ceil": "75000",
+          "exactNumerator": "7499970000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "869996",
+          "aggregateCeil": "869997",
+          "budgetedComponentCeil": "869997"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "869997",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "869997",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "325"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "74999",
+          "ceil": "75000",
+          "exactNumerator": "7499970000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "1619993",
+          "aggregateCeil": "1619994",
+          "budgetedComponentCeil": "1619994"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "1619994",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "1619994",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "325"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "74999",
+            "ceil": "75000",
+            "exactNumerator": "7499970000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "1694993",
+            "aggregateCeil": "1694994",
+            "budgetedComponentCeil": "1694994"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "1694994",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "1694994",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "324"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "74999",
+            "ceil": "75000",
+            "exactNumerator": "7499970000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "1544993",
+            "aggregateCeil": "1544994",
+            "budgetedComponentCeil": "1544994"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "1544994",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "1544994",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "326"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "3239986",
+          "aggregateCeil": "3239988",
+          "budgetedComponentCeil": "3239988"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "3239988",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "3239988",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "324",
+          "maximumBonusClaimsIfExclusivelyFunded": "326"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "287357",
+        "resolvedLifecycleRakeCoverageBps": "67204",
+        "minimumBreakEvenSettlementPoolAtomic": "17399940",
+        "minimumBreakEvenLifecyclePoolAtomic": "74399760",
+        "resolvedLifecycleCostAtomicCeil": "3719988",
+        "voidLifecycleCostAtomicCeil": "4469985",
+        "timeoutVoidLifecycleCostAtomicCeil": "6089979",
+        "resolvedNetAfterSettlementAtomic": "24130003",
+        "resolvedNetAfterLifecycleAtomic": "21280012"
+      }
+    },
+    {
+      "id": "trial-clone-500",
+      "marketMode": "CLONE",
+      "assumptions": {
+        "gasPriceWei": "100000000",
+        "ethUsdE8": "600000000000",
+        "usdcDecimals": 6,
+        "poolPrincipalAtomic": "500000000",
+        "rakeBps": "500",
+        "sponsorShareBps": "10000",
+        "sponsorBudgetAtomic": "25000000",
+        "aaBatchSize": "32",
+        "sponsorFinalization": true
+      },
+      "rakeAtomic": "25000000",
+      "lifecycleNonTerminal": {
+        "gasUnits": "9499969",
+        "costAtomic": {
+          "floor": "5699981",
+          "ceil": "5699982",
+          "exactNumerator": "569998140000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        }
+      },
+      "resolved": {
+        "claimantCount": "10",
+        "sponsoredClaims": "10",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "2499990",
+          "paymasterBatches": "149999",
+          "total": "2899988"
+        },
+        "perClaimCostAtomic": {
+          "floor": "149999",
+          "ceil": "150000",
+          "exactNumerator": "14999940000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "1739992",
+          "aggregateCeil": "1739993",
+          "budgetedComponentCeil": "1739994"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "1739994",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "1739994",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "162"
+        }
+      },
+      "voided": {
+        "claimantCount": "20",
+        "sponsoredClaims": "20",
+        "userPaidClaims": "0",
+        "sponsoredBatches": "1",
+        "gasUnits": {
+          "terminalFinalize": "249999",
+          "claims": "4999980",
+          "paymasterBatches": "149999",
+          "total": "5399978"
+        },
+        "perClaimCostAtomic": {
+          "floor": "149999",
+          "ceil": "150000",
+          "exactNumerator": "14999940000000000000000000000000",
+          "exactDenominator": "100000000000000000000000000"
+        },
+        "totalCostAtomic": {
+          "aggregateFloor": "3239986",
+          "aggregateCeil": "3239987",
+          "budgetedComponentCeil": "3239988"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "3239988",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "3239988",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumFullySubsidizedClaims": "162"
+        }
+      },
+      "timeoutVoided": {
+        "refunds": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "499998",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5649977"
+          },
+          "perClaimCostAtomic": {
+            "floor": "149999",
+            "ceil": "150000",
+            "exactNumerator": "14999940000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "3389986",
+            "aggregateCeil": "3389987",
+            "budgetedComponentCeil": "3389987"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "3389987",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "3389987",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "161"
+          }
+        },
+        "bonuses": {
+          "claimantCount": "20",
+          "sponsoredClaims": "20",
+          "userPaidClaims": "0",
+          "sponsoredBatches": "1",
+          "gasUnits": {
+            "terminalFinalize": "0",
+            "claims": "4999980",
+            "paymasterBatches": "149999",
+            "total": "5149979"
+          },
+          "perClaimCostAtomic": {
+            "floor": "149999",
+            "ceil": "150000",
+            "exactNumerator": "14999940000000000000000000000000",
+            "exactDenominator": "100000000000000000000000000"
+          },
+          "totalCostAtomic": {
+            "aggregateFloor": "3089987",
+            "aggregateCeil": "3089988",
+            "budgetedComponentCeil": "3089988"
+          },
+          "payerCostAtomicCeil": {
+            "sponsor": "3089988",
+            "operator": "0",
+            "users": "0"
+          },
+          "sponsorBudget": {
+            "requiredAtomicCeil": "3089988",
+            "availableAtomic": "25000000",
+            "sufficient": true,
+            "maximumFullySubsidizedClaims": "163"
+          }
+        },
+        "gasUnits": "10799956",
+        "totalCostAtomic": {
+          "aggregateFloor": "6479973",
+          "aggregateCeil": "6479975",
+          "budgetedComponentCeil": "6479975"
+        },
+        "payerCostAtomicCeil": {
+          "sponsor": "6479975",
+          "operator": "0",
+          "users": "0"
+        },
+        "sponsorBudget": {
+          "requiredAtomicCeil": "6479975",
+          "availableAtomic": "25000000",
+          "sufficient": true,
+          "maximumRefundClaimsIfExclusivelyFunded": "161",
+          "maximumBonusClaimsIfExclusivelyFunded": "163"
+        }
+      },
+      "economics": {
+        "resolvedSettlementRakeCoverageBps": "143678",
+        "resolvedLifecycleRakeCoverageBps": "33602",
+        "minimumBreakEvenSettlementPoolAtomic": "34799880",
+        "minimumBreakEvenLifecyclePoolAtomic": "148799520",
+        "resolvedLifecycleCostAtomicCeil": "7439976",
+        "voidLifecycleCostAtomicCeil": "8939970",
+        "timeoutVoidLifecycleCostAtomicCeil": "12179957",
+        "resolvedNetAfterSettlementAtomic": "23260006",
+        "resolvedNetAfterLifecycleAtomic": "17560024"
+      }
+    }
+  ]
+}

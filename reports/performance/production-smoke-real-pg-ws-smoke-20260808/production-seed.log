@@ -1,0 +1,9 @@
+file:///Users/undef1ned/Work/local/cpredict/load/production/seed-postgres.mjs:126
+    throw new Error("representative production query did not use an index");
+          ^
+
+Error: representative production query did not use an index
+    at file:///Users/undef1ned/Work/local/cpredict/load/production/seed-postgres.mjs:126:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+Node.js v22.22.2

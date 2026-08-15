@@ -1,0 +1,30 @@
+[2026-08-08 22:41:28.77] Compiling `test/security/EchidnaMarketAccounting.sol`... Done! (13.934918s)
+Analyzing contract: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-echidna-x86_64.Lbk9Qq/repo/test/security/EchidnaMarketAccounting.sol:EchidnaMarketAccounting
+[2026-08-08 22:41:43.08] Running slither on `test/security/EchidnaMarketAccounting.sol`... WARNING: Running slither failed. Echidna will continue, however fuzzing will likely be less effective.
+
+Done! (1.905038s)
+Loaded 0 transaction sequences from reports/security/echidna-corpus/reproducers
+Loaded 0 transaction sequences from reports/security/echidna-corpus/coverage
+[2026-08-08 22:41:45.47] [Worker 0] Crashed:
+
+Set.elemAt: index out of range
+CallStack (from HasCallStack):
+  error, called at libraries/containers/containers/src/Data/Set/Internal.hs:1401:17 in containers-0.6.8-62a8:Data.Set.Internal
+
+Please report it to https://github.com/crytic/echidna/issues
+[2026-08-08 22:41:45.47] [status] tests: 0/4, fuzzing: 0/1000000, values: [], cov: 0, corpus: 0, gas/s: 0
+echidna_vault_assets_cover_liabilities: passing
+echidna_guard_is_conservative: passing
+echidna_fee_and_bond_vaults_are_solvent: passing
+echidna_supply_is_conserved: passing
+
+Unique instructions: 0
+Unique codehashes: 0
+Corpus size: 0
+Seed: 7935876347236877661
+Total calls: 0
+
+[2026-08-08 22:41:45.47] Saving test reproducers... Done! (0.000002s)
+[2026-08-08 22:41:45.47] Saving corpus... Done! (0.000003s)
+[2026-08-08 22:41:45.47] Saving foundry reproducers... Done! (0.000122s)
+[2026-08-08 22:41:45.47] Saving coverage... Done! (0.000484s)

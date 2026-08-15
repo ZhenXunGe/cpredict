@@ -1,0 +1,74 @@
+[1m[32m⇾[0m[0m Reading the configuration file at: [1mscripts/security/medusa.json[0m
+⇾ Compiling targets with crytic-compile
+⇾ Running command:
+/Users/undef1ned/Work/local/cpredict/.tools/slither/bin/crytic-compile ../.. --export-format solc --foundry-compile-all
+⇾ Finished compiling targets in 50s
+⇾ artifacts: Medusa is running against a new set of build artifacts
+⇾ Running with a timeout of 1800 seconds
+⇾ Setting up test chain
+⇾ Finished setting up test chain
+⇾ Creating corpus...
+⇾ Fuzzing with 4 workers
+⇾ [NOT STARTED] Property Test: EchidnaMarketAccounting.property_fee_and_bond_vaults_are_solvent()
+⇾ fuzz: elapsed:       0s, calls:          0 (     0/sec), seq/s:      0, branches:   1048, corpus:     0, failures: 0/0, gas/s:            0
+⇾ [NOT STARTED] Property Test: EchidnaMarketAccounting.property_supply_is_conserved()
+⇾ [NOT STARTED] Property Test: EchidnaMarketAccounting.property_guard_is_conservative()
+⇾ [NOT STARTED] Property Test: EchidnaMarketAccounting.property_vault_assets_cover_liabilities()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimCreatorFee()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.echidna_fee_and_bond_vaults_are_solvent()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.echidna_guard_is_conservative()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.guard()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.refund(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.bondEscrow()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.creatorResolve(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.echidna_vault_assets_cover_liabilities()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.feeVault()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.market()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.settleBond()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.syncGuard()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.transfer(uint256,uint256,uint256,uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimCreatorBond()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.timeoutVoid()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.usdc()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.burnLosing(uint256,uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimEarlyBird(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimTimeoutBonus(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.claimWinner(uint256)
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.creatorVoid()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.echidna_supply_is_conserved()
+⇾ [NOT STARTED] Assertion Test: EchidnaMarketAccounting.buy(uint256,uint256,uint256)
+⇾ fuzz: elapsed:       3s, calls:      14204 (  4724/sec), seq/s:     36, branches:   2366, corpus:    40, failures: 0/110, gas/s:    198709607
+⇾ fuzz: elapsed:       6s, calls:      34644 (  6788/sec), seq/s:     53, branches:   2435, corpus:    46, failures: 0/270, gas/s:    289621999
+⇾ fuzz: elapsed:       9s, calls:      52366 (  5907/sec), seq/s:     45, branches:   2459, corpus:    51, failures: 0/408, gas/s:    251689873
+⇾ fuzz: elapsed:      12s, calls:      77038 (  8219/sec), seq/s:     63, branches:   2459, corpus:    51, failures: 0/600, gas/s:    349042062
+⇾ Transaction test limit reached, halting now...
+⇾ Fuzzer stopped, test results follow below ...
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.bondEscrow()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.burnLosing(uint256,uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.buy(uint256,uint256,uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimCreatorBond()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimCreatorFee()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimEarlyBird(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimTimeoutBonus(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.claimWinner(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.creatorResolve(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.creatorVoid()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.echidna_fee_and_bond_vaults_are_solvent()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.echidna_guard_is_conservative()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.echidna_supply_is_conserved()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.echidna_vault_assets_cover_liabilities()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.feeVault()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.guard()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.market()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.refund(uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.settleBond()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.syncGuard()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.timeoutVoid()
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.transfer(uint256,uint256,uint256,uint256)
+⇾ [PASSED] Assertion Test: EchidnaMarketAccounting.usdc()
+⇾ [PASSED] Property Test: EchidnaMarketAccounting.property_fee_and_bond_vaults_are_solvent()
+⇾ [PASSED] Property Test: EchidnaMarketAccounting.property_guard_is_conservative()
+⇾ [PASSED] Property Test: EchidnaMarketAccounting.property_supply_is_conserved()
+⇾ [PASSED] Property Test: EchidnaMarketAccounting.property_vault_assets_cover_liabilities()
+⇾ Test summary: 27 test(s) passed, 0 test(s) failed
+⇾ lcov report(s) saved to: ../../reports/security/medusa-corpus/coverage/lcov.info

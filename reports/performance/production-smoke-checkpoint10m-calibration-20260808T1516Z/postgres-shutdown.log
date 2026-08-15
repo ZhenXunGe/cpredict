@@ -1,0 +1,4 @@
+waiting for server to shut down.... done
+server stopped
+pg_ctl: no server running
+127.0.0.1:19432 - no response

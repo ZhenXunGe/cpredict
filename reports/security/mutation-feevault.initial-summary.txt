@@ -1,0 +1,10 @@
+scope: FeeVaultV1 bounded calibration
+test input: ProtocolControls.t.sol before mutation-resistance regressions
+revert mutants: 16/16 caught
+comment mutants: 23/29 caught
+tweak mutants: 74/90 caught
+compiled mutants: 135
+caught mutants: 113
+mutation score: 83.70%
+mutation gate: FAIL (>=90% required)
+raw log sha256: fdb238f60e3987db6f5fb689d27882a0209365d0008da43e8db066f6582ea13c

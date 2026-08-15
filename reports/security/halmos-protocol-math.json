@@ -1,0 +1,58 @@
+{
+    "exitcode": 0,
+    "test_results": {
+        "test/security/ProtocolMath.smt.sol:ProtocolMathSmt": [
+            {
+                "name": "check_C2CConservation(uint128,uint128,uint16,uint16)",
+                "exitcode": 0,
+                "num_models": 0,
+                "models": [],
+                "num_paths": [
+                    16,
+                    1,
+                    0
+                ],
+                "time": [
+                    0.5910598337650299,
+                    0.053420832846313715,
+                    0.5376326246187091
+                ],
+                "num_bounded_loops": 0
+            },
+            {
+                "name": "check_RakeConservation(uint128,uint16,uint16,uint16,bool)",
+                "exitcode": 0,
+                "num_models": 0,
+                "models": [],
+                "num_paths": [
+                    22,
+                    2,
+                    0
+                ],
+                "time": [
+                    0.9357377090491354,
+                    0.09055374981835485,
+                    0.8451811247505248
+                ],
+                "num_bounded_loops": 0
+            },
+            {
+                "name": "check_RemainingPoolStep(uint128,uint128,uint128)",
+                "exitcode": 0,
+                "num_models": 0,
+                "models": [],
+                "num_paths": [
+                    13,
+                    2,
+                    0
+                ],
+                "time": [
+                    0.14808833273127675,
+                    0.04078858392313123,
+                    0.10729316715151072
+                ],
+                "num_bounded_loops": 0
+            }
+        ]
+    }
+}

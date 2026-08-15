@@ -1,0 +1,43 @@
+{
+  "lane": "real-current-protocol-artifacts-on-fresh-local-anvil",
+  "profile": "full",
+  "rpcUrl": "http://127.0.0.1:18545",
+  "market": "0x7984CFADA40f6e9d91162028A73BdC1735C200a5",
+  "deploymentMode": "FULL",
+  "targetTps": 50,
+  "durationSeconds": 600,
+  "expectedRevertPercent": 5,
+  "setupSeconds": 0.074,
+  "elapsedSeconds": 600.009,
+  "achievedSubmittedTps": 49.999,
+  "achievedIncludedTps": 49.999,
+  "classifications": {
+    "planned": 30000,
+    "submitted": 30000,
+    "included": 30000,
+    "success": 28500,
+    "expectedRevert": 1500,
+    "rejectedSubmission": 0,
+    "unexpectedRevert": 0,
+    "unexpectedSuccess": 0,
+    "missingReceipt": 0
+  },
+  "submissionRpcLatencyMs": {
+    "p50": 1.045,
+    "p95": 3.756,
+    "p99": 18.2,
+    "max": 647.942
+  },
+  "inclusionLatencyMs": {
+    "p50": 508.65,
+    "p95": 957.688,
+    "p99": 997.657,
+    "max": 1927.017
+  },
+  "thresholds": {
+    "allSubmissionsIncluded": true,
+    "noUnexpectedOutcome": true,
+    "achievedAtLeast95PercentOfTarget": true
+  },
+  "proofBoundary": "Fresh local Anvil with real compiled protocol artifacts; submission throughput is not Base inclusion throughput, sequencer capacity, RPC capacity, or production finality."
+}

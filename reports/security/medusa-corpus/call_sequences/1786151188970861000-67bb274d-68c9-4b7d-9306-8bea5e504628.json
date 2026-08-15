@@ -1,0 +1,28 @@
+[
+ {
+  "call": {
+   "from": "0x0000000000000000000000000000000000020000",
+   "to": "0xa647ff3c36cfab592509e13860ab8c4f28781a66",
+   "nonce": 0,
+   "value": "0x0",
+   "gasLimit": 100000000,
+   "gasPrice": "0x1",
+   "gasFeeCap": "0x0",
+   "gasTipCap": "0x0",
+   "data": "0x40993b26fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff6bdc6fa61cea63cacd7326cf605e24195412a7b3cce487fb6cb5dfbb96f472c10a6911f1f2f1f5fa4a14a916b0124a5a1303bafc626c3218542630319f8c1236f",
+   "dataAbiValues": {
+    "methodSignature": "buy(uint256,uint256,uint256)",
+    "inputValues": [
+     "115792089237316195423570985008687907853269984665640564039457584007913129639926",
+     "85838692174527709878447056965508794773589020894457958425725764064183505595408",
+     "75340340484072767448163799882883670385161554192326434479986421731554662359919"
+    ]
+   },
+   "AccessList": null,
+   "SkipNonceChecks": true,
+   "SkipFromEOACheck": true
+  },
+  "blockNumberDelay": 28,
+  "blockTimestampDelay": 29
+ }
+]

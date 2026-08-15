@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "gate": "echidna",
+  "result": "PASS",
+  "tool": {
+    "name": "echidna",
+    "version": "2.3.3",
+    "artifactSha256": "8e16a43d8c37b74365ef259ea986e074b8a717309f770c7ff3d1f9fb891a7902",
+    "rawExitCode": 0,
+    "acceptedExitCodes": [
+      0
+    ]
+  },
+  "validatorExitCode": 0,
+  "platform": "darwin-arm64",
+  "sourceSnapshotSha256": "82186d9c54018a6063c14ac7a3200b89febc5f82e2b20e76f1c0ba4595c75dd9",
+  "inputs": [
+    {
+      "path": "foundry.toml",
+      "bytes": 1164,
+      "sha256": "006e3f5e2e36ca80b04bb25568f4c2b6d07806ac81de29b4451d1eb2d202b539"
+    },
+    {
+      "path": "remappings.txt",
+      "bytes": 177,
+      "sha256": "c03068e82f0a3616d4b3549c380f964426f7d3dc6f440baee1aa6fce15499dd1"
+    },
+    {
+      "path": "scripts/security/echidna.yaml",
+      "bytes": 267,
+      "sha256": "a8a6a921f3ed218abcd4cee0db84644f9f9aa9ff164812bac50b4d90552ee647"
+    },
+    {
+      "path": "scripts/security/run-echidna.sh",
+      "bytes": 3388,
+      "sha256": "d20be0c05396a10541ea195902638e804415d20713464b9da8cbb70b6a0bac9d"
+    },
+    {
+      "path": "scripts/security/validate-gate-evidence.mjs",
+      "bytes": 31461,
+      "sha256": "f91b55ebe0eda11cff339300cfc169f586e559baa6c914aa4a634cb229dff413"
+    },
+    {
+      "path": "scripts/security/verify-gate-evidence.mjs",
+      "bytes": 4400,
+      "sha256": "62533fa6fc77ae42c74081a835264339e61c4a390b189fb123bac466defc10e9"
+    },
+    {
+      "path": "scripts/security/write-gate-evidence.mjs",
+      "bytes": 6272,
+      "sha256": "73aeb00b53374c52fd2150d0a875e87408eeff2c29128328dddd75aa44fcf7c0"
+    },
+    {
+      "path": "src/core/BondEscrowV1.sol",
+      "bytes": 5259,
+      "sha256": "0ad1524032048957963c7676e374fdc1b25db0bafa59cf30851de617bae98c10"
+    },
+    {
+      "path": "src/core/EmergencyControllerV1.sol",
+      "bytes": 2830,
+      "sha256": "2efb5a4baf906df076c7e41ed6519154d81fbc0e659d5240a18c67b2c71ef60d"
+    },
+    {
+      "path": "src/core/FeeVaultV1.sol",
+      "bytes": 3571,
+      "sha256": "3809c803815804fd44351df94a99529a045c566edf1da23b0636da474045c289"
+    },
+    {
+      "path": "src/core/FullMarketDeployerV1.sol",
+      "bytes": 1378,
+      "sha256": "2bc6320300255d4caf976206d3aa205047f0303eb3f668a992c2c572550f39ff"
+    },
+    {
+      "path": "src/core/LaunchExposureGuardV1.sol",
+      "bytes": 4155,
+      "sha256": "45ab1f242cfaa74b64b02042aa9a7df2efc1545d1e062a371646c241d230361b"
+    },
+    {
+      "path": "src/core/MarketFactoryV1.sol",
+      "bytes": 20075,
+      "sha256": "981ba91b77e341c58fa9d6f5f5f17988ddd03c815a0be3e97091a036e3f2c434"
+    },
+    {
+      "path": "src/core/ProtocolConfigV1.sol",
+      "bytes": 7212,
+      "sha256": "ef354663cdafab05ba1ad3957dd418197774fb71098d2e6cd867cf3abf2179b5"
+    },
+    {
+      "path": "src/interfaces/IBondEscrowV1.sol",
+      "bytes": 342,
+      "sha256": "0b39066dd12085021aaea3bc600912a94cd7be97390bf9a7bb3ad07c1ac309dd"
+    },
+    {
+      "path": "src/interfaces/IEmergencyControllerV1.sol",
+      "bytes": 219,
+      "sha256": "1ac9d81e7f3987b76922fdade8ff0edcbd342a50dcdbfb1d58eac0963be6664f"
+    },
+    {
+      "path": "src/interfaces/IFeeVaultV1.sol",
+      "bytes": 507,
+      "sha256": "012bcf604eae7946ad0baa85dfba573fe856a254f8f6ce53f88195796a9c64e0"
+    },
+    {
+      "path": "src/interfaces/IFixedPriceMarketplaceV1.sol",
+      "bytes": 481,
+      "sha256": "f717ac0bd3a24274dc598617066f1545b45fb7fa51764f204beb5063a7216441"
+    },
+    {
+      "path": "src/interfaces/IFullMarketDeployerV1.sol",
+      "bytes": 277,
+      "sha256": "e2e27b6e167968b1ca1a9ed8e191c2d8e4eb5fc11073307dc15d5c23264f8aae"
+    },
+    {
+      "path": "src/interfaces/ILaunchExposureGuardV1.sol",
+      "bytes": 430,
+      "sha256": "f5264fd44b63db04d953b32bd2ec7f5ca4ab0a788470117f222edaa2234c9fbf"
+    },
+    {
+      "path": "src/interfaces/IMarketFactoryV1.sol",
+      "bytes": 381,
+      "sha256": "cb83ec6153d04ef3070c665850a8b5a054b720d62ad817b22cc243c5fb8d0347"
+    },
+    {
+      "path": "src/interfaces/IMarketVaultV1.sol",
+      "bytes": 1917,
+      "sha256": "b86ad4057afb462bee3596a1d2f23fecf6e8b831760db4922d49968de4e5b026"
+    },
+    {
+      "path": "src/interfaces/IProtocolConfigV1.sol",
+      "bytes": 1082,
+      "sha256": "2a89d2c237a88cd609f54ffd6cfcaafa55f22ae298793665a7b38495ccdf837e"
+    },
+    {
+      "path": "src/libraries/ProtocolErrors.sol",
+      "bytes": 2695,
+      "sha256": "d39bf99a3c77e910bd04c9abbc8287043b3740e25d745476a0aa1677ee97f359"
+    },
+    {
+      "path": "src/libraries/ProtocolTypes.sol",
+      "bytes": 2821,
+      "sha256": "3f6b8a88337d5ca66ba84f3066a461c0f82e37a3061441200e3ebe8c2fe94a64"
+    },
+    {
+      "path": "src/market/CloneMarketVaultV1.sol",
+      "bytes": 326,
+      "sha256": "414c017877d97133a4d4db9597fc21f1d0b185d1f55116e7cc8b3572a5b9ed0d"
+    },
+    {
+      "path": "src/market/FullMarketVaultV1.sol",
+      "bytes": 399,
+      "sha256": "e8985694384abff3fdd2883b93b6f328692d1c96bec9595ba969b6adf49211e8"
+    },
+    {
+      "path": "src/market/MarketVaultCoreV1.sol",
+      "bytes": 34453,
+      "sha256": "fff58b5e35752899701013eb57a030f955c27c71635b70c088314d282626d23e"
+    },
+    {
+      "path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+      "bytes": 17342,
+      "sha256": "4cad16fc35b6ca673768f15541b39dd6ad06fcfad65e2759e0fee3c7feed2724"
+    },
+    {
+      "path": "src/paymaster/SponsorshipPaymasterV1.sol",
+      "bytes": 17346,
+      "sha256": "e0bcad2a5c93764b1bd0c4053079ec7c0a07ee8ae79b8894ae73d9e882ddb8a6"
+    },
+    {
+      "path": "test/mocks/MockUSDC.sol",
+      "bytes": 390,
+      "sha256": "10429e52c82a4dc132b47a2aa42ad1e45fd2d72c5cffb673ee9975ed8d77c077"
+    },
+    {
+      "path": "test/security/EchidnaMarketAccounting.sol",
+      "bytes": 12035,
+      "sha256": "78a6b21f09a9da77dadb95451abd54cd1aa6a1661a59e9aa6a95062f7b8a25c3"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "reports/security/echidna-latest.log",
+      "bytes": 53318,
+      "sha256": "2b0d5fe58f0eea1f90780fc4dd76f17831fe39f0a8e270fdf882096ba2370ef8"
+    },
+    {
+      "path": "reports/security/echidna-validator.log",
+      "bytes": 27,
+      "sha256": "4d36dca4ef1f545187685e0edc917a32945bbc6fc9621d3d89fcf45eec43df72"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+
+         /\      Grafana   /‾‾/  
+    /\  /  \     |\  __   /  /   
+   /  \/    \    | |/ /  /   ‾‾\ 
+  /          \   |   (  |  (‾)  |
+ / __________ \  |_|\_\  \_____/ 
+
+
+     execution: local
+        script: load/k6/api-read.js
+        output: -
+
+     scenarios: (100.00%) 1 scenario, 100 max VUs, 33s max duration (incl. graceful stop):
+              * safe_smoke: 20.00 iterations/s for 3s (maxVUs: 10-100, gracefulStop: 30s)
+
+
+running (01.0s), 000/010 VUs, 20 complete and 0 interrupted iterations
+safe_smoke   [  33% ] 000/010 VUs  1.0s/3s  20.00 iters/s
+
+running (02.0s), 000/010 VUs, 40 complete and 0 interrupted iterations
+safe_smoke   [  67% ] 000/010 VUs  2.0s/3s  20.00 iters/s
+
+running (03.0s), 000/010 VUs, 60 complete and 0 interrupted iterations
+safe_smoke   [ 100% ] 000/010 VUs  3.0s/3s  20.00 iters/s
+
+
+  █ THRESHOLDS 
+
+    cpredict_response_errors
+    ✓ 'rate<0.005' rate=0.00%
+
+    cpredict_server_errors
+    ✓ 'rate<0.005' rate=0.00%
+
+    cpredict_transport_errors
+    ✓ 'rate<0.005' rate=0.00%
+
+    dropped_iterations
+    ✓ 'count==0' count=0
+
+    http_req_duration
+    ✓ 'p(95)<300' p(95)=14.07ms
+    ✓ 'p(99)<750' p(99)=21.11ms
+
+
+  █ TOTAL RESULTS 
+
+    checks_total.......: 60      19.993535/s
+    checks_succeeded...: 100.00% 60 out of 60
+    checks_failed......: 0.00%   0 out of 60
+
+    ✓ HTTP response is 2xx
+
+    CUSTOM
+    cpredict_response_errors.......: 0.00%  0 out of 60
+    cpredict_server_errors.........: 0.00%  0 out of 60
+    cpredict_transport_errors......: 0.00%  0 out of 60
+
+    HTTP
+    http_req_duration..............: avg=4.05ms min=838µs  med=2.44ms max=21.68ms p(90)=8.63ms p(95)=14.07ms p(99)=21.11ms
+      { expected_response:true }...: avg=4.05ms min=838µs  med=2.44ms max=21.68ms p(90)=8.63ms p(95)=14.07ms p(99)=21.11ms
+    http_req_failed................: 0.00%  0 out of 60
+    http_reqs......................: 60     19.993535/s
+
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: avg=4.35ms min=1.03ms med=2.67ms max=22.08ms p(90)=9ms    p(95)=14.24ms p(99)=21.4ms 
+    iterations.....................: 60     19.993535/s
+    vus............................: 0      min=0       max=0 
+    vus_max........................: 10     min=10      max=10
+
+    NETWORK
+    data_received..................: 405 kB 135 kB/s
+    data_sent......................: 9.6 kB 3.2 kB/s
+
+
+
+
+running (03.0s), 000/010 VUs, 60 complete and 0 interrupted iterations
+safe_smoke ✓ [ 100% ] 000/010 VUs  3s  20.00 iters/s
