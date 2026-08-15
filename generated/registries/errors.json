@@ -1,0 +1,2004 @@
+[
+  {
+    "contract": "FeeVaultV1",
+    "name": "AccruerNotAuthorized",
+    "signature": "AccruerNotAuthorized(address)",
+    "selector": "0x2f17bfd1",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "AlreadyConfigured",
+    "signature": "AlreadyConfigured()",
+    "selector": "0x11b61b6a",
+    "inputs": []
+  },
+  {
+    "contract": "FeeVaultV1",
+    "name": "AlreadyConfigured",
+    "signature": "AlreadyConfigured()",
+    "selector": "0x11b61b6a",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketDeployerV1",
+    "name": "AlreadyConfigured",
+    "signature": "AlreadyConfigured()",
+    "selector": "0x11b61b6a",
+    "inputs": []
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "name": "AlreadyConfigured",
+    "signature": "AlreadyConfigured()",
+    "selector": "0x11b61b6a",
+    "inputs": []
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "AlreadyConfigured",
+    "signature": "AlreadyConfigured()",
+    "selector": "0x11b61b6a",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "AlreadyInitialized",
+    "signature": "AlreadyInitialized()",
+    "selector": "0x0dc149f0",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "AlreadyInitialized",
+    "signature": "AlreadyInitialized()",
+    "selector": "0x0dc149f0",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "AlreadySettled",
+    "signature": "AlreadySettled()",
+    "selector": "0x560ff900",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "AlreadySettled",
+    "signature": "AlreadySettled()",
+    "selector": "0x560ff900",
+    "inputs": []
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "BondNotLocked",
+    "signature": "BondNotLocked(address)",
+    "selector": "0x5f0377ba",
+    "inputs": [
+      {
+        "name": "market",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "BondStateMismatch",
+    "signature": "BondStateMismatch(address)",
+    "selector": "0xfb0a5913",
+    "inputs": [
+      {
+        "name": "market",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "DeadlineExpired",
+    "signature": "DeadlineExpired(uint256,uint256)",
+    "selector": "0x1503f5f8",
+    "inputs": [
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "currentTime",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "DeadlineExpired",
+    "signature": "DeadlineExpired(uint256,uint256)",
+    "selector": "0x1503f5f8",
+    "inputs": [
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "currentTime",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "DeadlineExpired",
+    "signature": "DeadlineExpired(uint256,uint256)",
+    "selector": "0x1503f5f8",
+    "inputs": [
+      {
+        "name": "deadline",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "currentTime",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "DependencyCodeMissing",
+    "signature": "DependencyCodeMissing(bytes32,address)",
+    "selector": "0x359ce1c8",
+    "inputs": [
+      {
+        "name": "dependency",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "target",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "DependencyFingerprintMismatch",
+    "signature": "DependencyFingerprintMismatch(bytes32,bytes32)",
+    "selector": "0xad5f4382",
+    "inputs": [
+      {
+        "name": "expected",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "actual",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "DependencyWiringMismatch",
+    "signature": "DependencyWiringMismatch(bytes32,address,address)",
+    "selector": "0x546a08c2",
+    "inputs": [
+      {
+        "name": "dependency",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "expected",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "actual",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "name": "EmergencyEpochAlreadyUsed",
+    "signature": "EmergencyEpochAlreadyUsed(uint64)",
+    "selector": "0x37938379",
+    "inputs": [
+      {
+        "name": "epoch",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ]
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "name": "EmergencyPauseStillActive",
+    "signature": "EmergencyPauseStillActive(uint64)",
+    "selector": "0x1645701c",
+    "inputs": [
+      {
+        "name": "expiresAt",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ERC1155InsufficientBalance",
+    "signature": "ERC1155InsufficientBalance(address,uint256,uint256,uint256)",
+    "selector": "0x03dee4c5",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ERC1155InsufficientBalance",
+    "signature": "ERC1155InsufficientBalance(address,uint256,uint256,uint256)",
+    "selector": "0x03dee4c5",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ERC1155InvalidApprover",
+    "signature": "ERC1155InvalidApprover(address)",
+    "selector": "0x3e31884e",
+    "inputs": [
+      {
+        "name": "approver",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ERC1155InvalidApprover",
+    "signature": "ERC1155InvalidApprover(address)",
+    "selector": "0x3e31884e",
+    "inputs": [
+      {
+        "name": "approver",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ERC1155InvalidArrayLength",
+    "signature": "ERC1155InvalidArrayLength(uint256,uint256)",
+    "selector": "0x5b059991",
+    "inputs": [
+      {
+        "name": "idsLength",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "valuesLength",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ERC1155InvalidArrayLength",
+    "signature": "ERC1155InvalidArrayLength(uint256,uint256)",
+    "selector": "0x5b059991",
+    "inputs": [
+      {
+        "name": "idsLength",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "valuesLength",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ERC1155InvalidOperator",
+    "signature": "ERC1155InvalidOperator(address)",
+    "selector": "0xced3e100",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ERC1155InvalidOperator",
+    "signature": "ERC1155InvalidOperator(address)",
+    "selector": "0xced3e100",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ERC1155InvalidReceiver",
+    "signature": "ERC1155InvalidReceiver(address)",
+    "selector": "0x57f447ce",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ERC1155InvalidReceiver",
+    "signature": "ERC1155InvalidReceiver(address)",
+    "selector": "0x57f447ce",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ERC1155InvalidSender",
+    "signature": "ERC1155InvalidSender(address)",
+    "selector": "0x01a83514",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ERC1155InvalidSender",
+    "signature": "ERC1155InvalidSender(address)",
+    "selector": "0x01a83514",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ERC1155MissingApprovalForAll",
+    "signature": "ERC1155MissingApprovalForAll(address,address)",
+    "selector": "0xe237d922",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ERC1155MissingApprovalForAll",
+    "signature": "ERC1155MissingApprovalForAll(address,address)",
+    "selector": "0xe237d922",
+    "inputs": [
+      {
+        "name": "operator",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "EscrowOwnerMustReturnListing",
+    "signature": "EscrowOwnerMustReturnListing(address)",
+    "selector": "0x0648a258",
+    "inputs": [
+      {
+        "name": "marketplace",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "EscrowOwnerMustReturnListing",
+    "signature": "EscrowOwnerMustReturnListing(address)",
+    "selector": "0x0648a258",
+    "inputs": [
+      {
+        "name": "marketplace",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "name": "ExposureCapCannotDecrease",
+    "signature": "ExposureCapCannotDecrease(uint256,uint256)",
+    "selector": "0x65e5c9e2",
+    "inputs": [
+      {
+        "name": "currentCap",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "proposedCap",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "name": "ExposureCapExceeded",
+    "signature": "ExposureCapExceeded(uint256,uint256)",
+    "selector": "0xc0c45d91",
+    "inputs": [
+      {
+        "name": "requested",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "available",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "FactoryNotActive",
+    "signature": "FactoryNotActive()",
+    "selector": "0xf9fb75ec",
+    "inputs": []
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "FailedDeployment",
+    "signature": "FailedDeployment()",
+    "selector": "0xb06ebf3d",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "FillBelowMinimum",
+    "signature": "FillBelowMinimum(uint256,uint256)",
+    "selector": "0x27b15f0a",
+    "inputs": [
+      {
+        "name": "filled",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minimum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "FillBelowMinimum",
+    "signature": "FillBelowMinimum(uint256,uint256)",
+    "selector": "0x27b15f0a",
+    "inputs": [
+      {
+        "name": "filled",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minimum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "FillBelowMinimum",
+    "signature": "FillBelowMinimum(uint256,uint256)",
+    "selector": "0x27b15f0a",
+    "inputs": [
+      {
+        "name": "filled",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minimum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ImmutableAfterFirstBuy",
+    "signature": "ImmutableAfterFirstBuy()",
+    "selector": "0xb923a819",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ImmutableAfterFirstBuy",
+    "signature": "ImmutableAfterFirstBuy()",
+    "selector": "0xb923a819",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "InexactTokenTransfer",
+    "signature": "InexactTokenTransfer(uint256,uint256)",
+    "selector": "0xcfc6ff65",
+    "inputs": [
+      {
+        "name": "expected",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "received",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "InexactTokenTransfer",
+    "signature": "InexactTokenTransfer(uint256,uint256)",
+    "selector": "0xcfc6ff65",
+    "inputs": [
+      {
+        "name": "expected",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "received",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "InexactTokenTransfer",
+    "signature": "InexactTokenTransfer(uint256,uint256)",
+    "selector": "0xcfc6ff65",
+    "inputs": [
+      {
+        "name": "expected",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "received",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "InexactTokenTransfer",
+    "signature": "InexactTokenTransfer(uint256,uint256)",
+    "selector": "0xcfc6ff65",
+    "inputs": [
+      {
+        "name": "expected",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "received",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "Insolvent",
+    "signature": "Insolvent(uint256,uint256)",
+    "selector": "0x1f2c89f0",
+    "inputs": [
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "liabilities",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "Insolvent",
+    "signature": "Insolvent(uint256,uint256)",
+    "selector": "0x1f2c89f0",
+    "inputs": [
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "liabilities",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FeeVaultV1",
+    "name": "Insolvent",
+    "signature": "Insolvent(uint256,uint256)",
+    "selector": "0x1f2c89f0",
+    "inputs": [
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "liabilities",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "Insolvent",
+    "signature": "Insolvent(uint256,uint256)",
+    "selector": "0x1f2c89f0",
+    "inputs": [
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "liabilities",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "InsufficientBalance",
+    "signature": "InsufficientBalance(uint256,uint256)",
+    "selector": "0xcf479181",
+    "inputs": [
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "InvalidConfiguration",
+    "signature": "InvalidConfiguration(bytes32)",
+    "selector": "0x2440ee50",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "name": "InvalidConfiguration",
+    "signature": "InvalidConfiguration(bytes32)",
+    "selector": "0x2440ee50",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "InvalidConfiguration",
+    "signature": "InvalidConfiguration(bytes32)",
+    "selector": "0x2440ee50",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "InvalidConfiguration",
+    "signature": "InvalidConfiguration(bytes32)",
+    "selector": "0x2440ee50",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "InvalidConfiguration",
+    "signature": "InvalidConfiguration(bytes32)",
+    "selector": "0x2440ee50",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "name": "InvalidConfiguration",
+    "signature": "InvalidConfiguration(bytes32)",
+    "selector": "0x2440ee50",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "name": "InvalidConfiguration",
+    "signature": "InvalidConfiguration(bytes32)",
+    "selector": "0x2440ee50",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "InvalidInitializer",
+    "signature": "InvalidInitializer(address)",
+    "selector": "0x1210aa13",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "InvalidInitializer",
+    "signature": "InvalidInitializer(address)",
+    "selector": "0x1210aa13",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "InvalidListingExpiry",
+    "signature": "InvalidListingExpiry()",
+    "selector": "0xbdc52b5f",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "InvalidOutcome",
+    "signature": "InvalidOutcome(uint256,uint256)",
+    "selector": "0xcc25fc42",
+    "inputs": [
+      {
+        "name": "outcomeId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "outcomeCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "InvalidOutcome",
+    "signature": "InvalidOutcome(uint256,uint256)",
+    "selector": "0xcc25fc42",
+    "inputs": [
+      {
+        "name": "outcomeId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "outcomeCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "InvalidOutcome",
+    "signature": "InvalidOutcome(uint256,uint256)",
+    "selector": "0xcc25fc42",
+    "inputs": [
+      {
+        "name": "outcomeId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "outcomeCount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "InvalidPrice",
+    "signature": "InvalidPrice(uint256)",
+    "selector": "0xf9632e86",
+    "inputs": [
+      {
+        "name": "unitPrice",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "name": "InvalidShortString",
+    "signature": "InvalidShortString()",
+    "selector": "0xb3512b0c",
+    "inputs": []
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "ListingExpired",
+    "signature": "ListingExpired(bytes32)",
+    "selector": "0xdb570013",
+    "inputs": [
+      {
+        "name": "listingId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "ListingNotActive",
+    "signature": "ListingNotActive(bytes32)",
+    "selector": "0xf6a0b3c0",
+    "inputs": [
+      {
+        "name": "listingId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "MarketAlreadyRegistered",
+    "signature": "MarketAlreadyRegistered(address)",
+    "selector": "0x6604557d",
+    "inputs": [
+      {
+        "name": "market",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "name": "MarketAlreadyRegistered",
+    "signature": "MarketAlreadyRegistered(address)",
+    "selector": "0x6604557d",
+    "inputs": [
+      {
+        "name": "market",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "MarketAlreadyRegistered",
+    "signature": "MarketAlreadyRegistered(address)",
+    "selector": "0x6604557d",
+    "inputs": [
+      {
+        "name": "market",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "MarketNotClosed",
+    "signature": "MarketNotClosed()",
+    "selector": "0xa8a9eb69",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "MarketNotClosed",
+    "signature": "MarketNotClosed()",
+    "selector": "0xa8a9eb69",
+    "inputs": []
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "MarketNotClosedForReturn",
+    "signature": "MarketNotClosedForReturn()",
+    "selector": "0x2346993d",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "MarketNotOpen",
+    "signature": "MarketNotOpen()",
+    "selector": "0xc02d38cc",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "MarketNotOpen",
+    "signature": "MarketNotOpen()",
+    "selector": "0xc02d38cc",
+    "inputs": []
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "MarketNotRegistered",
+    "signature": "MarketNotRegistered(address)",
+    "selector": "0xbb22f947",
+    "inputs": [
+      {
+        "name": "market",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "name": "MarketNotRegistered",
+    "signature": "MarketNotRegistered(address)",
+    "selector": "0xbb22f947",
+    "inputs": [
+      {
+        "name": "market",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "MarketTerminal",
+    "signature": "MarketTerminal()",
+    "selector": "0xcd652fe2",
+    "inputs": []
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "MarketTerminal",
+    "signature": "MarketTerminal()",
+    "selector": "0xcd652fe2",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "MarketTerminal",
+    "signature": "MarketTerminal()",
+    "selector": "0xcd652fe2",
+    "inputs": []
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "NothingToClaim",
+    "signature": "NothingToClaim()",
+    "selector": "0x969bf728",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "NothingToClaim",
+    "signature": "NothingToClaim()",
+    "selector": "0x969bf728",
+    "inputs": []
+  },
+  {
+    "contract": "FeeVaultV1",
+    "name": "NothingToClaim",
+    "signature": "NothingToClaim()",
+    "selector": "0x969bf728",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "NothingToClaim",
+    "signature": "NothingToClaim()",
+    "selector": "0x969bf728",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "PauseActive",
+    "signature": "PauseActive(uint256)",
+    "selector": "0xbdf16b93",
+    "inputs": [
+      {
+        "name": "flag",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "PauseActive",
+    "signature": "PauseActive(uint256)",
+    "selector": "0xbdf16b93",
+    "inputs": [
+      {
+        "name": "flag",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "PauseActive",
+    "signature": "PauseActive(uint256)",
+    "selector": "0xbdf16b93",
+    "inputs": [
+      {
+        "name": "flag",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "PauseActive",
+    "signature": "PauseActive(uint256)",
+    "selector": "0xbdf16b93",
+    "inputs": [
+      {
+        "name": "flag",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "name": "PauseActive",
+    "signature": "PauseActive(uint256)",
+    "selector": "0xbdf16b93",
+    "inputs": [
+      {
+        "name": "flag",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "PaymentAboveMaximum",
+    "signature": "PaymentAboveMaximum(uint256,uint256)",
+    "selector": "0x4141e07b",
+    "inputs": [
+      {
+        "name": "payment",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "PaymentAboveMaximum",
+    "signature": "PaymentAboveMaximum(uint256,uint256)",
+    "selector": "0x4141e07b",
+    "inputs": [
+      {
+        "name": "payment",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "PaymentAboveMaximum",
+    "signature": "PaymentAboveMaximum(uint256,uint256)",
+    "selector": "0x4141e07b",
+    "inputs": [
+      {
+        "name": "payment",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "Permit2Disabled",
+    "signature": "Permit2Disabled()",
+    "selector": "0xbf549ab9",
+    "inputs": []
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "Permit2Disabled",
+    "signature": "Permit2Disabled()",
+    "selector": "0xbf549ab9",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "Permit2Disabled",
+    "signature": "Permit2Disabled()",
+    "selector": "0xbf549ab9",
+    "inputs": []
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "ReentrancyGuardReentrantCall",
+    "signature": "ReentrancyGuardReentrantCall()",
+    "selector": "0x3ee5aeb5",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ReentrancyGuardReentrantCall",
+    "signature": "ReentrancyGuardReentrantCall()",
+    "selector": "0x3ee5aeb5",
+    "inputs": []
+  },
+  {
+    "contract": "FeeVaultV1",
+    "name": "ReentrancyGuardReentrantCall",
+    "signature": "ReentrancyGuardReentrantCall()",
+    "selector": "0x3ee5aeb5",
+    "inputs": []
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "ReentrancyGuardReentrantCall",
+    "signature": "ReentrancyGuardReentrantCall()",
+    "selector": "0x3ee5aeb5",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ReentrancyGuardReentrantCall",
+    "signature": "ReentrancyGuardReentrantCall()",
+    "selector": "0x3ee5aeb5",
+    "inputs": []
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "ReentrancyGuardReentrantCall",
+    "signature": "ReentrancyGuardReentrantCall()",
+    "selector": "0x3ee5aeb5",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ResolutionWindowExpired",
+    "signature": "ResolutionWindowExpired()",
+    "selector": "0x89da025b",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ResolutionWindowExpired",
+    "signature": "ResolutionWindowExpired()",
+    "selector": "0x89da025b",
+    "inputs": []
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "SafeCastOverflowedUintDowncast",
+    "signature": "SafeCastOverflowedUintDowncast(uint8,uint256)",
+    "selector": "0x6dfcc650",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "SafeCastOverflowedUintDowncast",
+    "signature": "SafeCastOverflowedUintDowncast(uint8,uint256)",
+    "selector": "0x6dfcc650",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "SafeCastOverflowedUintDowncast",
+    "signature": "SafeCastOverflowedUintDowncast(uint8,uint256)",
+    "selector": "0x6dfcc650",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "SafeCastOverflowedUintDowncast",
+    "signature": "SafeCastOverflowedUintDowncast(uint8,uint256)",
+    "selector": "0x6dfcc650",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "SafeCastOverflowedUintDowncast",
+    "signature": "SafeCastOverflowedUintDowncast(uint8,uint256)",
+    "selector": "0x6dfcc650",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "SafeERC20FailedOperation",
+    "signature": "SafeERC20FailedOperation(address)",
+    "selector": "0x5274afe7",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "SafeERC20FailedOperation",
+    "signature": "SafeERC20FailedOperation(address)",
+    "selector": "0x5274afe7",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FeeVaultV1",
+    "name": "SafeERC20FailedOperation",
+    "signature": "SafeERC20FailedOperation(address)",
+    "selector": "0x5274afe7",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "SafeERC20FailedOperation",
+    "signature": "SafeERC20FailedOperation(address)",
+    "selector": "0x5274afe7",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "SafeERC20FailedOperation",
+    "signature": "SafeERC20FailedOperation(address)",
+    "selector": "0x5274afe7",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "SafeERC20FailedOperation",
+    "signature": "SafeERC20FailedOperation(address)",
+    "selector": "0x5274afe7",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "name": "SponsorshipBudgetExceeded",
+    "signature": "SponsorshipBudgetExceeded()",
+    "selector": "0x4c2e3514",
+    "inputs": []
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "name": "SponsorshipExpired",
+    "signature": "SponsorshipExpired()",
+    "selector": "0xaec27ce1",
+    "inputs": []
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "name": "StringTooLong",
+    "signature": "StringTooLong(string)",
+    "selector": "0x305a27a9",
+    "inputs": [
+      {
+        "name": "str",
+        "type": "string",
+        "internalType": "string"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "TimeoutNotReached",
+    "signature": "TimeoutNotReached()",
+    "selector": "0x9b0056ac",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "TimeoutNotReached",
+    "signature": "TimeoutNotReached()",
+    "selector": "0x9b0056ac",
+    "inputs": []
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FeeVaultV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketDeployerV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "name": "Unauthorized",
+    "signature": "Unauthorized(address)",
+    "selector": "0x8e4a23d6",
+    "inputs": [
+      {
+        "name": "caller",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "UnexpectedERC1155Transfer",
+    "signature": "UnexpectedERC1155Transfer()",
+    "selector": "0xf2cd7ad0",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "UnsupportedFeatureFlags",
+    "signature": "UnsupportedFeatureFlags(uint256)",
+    "selector": "0x057a9810",
+    "inputs": [
+      {
+        "name": "flags",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "UnsupportedFeatureFlags",
+    "signature": "UnsupportedFeatureFlags(uint256)",
+    "selector": "0x057a9810",
+    "inputs": [
+      {
+        "name": "flags",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "UnsupportedFeatureFlags",
+    "signature": "UnsupportedFeatureFlags(uint256)",
+    "selector": "0x057a9810",
+    "inputs": [
+      {
+        "name": "flags",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "name": "UnsupportedUserOperation",
+    "signature": "UnsupportedUserOperation()",
+    "selector": "0xc0f8ca04",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "UriTooLong",
+    "signature": "UriTooLong(uint256,uint256)",
+    "selector": "0xa99e90bb",
+    "inputs": [
+      {
+        "name": "supplied",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "UriTooLong",
+    "signature": "UriTooLong(uint256,uint256)",
+    "selector": "0xa99e90bb",
+    "inputs": [
+      {
+        "name": "supplied",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "UriTooLong",
+    "signature": "UriTooLong(uint256,uint256)",
+    "selector": "0xa99e90bb",
+    "inputs": [
+      {
+        "name": "supplied",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "name": "ValueOutOfRange",
+    "signature": "ValueOutOfRange(bytes32,uint256,uint256,uint256)",
+    "selector": "0xb8b24ff6",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minimum",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "ValueOutOfRange",
+    "signature": "ValueOutOfRange(bytes32,uint256,uint256,uint256)",
+    "selector": "0xb8b24ff6",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minimum",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "name": "ValueOutOfRange",
+    "signature": "ValueOutOfRange(bytes32,uint256,uint256,uint256)",
+    "selector": "0xb8b24ff6",
+    "inputs": [
+      {
+        "name": "field",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "minimum",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maximum",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "WinningOutcomeHasNoSupply",
+    "signature": "WinningOutcomeHasNoSupply(uint256)",
+    "selector": "0xe8327997",
+    "inputs": [
+      {
+        "name": "outcomeId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "WinningOutcomeHasNoSupply",
+    "signature": "WinningOutcomeHasNoSupply(uint256)",
+    "selector": "0xe8327997",
+    "inputs": [
+      {
+        "name": "outcomeId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "BondEscrowV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "FeeVaultV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketDeployerV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "name": "ZeroAddress",
+    "signature": "ZeroAddress()",
+    "selector": "0xd92e233d",
+    "inputs": []
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "name": "ZeroAmount",
+    "signature": "ZeroAmount()",
+    "selector": "0x1f2a2005",
+    "inputs": []
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "name": "ZeroAmount",
+    "signature": "ZeroAmount()",
+    "selector": "0x1f2a2005",
+    "inputs": []
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "name": "ZeroAmount",
+    "signature": "ZeroAmount()",
+    "selector": "0x1f2a2005",
+    "inputs": []
+  }
+]

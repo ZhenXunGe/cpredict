@@ -1,0 +1,19 @@
+{
+  "storage": [
+    {
+      "astId": 10455,
+      "contract": "src/core/FullMarketDeployerV1.sol:FullMarketDeployerV1",
+      "label": "factory",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_address"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    }
+  }
+}

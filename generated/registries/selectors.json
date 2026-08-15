@@ -1,0 +1,1707 @@
+[
+  {
+    "contract": "FeeVaultV1",
+    "signature": "accrue(address,uint256,bytes32,bytes32)",
+    "selector": "0x46a3af3d"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "activate(bytes32)",
+    "selector": "0x59db6e85"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "activationFingerprint()",
+    "selector": "0x18d34d9e"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "active()",
+    "selector": "0x02fb0c5e"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "addStake(uint32)",
+    "selector": "0x0396cb60"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "authorizedAccruer(address)",
+    "selector": "0x12acfeaf"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "balanceOf(address,uint256)",
+    "selector": "0x00fdd58e"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "balanceOf(address,uint256)",
+    "selector": "0x00fdd58e"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "balanceOfBatch(address[],uint256[])",
+    "selector": "0x4e1273f4"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "balanceOfBatch(address[],uint256[])",
+    "selector": "0x4e1273f4"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "BOND_RATE_BPS()",
+    "selector": "0xf684867c"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "bondEscrow()",
+    "selector": "0xdd1a9729"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "bondEscrow()",
+    "selector": "0xdd1a9729"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "bondEscrow()",
+    "selector": "0xdd1a9729"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "bondOf(address)",
+    "selector": "0x72d2b6c0"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "burnLosingPosition(uint256)",
+    "selector": "0x660ab752"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "burnLosingPosition(uint256)",
+    "selector": "0x660ab752"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "BUY_WITNESS_TYPE_STRING()",
+    "selector": "0xa4b85072"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "BUY_WITNESS_TYPE_STRING()",
+    "selector": "0xa4b85072"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "BUY_WITNESS_TYPEHASH()",
+    "selector": "0x9d184e4c"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "BUY_WITNESS_TYPEHASH()",
+    "selector": "0x9d184e4c"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "buy(uint256,uint256,uint256,uint256,uint64)",
+    "selector": "0x611c114d"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "buy(uint256,uint256,uint256,uint256,uint64)",
+    "selector": "0x611c114d"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "buyWithPermit2(address,uint256,uint256,uint256,uint256,uint64,((address,uint256),uint256,uint256),bytes)",
+    "selector": "0x56cf9f85"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "buyWithPermit2(address,uint256,uint256,uint256,uint256,uint64,((address,uint256),uint256,uint256),bytes)",
+    "selector": "0x56cf9f85"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "cancelListing(bytes32)",
+    "selector": "0x9299e552"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "claim()",
+    "selector": "0x4e71d92d"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "claim()",
+    "selector": "0x4e71d92d"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "claimEarlyBird()",
+    "selector": "0xf913a358"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "claimEarlyBird()",
+    "selector": "0xf913a358"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "claimEarlyBirdFor(address)",
+    "selector": "0x59f67a88"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "claimEarlyBirdFor(address)",
+    "selector": "0x59f67a88"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "claimFor(address)",
+    "selector": "0xddeae033"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "claimFor(address)",
+    "selector": "0xddeae033"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "claimTimeoutBonus()",
+    "selector": "0x19098977"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "claimTimeoutBonus()",
+    "selector": "0x19098977"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "claimTimeoutBonusFor(address)",
+    "selector": "0xc6b45405"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "claimTimeoutBonusFor(address)",
+    "selector": "0xc6b45405"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "claimWinnings()",
+    "selector": "0xb401faf1"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "claimWinnings()",
+    "selector": "0xb401faf1"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "claimWinningsFor(address)",
+    "selector": "0xdbfcd29c"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "claimWinningsFor(address)",
+    "selector": "0xdbfcd29c"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "cloneImplementation()",
+    "selector": "0xfe8886fc"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "closeAt()",
+    "selector": "0xa9854087"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "closeAt()",
+    "selector": "0xa9854087"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "config()",
+    "selector": "0x79502c55"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "config()",
+    "selector": "0x79502c55"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "config()",
+    "selector": "0x79502c55"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "consumedSponsorship(bytes32)",
+    "selector": "0x778af2e3"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "createdAt()",
+    "selector": "0xcf09e0d0"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "createdAt()",
+    "selector": "0xcf09e0d0"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "createListing(address,uint256,uint256,uint256,uint64)",
+    "selector": "0x594c8c19"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "createMarket((bytes32,string,bytes32,string,uint8,uint64,uint64,address,uint8,uint256,uint16,uint16,uint128,uint128,uint128,uint128,uint128),bytes32)",
+    "selector": "0x16fd1c2b"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "creationFee()",
+    "selector": "0xdce0b4e4"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "creator()",
+    "selector": "0x02d05d3f"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "creator()",
+    "selector": "0x02d05d3f"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "creatorBond()",
+    "selector": "0x459d6e4f"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "creatorBond()",
+    "selector": "0x459d6e4f"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "creatorC2CFeeBps()",
+    "selector": "0x9ba3d41b"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "creatorC2CFeeBps()",
+    "selector": "0x9ba3d41b"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "creatorNonce(address)",
+    "selector": "0x2fc0e2b7"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "creatorTreasury()",
+    "selector": "0x5dd7ca7c"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "creatorTreasury()",
+    "selector": "0x5dd7ca7c"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "creatorVoid(bytes32)",
+    "selector": "0x927ff7c5"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "creatorVoid(bytes32)",
+    "selector": "0x927ff7c5"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "creditOf(address)",
+    "selector": "0x75807250"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "creditOf(address)",
+    "selector": "0x75807250"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "cumulativePrimaryBought(address)",
+    "selector": "0x15f21be8"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "cumulativePrimaryBought(address)",
+    "selector": "0x15f21be8"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "dependencyFingerprint()",
+    "selector": "0x07a6de57"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "dependencyFingerprintFor(address)",
+    "selector": "0xf9c5bdbe"
+  },
+  {
+    "contract": "FullMarketDeployerV1",
+    "signature": "deploy(bytes32)",
+    "selector": "0x2b85ba38"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "deploymentMode()",
+    "selector": "0xcb7147aa"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "deploymentMode()",
+    "selector": "0xcb7147aa"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "deploymentModeOf(address)",
+    "selector": "0x10571148"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "deploymentSaltOf(address)",
+    "selector": "0x1235626d"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "deposit()",
+    "selector": "0xd0e30db0"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "deprecated()",
+    "selector": "0x0e136b19"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "earlyBirdEnabled()",
+    "selector": "0x27c0da9a"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "earlyBirdEnabled()",
+    "selector": "0x27c0da9a"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "earlyBirdScore(address)",
+    "selector": "0x9c747550"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "earlyBirdScore(address)",
+    "selector": "0x9c747550"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "earlyBirdShareBps()",
+    "selector": "0x0849a4c8"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "earlyBirdStart()",
+    "selector": "0x803d33b9"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "earlyBirdStart()",
+    "selector": "0x803d33b9"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "economics()",
+    "selector": "0x2e239d97"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "economics()",
+    "selector": "0x2e239d97"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "eip712Domain()",
+    "selector": "0x84b0196e"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "emergencyController()",
+    "selector": "0x7a936beb"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "emergencyController()",
+    "selector": "0x7a936beb"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "emergencyController()",
+    "selector": "0x7a936beb"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "emergencyController()",
+    "selector": "0x7a936beb"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "emergencyController()",
+    "selector": "0x7a936beb"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "emergencySafe()",
+    "selector": "0x1e8d5310"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "entryPoint()",
+    "selector": "0xb0d691fe"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "epoch()",
+    "selector": "0x900cf0cf"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "epochUsed(uint64)",
+    "selector": "0xfa97d189"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "exists(uint256)",
+    "selector": "0x4f558e79"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "exists(uint256)",
+    "selector": "0x4f558e79"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "exposureCap()",
+    "selector": "0xb51d20c7"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "exposureGuard()",
+    "selector": "0x4368a1a4"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "exposureGuard()",
+    "selector": "0x4368a1a4"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "exposureGuard()",
+    "selector": "0x4368a1a4"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
+    "contract": "FullMarketDeployerV1",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "featureFlags()",
+    "selector": "0x30e66cd2"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "featureFlags()",
+    "selector": "0x30e66cd2"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "FEE_KIND_CREATION()",
+    "selector": "0x7558e3dd"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "FEE_KIND_CREATOR_C2C()",
+    "selector": "0x0bad578c"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "FEE_KIND_CREATOR_RAKE()",
+    "selector": "0xb62d085d"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "FEE_KIND_CREATOR_RAKE()",
+    "selector": "0xb62d085d"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "FEE_KIND_PLATFORM_C2C()",
+    "selector": "0xe01e73bd"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "FEE_KIND_PROTOCOL_RAKE()",
+    "selector": "0xacb93b68"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "FEE_KIND_PROTOCOL_RAKE()",
+    "selector": "0xacb93b68"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "feeVault()",
+    "selector": "0x478222c2"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "feeVault()",
+    "selector": "0x478222c2"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "feeVault()",
+    "selector": "0x478222c2"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "feeVault()",
+    "selector": "0x478222c2"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "FILL_WITNESS_TYPE_STRING()",
+    "selector": "0x6fdc16a3"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "FILL_WITNESS_TYPEHASH()",
+    "selector": "0xcdf8fb22"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "fillListing(bytes32,uint256,uint256,uint256,uint64)",
+    "selector": "0xde580dfa"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "fillListingWithPermit2(bytes32,address,uint256,uint256,uint256,uint64,((address,uint256),uint256,uint256),bytes)",
+    "selector": "0xdda6730f"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "firstBuyOccurred()",
+    "selector": "0x2bc3b89b"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "firstBuyOccurred()",
+    "selector": "0x2bc3b89b"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "fullMarketDeployer()",
+    "selector": "0xf4fed294"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "fundTimeoutBonus(uint256)",
+    "selector": "0x1d3b4b21"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "fundTimeoutBonus(uint256)",
+    "selector": "0x1d3b4b21"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "getDeposit()",
+    "selector": "0xc399ec88"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "governance()",
+    "selector": "0x5aa6e675"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "governance()",
+    "selector": "0x5aa6e675"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "governance()",
+    "selector": "0x5aa6e675"
+  },
+  {
+    "contract": "FullMarketDeployerV1",
+    "signature": "governance()",
+    "selector": "0x5aa6e675"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "governance()",
+    "selector": "0x5aa6e675"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "governance()",
+    "selector": "0x5aa6e675"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "governance()",
+    "selector": "0x5aa6e675"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "governance()",
+    "selector": "0x5aa6e675"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "guardExposure()",
+    "selector": "0x99f0a8ac"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "guardExposure()",
+    "selector": "0x99f0a8ac"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "HARD_MAX_C2C_FEE_BPS()",
+    "selector": "0x7c47149e"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "HARD_MAX_CLONE_MARKET_CAP()",
+    "selector": "0x5a7bb9e8"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "HARD_MAX_CREATION_FEE()",
+    "selector": "0xd6d0bcb5"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "HARD_MAX_CREATOR_RAKE_BPS()",
+    "selector": "0x68799669"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "HARD_MAX_EARLY_BIRD_SHARE_BPS()",
+    "selector": "0x6c79f7fd"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "HARD_MAX_FULL_MARKET_CAP()",
+    "selector": "0xddbd2c98"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "HARD_MAX_PER_USER_PRIMARY_CAP()",
+    "selector": "0x8d523236"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "HARD_MAX_PROTOCOL_SHARE_BPS()",
+    "selector": "0x40c80e84"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
+    "selector": "0x0f431f11"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
+    "selector": "0x0f431f11"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "isApprovedForAll(address,address)",
+    "selector": "0xe985e9c5"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "isApprovedForAll(address,address)",
+    "selector": "0xe985e9c5"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "isMarket(address)",
+    "selector": "0x6ec934da"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "isPaused(uint256)",
+    "selector": "0xbdf2a43c"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "isTerminal()",
+    "selector": "0xc281c1d9"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "isTerminal()",
+    "selector": "0xc281c1d9"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "listings(bytes32)",
+    "selector": "0xc18b8db4"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "lockBond(address,address,uint256)",
+    "selector": "0x282689d4"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "marketplace()",
+    "selector": "0xabc8c7af"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "marketPrimaryCap()",
+    "selector": "0xd1e55b43"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "marketPrimaryCap()",
+    "selector": "0xd1e55b43"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "marketState()",
+    "selector": "0x08fb1b77"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "marketState()",
+    "selector": "0x08fb1b77"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "MAX_CONFIGURED_UNITS()",
+    "selector": "0x5507c7c8"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "MAX_CREATOR_BOND()",
+    "selector": "0x2caa42d9"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "MAX_PAUSE_DURATION()",
+    "selector": "0x2799657d"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "MAX_PAYMASTER_POST_OP_GAS_LIMIT()",
+    "selector": "0x1a1499c8"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "MAX_PAYMASTER_VERIFICATION_GAS_LIMIT()",
+    "selector": "0x2600e041"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "MAX_UNIT_PRICE()",
+    "selector": "0xd2715d4e"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "MAX_URI_LENGTH()",
+    "selector": "0xaab5a877"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "MAX_URI_LENGTH()",
+    "selector": "0xaab5a877"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "MAX_URI_LENGTH()",
+    "selector": "0xaab5a877"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "maxCloneMarketCap()",
+    "selector": "0xaed64b42"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "maxCostGlobalPerDay()",
+    "selector": "0xa22fee94"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "maxCostPerOperation()",
+    "selector": "0xcf1a07dc"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "maxCostPerUserPerDay()",
+    "selector": "0xfcdea64f"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "maxCreatorC2CFeeBps()",
+    "selector": "0xe3bf4ffa"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "maxCreatorRakeBps()",
+    "selector": "0x75bf834f"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "maxFullMarketCap()",
+    "selector": "0x42830dae"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "maxPerUserPrimaryCap()",
+    "selector": "0x4c91f62f"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "MIN_CONFIGURED_UNITS()",
+    "selector": "0x50d01813"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "MIN_CREATOR_BOND()",
+    "selector": "0x517f0e31"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "MIN_PAYMASTER_POST_OP_GAS_LIMIT()",
+    "selector": "0x12f9f08a"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "MIN_PAYMASTER_VERIFICATION_GAS_LIMIT()",
+    "selector": "0x72219437"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "MIN_UNIT_PRICE()",
+    "selector": "0xb4532247"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "minimumC2CUnits()",
+    "selector": "0x0716bf76"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "minimumC2CUnits()",
+    "selector": "0x0716bf76"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "minimumPrimaryUnits()",
+    "selector": "0x8b0666f5"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "minimumPrimaryUnits()",
+    "selector": "0x8b0666f5"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)",
+    "selector": "0xbc197c81"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "onERC1155Received(address,address,uint256,uint256,bytes)",
+    "selector": "0xf23a6e61"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "outcomeCount()",
+    "selector": "0xd300cb31"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "outcomeCount()",
+    "selector": "0xd300cb31"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "pause(uint256,uint64)",
+    "selector": "0x37936d4a"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "pausedFlags()",
+    "selector": "0xbffa777d"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "pauseExpiresAt()",
+    "selector": "0x26398d9e"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "PAYMASTER_DATA_OFFSET()",
+    "selector": "0xede31502"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "PAYMASTER_POST_OP_GAS_OFFSET()",
+    "selector": "0x3c72e556"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "PAYMASTER_VERIFICATION_GAS_OFFSET()",
+    "selector": "0xb930e2f6"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "payoutBreakdown()",
+    "selector": "0xc3f9168e"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "payoutBreakdown()",
+    "selector": "0xc3f9168e"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "permit2()",
+    "selector": "0x12261ee7"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "permit2()",
+    "selector": "0x12261ee7"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "permit2()",
+    "selector": "0x12261ee7"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "permit2()",
+    "selector": "0x12261ee7"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "permit2Enabled()",
+    "selector": "0x407c48b4"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "permit2Enabled()",
+    "selector": "0x407c48b4"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "perUserPrimaryCap()",
+    "selector": "0x1419aa7c"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "perUserPrimaryCap()",
+    "selector": "0x1419aa7c"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "platformC2CFeeBps()",
+    "selector": "0x205e90de"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "platformC2CFeeBps()",
+    "selector": "0x205e90de"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "platformC2CFeeBps()",
+    "selector": "0x205e90de"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "policyVersion()",
+    "selector": "0x58355ead"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "postOp(uint8,bytes,uint256,uint256)",
+    "selector": "0x7c627b21"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "predictCloneAddress(address,uint256,bytes32,bytes32,uint64,uint128)",
+    "selector": "0x771c9678"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "principalByOutcome(uint256)",
+    "selector": "0x59536453"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "principalByOutcome(uint256)",
+    "selector": "0x59536453"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "protocolShareBps()",
+    "selector": "0x37ed3f1e"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "protocolTreasury()",
+    "selector": "0x803db96d"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "protocolTreasury()",
+    "selector": "0x803db96d"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "protocolTreasury()",
+    "selector": "0x803db96d"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "raiseCap(uint256)",
+    "selector": "0x5410ac50"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "refund()",
+    "selector": "0x590e1ae3"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "refund()",
+    "selector": "0x590e1ae3"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "refundFor(address)",
+    "selector": "0x57aba4ab"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "refundFor(address)",
+    "selector": "0x57aba4ab"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "registerAccruer(address)",
+    "selector": "0x2c50cb94"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "registeredMarket(address)",
+    "selector": "0x93e1c280"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "registerMarket(address)",
+    "selector": "0xa79b9ec9"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "remainingEarlyBirdPool()",
+    "selector": "0xad81c616"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "remainingEarlyBirdPool()",
+    "selector": "0xad81c616"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "remainingEarlyBirdScore()",
+    "selector": "0x52e82519"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "remainingEarlyBirdScore()",
+    "selector": "0x52e82519"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "remainingRefundPrincipal()",
+    "selector": "0x2758391a"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "remainingRefundPrincipal()",
+    "selector": "0x2758391a"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "remainingTimeoutBonusPool()",
+    "selector": "0xac63c836"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "remainingTimeoutBonusPool()",
+    "selector": "0xac63c836"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "remainingTimeoutBonusUnits()",
+    "selector": "0xa77dbf5d"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "remainingTimeoutBonusUnits()",
+    "selector": "0xa77dbf5d"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "remainingWinnerPool()",
+    "selector": "0xe553ef49"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "remainingWinnerPool()",
+    "selector": "0xe553ef49"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "remainingWinningUnits()",
+    "selector": "0x260278f5"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "remainingWinningUnits()",
+    "selector": "0x260278f5"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "reportedExposure(address)",
+    "selector": "0xf9b7a169"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "requiredBond(uint128)",
+    "selector": "0xa18dceb3"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "reserve(uint256)",
+    "selector": "0x819b25ba"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "reservedGlobalByDay(uint256)",
+    "selector": "0x271e9e26"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "reservedUserByDay(uint256,address)",
+    "selector": "0x1456dc23"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "resetEpoch()",
+    "selector": "0x31eab48a"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "RESOLUTION_WINDOW()",
+    "selector": "0x734c8544"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "RESOLUTION_WINDOW()",
+    "selector": "0x734c8544"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "resolutionDeadline()",
+    "selector": "0x528f734f"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "resolutionDeadline()",
+    "selector": "0x528f734f"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "resolutionSourceHash()",
+    "selector": "0x324a665d"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "resolutionSourceHash()",
+    "selector": "0x324a665d"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "resolutionSourceURI()",
+    "selector": "0x0dd9968a"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "resolutionSourceURI()",
+    "selector": "0x0dd9968a"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "resolve(uint256,bytes32)",
+    "selector": "0xf2ac4b11"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "resolve(uint256,bytes32)",
+    "selector": "0xf2ac4b11"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "retired()",
+    "selector": "0x2eb38ae0"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "retireForever()",
+    "selector": "0xf65d3f46"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "returnTerminalListing(bytes32)",
+    "selector": "0x938b24bf"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "rulesHash()",
+    "selector": "0xc76f9c16"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "rulesHash()",
+    "selector": "0xc76f9c16"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)",
+    "selector": "0x2eb2c2d6"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)",
+    "selector": "0x2eb2c2d6"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "safeTransferFrom(address,address,uint256,uint256,bytes)",
+    "selector": "0xf242432a"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "safeTransferFrom(address,address,uint256,uint256,bytes)",
+    "selector": "0xf242432a"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "sellerNonce(address)",
+    "selector": "0x5022e6ea"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "setApprovalForAll(address,bool)",
+    "selector": "0xa22cb465"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "setApprovalForAll(address,bool)",
+    "selector": "0xa22cb465"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "setBudgets(uint256,uint256,uint256)",
+    "selector": "0xb1e9ef3d"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "setCreationFee(uint128)",
+    "selector": "0x9d3f98a7"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "setCreatorFeeLimits(uint16,uint16)",
+    "selector": "0xbf9c0108"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "setDeprecated(bool)",
+    "selector": "0xd848dee7"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "setEarlyBirdShareBps(uint16)",
+    "selector": "0xb559abda"
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "signature": "setEmergencySafe(address)",
+    "selector": "0xf7851883"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "setFactory(address)",
+    "selector": "0x5bb47808"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "setFactory(address)",
+    "selector": "0x5bb47808"
+  },
+  {
+    "contract": "FullMarketDeployerV1",
+    "signature": "setFactory(address)",
+    "selector": "0x5bb47808"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "setFactory(address)",
+    "selector": "0x5bb47808"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "setMarketCapLimits(uint128,uint128)",
+    "selector": "0xd3b2308e"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "setMarketplace(address)",
+    "selector": "0x73ad6c2d"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "setMaxPerUserPrimaryCap(uint128)",
+    "selector": "0x10d8332d"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "setPlatformC2CFeeBps(uint16)",
+    "selector": "0xadd74c07"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "setProtocolShareBps(uint16)",
+    "selector": "0x7e863a22"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "setProtocolTreasury(address)",
+    "selector": "0x0c5a61f8"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "setSponsorSigner(address)",
+    "selector": "0x880efad3"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "settleBond(address)",
+    "selector": "0x85b46da4"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "snapshot(uint16,uint16)",
+    "selector": "0x0c2c8e0c"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "spentGlobalByDay(uint256)",
+    "selector": "0xfe723b45"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "spentUserByDay(uint256,address)",
+    "selector": "0x48e66fea"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "SPONSOR_DATA_LENGTH()",
+    "selector": "0xa8b59d99"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "SPONSORSHIP_TYPEHASH()",
+    "selector": "0x96820eb6"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "sponsorshipDigest((address,uint256,bytes,bytes,bytes32,uint256,bytes32,bytes,bytes),uint128,uint128,uint48,uint48,uint256,uint32)",
+    "selector": "0x9920ee3e"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "sponsorSigner()",
+    "selector": "0x74dd1d9c"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "SUPPORTED_FEATURE_FLAGS()",
+    "selector": "0xe7130267"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "SUPPORTED_FEATURE_FLAGS()",
+    "selector": "0xe7130267"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "SUPPORTED_FEATURE_FLAGS()",
+    "selector": "0xe7130267"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "supportsInterface(bytes4)",
+    "selector": "0x01ffc9a7"
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "signature": "supportsInterface(bytes4)",
+    "selector": "0x01ffc9a7"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "supportsInterface(bytes4)",
+    "selector": "0x01ffc9a7"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "sync(address)",
+    "selector": "0xa5841194"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "timeoutBonusFunded()",
+    "selector": "0x0590a886"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "timeoutBonusFunded()",
+    "selector": "0x0590a886"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "timeoutBonusUnits(address)",
+    "selector": "0x85813261"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "timeoutBonusUnits(address)",
+    "selector": "0x85813261"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "totalCredits()",
+    "selector": "0xb5bd3eb9"
+  },
+  {
+    "contract": "FeeVaultV1",
+    "signature": "totalCredits()",
+    "selector": "0xb5bd3eb9"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "totalEarlyBirdScore()",
+    "selector": "0xcc1417ad"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "totalEarlyBirdScore()",
+    "selector": "0xcc1417ad"
+  },
+  {
+    "contract": "BondEscrowV1",
+    "signature": "totalLocked()",
+    "selector": "0x56891412"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "totalPrincipal()",
+    "selector": "0x4b1533b2"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "totalPrincipal()",
+    "selector": "0x4b1533b2"
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "signature": "totalReportedExposure()",
+    "selector": "0xee93f8f5"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "totalSupply()",
+    "selector": "0x18160ddd"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "totalSupply()",
+    "selector": "0x18160ddd"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "totalSupply(uint256)",
+    "selector": "0xbd85b039"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "totalSupply(uint256)",
+    "selector": "0xbd85b039"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "unlockStake()",
+    "selector": "0xbb9fe6bf"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "updateBeforeFirstBuy(bytes32,string,bytes32,string,uint64,uint64,address,uint256)",
+    "selector": "0x28383d31"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "updateBeforeFirstBuy(bytes32,string,bytes32,string,uint64,uint64,address,uint256)",
+    "selector": "0x28383d31"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "uri(uint256)",
+    "selector": "0x0e89341c"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "uri(uint256)",
+    "selector": "0x0e89341c"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "validatePaymasterUserOp((address,uint256,bytes,bytes,bytes32,uint256,bytes32,bytes,bytes),bytes32,uint256)",
+    "selector": "0x52b7512c"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "voidAfterDeadline()",
+    "selector": "0xbc81a1fe"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "voidAfterDeadline()",
+    "selector": "0xbc81a1fe"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "winningOutcome()",
+    "selector": "0x9b34ae03"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "winningOutcome()",
+    "selector": "0x9b34ae03"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "withdrawDepositTo(address,uint256)",
+    "selector": "0x4d44560d"
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "signature": "withdrawStake(address)",
+    "selector": "0xc23a5cea"
+  }
+]

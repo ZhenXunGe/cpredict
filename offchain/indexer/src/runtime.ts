@@ -1,0 +1,120 @@
+import { createPublicClient, http, type PublicClient } from "viem";
+import { createIndexerApi } from "./api.js";
+import type { IndexerServiceConfig } from "./config.js";
+import { ChainIndexer } from "./indexer.js";
+import { InstrumentedEventQueryStore } from "./instrumented-store.js";
+import { PostgresEventStore } from "./postgres-store.js";
+import { BoundedIndexerScheduler } from "./scheduler.js";
+import { PrometheusIndexerTelemetry } from "./telemetry.js";
+import { IndexerWebSocketHub } from "./websocket.js";
+
+export interface IndexerRuntime {
+  stop(): Promise<void>;
+}
+
+export interface IndexerRuntimeDependencies {
+  client?: PublicClient | undefined;
+  store?: PostgresEventStore | undefined;
+  telemetry?: PrometheusIndexerTelemetry | undefined;
+}
+
+export async function startIndexerRuntime(
+  config: IndexerServiceConfig,
+  dependencies: IndexerRuntimeDependencies = {},
+): Promise<IndexerRuntime> {
+  const client =
+    dependencies.client ??
+    createPublicClient({
+      transport: http(config.rpcUrl, {
+        retryCount: 0,
+        timeout: config.rpcTimeoutMs,
+      }),
+    });
+  const telemetry = dependencies.telemetry ?? new PrometheusIndexerTelemetry();
+  const rawStore =
+    dependencies.store ??
+    new PostgresEventStore(config.databaseUrl, config.databasePoolSize);
+  const store = new InstrumentedEventQueryStore(
+    rawStore,
+    config.databasePoolSize,
+    telemetry.database,
+  );
+  const websocket = new IndexerWebSocketHub(
+    {
+      chainId: config.chainId,
+      maxConnections: config.wsMaxConnections,
+      heartbeatIntervalMs: config.wsHeartbeatIntervalMs,
+      maxBufferedAmountBytes: config.wsMaxBufferedAmountBytes,
+      shutdownGraceMs: config.wsShutdownGraceMs,
+    },
+    telemetry.registry,
+  );
+  const unsubscribeFromBatches = telemetry.subscribeToBatches((result) => {
+    websocket.publishCheckpoint({
+      blockNumber: result.toBlock,
+      eventCount: result.eventCount,
+    });
+  });
+  const indexer = new ChainIndexer(client, store, {
+    chainId: config.chainId,
+    deploymentBlock: config.deploymentBlock,
+    confirmations: config.confirmations,
+    batchSize: config.batchSize,
+    addresses: config.coreAddresses,
+    factoryAddress: config.factoryAddress,
+  });
+  const scheduler = new BoundedIndexerScheduler(indexer, telemetry, {
+    intervalMs: config.pollIntervalMs,
+    maxBatchesPerTick: config.maxBatchesPerTick,
+  });
+  const readiness = async (): Promise<void> => {
+    const [rpcChainId] = await Promise.all([
+      client.getChainId(),
+      store.ready(),
+    ]);
+    if (rpcChainId !== config.chainId)
+      throw new Error("RPC chainId does not match indexer config");
+    if (!scheduler.isRunning())
+      throw new Error("indexer scheduler is not running");
+    scheduler.assertHealthy();
+  };
+  const app = createIndexerApi(store, {
+    readiness,
+    registry: telemetry.registry,
+    logLevel: config.logLevel,
+    maxConnections: config.httpMaxConnections,
+    websocket,
+  });
+
+  try {
+    const rpcChainId = await client.getChainId();
+    if (rpcChainId !== config.chainId)
+      throw new Error("RPC chainId does not match indexer config");
+    await store.ready();
+    await scheduler.runTick();
+    scheduler.start();
+    await app.listen({
+      host: config.host,
+      port: config.port,
+      backlog: config.listenBacklog,
+    });
+  } catch (error: unknown) {
+    unsubscribeFromBatches();
+    await scheduler.stop();
+    await app.close();
+    await store.close();
+    throw error;
+  }
+
+  let stopped = false;
+  return {
+    async stop(): Promise<void> {
+      if (stopped) return;
+      stopped = true;
+      unsubscribeFromBatches();
+      await scheduler.stop();
+      await app.close();
+      await store.close();
+    },
+  };
+}

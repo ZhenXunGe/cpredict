@@ -1,0 +1,79 @@
+[
+  {
+    "contract": "ProtocolConfigV1",
+    "creationBytecodeSha256": "17b4407a9a90da987849f5d670d07e80e1eabfcc06b91db94245a5b7c4e50622",
+    "runtimeBytecodeSha256": "4349b399db0ba93afdbf3ac4ae8a2021d1c0f2f1c407755ba188bb96df2539dd",
+    "creationBytes": 4251,
+    "runtimeBytes": 3630
+  },
+  {
+    "contract": "EmergencyControllerV1",
+    "creationBytecodeSha256": "f408c9c2dce6b0b75731da7224955a4164123c176ca8cc42fe59a6c335d465ae",
+    "runtimeBytecodeSha256": "b29060c6b2b6291ffa28058775e3fd6054192f17464b3ab4d228bb185d7823f2",
+    "creationBytes": 1632,
+    "runtimeBytes": 1376
+  },
+  {
+    "contract": "LaunchExposureGuardV1",
+    "creationBytecodeSha256": "855360d5d1833d8f8144f95282dcd7ba140e08a4a2919847ce99b6abdf8f234c",
+    "runtimeBytecodeSha256": "2a1dd9bcd63764fc889baf98dd998bbea44be502a2a1d63f83933977610e1ef6",
+    "creationBytes": 2091,
+    "runtimeBytes": 1880
+  },
+  {
+    "contract": "BondEscrowV1",
+    "creationBytecodeSha256": "6cd1385177204f1be033fc3e3131cd136bf4b3aa2c6d4d83d86697c2bac9b285",
+    "runtimeBytecodeSha256": "63bb4d20b7136d1f6fe9519bebecbacc7aa7710ac255e9bfbeacb57f583be4f5",
+    "creationBytes": 3088,
+    "runtimeBytes": 2794
+  },
+  {
+    "contract": "FeeVaultV1",
+    "creationBytecodeSha256": "205ff628ff9c443c10083abc7d7f9f65d83c8cf01a9e151d5a7e49dbc4128548",
+    "runtimeBytecodeSha256": "b191d1a9d236676471c9ebe78d31d9d511be0f1d9fd11de893fc0cd6e7692b4a",
+    "creationBytes": 2106,
+    "runtimeBytes": 1819
+  },
+  {
+    "contract": "FullMarketDeployerV1",
+    "creationBytecodeSha256": "ecead89c51a2e34c8851cfcb8f02c0f94c38615c011d83d299948ddbf3046bde",
+    "runtimeBytecodeSha256": "212f73597e97024e6b87cf4efab2b306ec5235c4c7c97868a613968ff43d5f2d",
+    "creationBytes": 23916,
+    "runtimeBytes": 23763
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "creationBytecodeSha256": "6e0344aee264f99e287e64142c2c0c281b2f35bc6bd373a6e390062b060c3a74",
+    "runtimeBytecodeSha256": "ffe5f36e67c6bafa15e8a33bc11176e26c15ca69d8c68512b2c21e88e6d99bf0",
+    "creationBytes": 16969,
+    "runtimeBytes": 15838
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "creationBytecodeSha256": "265c3fe9a0395b8f35b90accf5586b214a3c852873538c8c8763f8dcfdbc3a10",
+    "runtimeBytecodeSha256": "d87cedece592716a547bf716b15688b50f81669f8dacf6ff717c58e13701c1fd",
+    "creationBytes": 23195,
+    "runtimeBytes": 22975
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "creationBytecodeSha256": "3f311523a614bea0337d9cbb7cdd2a1c80c6223f798ce3c3ab741193a0fda50f",
+    "runtimeBytecodeSha256": "d87cedece592716a547bf716b15688b50f81669f8dacf6ff717c58e13701c1fd",
+    "creationBytes": 23208,
+    "runtimeBytes": 22975
+  },
+  {
+    "contract": "FixedPriceMarketplaceV1",
+    "creationBytecodeSha256": "0a037ffcd6ef565aab681e015e63d751a726ef6ef2f2a21a50352e381287fdae",
+    "runtimeBytecodeSha256": "523bdf228f11c5bed41e53193ad8100a2eda0b0c497dbaf2acab5e87514681ed",
+    "creationBytes": 10029,
+    "runtimeBytes": 9551
+  },
+  {
+    "contract": "SponsorshipPaymasterV1",
+    "creationBytecodeSha256": "6771c6fb64bc5510021c4306a14771e5d16baa125dbe8fcf20cef023741e302d",
+    "runtimeBytecodeSha256": "05d92b1e1b659599b520f8298f05f79b9530e05c73e408918e30c67ebe1c7ab4",
+    "creationBytes": 8427,
+    "runtimeBytes": 7381
+  }
+]

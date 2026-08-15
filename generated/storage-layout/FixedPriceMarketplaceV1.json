@@ -1,0 +1,142 @@
+{
+  "storage": [
+    {
+      "astId": 17072,
+      "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+      "label": "sellerNonce",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_mapping(t_address,t_uint256)"
+    },
+    {
+      "astId": 17077,
+      "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+      "label": "listings",
+      "offset": 0,
+      "slot": "1",
+      "type": "t_mapping(t_bytes32,t_struct(Listing)17042_storage)"
+    },
+    {
+      "astId": 17079,
+      "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+      "label": "_expectedReceipt",
+      "offset": 0,
+      "slot": "2",
+      "type": "t_bytes32"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_bytes32": {
+      "encoding": "inplace",
+      "label": "bytes32",
+      "numberOfBytes": "32"
+    },
+    "t_mapping(t_address,t_uint256)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => uint256)",
+      "numberOfBytes": "32",
+      "value": "t_uint256"
+    },
+    "t_mapping(t_bytes32,t_struct(Listing)17042_storage)": {
+      "encoding": "mapping",
+      "key": "t_bytes32",
+      "label": "mapping(bytes32 => struct FixedPriceMarketplaceV1.Listing)",
+      "numberOfBytes": "32",
+      "value": "t_struct(Listing)17042_storage"
+    },
+    "t_struct(Listing)17042_storage": {
+      "encoding": "inplace",
+      "label": "struct FixedPriceMarketplaceV1.Listing",
+      "numberOfBytes": "128",
+      "members": [
+        {
+          "astId": 17029,
+          "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+          "label": "vault",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_address"
+        },
+        {
+          "astId": 17031,
+          "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+          "label": "seller",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_address"
+        },
+        {
+          "astId": 17033,
+          "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+          "label": "remainingUnits",
+          "offset": 0,
+          "slot": "2",
+          "type": "t_uint128"
+        },
+        {
+          "astId": 17035,
+          "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+          "label": "unitPrice",
+          "offset": 16,
+          "slot": "2",
+          "type": "t_uint128"
+        },
+        {
+          "astId": 17037,
+          "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+          "label": "expiresAt",
+          "offset": 0,
+          "slot": "3",
+          "type": "t_uint64"
+        },
+        {
+          "astId": 17039,
+          "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+          "label": "outcomeId",
+          "offset": 8,
+          "slot": "3",
+          "type": "t_uint8"
+        },
+        {
+          "astId": 17041,
+          "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
+          "label": "active",
+          "offset": 9,
+          "slot": "3",
+          "type": "t_bool"
+        }
+      ]
+    },
+    "t_uint128": {
+      "encoding": "inplace",
+      "label": "uint128",
+      "numberOfBytes": "16"
+    },
+    "t_uint256": {
+      "encoding": "inplace",
+      "label": "uint256",
+      "numberOfBytes": "32"
+    },
+    "t_uint64": {
+      "encoding": "inplace",
+      "label": "uint64",
+      "numberOfBytes": "8"
+    },
+    "t_uint8": {
+      "encoding": "inplace",
+      "label": "uint8",
+      "numberOfBytes": "1"
+    }
+  }
+}
