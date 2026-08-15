@@ -39,13 +39,13 @@ Factory 部署后默认不可创建市场。Governance 必须在 marketplace、G
 
 ## 3. 状态机
 
-| 状态 | 允许 | 禁止 |
-|---|---|---|
-| OPEN，`now < closeAt` | buy、transfer、listing/fill/cancel、creator void | resolve、timeout |
-| CLOSED，`closeAt ≤ now < deadline` | transfer、listing/fill/cancel、creator resolve/void | primary buy、timeout |
-| RESOLVED | winner/early claim、loser burn、terminal listing return | 新风险、状态改变 |
-| VOIDED_CREATOR | 1:1 refund、bond return、terminal listing return | 新风险、结果改变 |
-| VOIDED_TIMEOUT | 1:1 refund、延迟 bonus、terminal listing return | 新风险、结果改变 |
+| 状态                               | 允许                                                    | 禁止                 |
+| ---------------------------------- | ------------------------------------------------------- | -------------------- |
+| OPEN，`now < closeAt`              | buy、transfer、listing/fill/cancel、creator void        | resolve、timeout     |
+| CLOSED，`closeAt ≤ now < deadline` | transfer、listing/fill/cancel、creator resolve/void     | primary buy、timeout |
+| RESOLVED                           | winner/early claim、loser burn、terminal listing return | 新风险、状态改变     |
+| VOIDED_CREATOR                     | 1:1 refund、bond return、terminal listing return        | 新风险、结果改变     |
+| VOIDED_TIMEOUT                     | 1:1 refund、延迟 bonus、terminal listing return         | 新风险、结果改变     |
 
 市场存储不需要 keeper 写入 CLOSED；所有入口按时间计算。终局不可逆。resolution deadline 是
 `closeAt + 24 hours`。creator 的 resolve/void 窗口均为半开区间：仅 `now < deadline`；在
@@ -144,12 +144,12 @@ unused-gas penalty 的 `actualGasCost`，形成保守损失上限。它不接触
 
 ## 11. 权限与暂停
 
-| 主体 | 能做 | 明确不能做 |
-|---|---|---|
-| Governance Timelock | 有界配置、未来 market limits、授权 accrual、guard cap/retire、Paymaster policy | 改存量市场、改结果、取本金 |
-| Emergency Safe | 每 epoch 一次、≤7 天暂停新增 market/buy/listing/fill/Permit2/Paymaster | unpause、续期、提款、调高费用 |
-| Creator | 创建、首注前有限更新、deadline 前 void、close 后窗口内 resolve | 提本金、改公式、超时 resolve/void |
-| 任意地址 | timeout、bond settle、guard sync、terminal return、claimFor | 把他人权益付给自己 |
+| 主体                | 能做                                                                           | 明确不能做                        |
+| ------------------- | ------------------------------------------------------------------------------ | --------------------------------- |
+| Governance Timelock | 有界配置、未来 market limits、授权 accrual、guard cap/retire、Paymaster policy | 改存量市场、改结果、取本金        |
+| Emergency Safe      | 每 epoch 一次、≤7 天暂停新增 market/buy/listing/fill/Permit2/Paymaster         | unpause、续期、提款、调高费用     |
+| Creator             | 创建、首注前有限更新、deadline 前 void、close 后窗口内 resolve                 | 提本金、改公式、超时 resolve/void |
+| 任意地址            | timeout、bond settle、guard sync、terminal return、claimFor                    | 把他人权益付给自己                |
 
 应急到期自动恢复；Timelock 必须开启新 epoch 后 Emergency Safe 才能再次暂停。撤单、transfer、
 winner claim、early claim、refund、timeout bonus 永不受暂停影响。
