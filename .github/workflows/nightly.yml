@@ -1,0 +1,111 @@
+name: nightly-security
+
+on:
+  workflow_dispatch:
+    inputs:
+      full_mutation:
+        description: Run the long full-contract mutation campaign
+        required: true
+        default: false
+        type: boolean
+  schedule:
+    - cron: "17 18 * * 1-6"
+    - cron: "41 18 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  deep-solidity-gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { submodules: false }
+      - name: Bootstrap pinned Foundry
+        run: bash scripts/bootstrap-foundry.sh
+      - name: Bootstrap pinned dependencies
+        run: bash scripts/bootstrap-deps.sh
+      - name: Nightly stateful invariants (fresh execution)
+        env:
+          FOUNDRY_PROFILE: nightly
+        run: bash scripts/forge.sh test --match-path test/invariant/MarketAccounting.invariant.t.sol -vv
+      - name: Full unfiltered coverage and threshold enforcement (fresh execution)
+        run: bash scripts/coverage-full.sh
+
+  security-runners:
+    name: security-${{ matrix.gate }}
+    runs-on: [self-hosted, macOS, ARM64, cpredict-security]
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        gate:
+          - slither
+          - aderyn
+          - echidna
+          - medusa
+          - halmos
+          - smt
+          - mutation-feevault
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { submodules: false }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.2
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Bootstrap pinned Foundry
+        run: bash scripts/bootstrap-foundry.sh
+      - name: Bootstrap pinned dependencies
+        run: bash scripts/bootstrap-deps.sh
+      - name: Link and verify preprovisioned pinned security tools
+        env:
+          CPREDICT_SECURITY_TOOLS_ROOT: ${{ vars.CPREDICT_SECURITY_TOOLS_ROOT }}
+        run: bash scripts/release/prepare-security-tools.sh
+      - name: Run fresh security tool and validate its new evidence
+        run: bash "scripts/security/run-${{ matrix.gate }}.sh"
+
+  full-mutation:
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '41 18 * * 0') ||
+      (github.event_name == 'workflow_dispatch' && inputs.full_mutation)
+    runs-on: [self-hosted, macOS, ARM64, cpredict-security]
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { submodules: false }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.2
+      - name: Bootstrap pinned Foundry
+        run: bash scripts/bootstrap-foundry.sh
+      - name: Bootstrap pinned dependencies
+        run: bash scripts/bootstrap-deps.sh
+      - name: Link and verify preprovisioned pinned security tools
+        env:
+          CPREDICT_SECURITY_TOOLS_ROOT: ${{ vars.CPREDICT_SECURITY_TOOLS_ROOT }}
+        run: bash scripts/release/prepare-security-tools.sh
+      - name: Run fresh full mutation campaign
+        env:
+          CPREDICT_MUTATION_CONFIRM: I_UNDERSTAND_MUTATION_RUNTIME
+          CPREDICT_MUTATION_CAMPAIGN_TIMEOUT_SECONDS: "21000"
+        run: bash scripts/security/run-mutation-full.sh
+
+  nightly-job-status-aggregate:
+    if: always()
+    needs: [deep-solidity-gates, security-runners, full-mutation]
+    runs-on: ubuntu-latest
+    steps:
+      # This is orchestration status only. Release acceptance separately validates
+      # the same-checkout, source-bound semantic evidence records.
+      - name: Require every scheduled nightly job status
+        env:
+          DEEP_RESULT: ${{ needs.deep-solidity-gates.result }}
+          SECURITY_RESULT: ${{ needs.security-runners.result }}
+          FULL_MUTATION_RESULT: ${{ needs.full-mutation.result }}
+        run: |
+          test "$DEEP_RESULT" = success
+          test "$SECURITY_RESULT" = success
+          test "$FULL_MUTATION_RESULT" = success -o "$FULL_MUTATION_RESULT" = skipped

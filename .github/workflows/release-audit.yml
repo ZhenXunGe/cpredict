@@ -1,0 +1,263 @@
+name: release-audit
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release-audit-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  full-release-gates:
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, macOS, ARM64, cpredict-security]
+    timeout-minutes: 540
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.2
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Bootstrap pinned Foundry and dependencies
+        run: |
+          bash scripts/bootstrap-foundry.sh
+          bash scripts/bootstrap-deps.sh
+      - name: Link and verify pinned security tools
+        env:
+          CPREDICT_SECURITY_TOOLS_ROOT: ${{ vars.CPREDICT_SECURITY_TOOLS_ROOT }}
+        run: bash scripts/release/prepare-security-tools.sh
+      - name: Materialize locked authoritative requirements
+        env:
+          CPREDICT_REQUIREMENTS_SOURCE_B64: ${{ secrets.CPREDICT_REQUIREMENTS_SOURCE_B64 }}
+        run: |
+          node --input-type=module -e '
+            import { writeFileSync } from "node:fs";
+            const encoded = process.env.CPREDICT_REQUIREMENTS_SOURCE_B64 ?? "";
+            if (encoded.length === 0 || encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) throw new Error("requirements secret is missing or invalid");
+            const bytes = Buffer.from(encoded, "base64");
+            if (bytes.length === 0) throw new Error("requirements source is empty");
+            writeFileSync(`${process.env.RUNNER_TEMP}/product-framework.md`, bytes, { mode: 0o600 });
+          '
+      - name: Materialize approved commercial economics evidence and policy
+        env:
+          CPREDICT_ECONOMICS_INPUT_B64: ${{ secrets.CPREDICT_COMMERCIAL_ECONOMICS_INPUT_B64 }}
+          CPREDICT_ECONOMICS_POLICY_B64: ${{ secrets.CPREDICT_COMMERCIAL_ECONOMICS_POLICY_B64 }}
+        run: |
+          node --input-type=module -e '
+            import { writeFileSync } from "node:fs";
+            import { join } from "node:path";
+            const decode = (name) => {
+              const encoded = process.env[name] ?? "";
+              if (encoded.length === 0 || encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) throw new Error(`${name} is missing or invalid`);
+              const bytes = Buffer.from(encoded, "base64");
+              if (bytes.length === 0) throw new Error(`${name} decoded to an empty document`);
+              JSON.parse(bytes.toString("utf8"));
+              return bytes;
+            };
+            writeFileSync(join(process.env.RUNNER_TEMP, "commercial-economics-input.json"), decode("CPREDICT_ECONOMICS_INPUT_B64"), { mode: 0o600 });
+            writeFileSync(join(process.env.RUNNER_TEMP, "commercial-economics-policy.json"), decode("CPREDICT_ECONOMICS_POLICY_B64"), { mode: 0o600 });
+          '
+      - name: Execute fixed same-SHA release gates
+        env:
+          CPREDICT_RELEASE_EVIDENCE_ROOT: ${{ runner.temp }}/release-evidence
+          CPREDICT_REQUIREMENTS_SOURCE: ${{ runner.temp }}/product-framework.md
+          CPREDICT_ECONOMICS_INPUT: ${{ runner.temp }}/commercial-economics-input.json
+          CPREDICT_ECONOMICS_POLICY: ${{ runner.temp }}/commercial-economics-policy.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          gates=(
+            requirements sbom generated-artifacts release-tools secret-scan deployment-tooling
+            solidity-viair solidity-nonir coverage gas-size offchain postgresql commercial-economics
+            slither aderyn echidna medusa halmos smt mutation
+          )
+          for gate in "${gates[@]}"; do
+            node scripts/release/run-release-gate.mjs \
+              --gate "$gate" \
+              --evidence-root "$CPREDICT_RELEASE_EVIDENCE_ROOT" \
+              --requirements-source "$CPREDICT_REQUIREMENTS_SOURCE"
+          done
+      - name: Upload source-bound gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-gates-runtime-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-evidence
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+
+  commercial-load:
+    if: github.ref == 'refs/heads/main'
+    environment: cpredict-commercial-release
+    runs-on: [self-hosted, Linux, X64, cpredict-commercial-load-controller]
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.2
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Materialize protected commercial-load verification key
+        env:
+          CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY_B64: ${{ secrets.CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY_B64 }}
+        run: |
+          node --input-type=module -e '
+            import { writeFileSync } from "node:fs";
+            import { join } from "node:path";
+            const encoded = process.env.CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY_B64 ?? "";
+            if (encoded.length === 0 || encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) throw new Error("commercial-load public key secret is missing or invalid");
+            const bytes = Buffer.from(encoded, "base64");
+            if (bytes.length === 0) throw new Error("commercial-load public key is empty");
+            writeFileSync(join(process.env.RUNNER_TEMP, "commercial-load-public-key.pem"), bytes, { mode: 0o600 });
+          '
+      - name: Validate and record distributed commercial-load evidence
+        env:
+          CPREDICT_COMMERCIAL_LOAD_BUNDLE: ${{ vars.CPREDICT_COMMERCIAL_LOAD_BUNDLE }}
+          CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY: ${{ runner.temp }}/commercial-load-public-key.pem
+          CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY_SHA256: ${{ vars.CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY_SHA256 }}
+          CPREDICT_RELEASE_EVIDENCE_ROOT: ${{ runner.temp }}/release-evidence
+        run: >-
+          node scripts/release/record-commercial-load.mjs
+          --bundle "$CPREDICT_COMMERCIAL_LOAD_BUNDLE"
+          --trusted-public-key "$CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY"
+          --trusted-public-key-sha256 "$CPREDICT_COMMERCIAL_LOAD_PUBLIC_KEY_SHA256"
+          --evidence-root "$CPREDICT_RELEASE_EVIDENCE_ROOT"
+      - name: Upload protected commercial-load gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-gates-commercial-load-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-evidence
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+
+  history-secret-scan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: false
+      - name: Scan all reachable Git history with pinned TruffleHog
+        id: history_scan
+        uses: trufflesecurity/trufflehog@6f3c981e7b77f235fd2702dd74af25fc4b72bf11 # v3.96.0
+        with:
+          path: ./
+          base: ""
+          head: ""
+          version: "3.96.0"
+          extra_args: --results=verified,unknown --no-update
+      - name: Record successful immutable full-history result
+        if: always()
+        env:
+          CPREDICT_HISTORY_SCAN_OUTCOME: ${{ steps.history_scan.outcome }}
+        run: >-
+          node scripts/release/record-history-secret-scan.mjs
+          --evidence-root "${{ runner.temp }}/release-evidence"
+      - name: Upload history gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-gates-history-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-evidence
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 30
+
+  attest-release-gates:
+    needs: [full-release-gates, commercial-load, history-secret-scan]
+    if: >-
+      always() &&
+      needs.full-release-gates.result == 'success' &&
+      needs.commercial-load.result == 'success' &&
+      needs.history-secret-scan.result == 'success' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      attestations: write
+      contents: read
+      id-token: write
+    env:
+      RUNNER_ENVIRONMENT: ${{ runner.environment }}
+      GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.2
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Rebuild contracts with pinned Ubuntu toolchain
+        run: |
+          bash scripts/bootstrap-foundry.sh
+          bash scripts/bootstrap-deps.sh
+          FOUNDRY_PROFILE=default bash scripts/forge.sh build --force
+      - name: Download and merge the three successful evidence lanes
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: release-gates-*-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/release-evidence
+          merge-multiple: true
+      - name: Prove generated artifacts are reproducible from this checkout
+        run: |
+          npm run generate:artifacts
+          git diff --exit-code -- generated manifests/source-manifest.json manifests/sbom.spdx.json manifests/licenses.json manifests/third-party-notices.md
+          npm run check:artifacts
+      - name: Aggregate and semantically revalidate all 22 gate records
+        run: |
+          node scripts/release/aggregate-release-gates.mjs --evidence-root "${{ runner.temp }}/release-evidence"
+          node scripts/release/check-release-gates.mjs --evidence-root "${{ runner.temp }}/release-evidence"
+      - name: Build same-SHA custom attestation predicate
+        run: >-
+          node scripts/release/build-ci-attestation-predicate.mjs
+          --evidence-root "${{ runner.temp }}/release-evidence"
+          --output "${{ runner.temp }}/release-gates-predicate.json"
+      - name: Compute immutable subject digest
+        id: subject
+        shell: bash
+        run: |
+          digest="$(sha256sum "${{ runner.temp }}/release-evidence/manifests/release-gates.json" | awk '{print $1}')"
+          printf 'sha256=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+      - name: Attest release gate index with GitHub OIDC
+        id: attest
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-name: manifests/release-gates.json
+          subject-digest: sha256:${{ steps.subject.outputs.sha256 }}
+          predicate-type: https://github.com/ZhenXunGe/cpredict/attestations/release-gates/v2
+          predicate-path: ${{ runner.temp }}/release-gates-predicate.json
+      - name: Upload attested audit evidence for signed-tag consumption
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cpredict-release-audit-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/release-evidence
+            ${{ runner.temp }}/release-gates-predicate.json
+            ${{ steps.attest.outputs.bundle-path }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 90

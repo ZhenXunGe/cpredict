@@ -1,0 +1,179 @@
+name: release-bundle
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  actions: read
+  attestations: read
+  contents: read
+
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22.22.2
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Materialize locked authoritative requirements
+        env:
+          CPREDICT_REQUIREMENTS_SOURCE_B64: ${{ secrets.CPREDICT_REQUIREMENTS_SOURCE_B64 }}
+        run: |
+          node --input-type=module -e '
+            import { writeFileSync } from "node:fs";
+            import { join } from "node:path";
+            const encoded = process.env.CPREDICT_REQUIREMENTS_SOURCE_B64 ?? "";
+            if (encoded.length === 0 || encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) {
+              throw new Error("CPREDICT_REQUIREMENTS_SOURCE_B64 is missing or invalid");
+            }
+            const source = Buffer.from(encoded, "base64");
+            if (source.length === 0) throw new Error("decoded requirements source is empty");
+            writeFileSync(join(process.env.RUNNER_TEMP, "product-framework.md"), source, { mode: 0o600 });
+          '
+      - name: Provision the sole trusted release tag key
+        env:
+          CPREDICT_RELEASE_GPG_PUBLIC_KEY_B64: ${{ secrets.CPREDICT_RELEASE_GPG_PUBLIC_KEY_B64 }}
+          CPREDICT_RELEASE_GPG_FINGERPRINT: ${{ vars.CPREDICT_RELEASE_GPG_FINGERPRINT }}
+        shell: bash
+        run: |
+          node --input-type=module -e '
+            import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+            import { join } from "node:path";
+            const encoded = process.env.CPREDICT_RELEASE_GPG_PUBLIC_KEY_B64 ?? "";
+            if (encoded.length === 0 || encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) {
+              throw new Error("CPREDICT_RELEASE_GPG_PUBLIC_KEY_B64 is missing or invalid");
+            }
+            const home = join(process.env.RUNNER_TEMP, "cpredict-release-gnupg");
+            mkdirSync(home, { mode: 0o700 });
+            writeFileSync(join(home, "release-key.asc"), Buffer.from(encoded, "base64"), { mode: 0o600 });
+            appendFileSync(process.env.GITHUB_ENV, `GNUPGHOME=${home}\n`);
+          '
+          export GNUPGHOME="$RUNNER_TEMP/cpredict-release-gnupg"
+          expected="$(printf '%s' "$CPREDICT_RELEASE_GPG_FINGERPRINT" | tr '[:lower:]' '[:upper:]')"
+          fingerprint_pattern='^([0-9A-F]{40}|[0-9A-F]{64})$'
+          [[ "$expected" =~ $fingerprint_pattern ]] || {
+            printf '%s\n' 'CPREDICT_RELEASE_GPG_FINGERPRINT is missing or invalid' >&2
+            exit 1
+          }
+          key_file="$RUNNER_TEMP/cpredict-release-gnupg/release-key.asc"
+          primary_count="$(gpg --batch --with-colons --import-options show-only --import "$key_file" | awk -F: '$1 == "pub" { count += 1 } END { print count + 0 }')"
+          primary_fingerprint="$(gpg --batch --with-colons --import-options show-only --import "$key_file" | awk -F: '$1 == "pub" { want = 1; next } want && $1 == "fpr" { print toupper($10); exit }')"
+          [[ "$primary_count" == "1" && "$primary_fingerprint" == "$expected" ]] || {
+            printf '%s\n' 'release public key does not match the sole configured fingerprint' >&2
+            exit 1
+          }
+          gpg --batch --import "$key_file"
+      - name: Requirements and release tooling unit gates
+        run: |
+          npm run test:requirements
+          npm run test:release-tools
+          npm run test:sbom
+          npm run check:sbom
+          npm run check:requirements -- --source "$RUNNER_TEMP/product-framework.md"
+      - name: Download and verify same-SHA attested release gate evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git verify-tag "$GITHUB_REF_NAME"
+          mapfile -t audit_runs < <(
+            git for-each-ref --format='%(contents)' "refs/tags/$GITHUB_REF_NAME" |
+              sed -n 's/^Release-Audit-Run: \([1-9][0-9]*\)$/\1/p'
+          )
+          [[ "${#audit_runs[@]}" -eq 1 ]] || {
+            printf '%s\n' 'signed annotated tag must contain exactly one Release-Audit-Run trailer' >&2
+            exit 1
+          }
+          audit_run_id="${audit_runs[0]}"
+          run_json="$(gh api "repos/ZhenXunGe/cpredict/actions/runs/$audit_run_id")"
+          jq -e \
+            --arg sha "$GITHUB_SHA" \
+            '.head_sha == $sha and .head_branch == "main" and .event == "workflow_dispatch" and .conclusion == "success" and .path == ".github/workflows/release-audit.yml"' \
+            <<<"$run_json" >/dev/null
+          evidence_root="$RUNNER_TEMP/cpredict-release-audit"
+          mkdir -p "$evidence_root"
+          gh run download "$audit_run_id" \
+            --repo ZhenXunGe/cpredict \
+            --name "cpredict-release-audit-$GITHUB_SHA" \
+            --dir "$evidence_root"
+          test -f "$evidence_root/manifests/release-gates.json"
+          mapfile -t attestation_bundles < <(find "$evidence_root" -type f -name '*.jsonl' -print)
+          [[ "${#attestation_bundles[@]}" -eq 1 ]] || {
+            printf '%s\n' 'audit artifact must contain exactly one attestation bundle' >&2
+            exit 1
+          }
+          gh attestation verify "$evidence_root/manifests/release-gates.json" \
+            --bundle "${attestation_bundles[0]}" \
+            --repo ZhenXunGe/cpredict \
+            --cert-oidc-issuer https://token.actions.githubusercontent.com \
+            --cert-identity https://github.com/ZhenXunGe/cpredict/.github/workflows/release-audit.yml@refs/heads/main \
+            --signer-workflow github.com/ZhenXunGe/cpredict/.github/workflows/release-audit.yml \
+            --signer-digest "$GITHUB_SHA" \
+            --source-digest "$GITHUB_SHA" \
+            --source-ref refs/heads/main \
+            --predicate-type https://github.com/ZhenXunGe/cpredict/attestations/release-gates/v2 \
+            --deny-self-hosted-runners \
+            --format json >"$RUNNER_TEMP/release-attestation-verification.json"
+          node scripts/release/verify-ci-attestation.mjs \
+            --verification-json "$RUNNER_TEMP/release-attestation-verification.json" \
+            --commit "$GITHUB_SHA" \
+            --run-id "$audit_run_id" \
+            --evidence-root "$evidence_root"
+          npm run check:release-gates -- --evidence-root "$evidence_root"
+          printf 'CPREDICT_ATTESTED_GATES_ROOT=%s\n' "$evidence_root" >> "$GITHUB_ENV"
+      - name: Node and shell syntax
+        shell: bash
+        run: |
+          while IFS= read -r -d '' file; do node --check "$file"; done < <(find scripts -type f -name '*.mjs' -print0)
+          while IFS= read -r -d '' file; do bash -n "$file"; done < <(find scripts -type f -name '*.sh' -print0)
+      - name: Build deterministic release bundle from signed tag
+        env:
+          RELEASE_BUNDLE: ${{ runner.temp }}/cpredict-release.tar.gz
+        run: >-
+          npm run build:release-bundle --
+          --tag "$GITHUB_REF_NAME"
+          --output "$RELEASE_BUNDLE"
+          --requirements-source "$RUNNER_TEMP/product-framework.md"
+          --attested-gates-root "$CPREDICT_ATTESTED_GATES_ROOT"
+      - name: Recheck bundle against the same clean tagged checkout
+        env:
+          RELEASE_BUNDLE: ${{ runner.temp }}/cpredict-release.tar.gz
+        run: >-
+          npm run check:release-bundle --
+          --tag "$GITHUB_REF_NAME"
+          --bundle "$RELEASE_BUNDLE"
+          --requirements-source "$RUNNER_TEMP/product-framework.md"
+          --attested-gates-root "$CPREDICT_ATTESTED_GATES_ROOT"
+      - name: Write outer archive checksum
+        env:
+          RELEASE_BUNDLE: ${{ runner.temp }}/cpredict-release.tar.gz
+        run: |
+          node --input-type=module -e '
+            import { createHash } from "node:crypto";
+            import { basename } from "node:path";
+            import { readFileSync, writeFileSync } from "node:fs";
+            const path = process.env.RELEASE_BUNDLE;
+            const digest = createHash("sha256").update(readFileSync(path)).digest("hex");
+            writeFileSync(`${path}.sha256`, `${digest}  ${basename(path)}\n`, { mode: 0o644 });
+          '
+      - name: Upload verified bundle and archive checksum
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cpredict-${{ github.ref_name }}
+          path: |
+            ${{ runner.temp }}/cpredict-release.tar.gz
+            ${{ runner.temp }}/cpredict-release.tar.gz.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
