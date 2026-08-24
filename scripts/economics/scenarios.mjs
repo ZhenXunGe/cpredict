@@ -24,7 +24,7 @@ const common = {
     ...FORMAL_GATE_UPPER_BOUND_GAS,
     ...UNVERIFIED_TRIAL_FINALIZE_GAS,
   },
-  gasPriceWei: 10_000_000n, // 0.01 gwei, sensitivity input only; not a Base price claim.
+  gasPriceWei: 10_000_000n, // 0.01 gwei, sensitivity input only; not a Arbitrum price claim.
   ethUsdE8: 3000n * 100_000_000n, // 3,000 USD, sensitivity input only; not a forecast.
   usdcDecimals: 6,
   rakeBps: 500n,

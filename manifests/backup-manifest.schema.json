@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example/schemas/stack-backup-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "evidenceClass", "chainId", "generatedAt", "sourceManifestSha256", "deploymentIdentity", "deploymentInputSha256", "postgresVersion", "dumps", "migrations", "snapshots"],
+  "properties": {
+    "schemaVersion": { "const": "cpredict.stack-backup.v1" },
+    "evidenceClass": { "const": "LOCAL_STACK_BACKUP" },
+    "chainId": { "const": 421614 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "sourceManifestSha256": { "$ref": "#/$defs/sha256" },
+    "deploymentIdentity": { "type": "string", "pattern": "^[0-9a-f]{24}$" },
+    "deploymentInputSha256": { "$ref": "#/$defs/sha256" },
+    "postgresVersion": { "type": "string", "pattern": "^postgres \\(PostgreSQL\\) 17\\." },
+    "dumps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["indexer", "paymaster"],
+      "properties": {
+        "indexer": { "$ref": "#/$defs/fileRecord" },
+        "paymaster": { "$ref": "#/$defs/fileRecord" }
+      }
+    },
+    "migrations": {
+      "type": "array",
+      "minItems": 4,
+      "items": { "$ref": "#/$defs/migration" }
+    },
+    "snapshots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["indexer", "paymaster"],
+      "properties": {
+        "indexer": { "type": "object" },
+        "paymaster": { "type": "object" }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "bytes", "sha256"],
+      "properties": {
+        "file": { "type": "string", "pattern": "^(indexer|paymaster)\\.dump$" },
+        "bytes": { "type": "integer", "minimum": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/sha256" }
+      }
+    }
+  }
+}

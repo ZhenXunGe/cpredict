@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 
-export const BASE_SEPOLIA_CHAIN_ID = 84_532;
+export const ARBITRUM_SEPOLIA_CHAIN_ID = 421_614;
 export const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 export const CONTRACT_KEYS = Object.freeze([
@@ -197,14 +197,14 @@ export function assertRuntimeEvidence(value, schemaVersion, path = "evidence") {
   assertObject(value, path);
   if (value.schemaVersion !== schemaVersion)
     fail(`${path}.schemaVersion`, `must equal ${schemaVersion}`);
-  if (value.evidenceClass !== "BASE_SEPOLIA_RUNTIME") {
+  if (value.evidenceClass !== "ARBITRUM_SEPOLIA_RUNTIME") {
     fail(
       `${path}.evidenceClass`,
-      "must equal BASE_SEPOLIA_RUNTIME; templates are not proof",
+      "must equal ARBITRUM_SEPOLIA_RUNTIME; templates are not proof",
     );
   }
-  if (value.chainId !== BASE_SEPOLIA_CHAIN_ID)
-    fail(`${path}.chainId`, `must equal ${BASE_SEPOLIA_CHAIN_ID}`);
+  if (value.chainId !== ARBITRUM_SEPOLIA_CHAIN_ID)
+    fail(`${path}.chainId`, `must equal ${ARBITRUM_SEPOLIA_CHAIN_ID}`);
 }
 
 export function normalizeAddressSet(values, path) {

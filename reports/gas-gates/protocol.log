@@ -29,6 +29,6 @@ Logs:
 Logs:
   winner claim transaction gas: 86856
 
-Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 10.43ms (8.74ms CPU time)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 6.47ms (5.67ms CPU time)
 
-Ran 1 test suite in 17.63ms (10.43ms CPU time): 7 tests passed, 0 failed, 0 skipped (7 total tests)
+Ran 1 test suite in 10.67ms (6.47ms CPU time): 7 tests passed, 0 failed, 0 skipped (7 total tests)

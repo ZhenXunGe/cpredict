@@ -1,8 +1,9 @@
 # 部署、验证、监控、应急与回滚
 
-## 1. Base Sepolia 前置条件
+## 1. Arbitrum Sepolia 前置条件
 
-- 确认 chainId 84532、canonical USDC/Permit2/EntryPoint v0.8 地址和 runtime codehash；
+- 确认 chainId 421614、Ethereum Sepolia parent chainId 11155111、canonical
+  USDC/Permit2/EntryPoint v0.8 地址和 runtime codehash；
 - 已创建 4/6 Governance Safe、2/6 Emergency Safe、treasury、独立 sponsor signer；
 - deployer 有受限测试 ETH，RPC 可信且不得把 private key 写入 `.env`/shell history；
 - 所有静态/测试/审计阻断关闭，source manifest 冻结；
@@ -10,7 +11,7 @@
 
 ## 2. 两阶段部署
 
-`DeployBaseSepolia.s.sol` 部署 Timelock(1h)、Config、Emergency、Guard、Escrows、Full deployer、
+`DeployArbitrumSepolia.s.sol` 部署 Timelock(1h)、Config、Emergency、Guard、Escrows、Full deployer、
 Clone implementation、Factory、Marketplace、Paymaster，并 schedule 一次性 wiring batch。等待至少 1h
 后运行 `FinalizeBootstrap.s.sol` 执行 batch，并撤销 deployer proposer/canceller/admin。两阶段都必须
 核对 pending manifest、simulation、broadcast receipt 和最终 roles。
@@ -74,19 +75,25 @@ Timelock。主网 Timelock 计划为 7 天，任何缩短属于新审计/治理�
 
 ## 8. 当前部署状态
 
-未部署。`deployments/base-sepolia/README.md` 是唯一当前状态；没有地址/交易/区块意味着所有实链
+未部署。`deployments/arbitrum-sepolia/README.md` 是唯一当前状态；没有地址/交易/区块意味着所有实链
 项均为 unverified。
+
+Compose、部署同步、Arbiscan、可恢复 canary、备份/恢复和本地故障演练入口已经补齐，操作手册见
+`docs/zh/13-compose-runtime-operations.md`。当前主机没有 Docker/Compose，所以镜像构建、新鲜 Compose
+健康链、真实 backup/restore 仍未运行；本地故障报告也只能标记 `LOCAL_SIMULATION`。这些工具不改变
+`BLOCKED_NOT_DEPLOYED`、24h canary `NOT RUN` 或 formal ops `NOT RUN`。
 
 ## 9. 证据门禁与禁止伪证
 
 仓库已提供 fail-closed 的静态工具，但它们不会部署或广播：
 
 - `final-manifest.schema.json` 定义最终交付字段；`validate-final-manifest.mjs` 进一步严格校验
-  chainId 84532、全部地址/交易/区块/codehash/constructor/config、4/6 与 2/6 Safe、1h Timelock、
+  chainId 421614、全部地址/交易/区块/codehash/constructor/config、4/6 与 2/6 Safe、1h Timelock、
   Factory fingerprint、源码验证和临时权限清零；
 - `verify-live-rpc.mjs` 必须连接两个不同 origin 的独立 RPC，并在同一个 reference block 比较
   block hash、runtime code、关键 getter/wiring、Factory active/fingerprint、Safe owner/threshold 和
-  从 RoleGranted/RoleRevoked 日志重建的 Timelock 最终角色；任何缺失或分歧均失败；
+  从 RoleGranted/RoleRevoked 日志重建的 Timelock 最终角色；reference block 还必须绑定
+  `l1BlockNumber`，且不高于两个 RPC 各自返回的 `finalized` block；任何缺失或分歧均失败；
 - `validate-canary-evidence.mjs` 要求 Full、Clone、allowance、Permit2、AA、C2C、resolve、void、
   emergency、Paymaster、deadline 边界以及真实 24h timeout 的完整 receipt；本金必须 1:1，bonus
   总和必须等于 slash bond，零参与者 bond 必须进入 creator credit；
@@ -94,7 +101,7 @@ Timelock。主网 Timelock 计划为 7 天，任何缩短属于新审计/治理�
   自动到期、Indexer reorg/备份恢复、KMS rotation 和 Paymaster deposit loss cap 的不可变证据；
 - `validate-monitoring-config.mjs` 只证明规则静态完整，不证明 Alertmanager/Pager/Sentry 真实送达。
 
-`deployments/base-sepolia/templates/*.template.json` 都带 `TEMPLATE_NOT_RUNTIME_EVIDENCE`，并被严格
+`deployments/arbitrum-sepolia/templates/*.template.json` 都带 `TEMPLATE_NOT_RUNTIME_EVIDENCE`，并被严格
 validator 主动拒绝。禁止把模板、simulation、pending manifest、单 RPC 输出、未确认 receipt 或手填
-状态当作 Base Sepolia runtime proof。证据必须存放在受控的不可变外部存储，仓库不保存私钥、RPC token、
+状态当作 Arbitrum Sepolia runtime proof。证据必须存放在受控的不可变外部存储，仓库不保存私钥、RPC token、
 KMS 凭据、Safe 凭据或告警路由 secret。

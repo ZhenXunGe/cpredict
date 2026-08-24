@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 671,
+      "astId": 38048,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_balances",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_mapping(t_uint256,t_mapping(t_address,t_uint256))"
     },
     {
-      "astId": 677,
+      "astId": 38054,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_operatorApprovals",
       "offset": 0,
@@ -17,7 +17,7 @@
       "type": "t_mapping(t_address,t_mapping(t_address,t_bool))"
     },
     {
-      "astId": 679,
+      "astId": 38056,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_uri",
       "offset": 0,
@@ -25,7 +25,7 @@
       "type": "t_string_storage"
     },
     {
-      "astId": 1772,
+      "astId": 39149,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_totalSupply",
       "offset": 0,
@@ -33,7 +33,7 @@
       "type": "t_mapping(t_uint256,t_uint256)"
     },
     {
-      "astId": 1774,
+      "astId": 39151,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_totalSupplyAll",
       "offset": 0,
@@ -41,7 +41,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14114,
+      "astId": 56101,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_initialized",
       "offset": 0,
@@ -49,7 +49,7 @@
       "type": "t_bool"
     },
     {
-      "astId": 14116,
+      "astId": 56103,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "factory",
       "offset": 1,
@@ -57,15 +57,15 @@
       "type": "t_address"
     },
     {
-      "astId": 14119,
+      "astId": 56106,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_paymentToken",
       "offset": 0,
       "slot": "6",
-      "type": "t_contract(IERC20)2781"
+      "type": "t_contract(IERC20)39643"
     },
     {
-      "astId": 14121,
+      "astId": 56108,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "config",
       "offset": 0,
@@ -73,23 +73,23 @@
       "type": "t_address"
     },
     {
-      "astId": 14124,
+      "astId": 56111,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "emergencyController",
       "offset": 0,
       "slot": "8",
-      "type": "t_contract(IEmergencyControllerV1)13251"
+      "type": "t_contract(IEmergencyControllerV1)55238"
     },
     {
-      "astId": 14127,
+      "astId": 56114,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "exposureGuard",
       "offset": 0,
       "slot": "9",
-      "type": "t_contract(ILaunchExposureGuardV1)13373"
+      "type": "t_contract(ILaunchExposureGuardV1)55360"
     },
     {
-      "astId": 14129,
+      "astId": 56116,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "bondEscrow",
       "offset": 0,
@@ -97,23 +97,23 @@
       "type": "t_address"
     },
     {
-      "astId": 14132,
+      "astId": 56119,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "feeVault",
       "offset": 0,
       "slot": "11",
-      "type": "t_contract(IFeeVaultV1)13292"
+      "type": "t_contract(IFeeVaultV1)55279"
     },
     {
-      "astId": 14135,
+      "astId": 56122,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "permit2",
       "offset": 0,
       "slot": "12",
-      "type": "t_contract(ISignatureTransfer)9286"
+      "type": "t_contract(ISignatureTransfer)50108"
     },
     {
-      "astId": 14137,
+      "astId": 56124,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "creator",
       "offset": 0,
@@ -121,7 +121,7 @@
       "type": "t_address"
     },
     {
-      "astId": 14139,
+      "astId": 56126,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "creatorTreasury",
       "offset": 0,
@@ -129,7 +129,7 @@
       "type": "t_address"
     },
     {
-      "astId": 14141,
+      "astId": 56128,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "rulesHash",
       "offset": 0,
@@ -137,7 +137,7 @@
       "type": "t_bytes32"
     },
     {
-      "astId": 14143,
+      "astId": 56130,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "resolutionSourceHash",
       "offset": 0,
@@ -145,7 +145,7 @@
       "type": "t_bytes32"
     },
     {
-      "astId": 14145,
+      "astId": 56132,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "resolutionSourceURI",
       "offset": 0,
@@ -153,7 +153,7 @@
       "type": "t_string_storage"
     },
     {
-      "astId": 14147,
+      "astId": 56134,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "outcomeCount",
       "offset": 0,
@@ -161,7 +161,7 @@
       "type": "t_uint8"
     },
     {
-      "astId": 14149,
+      "astId": 56136,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "createdAt",
       "offset": 1,
@@ -169,7 +169,7 @@
       "type": "t_uint64"
     },
     {
-      "astId": 14151,
+      "astId": 56138,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "closeAt",
       "offset": 9,
@@ -177,7 +177,7 @@
       "type": "t_uint64"
     },
     {
-      "astId": 14153,
+      "astId": 56140,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "earlyBirdStart",
       "offset": 17,
@@ -185,23 +185,23 @@
       "type": "t_uint64"
     },
     {
-      "astId": 14156,
+      "astId": 56143,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "deploymentMode",
       "offset": 25,
       "slot": "18",
-      "type": "t_enum(DeploymentMode)13860"
+      "type": "t_enum(DeploymentMode)55847"
     },
     {
-      "astId": 14159,
+      "astId": 56146,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "marketState",
       "offset": 26,
       "slot": "18",
-      "type": "t_enum(MarketState)13865"
+      "type": "t_enum(MarketState)55852"
     },
     {
-      "astId": 14161,
+      "astId": 56148,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "featureFlags",
       "offset": 0,
@@ -209,7 +209,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14163,
+      "astId": 56150,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "perUserPrimaryCap",
       "offset": 0,
@@ -217,7 +217,7 @@
       "type": "t_uint128"
     },
     {
-      "astId": 14165,
+      "astId": 56152,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "marketPrimaryCap",
       "offset": 16,
@@ -225,7 +225,7 @@
       "type": "t_uint128"
     },
     {
-      "astId": 14167,
+      "astId": 56154,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "minimumPrimaryUnits",
       "offset": 0,
@@ -233,7 +233,7 @@
       "type": "t_uint128"
     },
     {
-      "astId": 14169,
+      "astId": 56156,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "minimumC2CUnits",
       "offset": 16,
@@ -241,7 +241,7 @@
       "type": "t_uint128"
     },
     {
-      "astId": 14171,
+      "astId": 56158,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "creatorBond",
       "offset": 0,
@@ -249,23 +249,23 @@
       "type": "t_uint128"
     },
     {
-      "astId": 14174,
+      "astId": 56161,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_economics",
       "offset": 0,
       "slot": "23",
-      "type": "t_struct(EconomicSnapshot)13914_storage"
+      "type": "t_struct(EconomicSnapshot)55901_storage"
     },
     {
-      "astId": 14177,
+      "astId": 56164,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "payoutBreakdown",
       "offset": 0,
       "slot": "24",
-      "type": "t_struct(PayoutBreakdown)13982_storage"
+      "type": "t_struct(PayoutBreakdown)55969_storage"
     },
     {
-      "astId": 14179,
+      "astId": 56166,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "winningOutcome",
       "offset": 0,
@@ -273,7 +273,7 @@
       "type": "t_uint8"
     },
     {
-      "astId": 14181,
+      "astId": 56168,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_packedMarketAccounting",
       "offset": 0,
@@ -281,7 +281,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14183,
+      "astId": 56170,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "remainingWinningUnits",
       "offset": 0,
@@ -289,7 +289,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14185,
+      "astId": 56172,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "remainingWinnerPool",
       "offset": 0,
@@ -297,7 +297,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14187,
+      "astId": 56174,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "remainingEarlyBirdScore",
       "offset": 0,
@@ -305,7 +305,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14189,
+      "astId": 56176,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "remainingEarlyBirdPool",
       "offset": 0,
@@ -313,7 +313,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14191,
+      "astId": 56178,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "remainingRefundPrincipal",
       "offset": 0,
@@ -321,7 +321,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14193,
+      "astId": 56180,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "remainingTimeoutBonusUnits",
       "offset": 0,
@@ -329,7 +329,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14195,
+      "astId": 56182,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "remainingTimeoutBonusPool",
       "offset": 0,
@@ -337,7 +337,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14197,
+      "astId": 56184,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "timeoutBonusFunded",
       "offset": 0,
@@ -345,7 +345,7 @@
       "type": "t_bool"
     },
     {
-      "astId": 14201,
+      "astId": 56188,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "principalByOutcome",
       "offset": 0,
@@ -353,7 +353,7 @@
       "type": "t_mapping(t_uint256,t_uint256)"
     },
     {
-      "astId": 14205,
+      "astId": 56192,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "_packedBuyerAccounting",
       "offset": 0,
@@ -361,7 +361,7 @@
       "type": "t_mapping(t_address,t_uint256)"
     },
     {
-      "astId": 14209,
+      "astId": 56196,
       "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
       "label": "timeoutBonusUnits",
       "offset": 0,
@@ -385,37 +385,37 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_contract(IERC20)2781": {
+    "t_contract(IERC20)39643": {
       "encoding": "inplace",
       "label": "contract IERC20",
       "numberOfBytes": "20"
     },
-    "t_contract(IEmergencyControllerV1)13251": {
+    "t_contract(IEmergencyControllerV1)55238": {
       "encoding": "inplace",
       "label": "contract IEmergencyControllerV1",
       "numberOfBytes": "20"
     },
-    "t_contract(IFeeVaultV1)13292": {
+    "t_contract(IFeeVaultV1)55279": {
       "encoding": "inplace",
       "label": "contract IFeeVaultV1",
       "numberOfBytes": "20"
     },
-    "t_contract(ILaunchExposureGuardV1)13373": {
+    "t_contract(ILaunchExposureGuardV1)55360": {
       "encoding": "inplace",
       "label": "contract ILaunchExposureGuardV1",
       "numberOfBytes": "20"
     },
-    "t_contract(ISignatureTransfer)9286": {
+    "t_contract(ISignatureTransfer)50108": {
       "encoding": "inplace",
       "label": "contract ISignatureTransfer",
       "numberOfBytes": "20"
     },
-    "t_enum(DeploymentMode)13860": {
+    "t_enum(DeploymentMode)55847": {
       "encoding": "inplace",
       "label": "enum ProtocolTypes.DeploymentMode",
       "numberOfBytes": "1"
     },
-    "t_enum(MarketState)13865": {
+    "t_enum(MarketState)55852": {
       "encoding": "inplace",
       "label": "enum ProtocolTypes.MarketState",
       "numberOfBytes": "1"
@@ -460,13 +460,13 @@
       "label": "string",
       "numberOfBytes": "32"
     },
-    "t_struct(EconomicSnapshot)13914_storage": {
+    "t_struct(EconomicSnapshot)55901_storage": {
       "encoding": "inplace",
       "label": "struct ProtocolTypes.EconomicSnapshot",
       "numberOfBytes": "32",
       "members": [
         {
-          "astId": 13903,
+          "astId": 55890,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "creatorRakeBps",
           "offset": 0,
@@ -474,7 +474,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 13905,
+          "astId": 55892,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "protocolShareBps",
           "offset": 2,
@@ -482,7 +482,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 13907,
+          "astId": 55894,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "earlyBirdShareBps",
           "offset": 4,
@@ -490,7 +490,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 13909,
+          "astId": 55896,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "platformC2CFeeBps",
           "offset": 6,
@@ -498,7 +498,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 13911,
+          "astId": 55898,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "creatorC2CFeeBps",
           "offset": 8,
@@ -506,7 +506,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 13913,
+          "astId": 55900,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "protocolTreasury",
           "offset": 10,
@@ -515,13 +515,13 @@
         }
       ]
     },
-    "t_struct(PayoutBreakdown)13982_storage": {
+    "t_struct(PayoutBreakdown)55969_storage": {
       "encoding": "inplace",
       "label": "struct ProtocolTypes.PayoutBreakdown",
       "numberOfBytes": "192",
       "members": [
         {
-          "astId": 13971,
+          "astId": 55958,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "totalPrincipal",
           "offset": 0,
@@ -529,7 +529,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 13973,
+          "astId": 55960,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "totalRake",
           "offset": 0,
@@ -537,7 +537,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 13975,
+          "astId": 55962,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "protocolFee",
           "offset": 0,
@@ -545,7 +545,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 13977,
+          "astId": 55964,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "earlyBirdPool",
           "offset": 0,
@@ -553,7 +553,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 13979,
+          "astId": 55966,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "creatorFee",
           "offset": 0,
@@ -561,7 +561,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 13981,
+          "astId": 55968,
           "contract": "src/market/FullMarketVaultV1.sol:FullMarketVaultV1",
           "label": "winnerPool",
           "offset": 0,

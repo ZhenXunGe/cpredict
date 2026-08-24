@@ -35,7 +35,7 @@ allowance 给 canonical Permit2，再签一次性 bounded witness，不能误认
 
 Permit2 builder 使用与链上一致的 canonical witness suffix，并分别构造 Buy/Fill EIP-712 typed data；
 owner/buyer、spender、selector、Vault/listing、经济上下限、nonce/deadline 和 chainId 不得由 UI 隐式
-复用。标准账户 sign/recover 与独立 reference vector 已覆盖，但 Base canonical Permit2 runtime codehash
+复用。标准账户 sign/recover 与独立 reference vector 已覆盖，但 Arbitrum canonical Permit2 runtime codehash
 和真实钱包/provider 行为尚未验证。
 
 ## 4. Listing
@@ -101,6 +101,12 @@ Terminal worker 从 Indexer API 有界分页读取 terminal markets，对每个 
 allowance fill 明示精确 `maxGross` 授权给 Marketplace。它不是完整旗舰 UI，没有 wallet onboarding、真实钱包/链状态、creator
 信用、查询列表、可访问性或浏览器 E2E。
 `security-headers.conf` 必须在真实 edge 设置并用浏览器响应头验证，仓库文件本身不生效。
+
+`examples/web-demo` 在上述最小组件之上提供可运行 Vite 控制台：固定 Arbitrum Sepolia、EIP-6963
+钱包、runtime config/final manifest JSON Schema 校验、runtime codehash/wiring 门禁、Full/Clone
+创建复核、Allowance/Permit2 buy、C2C、canonical evidence 与四类 claim。它不会把 DEBUG 地址标成
+正式验证，也不提供管理员任意调用或 AA UserOperation。完整运行与甲方验收见
+`12-web-demo-integration.md`。
 
 ## 9. 错误处理
 

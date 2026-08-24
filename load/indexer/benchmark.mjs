@@ -82,7 +82,7 @@ async function run() {
       lagAtMostTwoBlocks: syntheticLag <= 2,
     },
     proofBoundary:
-      "Executes the repository ChainIndexer logic, but the deterministic client and counting store do not validate PostgreSQL throughput, RPC limits, Base reorgs, or production lag.",
+      "Executes the repository ChainIndexer logic, but the deterministic client and counting store do not validate PostgreSQL throughput, RPC limits, Arbitrum reorgs, or production lag.",
   };
   const encoded = `${JSON.stringify(result, null, 2)}\n`;
   process.stdout.write(encoded);

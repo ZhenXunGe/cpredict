@@ -15,7 +15,7 @@ const config: TerminalWorkerServiceConfig = {
   port: 3002,
   logLevel: "silent",
   adapterModule: "file:///adapter.js",
-  chainId: 84_532,
+  chainId: 421_614,
   rpcUrl: "https://rpc.example.invalid",
   databaseUrl: "postgresql://db.example.invalid/cpredict?sslmode=verify-full",
   expectedAccount: account,
@@ -34,7 +34,7 @@ function adapters(
   ]) as unknown as Sql;
   return {
     publicClient: {
-      getChainId: vi.fn(async () => 84_532),
+      getChainId: vi.fn(async () => 421_614),
     } as unknown as PublicClient,
     walletClient: {} as WalletClient,
     account,

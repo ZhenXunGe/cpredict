@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example/schemas/arbitrum-sepolia-canary-state-v1.json",
+  "type": "object",
+  "required": ["schemaVersion", "evidenceClass", "chainId", "phase", "updatedAt", "manifestSha256", "sourceManifestSha256", "deploymentIdentity", "accounts", "adapterSha256"],
+  "properties": {
+    "schemaVersion": { "const": "cpredict.arbitrum-sepolia.canary-state.v1" },
+    "evidenceClass": { "const": "ARBITRUM_SEPOLIA_RUNTIME" },
+    "chainId": { "const": 421614 },
+    "phase": { "enum": ["BLOCKED", "STARTING", "STARTED", "FINISHING", "COMPLETE"] },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "manifestSha256": { "$ref": "#/$defs/sha256" },
+    "sourceManifestSha256": { "$ref": "#/$defs/sha256" },
+    "deploymentIdentity": { "type": "object" },
+    "accounts": { "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": { "$ref": "#/$defs/address" } },
+    "adapterSha256": { "$ref": "#/$defs/sha256" }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "address": { "type": "string", "pattern": "^0x[0-9a-fA-F]{40}$" }
+  }
+}

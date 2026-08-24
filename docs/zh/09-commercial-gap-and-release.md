@@ -9,7 +9,7 @@
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | 独立审计             | RFP/范围/退出条件已备好，未聘请                                                                                                                                                                      | 两家独立团队、两次修复复审、公开范围/tag                                                                                     |
 | Bug bounty           | 完整政策草案，未出资/发布                                                                                                                                                                            | funded scope、safe harbor、响应/支付 SLA                                                                                     |
-| Formal/fuzz/mutation | Halmos 3/3、SMTChecker 限定范围 PASS；Echidna arm64 1,000,053 calls PASS，x86_64 lifecycle 未闭合；旧 FeeVault 133/135 但 lifecycle FAIL；全协议 0/12、无 score；runner 修复后 fresh campaign 未运行 | 核心数学/权限/状态证明、Echidna 完整跨架构证据和全协议 ≥90% mutation                                                         |
+| Formal/fuzz/mutation | 旧快照 Halmos 3/3、SMTChecker 限定范围及 Echidna arm64 1,000,053 calls 曾通过，但当前 verifier 因输入漂移拒绝；x86_64 lifecycle 未闭合；旧 FeeVault 133/135 但 lifecycle FAIL；全协议 0/12、无 score；runner 修复后 fresh campaign 未运行 | 核心数学/权限/状态证明、当前冻结快照的 Echidna 完整跨架构证据和全协议 ≥90% mutation                                                         |
 | 覆盖率               | 当前 20 suites/121 tests，`src` line 100%、function 100%、branch 99.13% PASS                                                                                                                         | 持续绑定冻结 source manifest；不得外推为外审或实链证明                                                                       |
 | 商业负载             | schema-v4 三机执行/telemetry/签名门禁已静态实现；正式三机运行 NOT RUN；保留的同机 schema-v3 API 旧证据 FAIL                                                                                          | 独立 SUT/load/chain 主机、生产等价容量、0 drops、10k simultaneous WS、30k 链上分类、reorg/lag/event latency 与签名证据全通过 |
 | 实链历史             | 无                                                                                                                                                                                                   | 长时间 testnet canary、故障注入和监控基线                                                                                    |
@@ -17,7 +17,7 @@
 | Indexer/API          | common-ancestor/dynamic discovery/read API 已实现；本地真实 PostgreSQL 9/9 PASS                                                                                                                      | HA PostgreSQL、多 RPC、备份恢复、reorg 演练                                                                                  |
 | Paymaster            | 合约完整 gas binding、可运行安全服务与 SDK fallback                                                                                                                                                  | 真实 KMS/HSM、transactional budget、Bundler、provider fallback、deposit/SLA/地区演练                                         |
 | 前端信任层           | 最小 React 全调用面，不是产品 UI                                                                                                                                                                     | 风险知情、信誉、标注、审核/申诉、钱包、可访问性/浏览器 E2E                                                                   |
-| 经济验证             | 确定性微池模型和 fail-closed 七项评估器已实现；当前 7/7 NOT_VERIFIED                                                                                                                                 | 已批准阈值、source/deployment-bound Base receipts、独立业务 cohort、价格证据和风险委员会签字                                 |
+| 经济验证             | 确定性微池模型和 fail-closed 七项评估器已实现；当前 7/7 NOT_VERIFIED                                                                                                                                 | 已批准阈值、source/deployment-bound Arbitrum receipts、独立业务 cohort、价格证据和风险委员会签字                                 |
 | 法律/ToS             | 未评估                                                                                                                                                                                               | 赌博/证券/消费者/隐私/制裁/直播平台评审                                                                                      |
 | 运维                 | runbook/alerts 模板                                                                                                                                                                                  | 24×7 owner、paging、SLO、演练与审计日志                                                                                      |
 
@@ -49,7 +49,7 @@
 
 - M0 设计冻结：甲方批准偏离、单位、状态机、权限、风险文案。
 - M1 内部 alpha：关闭 Clone/Permit2/Paymaster 等可选 flags，极低 cap，完成全部质量门禁。
-- M2 Base Sepolia：完整 E2E、24h canary、Indexer/monitoring/runbook、负载与故障注入。
+- M2 Arbitrum Sepolia：完整 E2E、24h canary、Indexer/monitoring/runbook、负载与故障注入。
 - M3 外审 RC1：冻结 commit/tag/source manifest，双外审和修复复审。
 - M4 限额主网：Full-only、总 exposure guard、低 cap、Bug bounty、7d Timelock、24×7 on-call。
 - M5 扩容：基于无事故时间、对账、成交和运营数据逐级提高；每次提高走 Timelock 与发布清单。

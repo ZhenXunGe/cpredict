@@ -20,7 +20,7 @@ const SENDER = getAddress("0x4444444444444444444444444444444444444444");
 
 function config(overrides: Partial<SponsorshipConfig> = {}): SponsorshipConfig {
   return {
-    chainId: 84_532,
+    chainId: 421_614,
     entryPoint: ENTRY_POINT,
     paymaster: PAYMASTER,
     verificationGasLimit: 150_000n,
@@ -74,7 +74,7 @@ describe("sponsorship typed data", () => {
       domain: {
         name: "Cpredict Sponsorship Paymaster",
         version: "1",
-        chainId: 84_532,
+        chainId: 421_614,
         verifyingContract: PAYMASTER,
       },
       primaryType: "Sponsorship",
@@ -112,7 +112,7 @@ describe("sponsorship typed data", () => {
         validUntil: sponsorship.validUntil,
         maxCost: 5_000n,
         policyVersion: 7,
-        chainId: 84_532n,
+        chainId: 421_614n,
         entryPoint: ENTRY_POINT,
         paymaster: PAYMASTER,
       },

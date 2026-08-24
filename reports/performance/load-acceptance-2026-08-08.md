@@ -16,9 +16,9 @@
 
 - API/WS 是本仓库的确定性查询参考 harness，不是生产 API；
 - Indexer 使用仓库真实 `ChainIndexer`，但 RPC client 和 store 是确定性合成实现，不是
-  PostgreSQL 或 Base RPC；
+  PostgreSQL 或 Arbitrum RPC；
 - 链上阶段使用本次工作区真实 Foundry artifacts，部署到全新本地 Anvil，并调用真实 Full
-  Market 的 `buy`；它不证明 Base sequencer、远程 RPC 或生产 finality。
+  Market 的 `buy`；它不证明 Arbitrum sequencer、远程 RPC 或生产 finality。
 
 ## 工具与执行环境
 
@@ -82,7 +82,7 @@
 - 实际执行仓库 `ChainIndexer.runBatch()`；
 - deterministic client 按 100 events/block 流式生成数据，避免将 100k 数据一次性驻留内存；
 - counting store 只验证摄取数量、checkpoint 和 batch 边界；
-- 756,434 synthetic events/s 不能作为 PostgreSQL、Base RPC 或生产 Indexer 指标；
+- 756,434 synthetic events/s 不能作为 PostgreSQL、Arbitrum RPC 或生产 Indexer 指标；
 - 生产 `provisional lag <= 2 L2 blocks` 仍未验证。
 
 ### 本地链交易分类
@@ -137,7 +137,7 @@ threshold、删除 drop 检查或再次重跑来掩盖。
 2. 调整和验证生产 WebSocket accept backlog、worker/进程数、连接建立速率及 load balancer，达到
    10,000 connections、upgrade success ≥99.5%；
 3. 对真实部署 API、PostgreSQL、缓存、RPC 和生产 Indexer 执行相同数据集；
-4. 在 Base Sepolia 只做低速真实 smoke，不把本地 50 TPS 结果外推到 Base；
+4. 在 Arbitrum Sepolia 只做低速真实 smoke，不把本地 50 TPS 结果外推到 Arbitrum；
 5. 对真实事件投递链路验证 event-to-client p95 `<2 s`；本次 deterministic harness 未测该指标；
 6. 未来 k6 runner 已配置 p99 明确导出，并会把 stdout/stderr 保存为 `k6-api.log` 和
    `k6-websocket.log`。本次 full 的 k6 阶段在这些增强前执行，仅留有 summary JSON 和阶段退出码；

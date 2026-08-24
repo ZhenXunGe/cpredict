@@ -41,7 +41,7 @@ export const CANCEL_LISTING_SELECTOR = toFunctionSelector(
 );
 
 export const sponsorshipRequestSchema = z.object({
-  chainId: z.literal(84_532),
+  chainId: z.literal(421_614),
   userOperation: z.object({
     sender: addressSchema,
     nonce: bigintSchema,

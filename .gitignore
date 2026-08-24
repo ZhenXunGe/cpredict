@@ -15,6 +15,9 @@ artifacts/
 /test/coverage/
 reports/generated/
 deployments/local/
+deployments/arbitrum-sepolia/pending.json
+deployments/arbitrum-sepolia/runtime/
+runtime/
 crytic-export/
 scripts/security/crytic-export/
 
@@ -25,10 +28,15 @@ dist/
 playwright-report/
 test-results/
 
+# Local Web Demo visual-QA artifacts (not part of the security-scanned source delivery)
+docs/assets/web-demo/*.png
+reports/web-demo/*.png
+
 # Environment and credentials
 .env
 .env.*
 !.env.example
+!.env.compose.example
 
 # Editors / OS
 .DS_Store

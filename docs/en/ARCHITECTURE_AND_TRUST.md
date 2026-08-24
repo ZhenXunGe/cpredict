@@ -22,7 +22,7 @@ policy. It cannot change a market, a result or a principal recipient. A 2/6 Emer
 activate selected new-risk pauses for at most seven days once per governance epoch. Cancel,
 transfer, claim and refund are not pausable.
 
-External trust assumptions include Base L2/sequencer, canonical USDC, Permit2, EntryPoint, Safe
+External trust assumptions include Arbitrum L2/sequencer, canonical USDC, Permit2, EntryPoint, Safe
 signers, the creator's result honesty, sponsor KMS/backend and RPC/indexer availability. The creator
 can deliberately choose a dishonest outcome; V1 protects custody and disclosure, not truth. Sybil
 limits and post-close insider C2C trading are also residual product risks.

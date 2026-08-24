@@ -12,7 +12,7 @@ ERC-1155 份额、固定价 C2C、早鸟、bond/fee 分账、受限应急、Full
 release-audit、GitHub OIDC attestation 和 signed-tag 外部 evidence 验签链已实现，但真实 OIDC/CI
 未运行。Echidna arm64 百万调用已通过，但 x86_64 lifecycle、mutation、商业负载仍阻断发布。
 商业负载 schema-v4 三机工具链已静态/fixture 验证，但正式运行仍为 NOT RUN；商业经济评估器已测试，
-但因无已批准阈值、真实 Base receipt 和独立业务数据，当前七项均为 NOT_VERIFIED。这两项没有修改
+但因无已批准阈值、真实 Arbitrum receipt 和独立业务数据，当前七项均为 NOT_VERIFIED。这两项没有修改
 V1 Solidity，也不能被描述为商用验收通过。
 
 ## 权威来源、版本与范围
@@ -49,8 +49,11 @@ V1 Solidity，也不能被描述为商用验收通过。
 - `test`：流程、Permit2、Paymaster、invariant。
 - `offchain`：SDK、Indexer、workers、sponsor service。
 - `examples/react`：create/buy/marketplace/terminal/claims 最小调用和 edge security headers。
+- `examples/web-demo`：Arbitrum Sepolia 可运行验证/交互控制台；说明见 `12-web-demo-integration.md`。
 - `generated`：ABI、event/error/function selector/bytecode registries 与 Full/Clone storage layout。
 - `script`/`deployments`：测试网部署与状态。
+- `compose.yaml`/`deploy`/`scripts/stack`：测试网验收栈、备份恢复和故障演练；运行手册见
+  `13-compose-runtime-operations.md`。
 
 ## 配置和开关
 
@@ -103,11 +106,15 @@ npm run scan:secrets
 secret scan 覆盖当前 Git cached 与未忽略的 untracked 交付文件，输出只包含文件名和模式，禁止回显
 疑似凭据值；正式 release 仍需对冻结 commit 的完整 Git 历史执行独立凭据扫描。
 
-## Base Sepolia
+## Arbitrum Sepolia
 
 填写 Safe/treasury/KMS signer 和受控 deployer secret，先 simulation，再运行 Deploy、独立复核
 `EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT`、等待 1h、运行 Finalize/一次性 activate、撤临时角色。
 核对清单和 E2E 见 `08-deployment-operations-incident.md`。当前未部署。
+
+Debug/final manifest 到 Demo、SDK、Indexer、Paymaster 和 Compose 的唯一同步入口、Arbiscan 验证、
+可恢复 canary、备份恢复及本地故障演练见 `13-compose-runtime-operations.md`。当前主机未安装 Docker，
+这些运行栈能力只有静态/构建证明，不能替代 Arbitrum Sepolia 真实部署和 24 小时证据。
 
 ## 监控与告警
 
@@ -133,7 +140,7 @@ Paymaster reserved/spent/deposit、RPC heads、Indexer lag。Critical signal 先
 
 ## 已知问题与剩余风险
 
-creator 单次杀猪、Sybil、内幕 C2C、USDC/Base/Paymaster 外部信任、Clone delegatecall、流动性不足
+creator 单次杀猪、Sybil、内幕 C2C、USDC/Arbitrum/Paymaster 外部信任、Clone delegatecall、流动性不足
 无法被本合约消除。测试/外审/实链/法律阻断见 `00-delivery-status.md` 和 `09-commercial-gap-and-release.md`。
 当前 bond/cap/fee/早鸟/LaunchGuard 退休和极端 gas 退出也只有可执行评估框架，没有真实参数 PASS；
 发布前必须以批准 policy 和 source/deployment-bound 证据重跑。微池 policy 必须指定 gross rake、
@@ -163,7 +170,7 @@ protocol fee 或扣早鸟后 creator net 中哪一种资金范围及实际承诺
 | ABI/selector/storage             | `generated/abi/`、`generated/registries/selectors.json`、`generated/storage-layout/`                                                                                                                                                                                  |
 | 编译器 known-bugs                | `reports/compiler-known-bugs.md`                                                                                                                                                                                                                                      |
 | SDK/调用                         | `docs/zh/07-sdk-integration.md`                                                                                                                                                                                                                                       |
-| 部署运维                         | `docs/zh/08-deployment-operations-incident.md`                                                                                                                                                                                                                        |
+| 部署运维                         | `docs/zh/08-deployment-operations-incident.md`、`docs/zh/13-compose-runtime-operations.md`、`reports/deployment/deployment-operations-tooling-2026-08-21.md`                                                                                                           |
 | 商用差距                         | `docs/zh/09-commercial-gap-and-release.md`                                                                                                                                                                                                                            |
 | 英文审计包                       | `docs/en/`                                                                                                                                                                                                                                                            |
 | 外审/赏金启动包                  | `docs/en/EXTERNAL_AUDIT_RFP.md`、`docs/en/BUG_BOUNTY_DRAFT.md`                                                                                                                                                                                                        |

@@ -5,7 +5,7 @@
   "assessmentTime": "1970-01-01T00:00:00Z",
   "validUntil": "1970-01-01T00:00:00Z",
   "subject": {
-    "chainId": 8453,
+    "chainId": 421614,
     "usdcDecimals": 6,
     "v1": {
       "minimumCreatorBondAtomic": "10000000",

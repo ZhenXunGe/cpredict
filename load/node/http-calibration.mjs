@@ -88,7 +88,7 @@ const result = {
     transportErrorRateUnder0_5Percent: transportErrors / total < 0.005,
   },
   proofBoundary:
-    "Local Node reference query harness only; this does not validate the production API, Postgres, RPC, CDN, or Base.",
+    "Local Node reference query harness only; this does not validate the production API, Postgres, RPC, CDN, or Arbitrum.",
 };
 
 const encoded = `${JSON.stringify(result, null, 2)}\n`;

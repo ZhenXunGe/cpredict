@@ -100,6 +100,7 @@ jobs:
         run: |
           npm run test:load-tools
           npm run test:deployment-tools
+          npm run test:stack-tools
       - name: Node and shell syntax
         shell: bash
         run: |
@@ -108,6 +109,17 @@ jobs:
       - run: npm run test:gate-parsers
       - run: npm run scan:secrets
       - run: npm run check:offchain
+      - name: Web Demo build and bundle secret scan
+        run: |
+          npm run demo:test
+          npm run demo:build
+          npm run scan:demo-bundle
+      - name: Compose static config and image builds
+        run: |
+          docker compose -f compose.yaml config --no-interpolate --quiet
+          docker build --file deploy/compose/Dockerfile.offchain --target indexer --tag cpredict-indexer:ci .
+          docker build --file deploy/compose/Dockerfile.offchain --target paymaster --tag cpredict-paymaster:ci .
+          docker build --file deploy/compose/Dockerfile.demo --tag cpredict-web-demo:ci .
       - name: Full offchain tests with PostgreSQL available
         run: npm run test:offchain -- --maxWorkers=1
       - name: PostgreSQL integration zero-skip gate

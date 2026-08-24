@@ -112,7 +112,7 @@ SDK 常量与合约常量互比，而是用独立字面量/typehash、标准 EIP
 域分离向量复算，降低双方复制同一错误的风险。
 
 证据：`testCanonicalWitnessReferenceVectorsAndContractExposure`、
-`offchain/sdk/test/permit2.test.ts` 与既有真实 Permit2 replay/changed-outcome 用例。Base canonical Permit2
+`offchain/sdk/test/permit2.test.ts` 与既有真实 Permit2 replay/changed-outcome 用例。Arbitrum canonical Permit2
 runtime codehash 和真实 provider 钱包仍须在测试网验证。
 
 ## CPV1-INT-008：Paymaster 签名未绑定 packed paymaster gas limits
@@ -160,7 +160,7 @@ fills/positions/claims；terminal worker 使用有界 API 分页、每市场每�
 证据：`offchain/indexer/test/indexer.test.ts` 覆盖无事件 common ancestor、多区块 reorg、动态发现、
 幂等和 projections；API/worker/SDK/React 聚焦用例已通过。独立 disposable PostgreSQL 17.10 lane
 实际执行 Indexer 3/3、Paymaster 2/2、readiness 4/4，共 9/9、0 skip。该结果是本地真实数据库证据，
-不是生产 TLS、备份、复制、恢复演练或 Base runtime verified。
+不是生产 TLS、备份、复制、恢复演练或 Arbitrum runtime verified。
 
 ## 链下交付与证明边界
 
@@ -175,7 +175,7 @@ fills/positions/claims；terminal worker 使用有界 API 分页、每市场每�
   submission、receipt 和链上 revert，32-byte 及更长 hex 被脱敏。
 - React 示例覆盖完整协议写调用面、creation fee+bond/Permit2/Marketplace fill 精确授权与不可逆提示，
   但 SSR unit 不是钱包、浏览器或旗舰 UI E2E。
-- 当前普通全量链下命令为 79 tests pass、5 个 PostgreSQL conditional skip；独立真实 PostgreSQL
+- 当前普通全量链下命令为 90 tests pass、5 个 PostgreSQL conditional skip；独立真实 PostgreSQL
   17.10 lane 为 9/9 pass、0 skip。两个 lane 的证明边界必须分别陈述。
 
 ## 结论
@@ -183,10 +183,11 @@ fills/positions/claims；terminal worker 使用有界 API 分页、每市场每�
 上述链上发现均在未部署工作树内修复并有聚焦回归；它们证明人工攻击面复核确实发现了自动化测试
 最初未覆盖的问题，也说明当前代码不能跳过独立审计。当前 coverage lane 为 20 suites、121/121 tests，
 `src/**` line 100%、function 100%、branch 99.13% PASS；production gas/size 为 10/10 PASS。Slither、
-Aderyn、Halmos、SMTChecker 与 Medusa 均有当前 source-bound 本地 PASS 证据，其中 Medusa 为
-1,024,046 calls、27/27。Echidna arm64 已完成 1,000,053 calls、4/4 PASS；x86_64 诊断达到
+Aderyn、Halmos、SMTChecker、Medusa 与 Echidna arm64 均保留旧输入快照的 PASS 结果，但当前 evidence
+verifier 因 `foundry.toml` 或验证脚本输入漂移拒绝全部证据，不能视为当前候选的 source-bound PASS。
+旧快照 Medusa 为 1,024,046 calls、27/27，Echidna arm64 为 1,000,053 calls、4/4；x86_64 诊断达到
 1,032 calls、4/4 PASS，但在保存 coverage 时挂起，未形成百万调用生命周期证据，因此 security
 aggregate 仍为 FAIL。Mutation runner 生命周期已加固但 fresh whole-protocol campaign 未运行；
-两轮外部审计、正式商业负载、Base
+两轮外部审计、正式商业负载、Arbitrum
 Sepolia 和 24 小时 canary 仍是发布阻断项。完整当前口径只以
 `docs/zh/00-delivery-status.md` 为准。

@@ -11,11 +11,11 @@ import { MarketFactoryV1 } from "../src/core/MarketFactoryV1.sol";
 
 /// @notice Executes the scheduled bootstrap batch and removes every temporary deployer role.
 contract FinalizeBootstrap is Script {
-    uint256 internal constant BASE_SEPOLIA_CHAIN_ID = 84_532;
+    uint256 internal constant ARBITRUM_SEPOLIA_CHAIN_ID = 421_614;
     bytes32 internal constant BOOTSTRAP_SALT = keccak256("CPREDICT_V1_BOOTSTRAP");
 
     function run() external {
-        require(block.chainid == BASE_SEPOLIA_CHAIN_ID, "wrong chain");
+        require(block.chainid == ARBITRUM_SEPOLIA_CHAIN_ID, "wrong chain");
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);
         TimelockController timelock = TimelockController(payable(vm.envAddress("TIMELOCK_ADDRESS")));

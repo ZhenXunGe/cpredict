@@ -33,7 +33,7 @@
       "additionalProperties": false,
       "required": ["chainId", "usdcDecimals", "v1"],
       "properties": {
-        "chainId": { "enum": [8453, 84532] },
+        "chainId": { "enum": [42161, 421614] },
         "usdcDecimals": { "const": 6 },
         "v1": {
           "type": "object",
@@ -369,7 +369,7 @@
           "type": "string",
           "pattern": "^0x[0-9a-fA-F]{64}$"
         },
-        "chainId": { "enum": [8453, 84532] },
+        "chainId": { "enum": [42161, 421614] },
         "blockNumber": { "$ref": "#/$defs/positiveUintString" },
         "operation": {
           "enum": [

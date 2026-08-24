@@ -1,7 +1,7 @@
 # Solidity Coverage 发布门禁报告
 
-日期：2026-08-08  
-工具：Foundry `1.7.1` (`4072e48705af9d93e3c0f6e29e93b5e9a40caed8`)  
+日期：2026-08-24
+工具：Foundry `1.7.1` (`4072e48705af9d93e3c0f6e29e93b5e9a40caed8`)
 结论：无 suite/path 排除的正式 runner 通过；`src/**` lines/functions/branches 分别为
 `1017/1017`、`151/151`、`227/229`，满足 `100%/100%/>=95%`。
 
@@ -58,7 +58,7 @@ production-viaIR gas runner 继续对原硬阈值 fail closed。没有跳过 gas
 
 | 范围 | Lines | Functions | Branches |
 |---|---:|---:|---:|
-| raw/unfiltered | 1,210/1,507 (80.29%) | 197/243 (81.07%) | 242/315 (76.83%) |
+| raw/unfiltered | 1,210/1,520 (79.61%) | 197/243 (81.07%) | 242/321 (75.39%) |
 | `src/**`，来自同一 LCOV | 1,017/1,017 (100.00%) | 151/151 (100.00%) | 227/229 (99.13%) |
 
 raw 数值如实包含不会由 Foundry 单元测试执行的部署脚本、Echidna/SMT harness 和测试辅助
@@ -82,13 +82,14 @@ low-level tests 已直接证明两条 revert 路径执行，但 Foundry 仍将 m
 
 ## 5. non-IR 可重复性修复
 
-`DeployBaseSepolia.run()` 原先在 coverage 的 unoptimized non-IR 编译中发生 stack-too-deep。
-部署 Factory 和调度 bootstrap 被拆为两个 internal helper，保持：
+`DeployArbitrumSepolia.run()` 原先在 coverage 的 unoptimized non-IR 编译中发生 stack-too-deep。
+Factory 部署被拆为 internal helper，且 pending manifest 只允许在真实 broadcast context 写入；
+dry-run 不再留下可误认成链上部署的地址文件。该调整保持：
 
 - 合约部署顺序不变；
 - 所有 constructor arguments 不变；
 - fingerprint 计算、require 和 Timelock schedule batch 不变；
-- broadcast 边界、manifest 字段、事件和日志不变。
+- 链上 broadcast 边界、manifest 字段、事件和日志不变。
 
 该调整随后通过 unoptimized non-IR 全路径 coverage 编译和 forced production-viaIR build。
 
@@ -112,4 +113,4 @@ runner 在写入最终 exit code 后生成 `full.sha256`；使用
 ## 7. 证明边界
 
 本报告证明当前本地候选的 Foundry coverage 门禁和 forced production-viaIR build；不据此
-推导静态分析、形式化验证、mutation、外部审计、Base Sepolia 或主网运行时已经通过。
+推导静态分析、形式化验证、mutation、外部审计、Arbitrum Sepolia 或主网运行时已经通过。

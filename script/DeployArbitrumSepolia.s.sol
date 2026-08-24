@@ -2,8 +2,10 @@
 pragma solidity 0.8.36;
 
 import { Script, console2 } from "forge-std/Script.sol";
+import { VmSafe } from "forge-std/Vm.sol";
 import { TimelockController } from "@openzeppelin/contracts/governance/TimelockController.sol";
 import { IEntryPoint } from "@account-abstraction/interfaces/IEntryPoint.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import { ProtocolConfigV1 } from "../src/core/ProtocolConfigV1.sol";
 import { EmergencyControllerV1 } from "../src/core/EmergencyControllerV1.sol";
 import { LaunchExposureGuardV1 } from "../src/core/LaunchExposureGuardV1.sol";
@@ -16,12 +18,12 @@ import { FixedPriceMarketplaceV1 } from "../src/marketplace/FixedPriceMarketplac
 import { SponsorshipPaymasterV1 } from "../src/paymaster/SponsorshipPaymasterV1.sol";
 
 /// @notice Deploys V1 and schedules the one-time factory wiring through the 1-hour timelock.
-/// @dev Run only on Base Sepolia (84532). Finalize with FinalizeBootstrap after the delay.
-contract DeployBaseSepolia is Script {
-    uint256 internal constant BASE_SEPOLIA_CHAIN_ID = 84_532;
+/// @dev Run only on Arbitrum Sepolia (421614). Finalize with FinalizeBootstrap after the delay.
+contract DeployArbitrumSepolia is Script {
+    uint256 internal constant ARBITRUM_SEPOLIA_CHAIN_ID = 421_614;
     uint256 internal constant TIMELOCK_DELAY = 1 hours;
     uint256 internal constant INITIAL_EXPOSURE_CAP = 50_000e6;
-    address internal constant BASE_SEPOLIA_USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+    address internal constant ARBITRUM_SEPOLIA_USDC = 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d;
     address internal constant CANONICAL_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
     address internal constant ENTRY_POINT_V08 = 0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108;
     bytes32 internal constant BOOTSTRAP_SALT = keccak256("CPREDICT_V1_BOOTSTRAP");
@@ -41,19 +43,20 @@ contract DeployBaseSepolia is Script {
     }
 
     function run() external returns (Deployment memory deployed) {
-        require(block.chainid == BASE_SEPOLIA_CHAIN_ID, "wrong chain");
+        require(block.chainid == ARBITRUM_SEPOLIA_CHAIN_ID, "wrong chain");
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);
         address governanceSafe = vm.envAddress("GOVERNANCE_SAFE");
         address emergencySafe = vm.envAddress("EMERGENCY_SAFE");
         address treasury = vm.envAddress("PROTOCOL_TREASURY");
         address sponsorSigner = vm.envAddress("SPONSOR_SIGNER");
-        address usdc = vm.envOr("USDC_ADDRESS", BASE_SEPOLIA_USDC);
-        address permit2 = vm.envOr("PERMIT2_ADDRESS", CANONICAL_PERMIT2);
-        address entryPoint = vm.envOr("ENTRYPOINT_ADDRESS", ENTRY_POINT_V08);
+        address usdc = ARBITRUM_SEPOLIA_USDC;
+        address permit2 = CANONICAL_PERMIT2;
+        address entryPoint = ENTRY_POINT_V08;
         require(usdc.code.length != 0, "USDC code missing");
         require(permit2.code.length != 0, "Permit2 code missing");
         require(entryPoint.code.length != 0, "EntryPoint code missing");
+        require(IERC20Metadata(usdc).decimals() == 6, "USDC decimals mismatch");
 
         address[] memory proposers = new address[](2);
         proposers[0] = governanceSafe;
@@ -89,27 +92,42 @@ contract DeployBaseSepolia is Script {
             vm.envOr("PAYMASTER_MAX_COST_GLOBAL_DAY", uint256(0.5 ether))
         );
 
-        _scheduleBootstrap(deployed);
+        bytes32 actualFactoryFingerprint =
+            deployed.factory.dependencyFingerprintFor(address(deployed.marketplace));
+        console2.log("CPREDICT_FACTORY_DEPENDENCY_FINGERPRINT");
+        console2.logBytes32(actualFactoryFingerprint);
+
+        // The orchestrator uses one non-broadcast preview to derive the address-bound
+        // dependency fingerprint. A preview must never schedule the bootstrap or write
+        // deployment evidence that could be mistaken for a broadcast result.
+        if (vm.envOr("DEPLOYMENT_PREVIEW_ONLY", false)) {
+            require(
+                !vm.isContext(VmSafe.ForgeContext.ScriptBroadcast), "preview mode cannot broadcast"
+            );
+            vm.stopBroadcast();
+            console2.log("Preview complete; no transaction was broadcast or scheduled");
+            return deployed;
+        }
+
+        _scheduleBootstrap(deployed, actualFactoryFingerprint);
         vm.stopBroadcast();
 
-        _writePendingManifest(
-            deployed, governanceSafe, emergencySafe, deployer, usdc, permit2, entryPoint
-        );
+        // A dry-run must never leave an address file that could be mistaken for broadcast evidence.
+        if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
+            _writePendingManifest(
+                deployed, governanceSafe, emergencySafe, deployer, usdc, permit2, entryPoint
+            );
+        }
         console2.log("Timelock", address(deployed.timelock));
         console2.log("Factory", address(deployed.factory));
         console2.log("Bootstrap execute after", block.timestamp + TIMELOCK_DELAY);
     }
 
-    function _scheduleBootstrap(Deployment memory deployed) internal {
+    function _scheduleBootstrap(Deployment memory deployed, bytes32 actualFactoryFingerprint)
+        internal
+    {
         bytes32 expectedFactoryFingerprint =
             vm.envBytes32("EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT");
-        bytes32 actualFactoryFingerprint =
-            deployed.factory.dependencyFingerprintFor(address(deployed.marketplace));
-        // The first non-broadcast preview intentionally uses a non-matching expected value and
-        // reads this value from the trace. An independently reviewed manifest must supply it for
-        // the subsequent nonce-identical simulation and broadcast.
-        console2.log("Factory dependency fingerprint (review before broadcast)");
-        console2.logBytes32(actualFactoryFingerprint);
         require(
             actualFactoryFingerprint == expectedFactoryFingerprint,
             "factory dependency fingerprint mismatch"
@@ -171,12 +189,28 @@ contract DeployBaseSepolia is Script {
         address permit2,
         address entryPoint
     ) internal {
-        string memory root = "cpredict-v1-base-sepolia";
+        string memory root = "cpredict-v1-arbitrum-sepolia";
         vm.serializeUint(root, "chainId", block.chainid);
         vm.serializeString(root, "status", "BOOTSTRAP_SCHEDULED_NOT_FINAL");
         vm.serializeAddress(root, "temporaryAdmin", deployer);
         vm.serializeAddress(root, "governanceSafe", governanceSafe);
         vm.serializeAddress(root, "emergencySafe", emergencySafe);
+        vm.serializeAddress(root, "protocolTreasury", deployed.config.protocolTreasury());
+        vm.serializeAddress(root, "sponsorSigner", deployed.paymaster.sponsorSigner());
+        vm.serializeUint(root, "paymasterPolicyVersion", deployed.paymaster.policyVersion());
+        vm.serializeString(
+            root,
+            "paymasterMaxCostPerOperation",
+            vm.toString(deployed.paymaster.maxCostPerOperation())
+        );
+        vm.serializeString(
+            root,
+            "paymasterMaxCostPerUserDay",
+            vm.toString(deployed.paymaster.maxCostPerUserPerDay())
+        );
+        vm.serializeString(
+            root, "paymasterMaxCostGlobalDay", vm.toString(deployed.paymaster.maxCostGlobalPerDay())
+        );
         vm.serializeAddress(root, "timelock", address(deployed.timelock));
         vm.serializeAddress(root, "config", address(deployed.config));
         vm.serializeAddress(root, "emergencyController", address(deployed.emergency));
@@ -196,6 +230,6 @@ contract DeployBaseSepolia is Script {
         vm.serializeAddress(root, "usdc", usdc);
         vm.serializeAddress(root, "permit2", permit2);
         string memory json = vm.serializeAddress(root, "entryPoint", entryPoint);
-        vm.writeJson(json, "deployments/base-sepolia/pending.json");
+        vm.writeJson(json, "deployments/arbitrum-sepolia/pending.json");
     }
 }

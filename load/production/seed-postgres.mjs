@@ -216,7 +216,7 @@ try {
     },
     bulkSeedCheckpointCompletedAt,
     proofBoundary:
-      "Fresh loopback PostgreSQL 17.10 with the production Indexer schema and query store; the one-off fixture seed was checkpointed before timing; not Base RPC or deployed infrastructure.",
+      "Fresh loopback PostgreSQL 17.10 with the production Indexer schema and query store; the one-off fixture seed was checkpointed before timing; not Arbitrum RPC or deployed infrastructure.",
   };
   await writeJsonAtomically(reportPath, report);
   await writeJsonAtomically(`${reportPath}.query-plans.json`, plans);

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "requirementId": "PF-CHAIN-005",
   "generatedBy": "scripts/economics/generate-report.mjs",
-  "disclaimer": "Deterministic trial inputs only. This file contains no current or forecast Base gas/ETH price.",
+  "disclaimer": "Deterministic trial inputs only. This file contains no current or forecast Arbitrum gas/ETH price.",
   "gasEvidence": {
     "formalGatePolicy": "Strict executable gate threshold minus one gas, representing the largest passing integer.",
     "source": "test/gas/ProtocolGasGates.t.sol, test/unit/Permit2Flows.t.sol, test/unit/PaymasterEdges.t.sol",

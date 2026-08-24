@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example/schemas/runtime-package-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "mode", "chainId", "deploymentIdentity", "sourceManifestSha256", "inputSha256", "generatedAt", "files"],
+  "properties": {
+    "schemaVersion": { "const": "cpredict.runtime-package.v1" },
+    "mode": { "enum": ["DEBUG", "FINALIZED_VERIFIED"] },
+    "chainId": { "const": 421614 },
+    "deploymentIdentity": { "type": "string", "pattern": "^[0-9a-f]{24}$" },
+    "sourceManifestSha256": { "$ref": "#/$defs/sha256" },
+    "inputSha256": { "$ref": "#/$defs/sha256" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "files": {
+      "type": "object",
+      "minProperties": 6,
+      "propertyNames": { "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$" },
+      "additionalProperties": { "$ref": "#/$defs/sha256" }
+    }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+  }
+}

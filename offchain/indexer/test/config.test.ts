@@ -3,9 +3,10 @@ import { parseIndexerServiceConfig } from "../src/config.js";
 
 const valid = {
   CPREDICT_INDEXER_HOST: "127.0.0.1",
+  CPREDICT_INDEXER_CONTAINER_MODE: "false",
   CPREDICT_INDEXER_PORT: "3001",
   CPREDICT_INDEXER_LOG_LEVEL: "silent",
-  CPREDICT_INDEXER_CHAIN_ID: "84532",
+  CPREDICT_INDEXER_CHAIN_ID: "421614",
   CPREDICT_INDEXER_RPC_URL: "https://rpc.example.invalid",
   CPREDICT_INDEXER_DATABASE_URL:
     "postgresql://user:pass@db.example.invalid/cpredict?sslmode=verify-full",
@@ -31,7 +32,7 @@ describe("parseIndexerServiceConfig", () => {
   it("parses bounded production configuration and normalizes addresses", () => {
     const config = parseIndexerServiceConfig(valid);
     expect(config).toMatchObject({
-      chainId: 84532,
+      chainId: 421614,
       deploymentBlock: 123n,
       batchSize: 500n,
       databasePoolSize: 10,
@@ -87,5 +88,38 @@ describe("parseIndexerServiceConfig", () => {
         CPREDICT_INDEXER_DATABASE_POOL_SIZE: "101",
       }),
     ).toThrow();
+  });
+
+  it("requires an explicit, narrowly-scoped container mode for wildcard binding", () => {
+    expect(() =>
+      parseIndexerServiceConfig({
+        ...valid,
+        CPREDICT_INDEXER_HOST: "0.0.0.0",
+      }),
+    ).toThrow("must be true exactly when binding");
+    expect(() =>
+      parseIndexerServiceConfig({
+        ...valid,
+        CPREDICT_INDEXER_CONTAINER_MODE: "true",
+      }),
+    ).toThrow("must be true exactly when binding");
+    expect(() =>
+      parseIndexerServiceConfig({
+        ...valid,
+        CPREDICT_INDEXER_HOST: "0.0.0.0",
+        CPREDICT_INDEXER_CONTAINER_MODE: "true",
+        CPREDICT_INDEXER_DATABASE_URL:
+          "postgresql://indexer:placeholder@postgres/cpredict_indexer?sslmode=disable",
+      }),
+    ).not.toThrow();
+    expect(() =>
+      parseIndexerServiceConfig({
+        ...valid,
+        CPREDICT_INDEXER_HOST: "0.0.0.0",
+        CPREDICT_INDEXER_CONTAINER_MODE: "true",
+        CPREDICT_INDEXER_DATABASE_URL:
+          "postgresql://indexer:placeholder@other-db/cpredict_indexer?sslmode=disable",
+      }),
+    ).toThrow("internal postgres service");
   });
 });

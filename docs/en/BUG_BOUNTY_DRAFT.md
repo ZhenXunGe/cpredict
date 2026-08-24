@@ -30,7 +30,7 @@ The published program must list addresses, not contract names alone.
 | SponsorshipPaymaster and EntryPoint deposit policy          | TBD                  | not deployed |
 | production SDK/sponsor/indexer/API domains                  | TBD                  | not deployed |
 
-Canonical USDC, Permit2, EntryPoint, Safe, Base, RPC, Bundler, and external Paymaster code are not
+Canonical USDC, Permit2, EntryPoint, Safe, Arbitrum, RPC, Bundler, and external Paymaster code are not
 owned by Cpredict. A Cpredict-specific misuse or unsafe integration is in scope; a vulnerability
 solely in an upstream system must be reported to that upstream program.
 
@@ -53,7 +53,7 @@ solely in an upstream system must be reported to that upstream program.
   model, without bypassing contract rules;
 - Sybil bypass of per-address limits, voluntary C2C trades with insiders, or ordinary transaction
   ordering/price movement without a contract violation;
-- Base sequencer downtime, USDC blacklist/pause/proxy risk, or upstream provider outage by itself;
+- Arbitrum sequencer downtime, USDC blacklist/pause/proxy risk, or upstream provider outage by itself;
 - findings already listed in the release `KNOWN_ISSUES`/accepted-risk register;
 - attacks requiring stolen keys, leaked credentials, social engineering, physical access, or a
   governance majority acting within its disclosed authority;

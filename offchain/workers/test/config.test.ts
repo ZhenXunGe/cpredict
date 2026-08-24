@@ -6,7 +6,7 @@ const valid = {
   CPREDICT_WORKER_PORT: "3002",
   CPREDICT_WORKER_LOG_LEVEL: "silent",
   CPREDICT_WORKER_ADAPTER_MODULE: "file:///opt/cpredict/worker-adapters.js",
-  CPREDICT_WORKER_CHAIN_ID: "84532",
+  CPREDICT_WORKER_CHAIN_ID: "421614",
   CPREDICT_WORKER_RPC_URL: "https://rpc.example.invalid",
   CPREDICT_WORKER_DATABASE_URL:
     "postgresql://worker@db.example.invalid/cpredict?sslmode=verify-full",
@@ -22,7 +22,7 @@ const valid = {
 describe("parseTerminalWorkerConfig", () => {
   it("parses deployment configuration without accepting signing material", () => {
     expect(parseTerminalWorkerConfig(valid)).toMatchObject({
-      chainId: 84532,
+      chainId: 421614,
       indexerMaxPages: 100,
     });
   });

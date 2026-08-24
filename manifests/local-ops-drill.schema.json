@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example/schemas/local-ops-drill-v1.json",
+  "type": "object",
+  "required": ["schemaVersion", "evidenceClass", "status", "chainId", "generatedAt", "sourceManifestSha256", "deploymentManifestSha256", "deploymentIdentity", "drills", "formalOpsEvidence"],
+  "properties": {
+    "schemaVersion": { "const": "cpredict.local-ops-drill.v1" },
+    "evidenceClass": { "const": "LOCAL_SIMULATION" },
+    "status": { "const": "PASS" },
+    "chainId": { "const": 421614 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "sourceManifestSha256": { "$ref": "#/$defs/sha256" },
+    "deploymentManifestSha256": { "$ref": "#/$defs/sha256" },
+    "deploymentIdentity": { "type": "string", "minLength": 1 },
+    "drills": { "type": "array", "minItems": 13, "maxItems": 13 },
+    "formalOpsEvidence": { "const": "NOT_RUN" }
+  },
+  "$defs": { "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" } }
+}

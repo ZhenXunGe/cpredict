@@ -30,7 +30,7 @@ describe("IndexerTerminalMarketSource", () => {
       );
     const source = new IndexerTerminalMarketSource(
       new URL("https://indexer.example.invalid"),
-      84532,
+      421614,
       fetcher,
     );
     await expect(source.terminalMarkets(1n)).resolves.toEqual([terminal]);
@@ -53,7 +53,7 @@ describe("IndexerTerminalMarketSource", () => {
       () =>
         new IndexerTerminalMarketSource(
           new URL("https://indexer.example.invalid"),
-          84532,
+          421614,
           fetch,
           100,
           30_001,
@@ -64,7 +64,7 @@ describe("IndexerTerminalMarketSource", () => {
   it("accepts loopback development hosts and rejects oversized pages", async () => {
     const source = new IndexerTerminalMarketSource(
       new URL("http://localhost:3001"),
-      84532,
+      421614,
       vi.fn(async () => new Response("x".repeat(1_048_577), { status: 200 })),
     );
     await expect(source.terminalMarkets(1n)).rejects.toThrow("size limit");

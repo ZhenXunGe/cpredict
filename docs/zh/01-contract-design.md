@@ -157,7 +157,7 @@ winner claim、early claim、refund、timeout bonus 永不受暂停影响。
 ## 12. 失败与恢复
 
 USDC pause/blocklist 会令受影响地址转账失败，但不能导致会计静默变化；恢复依赖 USDC 发行方。
-Base sequencer/RPC 故障不改变终局，客户端必须停止无界重试并等待 canonical receipt。索引器不是
+Arbitrum sequencer/RPC 故障不改变终局，客户端必须停止无界重试并等待 canonical receipt。索引器不是
 会计真相；它保存每个扫描区块（含无事件区块）的 hash/parentHash，发现不一致后向后找到 common
 ancestor，在单一存储事务中删除分叉后的 raw/derived rows 并重放。Factory `MarketCreated` 动态发现
 Vault，同批扫描初始化事件；只读 API 和 terminal worker 均不得代替交易前 RPC simulate。若发现漏洞，

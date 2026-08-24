@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 11072,
+      "astId": 53059,
       "contract": "src/core/MarketFactoryV1.sol:MarketFactoryV1",
       "label": "marketplace",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_address"
     },
     {
-      "astId": 11074,
+      "astId": 53061,
       "contract": "src/core/MarketFactoryV1.sol:MarketFactoryV1",
       "label": "active",
       "offset": 20,
@@ -17,7 +17,7 @@
       "type": "t_bool"
     },
     {
-      "astId": 11076,
+      "astId": 53063,
       "contract": "src/core/MarketFactoryV1.sol:MarketFactoryV1",
       "label": "deprecated",
       "offset": 21,
@@ -25,7 +25,7 @@
       "type": "t_bool"
     },
     {
-      "astId": 11078,
+      "astId": 53065,
       "contract": "src/core/MarketFactoryV1.sol:MarketFactoryV1",
       "label": "activationFingerprint",
       "offset": 0,
@@ -33,7 +33,7 @@
       "type": "t_bytes32"
     },
     {
-      "astId": 11082,
+      "astId": 53069,
       "contract": "src/core/MarketFactoryV1.sol:MarketFactoryV1",
       "label": "creatorNonce",
       "offset": 0,
@@ -41,7 +41,7 @@
       "type": "t_mapping(t_address,t_uint256)"
     },
     {
-      "astId": 11086,
+      "astId": 53073,
       "contract": "src/core/MarketFactoryV1.sol:MarketFactoryV1",
       "label": "isMarket",
       "offset": 0,
@@ -49,15 +49,15 @@
       "type": "t_mapping(t_address,t_bool)"
     },
     {
-      "astId": 11091,
+      "astId": 53078,
       "contract": "src/core/MarketFactoryV1.sol:MarketFactoryV1",
       "label": "deploymentModeOf",
       "offset": 0,
       "slot": "4",
-      "type": "t_mapping(t_address,t_enum(DeploymentMode)13860)"
+      "type": "t_mapping(t_address,t_enum(DeploymentMode)55847)"
     },
     {
-      "astId": 11095,
+      "astId": 53082,
       "contract": "src/core/MarketFactoryV1.sol:MarketFactoryV1",
       "label": "deploymentSaltOf",
       "offset": 0,
@@ -81,7 +81,7 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_enum(DeploymentMode)13860": {
+    "t_enum(DeploymentMode)55847": {
       "encoding": "inplace",
       "label": "enum ProtocolTypes.DeploymentMode",
       "numberOfBytes": "1"
@@ -100,12 +100,12 @@
       "numberOfBytes": "32",
       "value": "t_bytes32"
     },
-    "t_mapping(t_address,t_enum(DeploymentMode)13860)": {
+    "t_mapping(t_address,t_enum(DeploymentMode)55847)": {
       "encoding": "mapping",
       "key": "t_address",
       "label": "mapping(address => enum ProtocolTypes.DeploymentMode)",
       "numberOfBytes": "32",
-      "value": "t_enum(DeploymentMode)13860"
+      "value": "t_enum(DeploymentMode)55847"
     },
     "t_mapping(t_address,t_uint256)": {
       "encoding": "mapping",

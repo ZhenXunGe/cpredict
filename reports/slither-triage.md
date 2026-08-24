@@ -28,7 +28,7 @@ Informational。Slither 因存在 finding 返回 255，这是预期行为；机�
 处于同一交易；回调所有可写资金入口会被 guard 拒绝，任一步失败会整体回滚。余额差检查本身用于拒绝
 fee-on-transfer/非精确转账，不能删除。
 
-残余风险：Base USDC proxy、官方 Permit2 或链执行语义若被破坏，属于外部信任失效；主网上线前仍需
+残余风险：Arbitrum USDC proxy、官方 Permit2 或链执行语义若被破坏，属于外部信任失效；主网上线前仍需
 独立审计复核调用图和恶意 token/receiver harness。
 
 ## 已关闭的 Medium：memory struct 初始化
@@ -55,9 +55,10 @@ vector 均通过，fresh Slither 报告不再包含该 Medium。
 | `cyclomatic-complexity` | 仅有限参数校验与 O(1) fill 校验；用边界测试覆盖，未以拆分隐藏规则 |
 | `missing-inheritance` | concrete 合约通过结构化接口被消费者调用；不影响 ABI/访问控制，列入审计清理候选 |
 
-结论：本次 fresh Slither 无未处置 High/Medium，但“已分诊”不等于“外部审计通过”。当前
-Aderyn、Medusa、Halmos 和 SMTChecker 各自在限定范围内 PASS，coverage 与 production gas/size
-也已通过本地门禁；Echidna arm64 已执行 1,000,053 calls 并通过，x86_64 仅完成 1,032-call
-诊断且 coverage 保存生命周期未闭合。fresh whole-protocol mutation 和两轮独立审计未完成。
+结论：该快照的 Slither 无未处置 High/Medium，但“已分诊”不等于“外部审计通过”。保留的
+Aderyn、Medusa、Halmos、SMTChecker 和 Echidna arm64 结果属于旧输入快照；当前 evidence verifier
+因 `foundry.toml` 或验证脚本漂移拒绝全部记录，必须在冻结候选上重跑。coverage 与 production
+gas/size 已通过当前本地门禁；x86_64 仅完成 1,032-call 诊断且 coverage 保存生命周期未闭合。
+fresh whole-protocol mutation 和两轮独立审计未完成。
 不得据此发布主网声明；当前总状态以
 `docs/zh/00-delivery-status.md` 和 `reports/security/security-gates.md` 为准。

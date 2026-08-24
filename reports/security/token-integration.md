@@ -1,12 +1,12 @@
 # Token integration and ERC-1155 conformance review
 
-Status: internal static and local-test evidence for the current candidate. This is not Base runtime
+Status: internal static and local-test evidence for the current candidate. This is not Arbitrum runtime
 verification or an external audit.
 
 ## Asset model
 
 - The only payment asset is the deployment-pinned six-decimal token exposed by
-  `ProtocolConfigV1.paymentToken`; V1 deployment intends canonical Base USDC.
+  `ProtocolConfigV1.paymentToken`; V1 deployment intends canonical Arbitrum USDC.
 - One primary USDC atomic unit mints one ERC-1155 share unit. Every market has an independent
   ERC-1155 contract and outcome IDs are local to that market.
 - Factory fees/bond, primary principal and Permit2 gross transfers measure the receiving balance or
@@ -59,7 +59,7 @@ standard event, recipient balances and unchanged per-outcome total supply.
 
 ## Residual integration risks
 
-- Base USDC proxy/admin, Permit2 runtime and Base sequencing remain external trust assumptions. Their
+- Arbitrum USDC proxy/admin, Permit2 runtime and Arbitrum sequencing remain external trust assumptions. Their
   addresses and current code hashes must be independently reviewed before Factory activation.
 - Per-address primary caps do not stop Sybil splitting. ERC-1155 transferability intentionally makes
   current holder identity differ from the original buyer.
@@ -72,5 +72,5 @@ standard event, recipient balances and unchanged per-outcome total supply.
 ## Evidence boundary
 
 Focused fee-on-transfer, Permit2, transfer, Marketplace escrow, claim and Full/Clone differential
-tests pass locally. Real Base USDC pause/blocklist behavior, Permit2 deployment code hash, wallet UX,
+tests pass locally. Real Arbitrum USDC pause/blocklist behavior, Permit2 deployment code hash, wallet UX,
 hardware wallet signing and production indexer interpretation are not runtime verified here.

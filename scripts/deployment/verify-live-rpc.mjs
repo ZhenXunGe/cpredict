@@ -618,15 +618,29 @@ export async function verifyLiveRpc(manifest, rpcUrls) {
   const rpcs = rpcUrls.map((url) => new Rpc(url));
   const blockTag = hexBlock(manifest.referenceBlock.number);
   const results = [];
+  const finality = [];
   for (const rpc of rpcs) {
     const chainId = Number(BigInt(await rpc.request("eth_chainId", [])));
-    if (chainId !== 84_532)
-      throw new Error(`RPC chainId ${chainId} is not Base Sepolia`);
+    if (chainId !== 421_614)
+      throw new Error(`RPC chainId ${chainId} is not Arbitrum Sepolia`);
     const block = await rpc.request("eth_getBlockByNumber", [blockTag, false]);
     if (lower(block.hash) !== lower(manifest.referenceBlock.hash))
       throw new Error("RPC reference block hash mismatch");
     if (Number(BigInt(block.timestamp)) !== manifest.referenceBlock.timestamp)
       throw new Error("RPC reference block timestamp mismatch");
+    if (
+      Number(BigInt(block.l1BlockNumber)) !==
+      manifest.referenceBlock.l1BlockNumber
+    )
+      throw new Error("RPC reference block L1 block number mismatch");
+    const finalizedBlock = await rpc.request("eth_getBlockByNumber", [
+      "finalized",
+      false,
+    ]);
+    if (!finalizedBlock?.number || !finalizedBlock?.hash)
+      throw new Error("RPC does not expose an Arbitrum finalized block");
+    if (BigInt(finalizedBlock.number) < BigInt(blockTag))
+      throw new Error("RPC reference block is not finalized on Arbitrum");
     const latest = await rpc.request("eth_blockNumber", []);
     if (
       BigInt(latest) - BigInt(blockTag) <
@@ -641,9 +655,16 @@ export async function verifyLiveRpc(manifest, rpcUrls) {
         number: manifest.referenceBlock.number,
         hash: lower(block.hash),
         timestamp: Number(BigInt(block.timestamp)),
+        l1BlockNumber: Number(BigInt(block.l1BlockNumber)),
       },
       snapshot,
       logs,
+    });
+    finality.push({
+      providerSha256: endpoints[finality.length].sha256,
+      finalizedBlockNumber: Number(BigInt(finalizedBlock.number)),
+      finalizedBlockHash: lower(finalizedBlock.hash),
+      finalizedL1BlockNumber: Number(BigInt(finalizedBlock.l1BlockNumber)),
     });
   }
   if (comparable(results[0]) !== comparable(results[1]))
@@ -654,11 +675,12 @@ export async function verifyLiveRpc(manifest, rpcUrls) {
     results[0].logs,
   );
   const evidence = {
-    schemaVersion: "cpredict.base-sepolia.rpc-verification.v1",
-    evidenceClass: "BASE_SEPOLIA_RUNTIME",
-    chainId: 84_532,
+    schemaVersion: "cpredict.arbitrum-sepolia.rpc-verification.v1",
+    evidenceClass: "ARBITRUM_SEPOLIA_RUNTIME",
+    chainId: 421_614,
     referenceBlock: results[0].block,
     providers: endpoints,
+    finality,
     roleEventsSha256: stateValidation.roleEventsSha256,
     stateSha256: sha256Json(results[0].snapshot),
   };
@@ -680,15 +702,15 @@ async function main() {
   const path = process.argv[2];
   if (!path)
     throw new Error(
-      "usage: BASE_SEPOLIA_RPC_URL_A=... BASE_SEPOLIA_RPC_URL_B=... node scripts/deployment/verify-live-rpc.mjs <final-manifest.json>",
+      "usage: ARBITRUM_SEPOLIA_RPC_URL_A=... ARBITRUM_SEPOLIA_RPC_URL_B=... node scripts/deployment/verify-live-rpc.mjs <final-manifest.json>",
     );
   const urls = [
-    process.env.BASE_SEPOLIA_RPC_URL_A,
-    process.env.BASE_SEPOLIA_RPC_URL_B,
+    process.env.ARBITRUM_SEPOLIA_RPC_URL_A,
+    process.env.ARBITRUM_SEPOLIA_RPC_URL_B,
   ];
   if (urls.some((url) => !url))
     throw new Error(
-      "BASE_SEPOLIA_RPC_URL_A and BASE_SEPOLIA_RPC_URL_B are required",
+      "ARBITRUM_SEPOLIA_RPC_URL_A and ARBITRUM_SEPOLIA_RPC_URL_B are required",
     );
   const result = await verifyLiveRpc(await readJson(path), urls);
   process.stdout.write(

@@ -1,7 +1,7 @@
 # Gas 与代码体积门禁
 
 核查日期：2026-08-08。编译：Solidity 0.8.36、Cancun、optimizer 200、viaIR、无 metadata
-hash。当前 production-context runner **10/10 PASS**。所有数值是本地交易等价测量，不是 Base
+hash。当前 production-context runner **10/10 PASS**。所有数值是本地交易等价测量，不是 Arbitrum
 Sepolia receipt，也不包含主网价格、L1 data fee、Bundler markup 或外部 Paymaster 计费。
 
 ## 当前 operation gas
@@ -40,5 +40,5 @@ storage layout 和 implementation 锁定风险。
 
 当前本地 production gas/size 门禁通过。旧报告中的 allowance buy 348,144、Permit2 buy
 391,284、Paymaster 合计 193,796 或 gas FAIL 属于历史候选，已被本报告取代。该 PASS 不能外推为
-Base 运行时、微池经济或商业可发布结论；`reports/economics/micro-pool-unit-economics.md` 仍将
-`PF-CHAIN-005` 保持 partial，直到目标 Base 环境 receipt、费用策略和批量赞助方案通过验收。
+Arbitrum 运行时、微池经济或商业可发布结论；`reports/economics/micro-pool-unit-economics.md` 仍将
+`PF-CHAIN-005` 保持 partial，直到目标 Arbitrum 环境 receipt、费用策略和批量赞助方案通过验收。

@@ -261,7 +261,7 @@ export function validateCanaryEvidence(evidence) {
     ],
     "canary",
   );
-  assertRuntimeEvidence(evidence, "cpredict.base-sepolia.canary.v1", "canary");
+  assertRuntimeEvidence(evidence, "cpredict.arbitrum-sepolia.canary.v1", "canary");
   if (evidence.status !== "COMPLETE")
     throw new Error("canary.status: must equal COMPLETE");
   assertTimestamp(evidence.generatedAt, "canary.generatedAt");
@@ -387,7 +387,7 @@ async function main() {
       "usage: node scripts/deployment/validate-canary-evidence.mjs <canary-evidence.json>",
     );
   const result = validateCanaryEvidence(await readJson(path));
-  process.stdout.write(`PASS Base Sepolia canary evidence ${result.sha256}\n`);
+  process.stdout.write(`PASS Arbitrum Sepolia canary evidence ${result.sha256}\n`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href)

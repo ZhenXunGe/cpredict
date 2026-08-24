@@ -9,8 +9,9 @@ reports remain evidence for their own source snapshots but must not override tha
 - Current production `src/**` coverage passes at 100% line, 100% function and 99.13% branch across
   20 suites / 121 tests. The production-context gas/size gate passes 10/10. These local PASS results
   remove the prior percentage/gas blockers but do not close the aggregate release gate.
-- Slither, Aderyn, Medusa (1,024,046 calls; 27/27), Halmos and SMTChecker pass their stated local
-  scopes. Echidna arm64 now passes 1,000,053 calls and 4/4 properties. The x86_64/Rosetta diagnostic
+- Retained prior-snapshot Slither, Aderyn, Medusa (1,024,046 calls; 27/27), Halmos, SMTChecker and
+  Echidna arm64 (1,000,053 calls; 4/4) runs passed their stated scopes, but the current evidence verifier
+  rejects all of them because `foundry.toml` or validator inputs drifted. The x86_64/Rosetta diagnostic
   executes 1,032 calls and 4/4 properties after the same harness fix but hangs while saving coverage,
   so its million-call lifecycle remains open. FeeVault's retained mutation result is 133/135 (98.52%)
   with raw rc 143 and remains FAIL; the prior whole-protocol run completed 0/12 contracts. The runners
@@ -24,13 +25,13 @@ reports remain evidence for their own source snapshots but must not override tha
 - Commercial economics are **NOT_VERIFIED (7/7)**. The fail-closed BigInt evaluator and its negative
   evidence tests exist, but bond deterrence, micro-pool rake coverage, Full/Clone caps, early-bird
   Sybil concentration, C2C fee liquidity, LaunchGuard retirement and extreme-gas exits lack approved
-  thresholds, source/deployment-bound Base receipts or independently verified business cohorts.
+  thresholds, source/deployment-bound Arbitrum receipts or independently verified business cohorts.
   Micro-pool funding must explicitly select gross rake, protocol fee or creator net after early-bird
   allocation and a committed funding share; it does not assume all rake is available. Evidence
   provenance must end no later than the assessment time and the deployment inventory must match the
   audit commit, addresses and runtime code hashes exactly. These tools do not change V1 Solidity or
   execute governance actions.
-- Base Sepolia deployment, source verification, role verification, real AA/Permit2/C2C flows and the
+- Arbitrum Sepolia deployment, source verification, role verification, real AA/Permit2/C2C flows and the
   24-hour timeout canary have not occurred.
 - Production KMS/HSM, Bundler, external USDC Paymaster, RPC quorum, indexer HA and incident
   exercises are not integrated. A dedicated disposable PostgreSQL 17.10 lane passes 9/9 with zero
@@ -48,7 +49,7 @@ reports remain evidence for their own source snapshots but must not override tha
 - A creator may build reputation and then deliberately settle a large market dishonestly.
 - Per-address caps do not prevent Sybil splitting.
 - Post-close C2C trading permits informed or creator-associated traders to trade on private knowledge.
-- USDC can pause/blocklist/upgrade; Base sequencing can halt or reorder within platform guarantees.
+- USDC can pause/blocklist/upgrade; Arbitrum sequencing can halt or reorder within platform guarantees.
 - Clone delegatecall/storage risk is higher than Full deployment risk.
 - Dynamic remaining-pool recomputation can allocate earlier division remainders to multiple later
   claimants. Ordering, transfers and address splitting can change individual atomic-unit allocation,

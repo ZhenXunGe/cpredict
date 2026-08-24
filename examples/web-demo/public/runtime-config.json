@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "cpredict.web-demo.runtime.v1",
+  "chain": {
+    "id": 421614,
+    "name": "Arbitrum Sepolia",
+    "rpcPath": "/rpc",
+    "explorerOrigin": "https://sepolia.arbiscan.io"
+  },
+  "deployment": {
+    "manifestPath": "/deployment/final.json",
+    "requiredStatus": "FINALIZED_VERIFIED",
+    "allowDebugAddresses": true
+  },
+  "indexer": {
+    "enabled": false,
+    "basePath": "/indexer"
+  },
+  "evidence": {
+    "uploadEnabled": false,
+    "endpointPath": "/evidence"
+  }
+}

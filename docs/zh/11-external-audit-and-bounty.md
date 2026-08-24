@@ -9,7 +9,7 @@
 - `docs/en/EXTERNAL_AUDIT_RFP.md` 给出两轮独立审计的输入、工作项、交付物、独立性和退出条件。
 - `docs/en/BUG_BOUNTY_DRAFT.md` 给出资产/影响范围、排除项、研究规则、建议奖金、响应 SLA、
   safe harbor 和披露规则。
-- 当前工作树未 commit/tag，Base Sepolia/主网均未部署，故不能生成真实审计 hash、地址范围或
+- 当前工作树未 commit/tag，Arbitrum Sepolia/主网均未部署，故不能生成真实审计 hash、地址范围或
   发布一个可兑现的 bounty。
 
 “RFP 已完成”不等于“已外审”；“Bounty 草案已完成”不等于“赏金已上线”。两项继续保持
@@ -24,7 +24,7 @@ Release Blocker。
 5. 冻结修复 commit，由 Round 1 原团队逐项复审。
 6. Round 2 交给另一法律主体和不同主审；可采用资深团队审计或带资深分诊的审计竞赛。
 7. Round 2 修复复审；任何后续代码变化都必须做差分复核。
-8. 完成 Base Sepolia E2E、24 小时 canary、角色/应急/监控演练和法务评估。
+8. 完成 Arbitrum Sepolia E2E、24 小时 canary、角色/应急/监控演练和法务评估。
 9. 资金托管、24×7 分诊和应急联系人就绪后，才能发布 Bug Bounty。
 10. 只有全部发布阻断项关闭，才进入限额主网。
 

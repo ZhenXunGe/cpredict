@@ -99,7 +99,7 @@ class TestBudgetStore implements SponsorBudgetStore {
 
 function requestBody() {
   return {
-    chainId: 84_532,
+    chainId: 421_614,
     userOperation: {
       sender: SENDER,
       nonce: "1",
@@ -147,7 +147,7 @@ describe("paymaster service endpoints", () => {
       authorizer,
       budgetStore,
       config: {
-        chainId: 84_532,
+        chainId: 421_614,
         entryPoint: getAddress("0x1111111111111111111111111111111111111111"),
         paymaster: getAddress("0x2222222222222222222222222222222222222222"),
         verificationGasLimit: 150_000n,

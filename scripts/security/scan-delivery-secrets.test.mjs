@@ -120,6 +120,25 @@ test("CLI scans the Git delivery inventory and redacts matched values", async ()
   }
 });
 
+test("CLI excludes tracked files deleted from the working-tree delivery inventory", async () => {
+  const directory = await createRepository();
+  try {
+    await writeFile(join(directory, "retired.env"), "API_KEY=${API_KEY}\n", "utf8");
+    assert.equal(
+      spawnSync("git", ["add", "retired.env"], { cwd: directory }).status,
+      0,
+    );
+    await rm(join(directory, "retired.env"));
+    await writeFile(join(directory, "replacement.env"), "API_KEY=${API_KEY}\n", "utf8");
+
+    const result = runScanner(directory);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /1 delivery payloads scanned total/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("CLI counts an allowlisted normalized payload within the inventory total", async () => {
   const directory = await createRepository();
   try {

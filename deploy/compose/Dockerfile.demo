@@ -1,0 +1,15 @@
+FROM node:22.22.2-bookworm-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json tsconfig.json ./
+RUN npm ci --ignore-scripts
+COPY examples ./examples
+COPY offchain/sdk ./offchain/sdk
+COPY generated ./generated
+COPY deployments/arbitrum-sepolia/final-manifest.schema.json ./deployments/arbitrum-sepolia/final-manifest.schema.json
+COPY scripts/generate-web-demo-validators.mjs ./scripts/generate-web-demo-validators.mjs
+RUN npm run demo:build
+
+FROM nginxinc/nginx-unprivileged:1.27-alpine
+COPY --from=build /app/dist/web-demo /usr/share/nginx/html
+COPY deploy/compose/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+USER 101

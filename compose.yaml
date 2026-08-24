@@ -1,0 +1,199 @@
+{
+  "name": "cpredict",
+  "services": {
+    "postgres": {
+      "image": "postgres:17.10-bookworm",
+      "restart": "unless-stopped",
+      "stop_grace_period": "30s",
+      "environment": {
+        "POSTGRES_USER": "cpredict_bootstrap",
+        "POSTGRES_PASSWORD": "${CPREDICT_STACK_POSTGRES_ADMIN_PASSWORD:?set in .env.compose.local}",
+        "POSTGRES_DB": "postgres",
+        "CPREDICT_STACK_MIGRATOR_PASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_INDEXER_PASSWORD": "${CPREDICT_STACK_INDEXER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_PAYMASTER_PASSWORD": "${CPREDICT_STACK_PAYMASTER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}"
+      },
+      "volumes": [
+        "postgres-data:/var/lib/postgresql/data",
+        "./deploy/compose/postgres/init:/docker-entrypoint-initdb.d:ro"
+      ],
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=32m", "/var/run/postgresql:rw,noexec,nosuid,size=8m"],
+      "healthcheck": {
+        "test": ["CMD-SHELL", "pg_isready -U cpredict_bootstrap -d postgres"],
+        "interval": "5s",
+        "timeout": "5s",
+        "retries": 20,
+        "start_period": "10s"
+      },
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "cap_add": ["CHOWN", "DAC_OVERRIDE", "FOWNER", "SETGID", "SETUID"],
+      "networks": ["data"],
+      "deploy": {"resources": {"limits": {"cpus": "2.0", "memory": "2G"}}},
+      "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
+    },
+    "migrate-indexer": {
+      "image": "postgres:17.10-bookworm",
+      "restart": "no",
+      "depends_on": {"postgres": {"condition": "service_healthy"}},
+      "environment": {
+        "PGHOST": "postgres",
+        "PGDATABASE": "cpredict_indexer",
+        "PGUSER": "cpredict_migrator",
+        "PGPASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_INDEXER_PASSWORD": "${CPREDICT_STACK_INDEXER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}"
+      },
+      "volumes": [
+        "./offchain/indexer/migrations:/migrations:ro",
+        "./deploy/compose/postgres/run-migrations.sh:/usr/local/bin/run-cpredict-migrations:ro"
+      ],
+      "entrypoint": ["bash", "/usr/local/bin/run-cpredict-migrations", "indexer"],
+      "user": "999:999",
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=16m"],
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "networks": ["data"],
+      "deploy": {"resources": {"limits": {"cpus": "0.5", "memory": "256M"}}}
+    },
+    "migrate-paymaster": {
+      "image": "postgres:17.10-bookworm",
+      "restart": "no",
+      "depends_on": {"postgres": {"condition": "service_healthy"}},
+      "environment": {
+        "PGHOST": "postgres",
+        "PGDATABASE": "cpredict_paymaster",
+        "PGUSER": "cpredict_migrator",
+        "PGPASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_PAYMASTER_PASSWORD": "${CPREDICT_STACK_PAYMASTER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}"
+      },
+      "volumes": [
+        "./offchain/paymaster-service/migrations:/migrations:ro",
+        "./deploy/compose/postgres/run-migrations.sh:/usr/local/bin/run-cpredict-migrations:ro"
+      ],
+      "entrypoint": ["bash", "/usr/local/bin/run-cpredict-migrations", "paymaster"],
+      "user": "999:999",
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=16m"],
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "networks": ["data"],
+      "deploy": {"resources": {"limits": {"cpus": "0.5", "memory": "256M"}}}
+    },
+    "indexer": {
+      "build": {"context": ".", "dockerfile": "deploy/compose/Dockerfile.offchain", "target": "indexer"},
+      "restart": "unless-stopped",
+      "stop_grace_period": "15s",
+      "depends_on": {"migrate-indexer": {"condition": "service_completed_successfully"}},
+      "environment": {
+        "CPREDICT_INDEXER_HOST": "0.0.0.0",
+        "CPREDICT_INDEXER_CONTAINER_MODE": "true",
+        "CPREDICT_INDEXER_PORT": "8787",
+        "CPREDICT_INDEXER_LOG_LEVEL": "info",
+        "CPREDICT_INDEXER_CHAIN_ID": "421614",
+        "CPREDICT_INDEXER_RPC_URL": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}",
+        "CPREDICT_INDEXER_DATABASE_URL": "postgresql://cpredict_indexer:${CPREDICT_STACK_INDEXER_PASSWORD}@postgres/cpredict_indexer?sslmode=disable",
+        "CPREDICT_INDEXER_FACTORY_ADDRESS": "${CPREDICT_INDEXER_FACTORY_ADDRESS:?run deploy:sync first}",
+        "CPREDICT_INDEXER_CORE_ADDRESSES": "${CPREDICT_INDEXER_CORE_ADDRESSES:?run deploy:sync first}",
+        "CPREDICT_INDEXER_DEPLOYMENT_BLOCK": "${CPREDICT_INDEXER_DEPLOYMENT_BLOCK:?run deploy:sync first}",
+        "CPREDICT_INDEXER_CONFIRMATIONS": "2",
+        "CPREDICT_INDEXER_BATCH_SIZE": "500",
+        "CPREDICT_INDEXER_MAX_BATCHES_PER_TICK": "4",
+        "CPREDICT_INDEXER_POLL_INTERVAL_MS": "1000",
+        "CPREDICT_INDEXER_RPC_TIMEOUT_MS": "5000",
+        "CPREDICT_INDEXER_DATABASE_POOL_SIZE": "10",
+        "CPREDICT_INDEXER_LISTEN_BACKLOG": "16384",
+        "CPREDICT_INDEXER_HTTP_MAX_CONNECTIONS": "20000",
+        "CPREDICT_INDEXER_WS_MAX_CONNECTIONS": "12000",
+        "CPREDICT_INDEXER_WS_HEARTBEAT_INTERVAL_MS": "15000",
+        "CPREDICT_INDEXER_WS_MAX_BUFFERED_AMOUNT_BYTES": "65536",
+        "CPREDICT_INDEXER_WS_SHUTDOWN_GRACE_MS": "5000"
+      },
+      "ports": ["127.0.0.1:${CPREDICT_STACK_INDEXER_PORT:-8787}:8787"],
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=32m"],
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "healthcheck": {
+        "test": ["CMD", "node", "-e", "fetch('http://127.0.0.1:8787/readyz').then(r=>{if(!r.ok)process.exit(1)})"],
+        "interval": "10s", "timeout": "5s", "retries": 12, "start_period": "15s"
+      },
+      "networks": ["app", "data"],
+      "deploy": {"resources": {"limits": {"cpus": "2.0", "memory": "1G"}}},
+      "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
+    },
+    "web-demo": {
+      "build": {"context": ".", "dockerfile": "deploy/compose/Dockerfile.demo"},
+      "restart": "unless-stopped",
+      "stop_grace_period": "10s",
+      "depends_on": {"indexer": {"condition": "service_healthy"}},
+      "environment": {
+        "NGINX_ENVSUBST_FILTER": "^CPREDICT_",
+        "CPREDICT_RPC_UPSTREAM": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}"
+      },
+      "volumes": [
+        "${CPREDICT_STACK_RUNTIME_ROOT:?run deploy:sync first}/web-demo/runtime-config.json:/usr/share/nginx/html/runtime-config.json:ro",
+        "${CPREDICT_STACK_RUNTIME_ROOT:?run deploy:sync first}/web-demo/deployment:/usr/share/nginx/html/deployment:ro"
+      ],
+      "ports": ["127.0.0.1:${CPREDICT_STACK_DEMO_PORT:-4177}:8080"],
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=16m", "/var/cache/nginx:rw,noexec,nosuid,size=16m", "/var/run:rw,noexec,nosuid,size=1m"],
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "healthcheck": {"test": ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"], "interval": "10s", "timeout": "5s", "retries": 12},
+      "networks": ["app"],
+      "deploy": {"resources": {"limits": {"cpus": "1.0", "memory": "256M"}}},
+      "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
+    },
+    "paymaster": {
+      "build": {"context": ".", "dockerfile": "deploy/compose/Dockerfile.offchain", "target": "paymaster"},
+      "restart": "unless-stopped",
+      "stop_grace_period": "15s",
+      "profiles": ["sponsorship"],
+      "depends_on": {"migrate-paymaster": {"condition": "service_completed_successfully"}},
+      "environment": {
+        "CPREDICT_PAYMASTER_HOST": "0.0.0.0",
+        "CPREDICT_PAYMASTER_CONTAINER_MODE": "true",
+        "CPREDICT_PAYMASTER_PORT": "8791",
+        "CPREDICT_PAYMASTER_LOG_LEVEL": "info",
+        "CPREDICT_PAYMASTER_ADAPTER_MODULE": "file:///run/cpredict/paymaster-adapter.mjs",
+        "CPREDICT_PAYMASTER_CHAIN_ID": "421614",
+        "CPREDICT_PAYMASTER_ENTRY_POINT": "${CPREDICT_PAYMASTER_ENTRY_POINT:?run deploy:sync first}",
+        "CPREDICT_PAYMASTER_ADDRESS": "${CPREDICT_PAYMASTER_ADDRESS:?run deploy:sync first}",
+        "CPREDICT_PAYMASTER_EXPECTED_SIGNER": "${CPREDICT_PAYMASTER_EXPECTED_SIGNER:?run deploy:sync first}",
+        "CPREDICT_PAYMASTER_POLICY_VERSION": "${CPREDICT_PAYMASTER_POLICY_VERSION:-1}",
+        "CPREDICT_PAYMASTER_VERIFICATION_GAS_LIMIT": "150000",
+        "CPREDICT_PAYMASTER_POST_OP_GAS_LIMIT": "100000",
+        "CPREDICT_PAYMASTER_VALIDITY_SECONDS": "300",
+        "CPREDICT_PAYMASTER_MAX_COST_PER_REQUEST": "${CPREDICT_PAYMASTER_MAX_COST_PER_REQUEST:?run deploy:sync first}",
+        "CPREDICT_PAYMASTER_MAX_COST_PER_USER_DAY": "${CPREDICT_PAYMASTER_MAX_COST_PER_USER_DAY:?run deploy:sync first}",
+        "CPREDICT_PAYMASTER_MAX_COST_GLOBAL_DAY": "${CPREDICT_PAYMASTER_MAX_COST_GLOBAL_DAY:?run deploy:sync first}",
+        "CPREDICT_PAYMASTER_MAX_INIT_CODE_BYTES": "1024",
+        "CPREDICT_PAYMASTER_MAX_CALL_DATA_BYTES": "16384",
+        "CPREDICT_PAYMASTER_MIN_SPONSORED_LISTING_UNITS": "1000000",
+        "CPREDICT_PAYMASTER_MAX_CREATE_LISTINGS_PER_USER_DAY": "20",
+        "CPREDICT_PAYMASTER_MAX_CANCEL_LISTINGS_PER_USER_DAY": "40",
+        "CPREDICT_ADAPTER_DATABASE_URL": "postgresql://cpredict_paymaster:${CPREDICT_STACK_PAYMASTER_PASSWORD}@postgres/cpredict_paymaster?sslmode=disable"
+      },
+      "volumes": ["${CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH:?set for sponsorship profile}:/run/cpredict/paymaster-adapter.mjs:ro"],
+      "ports": ["127.0.0.1:${CPREDICT_STACK_PAYMASTER_PORT:-8791}:8791"],
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=16m"],
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "healthcheck": {"test": ["CMD", "node", "-e", "fetch('http://127.0.0.1:8791/readyz').then(r=>{if(!r.ok)process.exit(1)})"], "interval": "10s", "timeout": "5s", "retries": 12, "start_period": "15s"},
+      "networks": ["app", "data"],
+      "deploy": {"resources": {"limits": {"cpus": "1.0", "memory": "512M"}}},
+      "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
+    }
+  },
+  "networks": {
+    "app": {"internal": false},
+    "data": {"internal": true}
+  },
+  "volumes": {"postgres-data": {}}
+}

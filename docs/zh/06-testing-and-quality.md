@@ -10,7 +10,7 @@
 4. Stateful invariant：随机 buy/transfer/terminal/claim 下的资产与 supply 守恒。
 5. Fuzz/formal/mutation：数学、签名、初始化、terminal 和 reentrancy。
 6. Off-chain：精确单位、schema/policy、indexer reorg/replay、SDK simulation→receipt、React 去重。
-7. 实链 E2E：Base Sepolia 指定地址/receipt/storage/codehash。
+7. 实链 E2E：Arbitrum Sepolia 指定地址/receipt/storage/codehash。
 8. 性能：本地受控链、Indexer/API/k6、gas/size；商业容量必须由不同 SUT/load/chain 主机的
    schema-v4 证据关闭，同机 runner 只作诊断。
 
@@ -21,7 +21,7 @@ line 100%、function 100%、branch 99.13%。用例覆盖 creator void 在 deadli
 零参与者 timeout bond 返 credit、canonical Permit2 reference
 vector、Paymaster 两段 gas header 防篡改、Factory inactive/code/wiring/fingerprint activation，以及
 ERC-1155 batch transfer 的标准 `TransferBatch` 事件、余额与 supply conformance。
-coverage 与测试 lane 当前均通过其本地门禁；不得把该 PASS 合并为外审、Base 或生产 PASS。除原有
+coverage 与测试 lane 当前均通过其本地门禁；不得把该 PASS 合并为外审、Arbitrum 或生产 PASS。除原有
 `ProtocolFlows`、`Permit2Flows`、
 `SponsorshipPaymaster` 和 invariant 外，新增 Controls、FactoryValidation、MarketVaultEdges、
 MarketplaceEdges、PaymasterEdges、TokenTransferIntegrity、internal harness 与 FeeVault mutation
@@ -102,23 +102,26 @@ allowance/Permit2 buy、listing、两种 fill、claim/refund 和 Paymaster valid
 
 `bash scripts/coverage-full.sh` 不排除 suite/path，并机器校验 production `src/**` 100% line、100%
 function、≥95% branch。当前执行 20 suites、121/121 tests PASS；`src/**` 为 line 100%、function
-100%、branch 99.13%，门禁 PASS。原始未过滤 LCOV 为 line 80.29%、function 81.07%、branch 76.83%，
+100%、branch 99.13%，门禁 PASS。原始未过滤 LCOV 为 line 79.61%、function 81.07%、branch 75.39%，
 因为它还包含部署脚本、安全 harness 和测试辅助代码。runner 不使用 LCOV remove、path/suite exclusion
 或空测试伪造生产覆盖率；完整命令、原始 LCOV、forced production build 与哈希见
 `reports/coverage/REPORT.md`。
 
 ## 7. 深度安全工具结果
 
-- Slither：fresh run 分析 66 contracts/102 detectors，25 findings=2 High 已分诊、0 Medium、21 Low、
-  2 Info；runner 与 14 个 parser tests PASS。High 为固定 Permit2 调用面的 reentrancy detector，保留给
-  外审复核，详见 `reports/slither-triage.md`；
+- Slither：保留的旧快照分析 66 contracts/102 detectors，25 findings=2 High 已分诊、0 Medium、21 Low、
+  2 Info；当前 evidence verifier 因 `foundry.toml` 输入漂移拒绝该证据，不能写成当前候选 PASS。
+  High 为固定 Permit2 调用面的 reentrancy detector，保留给外审复核，详见 `reports/slither-triage.md`；
 - nightly invariant：4 属性各 10,000 runs×depth 256，即 2,560,000 calls/属性，0 revert；
-- Medusa：1,024,046 calls、27 passed/0 failed；
-- Echidna：arm64 正式 1,000,053 calls、4/4 PASS；x86_64 诊断 1,032 calls、4/4 PASS，但在保存
+- Medusa：旧快照 1,024,046 calls、27 passed/0 failed；当前 evidence verifier 因输入漂移拒绝；
+- Echidna：旧 arm64 快照为 1,000,053 calls、4/4 PASS；当前 evidence verifier 因输入漂移拒绝。
+  x86_64 诊断 1,032 calls、4/4 PASS，但在保存
   coverage 时挂起，未完成百万调用生命周期；
-- Aderyn：官方固定版本正常退出，报告 inventory validator PASS；
-- Halmos：Z3 对 rake、remaining pool、C2C 三个守恒性质 3/3 通过；范围不是全协议；
-- Solidity SMTChecker：固定 solc 0.8.36 + Z3 4.12.6，CHC/BMC 各证明 10 assertions；范围不是全协议；
+- Aderyn：旧快照官方固定版本正常退出；当前 evidence verifier 因输入漂移拒绝；
+- Halmos：旧快照 Z3 对 rake、remaining pool、C2C 三个守恒性质 3/3 通过；当前 evidence verifier
+  因输入漂移拒绝，范围也不是全协议；
+- Solidity SMTChecker：旧快照固定 solc 0.8.36 + Z3 4.12.6，CHC/BMC 各证明 10 assertions；
+  当前 evidence verifier 因验证脚本输入漂移拒绝，范围也不是全协议；
 - mutation：旧 FeeVault bounded score 133/135（98.52%）达到数值阈值，但 raw rc 143 令正式结果
   FAIL；旧全协议 campaign 为 0/12。runner 已改为 exact source target、进程组 TERM/KILL、原子证据和
   ordered 12/12 summary binding，30/30 focused tests PASS；fresh FeeVault/full campaign 未运行，不能
@@ -127,14 +130,14 @@ function、≥95% branch。当前执行 20 suites、121/121 tests PASS；`src/**
 ## 8. 测试报告规则
 
 报告必须包含 commit/source manifest、compiler/profile、seed/runs/depth、测试名称、耗时、失败/
-skip、机器规格和日志路径。Base Sepolia 只做低速真实烟测，不把提交吞吐量描述为链上确认 TPS。
+skip、机器规格和日志路径。Arbitrum Sepolia 只做低速真实烟测，不把提交吞吐量描述为链上确认 TPS。
 
 ## 9. 链下聚焦结果
 
 当前全量普通链下 lane 覆盖 SDK、AA/Permit2、Paymaster service、Indexer memory/API、terminal worker
-与 React SSR：79 tests pass；5 个 PostgreSQL 用例在该命令中 conditional skip。独立 disposable
+与 React SSR：90 tests pass；5 个 PostgreSQL 用例在该命令中 conditional skip。独立 disposable
 PostgreSQL 17.10 lane 实际执行 Paymaster 2/2、Indexer 3/3、readiness 4/4，共 9/9、0 skip。
-Playwright 浏览器、真实钱包、Bundler/KMS、Base Sepolia 和生产 API 仍未验证。
+Playwright 浏览器、真实钱包、Bundler/KMS、Arbitrum Sepolia 和生产 API 仍未验证。
 
 ## 10. 商业经济参数验收
 
@@ -142,7 +145,7 @@ Playwright 浏览器、真实钱包、Bundler/KMS、Base Sepolia 和生产 API �
 覆盖 claim/Paymaster、Full/Clone cap、早鸟 Sybil、C2C fee 流动性、LaunchGuard 退休资格及极端 gas
 退出七项。输入/policy schema 拒绝未知字段；模型与负面证据用例通过只证明评估器能拒绝缺失、歧义、
 过期或未绑定的数据；当前模板没有已批准
-阈值、真实 Base receipt 或独立业务 cohort，因此生成报告必须保持 **7/7 NOT_VERIFIED**。
+阈值、真实 Arbitrum receipt 或独立业务 cohort，因此生成报告必须保持 **7/7 NOT_VERIFIED**。
 
 微池门禁不会默认把 gross rake 全部用于赞助：approved policy 必须明确选取 `GROSS_RAKE`、
 `PROTOCOL_FEE` 或 `CREATOR_NET_AFTER_EARLY_BIRD`，再乘以 `committedFundingShareBps`。所有证据

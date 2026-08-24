@@ -80,7 +80,7 @@ export function renderCommercialEconomicsMarkdown(result, paths = {}) {
 
 ## 正式状态
 
-**${result.overallStatus}**。该状态由七项 fail-closed 门禁聚合；任何缺失的真实 Base receipt、业务数据或批准阈值都只能得到 \`NOT_VERIFIED\`，估算值不能得到 \`PASS\`。
+**${result.overallStatus}**。该状态由七项 fail-closed 门禁聚合；任何缺失的真实 Arbitrum receipt、业务数据或批准阈值都只能得到 \`NOT_VERIFIED\`，估算值不能得到 \`PASS\`。
 
 | 门禁 | 状态 | 原因 |
 |---|---|---|
@@ -102,7 +102,7 @@ ${unresolved || "- 无；七项均满足已批准阈值。"}
 ## 七项判断
 
 1. Bond：分别按 Full/Clone 的 \`max(10 USDC, ceil(cap×2%))\`，与经批准覆盖倍数下的 P95 恶意收益和响应成本比较。
-2. 微池：用真实 Base claim、L1 data fee、Paymaster receipt 及外部供应商收费的 P95 每 claimant 成本，向上取整后与获批准资金范围（协议分成、早鸟后 creator 净额或总 rake）中已明确承诺的比例比较；不会默认整笔 gross rake 都可用于赞助。
+2. 微池：用真实 Arbitrum claim、L1 data fee、Paymaster receipt 及外部供应商收费的 P95 每 claimant 成本，向上取整后与获批准资金范围（协议分成、早鸟后 creator 净额或总 rake）中已明确承诺的比例比较；不会默认整笔 gross rake 都可用于赞助。
 3. Cap：同时检查 Full 5,000 USDC 与 Clone 500 USDC 的风险预算、P95 利用率、cap 拒单率和未追回损失。
 4. 早鸟：检查疑似 Sybil 钱包占比、奖励占比以及奖励相对本金的放大倍数。
 5. C2C：用匹配的零费率/候选费率 cohort 检查 fill-rate 损失、保留率和成交时延变化。

@@ -25,6 +25,8 @@ or in-memory production budget implementation.
 
 An account-specific decoder, real KMS/HSM adapter, short-lived authentication provider,
 transactional shared budget datastore, live on-chain `sponsorSigner`/policy-version verification,
-infrastructure TLS, WAF and egress policy remain deployment integrations. The process only accepts
-loopback bind addresses and should run behind a correctly configured gateway. The expected signer
-environment value is a fail-closed deployment assertion, not proof that chain state was queried.
+infrastructure TLS, WAF and egress policy remain deployment integrations. The process accepts only
+loopback bind addresses unless `CPREDICT_PAYMASTER_CONTAINER_MODE=true`; that override is reserved
+for an isolated Compose network whose host publish remains loopback-only. It should still run behind
+a correctly configured gateway. The expected signer environment value is a fail-closed deployment
+assertion, not proof that chain state was queried.

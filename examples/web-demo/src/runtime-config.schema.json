@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpredict.example/schemas/web-demo-runtime-v1.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "chain", "deployment", "indexer", "evidence"],
+  "properties": {
+    "schemaVersion": { "const": "cpredict.web-demo.runtime.v1" },
+    "chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "rpcPath", "explorerOrigin"],
+      "properties": {
+        "id": { "const": 421614 },
+        "name": { "const": "Arbitrum Sepolia" },
+        "rpcPath": { "$ref": "#/$defs/sameOriginPath" },
+        "explorerOrigin": { "const": "https://sepolia.arbiscan.io" }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manifestPath", "requiredStatus", "allowDebugAddresses"],
+      "properties": {
+        "manifestPath": { "$ref": "#/$defs/sameOriginPath" },
+        "requiredStatus": { "const": "FINALIZED_VERIFIED" },
+        "allowDebugAddresses": { "type": "boolean" }
+      }
+    },
+    "indexer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "basePath"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "basePath": { "$ref": "#/$defs/sameOriginPath" }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uploadEnabled", "endpointPath"],
+      "properties": {
+        "uploadEnabled": { "type": "boolean" },
+        "endpointPath": { "$ref": "#/$defs/sameOriginPath" }
+      }
+    }
+  },
+  "$defs": {
+    "sameOriginPath": {
+      "type": "string",
+      "pattern": "^/(?!/)[A-Za-z0-9._~!$&'()*+,;=:@%/-]*$",
+      "minLength": 1,
+      "maxLength": 256
+    }
+  }
+}

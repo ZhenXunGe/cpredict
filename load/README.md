@@ -173,6 +173,6 @@ against the offline Ed25519 public key. The older deterministic-harness failure 
 `reports/performance/full-20260808T013000Z-final/` also remains historical evidence and must not be
 relabelled.
 
-All results are local. They do not prove deployed API/load-balancer capacity, Base sequencer/RPC
-behavior, production PostgreSQL sizing, CDN behavior, or multi-region failover. Base Sepolia remains a
+All results are local. They do not prove deployed API/load-balancer capacity, Arbitrum sequencer/RPC
+behavior, production PostgreSQL sizing, CDN behavior, or multi-region failover. Arbitrum Sepolia remains a
 low-rate functional smoke target, never a 50 tx/s load target.

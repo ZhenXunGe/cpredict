@@ -12,7 +12,8 @@ const address = z
   .refine(isAddress, "must be an address")
   .transform((value) => getAddress(value))
   .refine((value) => value !== zeroAddress, "must not be zero");
-const loopbackHost = z.enum(["127.0.0.1", "::1"]);
+const serviceHost = z.enum(["127.0.0.1", "::1", "0.0.0.0", "::"]);
+const booleanString = z.enum(["true", "false"]);
 const logLevel = z.enum([
   "fatal",
   "error",
@@ -25,7 +26,8 @@ const logLevel = z.enum([
 
 const schema = z
   .object({
-    CPREDICT_INDEXER_HOST: loopbackHost,
+    CPREDICT_INDEXER_HOST: serviceHost,
+    CPREDICT_INDEXER_CONTAINER_MODE: booleanString.default("false"),
     CPREDICT_INDEXER_PORT: safeInteger.refine(
       (value) => value >= 1 && value <= 65_535,
     ),
@@ -38,7 +40,11 @@ const schema = z
     CPREDICT_INDEXER_DATABASE_URL: z
       .string()
       .url()
-      .refine(isSecurePostgresUrl, "must use secure PostgreSQL"),
+      .refine(
+        (value) =>
+          isSecurePostgresUrl(value) || isComposePostgresUrl(value),
+        "must use secure PostgreSQL or the explicit Compose-internal endpoint",
+      ),
     CPREDICT_INDEXER_FACTORY_ADDRESS: address,
     CPREDICT_INDEXER_CORE_ADDRESSES: z.string().min(1),
     CPREDICT_INDEXER_DEPLOYMENT_BLOCK: unsignedInteger.transform(BigInt),
@@ -83,6 +89,39 @@ const schema = z
     ),
   })
   .superRefine((value, context) => {
+    const publicBind = ["0.0.0.0", "::"].includes(
+      value.CPREDICT_INDEXER_HOST,
+    );
+    const containerMode = value.CPREDICT_INDEXER_CONTAINER_MODE === "true";
+    if (publicBind !== containerMode) {
+      context.addIssue({
+        code: "custom",
+        path: ["CPREDICT_INDEXER_CONTAINER_MODE"],
+        message:
+          "must be true exactly when binding a container wildcard address",
+      });
+    }
+    if (
+      containerMode &&
+      !isComposePostgresUrl(value.CPREDICT_INDEXER_DATABASE_URL)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["CPREDICT_INDEXER_DATABASE_URL"],
+        message:
+          "container mode only permits the internal postgres service with sslmode=disable",
+      });
+    }
+    if (
+      !containerMode &&
+      isComposePostgresUrl(value.CPREDICT_INDEXER_DATABASE_URL)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["CPREDICT_INDEXER_DATABASE_URL"],
+        message: "the Compose-internal endpoint requires container mode",
+      });
+    }
     if (
       value.CPREDICT_INDEXER_HTTP_MAX_CONNECTIONS <
       value.CPREDICT_INDEXER_WS_MAX_CONNECTIONS
@@ -96,7 +135,8 @@ const schema = z
   });
 
 export interface IndexerServiceConfig {
-  host: "127.0.0.1" | "::1";
+  host: "127.0.0.1" | "::1" | "0.0.0.0" | "::";
+  containerMode: boolean;
   port: number;
   logLevel: z.infer<typeof logLevel>;
   chainId: number;
@@ -133,6 +173,7 @@ export function parseIndexerServiceConfig(
   );
   return {
     host: parsed.CPREDICT_INDEXER_HOST,
+    containerMode: parsed.CPREDICT_INDEXER_CONTAINER_MODE === "true",
     port: parsed.CPREDICT_INDEXER_PORT,
     logLevel: parsed.CPREDICT_INDEXER_LOG_LEVEL,
     chainId: parsed.CPREDICT_INDEXER_CHAIN_ID,
@@ -188,6 +229,15 @@ function isSecurePostgresUrl(value: string): boolean {
   if (isLoopback(url.hostname)) return true;
   return ["require", "verify-ca", "verify-full"].includes(
     url.searchParams.get("sslmode") ?? "",
+  );
+}
+
+function isComposePostgresUrl(value: string): boolean {
+  const url = new URL(value);
+  return (
+    ["postgres:", "postgresql:"].includes(url.protocol) &&
+    url.hostname === "postgres" &&
+    url.searchParams.get("sslmode") === "disable"
   );
 }
 

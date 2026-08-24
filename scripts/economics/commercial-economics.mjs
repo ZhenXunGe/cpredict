@@ -8,7 +8,7 @@ const UINT_PATTERN = /^(0|[1-9][0-9]*)$/;
 const SHA256_PATTERN = /^sha256:[0-9a-f]{64}$/;
 const TX_HASH_PATTERN = /^0x[0-9a-fA-F]{64}$/;
 const ISO_UTC_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
-const BASE_CHAIN_IDS = new Set([8453, 84532]);
+const ARBITRUM_CHAIN_IDS = new Set([42161, 421614]);
 const MODES = ["FULL", "CLONE"];
 const EXIT_OPERATIONS = [
   "RESOLVE",
@@ -162,9 +162,9 @@ export function validateCommercialEconomicsInput(input) {
     "usdcDecimals",
     "v1",
   ]);
-  if (!BASE_CHAIN_IDS.has(input.subject.chainId))
+  if (!ARBITRUM_CHAIN_IDS.has(input.subject.chainId))
     throw new RangeError(
-      "input.subject.chainId must be Base mainnet or Base Sepolia",
+      "input.subject.chainId must be Arbitrum One or Arbitrum Sepolia",
     );
   requireExact(
     input.subject.usdcDecimals,
@@ -876,7 +876,7 @@ export function evaluateCommercialEconomics(input, policy) {
     },
     gates,
     proofBoundary: [
-      "PASS requires approved policy and provenance-complete supplied Base/business evidence; estimates never satisfy evidence readiness.",
+      "PASS requires approved policy and provenance-complete supplied Arbitrum/business evidence; estimates never satisfy evidence readiness.",
       "Receipt provenance is validated structurally offline but transaction inclusion is not queried by this tool.",
       "Extreme-gas PASS proves only economic feasibility under the approved stress vector, not sequencer, RPC, bundler, or USDC availability.",
       "LaunchGuard PASS means evidence-backed retirement eligibility only; this tool never sends the irreversible governance transaction.",
@@ -941,7 +941,7 @@ function evaluateMicroPool(input, policy) {
   requireGate(
     requirements,
     receiptsMatchDeployment(input),
-    "one or more Base receipts do not match an attested deployment address and runtime codehash",
+    "one or more Arbitrum receipts do not match an attested deployment address and runtime codehash",
   );
   const minimum = Number(toBigInt(policy.minimumReceiptsPerOperation));
   const claims = receiptCostsPerCoveredClaim(
@@ -953,12 +953,12 @@ function evaluateMicroPool(input, policy) {
   requireGate(
     requirements,
     claims.length >= minimum,
-    "insufficient verified WINNER_CLAIM Base receipts",
+    "insufficient verified WINNER_CLAIM Arbitrum receipts",
   );
   requireGate(
     requirements,
     paymaster.length >= minimum,
-    "insufficient verified PAYMASTER_OVERHEAD Base receipts",
+    "insufficient verified PAYMASTER_OVERHEAD Arbitrum receipts",
   );
   const claimantCount = toBigInt(input.microPoolEvidence.expectedClaimantCount);
   requireGate(
@@ -989,14 +989,14 @@ function evaluateMicroPool(input, policy) {
   const earlyBirdPool = input.microPoolEvidence.earlyBirdEnabled
     ? mulDivFloor(creatorNet, toBigInt(input.subject.v1.earlyBirdShareBps), BPS)
     : 0n;
-  const fundingBase =
+  const fundingArbitrum =
     policy.fundingScope === "PROTOCOL_FEE"
       ? protocolFee
       : policy.fundingScope === "CREATOR_NET_AFTER_EARLY_BIRD"
         ? creatorNet - earlyBirdPool
         : rake;
   const committedFunding = mulDivFloor(
-    fundingBase,
+    fundingArbitrum,
     toBigInt(policy.committedFundingShareBps),
     BPS,
   );
@@ -1011,7 +1011,7 @@ function evaluateMicroPool(input, policy) {
     protocolFeeAtomicFloor: protocolFee,
     earlyBirdPoolAtomicFloor: earlyBirdPool,
     fundingScope: policy.fundingScope,
-    fundingBaseAtomicFloor: fundingBase,
+    fundingArbitrumAtomicFloor: fundingArbitrum,
     committedFundingAtomicFloor: committedFunding,
     rakeCoverageBps: coverageBps,
   };
@@ -1315,7 +1315,7 @@ function evaluateExtremeGas(input, policy) {
   requireGate(
     requirements,
     receiptsMatchDeployment(input),
-    "one or more Base receipts do not match an attested deployment address and runtime codehash",
+    "one or more Arbitrum receipts do not match an attested deployment address and runtime codehash",
   );
   const prices = input.gasPriceEvidence.samplesWei.map(toBigInt);
   requireGate(
@@ -1340,7 +1340,7 @@ function evaluateExtremeGas(input, policy) {
     requireGate(
       requirements,
       receipts.length >= minimumReceipts,
-      `insufficient verified ${operation} Base receipts`,
+      `insufficient verified ${operation} Arbitrum receipts`,
     );
     if (VAULT_RECEIPT_OPERATIONS.has(operation)) {
       for (const mode of MODES) {
@@ -1348,7 +1348,7 @@ function evaluateExtremeGas(input, policy) {
           requirements,
           receipts.filter((receipt) => receipt.deploymentMode === mode)
             .length >= minimumReceipts,
-          `insufficient verified ${operation} ${mode} Base receipts`,
+          `insufficient verified ${operation} ${mode} Arbitrum receipts`,
         );
       }
     }

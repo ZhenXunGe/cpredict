@@ -3,7 +3,7 @@
 ## Status
 
 Pre-audit candidate as of 2026-08-08. The code has local build and focused test evidence. It has
-not received an independent audit and has not been deployed to Base Sepolia or mainnet. It must
+not received an independent audit and has not been deployed to Arbitrum Sepolia or mainnet. It must
 not hold real funds before every release gate in `docs/zh/00-delivery-status.md` is closed.
 
 ## In scope
@@ -13,7 +13,7 @@ not hold real funds before every release gate in `docs/zh/00-delivery-status.md`
 - `src/market`: shared accounting/state machine and the Full/Clone concrete runtimes.
 - `src/marketplace`: escrowed fixed-price sell listings, partial fills and Permit2 witness flow.
 - `src/paymaster`: ERC-4337 v0.8 stateful sponsorship Paymaster.
-- `src/interfaces`, `src/libraries`, all Foundry tests and Base Sepolia scripts.
+- `src/interfaces`, `src/libraries`, all Foundry tests and Arbitrum Sepolia scripts.
 - Integration assumptions for canonical USDC, Permit2, EntryPoint, Safe and TimelockController.
 
 The off-chain SDK, canonical-chain indexer/read API, workers, sponsor service and React call examples
@@ -21,7 +21,7 @@ are security-relevant integration scope, but are not asset custodians. The compl
 reputation/labeling, fiat ramps, OBS and production infrastructure are outside this repository. The
 ordinary off-chain lane conditionally skips five PostgreSQL cases, while a separate disposable
 PostgreSQL 17.10 lane passes 9/9 with zero skips. That is local real-database evidence only; no
-production database, Base, KMS, Bundler or provider runtime claim follows.
+production database, Arbitrum, KMS, Bundler or provider runtime claim follows.
 
 ## Priority review areas
 

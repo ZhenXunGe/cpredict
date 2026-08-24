@@ -35,7 +35,7 @@ The final statement of work must replace every `TBD` below and attach the immuta
 | Source manifest SHA-256       | `TBD — regenerate after the audit freeze`                                                                              |
 | Solidity source size          | 2,808 physical lines before audit-prep test/report changes                                                             |
 | Compiler/build                | Solidity 0.8.36, Cancun, optimizer 200, production `viaIR=true`                                                        |
-| Canonical deployment manifest | `TBD — Base Sepolia first; mainnet addresses cannot be assumed`                                                        |
+| Canonical deployment manifest | `TBD — Arbitrum Sepolia first; mainnet addresses cannot be assumed`                                                        |
 | Review window/person-weeks    | reviewer proposal                                                                                                      |
 | Named reviewers and conflicts | reviewer proposal; mandatory disclosure                                                                                |
 
@@ -109,7 +109,7 @@ The review lane is complete only when:
 - the final deployable bytecode is reproducible from the reviewed source manifest; and
 - any post-review delta has a reviewer-approved differential scope.
 
-These are necessary but not sufficient for launch: Base Sepolia E2E/canary, operational drills,
+These are necessary but not sufficient for launch: Arbitrum Sepolia E2E/canary, operational drills,
 legal review, and a funded public bounty remain separate release gates.
 
 ## 7. Vendor qualification and selection record

@@ -10,7 +10,7 @@ import {
 import type { PackedUserOperationInput, SponsorSigner } from "./types.js";
 
 export interface SponsorshipConfig {
-  chainId: 84_532;
+  chainId: 421_614;
   entryPoint: Address;
   paymaster: Address;
   verificationGasLimit: bigint;

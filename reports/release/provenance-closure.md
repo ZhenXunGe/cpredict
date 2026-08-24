@@ -38,7 +38,7 @@ Status: **tooling statically verified; release intentionally blocked**.
 - `npm run check:sbom`: pass, byte-identical regeneration.
 - `npm run test:release-tools`: 39/39 pass, including workflow wiring, production runner/aggregate and semantic release-gate negative cases.
 - `npm run test:load-tools`: 16/16 pass.
-- `npm run test:deployment-tools`: 18/18 pass.
+- `npm run test:deployment-tools`: 20/20 pass.
 - Node syntax checks for the changed SBOM/release scripts: pass.
 - Ruby/Psych parse of all four GitHub Actions workflows: pass.
 - JSON parse of provenance manifests/schemas: pass.

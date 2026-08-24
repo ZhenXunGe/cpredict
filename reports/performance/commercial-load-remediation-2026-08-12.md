@@ -93,7 +93,7 @@ WebSocket full：
 - 商业 full：未运行。
 - 10,000 simultaneous WS：未运行；新增证据逻辑仅 static/focused verified。
 - 50 tx/s × 10 分钟当前 schema-v3 lane：未运行。
-- 分离负载发生器、生产 load balancer、多进程 API、远程 PostgreSQL/Base RPC：未运行。
+- 分离负载发生器、生产 load balancer、多进程 API、远程 PostgreSQL/Arbitrum RPC：未运行。
 
 以上未验证项现在必须由 schema-v4 分布式门禁关闭；再次执行本报告中的同机 runner 仍只能产生
 诊断证据，不能生成正式商业 PASS。

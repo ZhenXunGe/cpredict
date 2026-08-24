@@ -283,7 +283,7 @@ const result = {
       classifications.submitted / elapsedSeconds >= targetTps * 0.95,
   },
   proofBoundary:
-    "Fresh local Anvil with real compiled protocol artifacts; submission throughput is not Base inclusion throughput, sequencer capacity, RPC capacity, or production finality.",
+    "Fresh local Anvil with real compiled protocol artifacts; submission throughput is not Arbitrum inclusion throughput, sequencer capacity, RPC capacity, or production finality.",
 };
 const encoded = `${JSON.stringify(result, null, 2)}\n`;
 process.stdout.write(encoded);

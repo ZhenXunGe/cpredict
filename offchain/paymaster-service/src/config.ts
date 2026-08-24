@@ -29,9 +29,13 @@ const logLevelSchema = z.enum([
   "trace",
   "silent",
 ]);
+const serviceHost = z.enum(["127.0.0.1", "::1", "0.0.0.0", "::"]);
+const booleanString = z.enum(["true", "false"]);
 
-const envSchema = z.object({
-  CPREDICT_PAYMASTER_HOST: z.enum(["127.0.0.1", "::1"]),
+const envSchema = z
+  .object({
+  CPREDICT_PAYMASTER_HOST: serviceHost,
+  CPREDICT_PAYMASTER_CONTAINER_MODE: booleanString.default("false"),
   CPREDICT_PAYMASTER_PORT: safeInteger.refine(
     (value) => value >= 1 && value <= 65_535,
   ),
@@ -43,7 +47,7 @@ const envSchema = z.object({
       (value) => new URL(value).protocol === "file:",
       "must be an absolute file URL",
     ),
-  CPREDICT_PAYMASTER_CHAIN_ID: z.literal("84532"),
+  CPREDICT_PAYMASTER_CHAIN_ID: z.literal("421614"),
   CPREDICT_PAYMASTER_ENTRY_POINT: addressSchema,
   CPREDICT_PAYMASTER_ADDRESS: addressSchema,
   CPREDICT_PAYMASTER_EXPECTED_SIGNER: addressSchema,
@@ -82,10 +86,25 @@ const envSchema = z.object({
   CPREDICT_PAYMASTER_MAX_CANCEL_LISTINGS_PER_USER_DAY: safeInteger.refine(
     (value) => value >= 0 && value <= 10_000,
   ),
-});
+  })
+  .superRefine((value, context) => {
+    const publicBind = ["0.0.0.0", "::"].includes(
+      value.CPREDICT_PAYMASTER_HOST,
+    );
+    const containerMode = value.CPREDICT_PAYMASTER_CONTAINER_MODE === "true";
+    if (publicBind !== containerMode) {
+      context.addIssue({
+        code: "custom",
+        path: ["CPREDICT_PAYMASTER_CONTAINER_MODE"],
+        message:
+          "must be true exactly when binding a container wildcard address",
+      });
+    }
+  });
 
 export interface SponsorServiceConfig {
-  host: "127.0.0.1" | "::1";
+  host: "127.0.0.1" | "::1" | "0.0.0.0" | "::";
+  containerMode: boolean;
   port: number;
   logLevel: z.infer<typeof logLevelSchema>;
   adapterModule: string;
@@ -127,12 +146,13 @@ export function parseSponsorServiceConfig(
   }
   return {
     host: parsed.CPREDICT_PAYMASTER_HOST,
+    containerMode: parsed.CPREDICT_PAYMASTER_CONTAINER_MODE === "true",
     port: parsed.CPREDICT_PAYMASTER_PORT,
     logLevel: parsed.CPREDICT_PAYMASTER_LOG_LEVEL,
     adapterModule: parsed.CPREDICT_PAYMASTER_ADAPTER_MODULE,
     expectedSigner: parsed.CPREDICT_PAYMASTER_EXPECTED_SIGNER,
     sponsorship: {
-      chainId: 84_532,
+      chainId: 421_614,
       entryPoint: parsed.CPREDICT_PAYMASTER_ENTRY_POINT,
       paymaster: parsed.CPREDICT_PAYMASTER_ADDRESS,
       verificationGasLimit: parsed.CPREDICT_PAYMASTER_VERIFICATION_GAS_LIMIT,

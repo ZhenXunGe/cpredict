@@ -26,13 +26,13 @@ so reviewers should filter to `src/**` contracts when preparing the final audit 
 
 | surface | disposition | evidence / residual boundary |
 |---|---|---|
-| upgradeability | Protocol contracts are non-upgradeable; no replaceable proxy implementation | Base USDC remains an external upgradeable dependency |
+| upgradeability | Protocol contracts are non-upgradeable; no replaceable proxy implementation | Arbitrum USDC remains an external upgradeable dependency |
 | clone execution | EIP-1167 Clone delegates only to the immutable Factory-pinned implementation | Clone has more delegatecall/storage risk than Full; differential and activation checks are mandatory |
 | arbitrary calls | No protocol-owned arbitrary target/call or arbitrary delegatecall entry point | Fixed external calls remain to USDC, Permit2, EntryPoint, Vault/Marketplace and protocol dependencies |
 | destruction/origin | No `selfdestruct` or `tx.origin` in `src/**` | none identified |
 | inline assembly | No project assembly in `src/**` | compiler and pinned dependencies remain in scope |
 | randomness/oracle | No block randomness, VRF or price oracle | creator is the explicit result oracle; malicious creator resolution is a documented product risk |
-| signatures | Permit2 witness and Paymaster EIP-712 are domain separated and bind operation-specific limits | Base Permit2 codehash, wallet interoperability, EntryPoint and KMS/HSM remain runtime dependencies |
+| signatures | Permit2 witness and Paymaster EIP-712 are domain separated and bind operation-specific limits | Arbitrum Permit2 codehash, wallet interoperability, EntryPoint and KMS/HSM remain runtime dependencies |
 | token callbacks | Vault inherits standard ERC-1155; Marketplace accepts only its expected single receipt and rejects batch/direct custody | arbitrary third-party custody contracts do not receive official Marketplace terminal-return protection |
 
 The source search for `delegatecall`, `selfdestruct`, `tx.origin`, `assembly`, `ecrecover`,
@@ -82,7 +82,7 @@ runtime, not written as a project assembly block.
   outcome/amount limits, nonce and deadlines.
 - Paymaster sponsorship binds both packed Paymaster gas limits in EIP-712, validates their byte-level
   header values and reserves a conservative full `maxCost` budget.
-- These checks are statically and locally tested only. Real Permit2 wallet signing, Base EntryPoint
+- These checks are statically and locally tested only. Real Permit2 wallet signing, Arbitrum EntryPoint
   v0.8, bundler behavior, KMS/HSM signing and multi-instance durable budget serialization are not
   runtime verified by this review.
 
@@ -93,7 +93,7 @@ runtime, not written as a project assembly block.
   boundary.
 - In-memory tests cover deep reorg, dynamic discovery and projections. The independent disposable
   PostgreSQL 17.10 lane passes Paymaster 2/2, Indexer 3/3 and readiness 4/4 with zero skips. This is
-  local real-database evidence, not production HA/TLS/backup/restore or Base runtime evidence.
+  local real-database evidence, not production HA/TLS/backup/restore or Arbitrum runtime evidence.
 
 ## Security properties reviewed
 
@@ -118,7 +118,7 @@ runtime evidence.
 - two independent external audits, remediation reviews and bug bounty;
 - whole-protocol mutation and broader authorization/state formal work;
 - Echidna 0-call worker crash and the resulting failed security aggregate;
-- Base Sepolia codehash/role/USDC/Permit2/EntryPoint/Paymaster end-to-end verification;
+- Arbitrum Sepolia codehash/role/USDC/Permit2/EntryPoint/Paymaster end-to-end verification;
 - real KMS/HSM, bundler, RPC/reorg and external-USDC-paymaster failure drills;
 - API and WebSocket load lanes that previously failed their exact acceptance thresholds.
 

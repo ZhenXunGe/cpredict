@@ -69,10 +69,21 @@ async function main() {
   if (listed.error !== undefined || listed.status !== 0) {
     throw new Error("git delivery-file inventory could not be enumerated");
   }
+  const deleted = spawnSync("git", ["ls-files", "--deleted", "-z"], {
+    encoding: null,
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  if (deleted.error !== undefined || deleted.status !== 0) {
+    throw new Error("git deleted-file inventory could not be enumerated");
+  }
+  const deletedPaths = new Set(
+    deleted.stdout.toString("utf8").split("\0").filter(Boolean),
+  );
   const paths = listed.stdout
     .toString("utf8")
     .split("\0")
     .filter(Boolean)
+    .filter((path) => !deletedPaths.has(path))
     .sort();
   if (paths.length === 0)
     throw new Error("git delivery-file inventory is empty");

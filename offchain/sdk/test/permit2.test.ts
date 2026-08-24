@@ -44,7 +44,7 @@ describe("canonical Permit2 witness typed data", () => {
       minUnits: 4_000_000n,
       maxPayment: 5_000_000n,
       callDeadline: 1_800_000_000n,
-      chainId: 84532n,
+      chainId: 421614n,
     });
     const signature = await account.signTypedData(data);
     await expect(recoverTypedDataAddress({ ...data, signature })).resolves.toBe(

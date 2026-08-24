@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 12719,
+      "astId": 54706,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "protocolTreasury",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_address"
     },
     {
-      "astId": 12721,
+      "astId": 54708,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "creationFee",
       "offset": 0,
@@ -17,7 +17,7 @@
       "type": "t_uint128"
     },
     {
-      "astId": 12723,
+      "astId": 54710,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "protocolShareBps",
       "offset": 16,
@@ -25,7 +25,7 @@
       "type": "t_uint16"
     },
     {
-      "astId": 12725,
+      "astId": 54712,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "earlyBirdShareBps",
       "offset": 18,
@@ -33,7 +33,7 @@
       "type": "t_uint16"
     },
     {
-      "astId": 12727,
+      "astId": 54714,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "platformC2CFeeBps",
       "offset": 20,
@@ -41,7 +41,7 @@
       "type": "t_uint16"
     },
     {
-      "astId": 12730,
+      "astId": 54717,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "maxFullMarketCap",
       "offset": 0,
@@ -49,7 +49,7 @@
       "type": "t_uint128"
     },
     {
-      "astId": 12733,
+      "astId": 54720,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "maxCloneMarketCap",
       "offset": 16,
@@ -57,7 +57,7 @@
       "type": "t_uint128"
     },
     {
-      "astId": 12736,
+      "astId": 54723,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "maxPerUserPrimaryCap",
       "offset": 0,
@@ -65,7 +65,7 @@
       "type": "t_uint128"
     },
     {
-      "astId": 12739,
+      "astId": 54726,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "maxCreatorRakeBps",
       "offset": 16,
@@ -73,7 +73,7 @@
       "type": "t_uint16"
     },
     {
-      "astId": 12742,
+      "astId": 54729,
       "contract": "src/core/ProtocolConfigV1.sol:ProtocolConfigV1",
       "label": "maxCreatorC2CFeeBps",
       "offset": 18,

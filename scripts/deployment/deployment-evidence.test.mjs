@@ -67,7 +67,7 @@ function finalManifest() {
   const timelock = deploymentRecord(1);
   const usdc = {
     ...externalRecord(101),
-    address: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    address: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
   };
   const permit2 = {
     ...externalRecord(102),
@@ -220,11 +220,11 @@ function finalManifest() {
     ),
   ];
   return {
-    schemaVersion: "cpredict.base-sepolia.deployment.v1",
-    evidenceClass: "BASE_SEPOLIA_RUNTIME",
+    schemaVersion: "cpredict.arbitrum-sepolia.deployment.v1",
+    evidenceClass: "ARBITRUM_SEPOLIA_RUNTIME",
     status: "FINALIZED_VERIFIED",
-    chainId: 84532,
-    network: "base-sepolia",
+    chainId: 421614,
+    network: "arbitrum-sepolia",
     generatedAt: "2026-08-08T00:00:00Z",
     source: {
       commit: "1".repeat(40),
@@ -241,6 +241,9 @@ function finalManifest() {
       number: 2000,
       hash: h(2000),
       timestamp: 2_000_000,
+      parentChainId: 11_155_111,
+      l1BlockNumber: 1_000_000,
+      finality: "FINALIZED",
       confirmations: 20,
       rpcEvidenceSha256: sha(2),
     },
@@ -273,7 +276,7 @@ function finalManifest() {
       contract,
       address: contracts[contract].address,
       status: "VERIFIED",
-      explorerUrl: `https://sepolia.basescan.org/address/${contracts[contract].address}#code`,
+      explorerUrl: `https://sepolia.arbiscan.io/address/${contracts[contract].address}#code`,
       constructorArgsVerified: true,
       runtimeBytecodeVerified: true,
     })),
@@ -356,10 +359,10 @@ function canaryEvidence() {
     };
   });
   return {
-    schemaVersion: "cpredict.base-sepolia.canary.v1",
-    evidenceClass: "BASE_SEPOLIA_RUNTIME",
+    schemaVersion: "cpredict.arbitrum-sepolia.canary.v1",
+    evidenceClass: "ARBITRUM_SEPOLIA_RUNTIME",
     status: "COMPLETE",
-    chainId: 84532,
+    chainId: 421614,
     generatedAt: "2026-08-08T00:00:00Z",
     deploymentIdentity: {
       factory: a(9),
@@ -455,10 +458,10 @@ function opsEvidence() {
     return ["RUNBOOK_LOG"];
   };
   return {
-    schemaVersion: "cpredict.base-sepolia.ops-drill.v1",
-    evidenceClass: "BASE_SEPOLIA_RUNTIME",
+    schemaVersion: "cpredict.arbitrum-sepolia.ops-drill.v1",
+    evidenceClass: "ARBITRUM_SEPOLIA_RUNTIME",
     status: "COMPLETE",
-    chainId: 84532,
+    chainId: 421614,
     generatedAt: "2026-08-08T00:00:00Z",
     deploymentManifestSha256: sha(20),
     referenceBlock: { number: 5000, hash: h(5000) },
@@ -474,7 +477,7 @@ function opsEvidence() {
         sha256: sha(9000 + i * 10 + j),
         capturedAt: at(i * 2 + 1),
       })),
-      observedOutcome: `${id} passed against Base Sepolia runtime evidence`,
+      observedOutcome: `${id} passed against Arbitrum Sepolia runtime evidence`,
     })),
     signoff: {
       deploymentOperator: operators[0].address,
@@ -487,7 +490,24 @@ function opsEvidence() {
 }
 
 test("final deployment manifest accepts a complete cross-linked runtime record", () => {
-  assert.equal(validateFinalManifest(finalManifest()).chainId, 84532);
+  assert.equal(validateFinalManifest(finalManifest()).chainId, 421614);
+});
+
+test("source-verification planning accepts only explicit pending records", () => {
+  const fixture = finalManifest();
+  fixture.status = "BOOTSTRAP_FINALIZED_PENDING_CANARY";
+  fixture.canaryEvidence = { evidenceSha256: "0".repeat(64), status: "PENDING" };
+  fixture.sourceVerification = fixture.sourceVerification.map((item) => ({
+    ...item,
+    status: "PENDING",
+    constructorArgsVerified: false,
+    runtimeBytecodeVerified: false,
+  }));
+  assert.doesNotThrow(() => validateFinalManifest(fixture, {
+    allowPendingCanary: true,
+    allowPendingSourceVerification: true,
+  }));
+  assert.throws(() => validateFinalManifest(fixture, { allowPendingCanary: true }), /explicitly PENDING/);
 });
 
 test("final manifest rejects missing fields", () => {
@@ -500,6 +520,23 @@ test("final manifest rejects wrong chain", () => {
   const fixture = finalManifest();
   fixture.chainId = 1;
   assert.throws(() => validateFinalManifest(fixture), /chainId/);
+});
+
+test("final manifest requires Ethereum Sepolia parent binding and finalized status", () => {
+  const wrongParent = finalManifest();
+  wrongParent.referenceBlock.parentChainId = 1;
+  assert.throws(() => validateFinalManifest(wrongParent), /parentChainId/);
+
+  const softFinality = finalManifest();
+  softFinality.referenceBlock.finality = "SAFE";
+  assert.throws(() => validateFinalManifest(softFinality), /finality/);
+});
+
+test("final manifest rejects source-verification links outside Arbitrum Sepolia Arbiscan", () => {
+  const fixture = finalManifest();
+  fixture.sourceVerification[0].explorerUrl =
+    `https://example.com/address/${fixture.sourceVerification[0].address}#code`;
+  assert.throws(() => validateFinalManifest(fixture), /Arbiscan address URL/);
 });
 
 test("final manifest rejects constructor/address tampering", () => {
@@ -775,16 +812,29 @@ test("live verifier reaches strict PASS only after two matching RPCs and evidenc
   );
 
   const originalFetch = globalThis.fetch;
+  let finalizedNumber = 2000;
   globalThis.fetch = async (_url, options) => {
     const request = JSON.parse(options.body);
     let result;
-    if (request.method === "eth_chainId") result = "0x14a34";
+    if (request.method === "eth_chainId") result = "0x66eee";
     else if (request.method === "eth_blockNumber") result = "0x7e4";
-    else if (request.method === "eth_getBlockByNumber")
-      result = {
-        hash: manifest.referenceBlock.hash,
-        timestamp: `0x${manifest.referenceBlock.timestamp.toString(16)}`,
-      };
+    else if (request.method === "eth_getBlockByNumber") {
+      if (request.params[0] === "finalized") {
+        result = {
+          number: `0x${finalizedNumber.toString(16)}`,
+          hash: h(finalizedNumber),
+          timestamp: `0x${manifest.referenceBlock.timestamp.toString(16)}`,
+          l1BlockNumber: `0x${manifest.referenceBlock.l1BlockNumber.toString(16)}`,
+        };
+      } else {
+        result = {
+          number: `0x${manifest.referenceBlock.number.toString(16)}`,
+          hash: manifest.referenceBlock.hash,
+          timestamp: `0x${manifest.referenceBlock.timestamp.toString(16)}`,
+          l1BlockNumber: `0x${manifest.referenceBlock.l1BlockNumber.toString(16)}`,
+        };
+      }
+    }
     else if (request.method === "eth_getCode") result = runtime;
     else if (request.method === "eth_getStorageAt") result = h(1);
     else if (request.method === "eth_getLogs") result = logs;
@@ -842,6 +892,11 @@ test("live verifier reaches strict PASS only after two matching RPCs and evidenc
     assert.equal(
       (await verifyLiveRpc(manifest, urls)).digest,
       manifest.referenceBlock.rpcEvidenceSha256,
+    );
+    finalizedNumber = manifest.referenceBlock.number - 1;
+    await assert.rejects(
+      verifyLiveRpc(manifest, urls),
+      /reference block is not finalized/,
     );
   } finally {
     globalThis.fetch = originalFetch;
@@ -906,7 +961,7 @@ test("monitoring validator rejects severity weakening", async () => {
 test("templates are explicitly rejected as runtime evidence", async () => {
   const template = JSON.parse(
     await readFile(
-      "deployments/base-sepolia/templates/final-manifest.template.json",
+      "deployments/arbitrum-sepolia/templates/final-manifest.template.json",
       "utf8",
     ),
   );
@@ -921,5 +976,7 @@ test("deployment verifier getter ABI stays compatible with generated artifacts",
 });
 
 test("deployment documentation references every required local artifact", async () => {
-  assert.equal((await checkDeploymentLinks()).targets, 12);
+  const result = await checkDeploymentLinks();
+  assert.equal(result.documents, 7);
+  assert.equal(result.targets, 29);
 });

@@ -76,11 +76,11 @@ coverage passes its production `src/**` gate (20 suites, 121/121 tests; 100% lin
 has 73 passing tests and five PostgreSQL-conditional skips; the separate disposable PostgreSQL 17.10
 lane passes 9/9 with zero skips. These are distinct local evidence lanes. The aggregate security gate
 still fails because the required x86_64 corroboration and whole-protocol mutation are incomplete,
-commercial load acceptance has not passed, and Base/external-audit/production evidence
+commercial load acceptance has not passed, and Arbitrum/external-audit/production evidence
 does not exist. The schema-v4 three-host load/evidence system is statically and fixture verified, but
 its formal 500/2,000 RPS, 10,000 simultaneous WebSocket and 50 tx/s run is **NOT RUN**. The commercial
 economics evaluator is implemented and unit tested, but the current fail-closed report is
-**NOT_VERIFIED (7/7)** because approved thresholds, real Base receipts and independent business data
+**NOT_VERIFIED (7/7)** because approved thresholds, real Arbitrum receipts and independent business data
 are absent. See `reports/performance/distributed-commercial-load-system-2026-08-12.md` and
 `reports/economics/commercial-economics-gate.md`. Neither workstream changes V1 Solidity behavior.
 Do not infer release readiness from any individual PASS.
@@ -111,3 +111,55 @@ attestation.
 
 See `docs/zh/01-contract-design.md` and `docs/en/AUDIT_SCOPE.md` for the
 normative design and review boundary.
+
+## Arbitrum Sepolia Web Demo
+
+`examples/web-demo` 是可运行的中文合约验证与交互控制台，固定 chainId `421614`，包含
+EIP-6963 钱包、正式 manifest/reference-block/codehash/完整 wiring 门禁、市场创建、Allowance/Permit2 一级购买、
+C2C、结算证据和 claim/refund 入口。默认部署状态仍为 `BLOCKED_NOT_DEPLOYED`，因此默认锁定写操作。
+
+```bash
+npm run demo:dev
+npm run demo:test
+npm run demo:build
+```
+
+部署、反向代理、三钱包验收和安全边界见 `docs/zh/12-web-demo-integration.md`。
+
+## Arbitrum Sepolia direct deployment
+
+The deployment is operated through one resumable entrypoint while retaining the required one-hour
+Timelock and two-stage privilege removal:
+
+```bash
+cp deployments/arbitrum-sepolia/deploy.env.example .env.arbitrum-sepolia.local
+chmod 600 .env.arbitrum-sepolia.local
+npm run deploy:arbitrum-sepolia -- preflight --profile debug
+npm run deploy:arbitrum-sepolia -- deploy --profile debug
+# after the Timelock
+npm run deploy:arbitrum-sepolia -- finalize --profile debug
+```
+
+Use `all --yes --wait-for-timelock` only for an explicitly acknowledged unattended testnet run.
+Formal evidence still requires the signed-audit-tag, Safe, dual-RPC, canary and operations gates in
+`deployments/arbitrum-sepolia/README.md`; a successful broadcast alone is not release verification.
+
+## Docker Compose acceptance stack
+
+After `deploy:sync` has generated a DEBUG or final runtime package, the Web Demo, canonical
+Indexer/API/WS and PostgreSQL can be operated through one interface:
+
+```bash
+cp .env.compose.example .env.compose.local
+chmod 600 .env.compose.local
+npm run stack:up
+npm run stack:status
+npm run stack:backup
+npm run stack:down
+```
+
+Paymaster is an explicit `--sponsorship` profile and requires an external Auth/KMS/budget adapter;
+there is no built-in raw-key adapter. Candidate sync stays yellow DEBUG and never writes a final
+manifest. The complete config-sync, Arbiscan, canary, backup/restore, fault-drill and proof boundary is
+documented in `docs/zh/13-compose-runtime-operations.md`. Docker is unavailable on the current
+development host, so this delivery is static/build verified, not local Compose runtime verified.

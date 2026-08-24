@@ -3,7 +3,7 @@
 ## 1. 资产、信任与攻击者
 
 首要资产是各 Vault USDC 本金；其次是托管 listing 份额、creator bond、FeeVault credit 和
-EntryPoint deposit。信任对象：Base L2/sequencer、canonical USDC proxy/admin、Permit2、
+EntryPoint deposit。信任对象：Arbitrum L2/sequencer、canonical USDC proxy/admin、Permit2、
 EntryPoint、Safe 成员、Timelock、creator 结果诚信、KMS/赞助后端、RPC/indexer。任意用户、
 creator、keeper、ERC-1155 receiver、智能账户、Bundler、RPC 和 metadata URI 均按潜在恶意处理。
 
@@ -42,7 +42,7 @@ creator、keeper、ERC-1155 receiver、智能账户、Bundler、RPC 和 metadata
 ## 4. 经济与产品攻击
 
 无法由合约消除：creator 单次杀猪、Sybil 绕 per-address cap、封盘后内幕 C2C、creator 自买/
-关联账户、C2C 流动性枯竭、Base/USDC/外部 Paymaster 失效。合约保证的是资产路径与公开语义，
+关联账户、C2C 流动性枯竭、Arbitrum/USDC/外部 Paymaster 失效。合约保证的是资产路径与公开语义，
 不是结果真实性。缓解依赖 cap、显著知情文案、creator 信用、地址关联检测、头部盘二次确认和运营限制。
 
 Flash loan 对一级购买没有同 tx 赎回路径，不能无成本操纵后退出；但有资本的攻击者仍可改变实时
@@ -58,7 +58,7 @@ SHA-256 在 `manifests/solidity-skills.lock`。Solidity/OZ/Foundry/Permit2/AA co
 
 ERC-1155 conformance、canonical USDC 入账/对外支付边界、Permit2 witness/approval 与残余风险的专项
 证据见 [Token integration report](../../reports/security/token-integration.md)。该报告不改变 USDC proxy、
-pause/blocklist/rebase 语义和真实 Base codehash 仍属于外部/实链验证边界的结论。
+pause/blocklist/rebase 语义和真实 Arbitrum codehash 仍属于外部/实链验证边界的结论。
 
 完整人工攻击面结论见 [Manual attack-surface review](../../reports/security/manual-review.md)；机器可读
 辅助材料包括 [inheritance graph](../../reports/security/diagrams/inheritance-graph.dot)、
@@ -99,7 +99,7 @@ pause/blocklist/rebase 语义和真实 Base codehash 仍属于外部/实链验�
   fingerprint；部署清单必须从独立 reviewed output 提供期望值。
 - 已实现并有本地验证：Indexer common-ancestor rollback、Factory 动态市场发现、只读 API、worker、
   SDK 与 React 调用面；独立 disposable PostgreSQL 17.10 lane 为 9/9、0 skip。该证据不能升级为生产
-  TLS/HA/备份恢复或 Base 运行证据。
+  TLS/HA/备份恢复或 Arbitrum 运行证据。
 - 已接受：Full deployment 因 Factory EIP-170 体积拆为 Factory-only deployer；初始化仍在
   createMarket 同一交易原子完成，但不再是带参数 constructor，须在 ADR/审计范围明确。
 - 待验证：Forge 对协议时钟的 block.timestamp lint 是设计必需，不是自动关闭；外审需审查每个边界。
@@ -109,4 +109,4 @@ pause/blocklist/rebase 语义和真实 Base codehash 仍属于外部/实链验�
 - 发布阻断：Slither、Aderyn、Medusa 1,024,046 calls/27 properties、Echidna arm64
   1,000,053 calls/4 properties、Halmos 3/3 与 SMTChecker CHC/BMC 限定证明通过，coverage 和
   production gas/size 也通过；但 Echidna x86_64 lifecycle、fresh whole-protocol mutation、
-  正式商业负载、两轮外审和 Base runtime 尚未闭合。
+  正式商业负载、两轮外审和 Arbitrum runtime 尚未闭合。

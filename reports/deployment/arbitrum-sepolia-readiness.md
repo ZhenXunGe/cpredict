@@ -1,4 +1,4 @@
-# Base Sepolia execution-readiness report
+# Arbitrum Sepolia execution-readiness report
 
 Status: **STATIC VERIFIED / RUNTIME BLOCKED**.
 
@@ -18,9 +18,9 @@ Static deliverables:
 - alert rules for solvency, state transition, RPC, codehash, role, exit path, Paymaster and backup;
 - negative tests for missing/tampered evidence, wrong chain, early timeout, weak roles and single RPC.
 
-Static validation result: deployment-tool suite 18/18 PASS; monitoring inventory contains 10 alert
+Static validation result: deployment-tool suite 40/40 PASS; monitoring inventory contains 10 alert
 rules. These counts describe repository tooling and templates only.
 
 Production boundary: these tools prepare an authorized external execution. They do not convert static
-source into Base Sepolia runtime evidence and do not replace two external audits, bug bounty, legal
+source into Arbitrum Sepolia runtime evidence and do not replace two external audits, bug bounty, legal
 review or mainnet release approval.

@@ -25,9 +25,10 @@ Required configuration (all values are strings):
 
 ```text
 CPREDICT_INDEXER_HOST=127.0.0.1
+CPREDICT_INDEXER_CONTAINER_MODE=false
 CPREDICT_INDEXER_PORT=3001
 CPREDICT_INDEXER_LOG_LEVEL=info
-CPREDICT_INDEXER_CHAIN_ID=84532
+CPREDICT_INDEXER_CHAIN_ID=421614
 CPREDICT_INDEXER_RPC_URL=https://...
 CPREDICT_INDEXER_DATABASE_URL=postgresql://...?...sslmode=verify-full
 CPREDICT_INDEXER_FACTORY_ADDRESS=0x...
@@ -45,6 +46,9 @@ CPREDICT_INDEXER_WS_HEARTBEAT_INTERVAL_MS=15000
 CPREDICT_INDEXER_WS_MAX_BUFFERED_AMOUNT_BYTES=65536
 CPREDICT_INDEXER_WS_SHUTDOWN_GRACE_MS=5000
 ```
+
+`0.0.0.0` is rejected unless `CPREDICT_INDEXER_CONTAINER_MODE=true`; that override is intended only
+for the isolated Compose application network. The published host port remains loopback-only.
 
 Unknown `CPREDICT_INDEXER_*` variables are rejected. Remote RPC must use HTTPS; remote PostgreSQL
 must request TLS through `sslmode=require`, `verify-ca` or `verify-full`. Plain HTTP/PostgreSQL is

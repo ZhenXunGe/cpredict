@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { pathToFileURL } from "node:url";
 import {
-  BASE_SEPOLIA_CHAIN_ID,
+  ARBITRUM_SEPOLIA_CHAIN_ID,
   CONTRACT_KEYS,
   EXTERNAL_KEYS,
   ZERO_ADDRESS,
@@ -178,12 +178,12 @@ function validateSafe(safe, expectedThreshold, path) {
 
 export function validateFinalManifest(
   manifest,
-  { allowPendingCanary = false } = {},
+  { allowPendingCanary = false, allowPendingSourceVerification = false } = {},
 ) {
   assertExactKeys(manifest, ROOT_KEYS, "manifest");
   assertRuntimeEvidence(
     manifest,
-    "cpredict.base-sepolia.deployment.v1",
+    "cpredict.arbitrum-sepolia.deployment.v1",
     "manifest",
   );
   const allowedStatus = allowPendingCanary
@@ -193,14 +193,23 @@ export function validateFinalManifest(
     throw new Error(
       `manifest.status: must equal ${allowedStatus.join(" or ")}`,
     );
-  if (manifest.network !== "base-sepolia")
-    throw new Error("manifest.network: must equal base-sepolia");
+  if (manifest.network !== "arbitrum-sepolia")
+    throw new Error("manifest.network: must equal arbitrum-sepolia");
   assertTimestamp(manifest.generatedAt, "manifest.generatedAt");
   validateSource(manifest.source);
 
   assertExactKeys(
     manifest.referenceBlock,
-    ["number", "hash", "timestamp", "confirmations", "rpcEvidenceSha256"],
+    [
+      "number",
+      "hash",
+      "timestamp",
+      "parentChainId",
+      "l1BlockNumber",
+      "finality",
+      "confirmations",
+      "rpcEvidenceSha256",
+    ],
     "manifest.referenceBlock",
   );
   assertInteger(
@@ -214,6 +223,19 @@ export function validateFinalManifest(
     "manifest.referenceBlock.timestamp",
     { min: 1 },
   );
+  if (manifest.referenceBlock.parentChainId !== 11_155_111)
+    throw new Error(
+      "manifest.referenceBlock.parentChainId: must equal Ethereum Sepolia 11155111",
+    );
+  assertInteger(
+    manifest.referenceBlock.l1BlockNumber,
+    "manifest.referenceBlock.l1BlockNumber",
+    { min: 1 },
+  );
+  if (manifest.referenceBlock.finality !== "FINALIZED")
+    throw new Error(
+      "manifest.referenceBlock.finality: must equal FINALIZED",
+    );
   assertInteger(
     manifest.referenceBlock.confirmations,
     "manifest.referenceBlock.confirmations",
@@ -283,14 +305,14 @@ export function validateFinalManifest(
       `manifest.externalContracts.${key}`,
     );
   const canonicalExternalAddresses = {
-    usdc: "0x036cbd53842c5426634e7929541ec2318f3dcf7e",
+    usdc: "0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d",
     permit2: "0x000000000022d473030f116ddee9f6b43ac78ba3",
     entryPoint: "0x4337084d9e255ff0702461cf8895ce9e3b5ff108",
   };
   for (const [key, address] of Object.entries(canonicalExternalAddresses)) {
     if (manifest.externalContracts[key].address.toLowerCase() !== address)
       throw new Error(
-        `manifest.externalContracts.${key}.address: not the V1 canonical Base Sepolia address`,
+        `manifest.externalContracts.${key}.address: not the V1 canonical Arbitrum Sepolia address`,
       );
   }
   assertExactKeys(manifest.contracts, CONTRACT_KEYS, "manifest.contracts");
@@ -385,7 +407,7 @@ export function validateFinalManifest(
   }
   if (cfg.initialExposureCap !== "50000000000")
     throw new Error(
-      "manifest.configuration.initialExposureCap: must equal Base Sepolia launch cap 50000000000",
+      "manifest.configuration.initialExposureCap: must equal Arbitrum Sepolia launch cap 50000000000",
     );
   const bounded = (key, maximum) => {
     const value = key.endsWith("Bps") ? BigInt(cfg[key]) : BigInt(cfg[key]);
@@ -515,16 +537,32 @@ export function validateFinalManifest(
       manifest.contracts[item.contract].address.toLowerCase()
     )
       throw new Error(`${path}.address: contract address mismatch`);
+    const verified =
+      item.status === "VERIFIED" &&
+      item.constructorArgsVerified === true &&
+      item.runtimeBytecodeVerified === true;
+    const pending =
+      allowPendingSourceVerification &&
+      item.status === "PENDING" &&
+      item.constructorArgsVerified === false &&
+      item.runtimeBytecodeVerified === false;
+    if (!verified && !pending)
+      throw new Error(`${path}: source, constructor and runtime verification must all pass or be explicitly PENDING`);
+    let explorer;
+    try {
+      explorer = new URL(item.explorerUrl);
+    } catch {
+      throw new Error(`${path}.explorerUrl: must be a valid URL`);
+    }
     if (
-      item.status !== "VERIFIED" ||
-      item.constructorArgsVerified !== true ||
-      item.runtimeBytecodeVerified !== true
+      explorer.protocol !== "https:" ||
+      explorer.hostname !== "sepolia.arbiscan.io" ||
+      explorer.pathname.toLowerCase() !==
+        `/address/${item.address.toLowerCase()}`
     )
       throw new Error(
-        `${path}: source, constructor and runtime verification must all pass`,
+        `${path}.explorerUrl: must be the exact Arbitrum Sepolia Arbiscan address URL`,
       );
-    if (!/^https:\/\//.test(item.explorerUrl))
-      throw new Error(`${path}.explorerUrl: must be HTTPS`);
   }
   assertUnique(verifiedNames, "manifest.sourceVerification contracts");
 
@@ -709,7 +747,7 @@ export function validateFinalManifest(
   return {
     manifest,
     sha256: sha256Json(manifest),
-    chainId: BASE_SEPOLIA_CHAIN_ID,
+    chainId: ARBITRUM_SEPOLIA_CHAIN_ID,
   };
 }
 

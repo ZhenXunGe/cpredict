@@ -4,11 +4,12 @@ import { parseSponsorServiceConfig } from "../src/config.js";
 function environment(): Record<string, string> {
   return {
     CPREDICT_PAYMASTER_HOST: "127.0.0.1",
+    CPREDICT_PAYMASTER_CONTAINER_MODE: "false",
     CPREDICT_PAYMASTER_PORT: "3001",
     CPREDICT_PAYMASTER_LOG_LEVEL: "info",
     CPREDICT_PAYMASTER_ADAPTER_MODULE:
       "file:///opt/cpredict/paymaster-adapters.js",
-    CPREDICT_PAYMASTER_CHAIN_ID: "84532",
+    CPREDICT_PAYMASTER_CHAIN_ID: "421614",
     CPREDICT_PAYMASTER_ENTRY_POINT:
       "0x1111111111111111111111111111111111111111",
     CPREDICT_PAYMASTER_ADDRESS: "0x2222222222222222222222222222222222222222",
@@ -46,6 +47,17 @@ describe("paymaster service environment", () => {
     const publicHost = environment();
     publicHost.CPREDICT_PAYMASTER_HOST = "0.0.0.0";
     expect(() => parseSponsorServiceConfig(publicHost)).toThrow();
+
+    const containerHost = environment();
+    containerHost.CPREDICT_PAYMASTER_HOST = "0.0.0.0";
+    containerHost.CPREDICT_PAYMASTER_CONTAINER_MODE = "true";
+    expect(() => parseSponsorServiceConfig(containerHost)).not.toThrow();
+
+    const inconsistentContainer = environment();
+    inconsistentContainer.CPREDICT_PAYMASTER_CONTAINER_MODE = "true";
+    expect(() => parseSponsorServiceConfig(inconsistentContainer)).toThrow(
+      "must be true exactly when binding",
+    );
 
     const excessiveGas = environment();
     excessiveGas.CPREDICT_PAYMASTER_POST_OP_GAS_LIMIT = "300001";

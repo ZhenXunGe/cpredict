@@ -58,7 +58,7 @@ export function validateOpsEvidence(evidence) {
     ],
     "ops",
   );
-  assertRuntimeEvidence(evidence, "cpredict.base-sepolia.ops-drill.v1", "ops");
+  assertRuntimeEvidence(evidence, "cpredict.arbitrum-sepolia.ops-drill.v1", "ops");
   if (evidence.status !== "COMPLETE")
     throw new Error("ops.status: must equal COMPLETE");
   assertTimestamp(evidence.generatedAt, "ops.generatedAt");
@@ -217,7 +217,7 @@ async function main() {
     );
   const result = validateOpsEvidence(await readJson(path));
   process.stdout.write(
-    `PASS Base Sepolia operations evidence ${result.sha256}\n`,
+    `PASS Arbitrum Sepolia operations evidence ${result.sha256}\n`,
   );
 }
 
