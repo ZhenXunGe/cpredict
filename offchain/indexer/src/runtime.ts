@@ -87,17 +87,19 @@ export async function startIndexerRuntime(
   });
 
   try {
-    const rpcChainId = await client.getChainId();
+    const rpcChainId = await startupStage("rpc-chain", () => client.getChainId());
     if (rpcChainId !== config.chainId)
       throw new Error("RPC chainId does not match indexer config");
-    await store.ready();
-    await scheduler.runTick();
+    await startupStage("database", () => store.ready());
+    await startupStage("initial-sync", () => scheduler.runTick());
     scheduler.start();
-    await app.listen({
-      host: config.host,
-      port: config.port,
-      backlog: config.listenBacklog,
-    });
+    await startupStage("http-listen", () =>
+      app.listen({
+        host: config.host,
+        port: config.port,
+        backlog: config.listenBacklog,
+      }),
+    );
   } catch (error: unknown) {
     unsubscribeFromBatches();
     await scheduler.stop();
@@ -117,4 +119,24 @@ export async function startIndexerRuntime(
       await store.close();
     },
   };
+}
+
+async function startupStage<T>(
+  stage: "rpc-chain" | "database" | "initial-sync" | "http-listen",
+  action: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await action();
+  } catch (error: unknown) {
+    if (
+      error instanceof Error &&
+      /^indexer sync stage failed: (reconcile|checkpoint-read|chain-head|discovery-logs|registered-markets|event-logs|canonical-blocks|batch-write)$/.test(
+        error.message,
+      )
+    ) {
+      throw error;
+    }
+    // Do not retain the provider error as a cause: RPC and PostgreSQL errors may embed secrets.
+    throw new Error(`indexer startup stage failed: ${stage}`);
+  }
 }

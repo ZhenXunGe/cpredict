@@ -32,8 +32,11 @@ server {
   location = /rpc {
     limit_except POST { deny all; }
     client_max_body_size 64k;
+    rewrite ^ / break;
     proxy_pass ${CPREDICT_RPC_UPSTREAM};
     proxy_http_version 1.1;
+    proxy_ssl_server_name on;
+    proxy_ssl_name $proxy_host;
     proxy_set_header Host $proxy_host;
     proxy_set_header Content-Type application/json;
     proxy_set_header Authorization "";

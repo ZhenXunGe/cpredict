@@ -93,6 +93,13 @@ describe("ChainIndexer canonical ingestion", () => {
     });
   });
 
+  it("bounds canonical block RPC concurrency for public providers", async () => {
+    const client = new FakeClient(12n, [], 2);
+    await createIndexer(client, new MemoryEventStore()).runBatch();
+    expect(client.maximumBlockConcurrency).toBeGreaterThan(1);
+    expect(client.maximumBlockConcurrency).toBeLessThanOrEqual(4);
+  });
+
   it("removes a one-block orphan and replays the replacement without duplicate rows", async () => {
     const client = new FakeClient(4n, [
       marketCreatedLog(4n, MARKET_A),
@@ -264,10 +271,13 @@ class FakeClient {
   private readonly blocks = new Map<bigint, FakeBlock>();
   private logs: readonly Log[];
   private generation = 1n;
+  private activeBlockRequests = 0;
+  maximumBlockConcurrency = 0;
 
   constructor(
     private readonly head: bigint,
     logs: readonly Log[],
+    private readonly blockDelayMs = 0,
   ) {
     this.logs = logs;
     this.buildBlocks(1n);
@@ -278,10 +288,21 @@ class FakeClient {
   }
 
   async getBlock({ blockNumber }: { blockNumber: bigint }): Promise<FakeBlock> {
-    const block = this.blocks.get(blockNumber);
-    if (block === undefined)
-      throw new Error(`missing fake block ${blockNumber.toString()}`);
-    return block;
+    this.activeBlockRequests += 1;
+    this.maximumBlockConcurrency = Math.max(
+      this.maximumBlockConcurrency,
+      this.activeBlockRequests,
+    );
+    try {
+      if (this.blockDelayMs > 0)
+        await new Promise((resolve) => setTimeout(resolve, this.blockDelayMs));
+      const block = this.blocks.get(blockNumber);
+      if (block === undefined)
+        throw new Error(`missing fake block ${blockNumber.toString()}`);
+      return block;
+    } finally {
+      this.activeBlockRequests -= 1;
+    }
   }
 
   async getLogs(input: {

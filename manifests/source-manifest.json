@@ -58,7 +58,7 @@
     },
     {
       "path": "compose.yaml",
-      "sha256": "ee6ddce111545e2c267905295a5a9bb80944d61d5d1925e8acbd1cb3d679574d"
+      "sha256": "38ae99c3204e23adcf60c04976ce9084489a83276e5c212abefd6d19a66d98e2"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
@@ -70,7 +70,7 @@
     },
     {
       "path": "deploy/compose/nginx/default.conf.template",
-      "sha256": "a715e86c9562d3c6ac323e811c12f05f405436a87f19039ebbaa65e0b01ae80b"
+      "sha256": "468de08959e37dbb3ce651d65c8352701986289b477ab6d0058693dee2ebf9c1"
     },
     {
       "path": "deploy/compose/postgres/init/00-create-databases.sh",
@@ -570,7 +570,7 @@
     },
     {
       "path": "offchain/indexer/src/indexer.ts",
-      "sha256": "d40462f66b270356de8c9b622491ebd75aed63c14514d28dcda90b4a8d518449"
+      "sha256": "412d9e8270019133a3ca88b41daa629678c0cfc90722fbcfb0862d32075211d3"
     },
     {
       "path": "offchain/indexer/src/instrumented-store.ts",
@@ -578,7 +578,7 @@
     },
     {
       "path": "offchain/indexer/src/main.ts",
-      "sha256": "0dc3c12606228e41dd783c3f810ec7cc8a21db29647a4ef2eebb83c8ad9879b1"
+      "sha256": "dfa88cbd0d4c8ec299b8cdc12423d7c9534957a978c99b9a4faaab5268183785"
     },
     {
       "path": "offchain/indexer/src/memory-store.ts",
@@ -590,7 +590,7 @@
     },
     {
       "path": "offchain/indexer/src/runtime.ts",
-      "sha256": "396ed1b1e761ae96bfdb6b2bfa34777b093c7ef7fe2fa6cc44ea2576313d41a5"
+      "sha256": "f1bba4f2a1469108db15120aca0a6f4553c7edd94ffd3ddd372ddac13ccf7667"
     },
     {
       "path": "offchain/indexer/src/scheduler.ts",
@@ -618,7 +618,7 @@
     },
     {
       "path": "offchain/indexer/test/indexer.test.ts",
-      "sha256": "2b36ca02253db31a9886fcbffc5900e9c39b28507211b65b3a9dc5f576490f3c"
+      "sha256": "10c6a03cbb91d9267828e842e994dcd29dd77f6d8aa454bf37c4692b36afc635"
     },
     {
       "path": "offchain/indexer/test/instrumented-store.test.ts",
@@ -1298,7 +1298,7 @@
     },
     {
       "path": "scripts/stack/compose.test.mjs",
-      "sha256": "fd19b83518cc2254717c1ac09b5a728e231cb7e872797b1c2c5783017eba3029"
+      "sha256": "cc7f02bceb7269f9bb4de79f63feb6dff62600217c9bbd719a4a160d7b4789af"
     },
     {
       "path": "scripts/stack/config.mjs",

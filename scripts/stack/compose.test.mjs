@@ -73,6 +73,12 @@ test("runtime services are least privilege, bounded and health ordered", async (
   ]);
   assert.match(dockerfiles[0], /USER node/);
   assert.match(dockerfiles[1], /USER 101/);
+  assert.equal(
+    compose.services["web-demo"].tmpfs.includes(
+      "/etc/nginx/conf.d:rw,noexec,nosuid,size=1m,uid=101,gid=101,mode=0755",
+    ),
+    true,
+  );
   const postgresInit = await readFile(
     new URL(
       "../../deploy/compose/postgres/init/00-create-databases.sh",
@@ -101,6 +107,9 @@ test("runtime services are least privilege, bounded and health ordered", async (
     /location = \/readyz[\s\S]*proxy_pass http:\/\/indexer:8787\/readyz/,
   );
   assert.match(nginx, /location = \/rpc[\s\S]*limit_except POST/);
+  assert.match(nginx, /location = \/rpc[\s\S]*rewrite \^ \/ break/);
+  assert.match(nginx, /location = \/rpc[\s\S]*proxy_ssl_server_name on/);
+  assert.match(nginx, /location = \/rpc[\s\S]*proxy_ssl_name \$proxy_host/);
   assert.match(
     nginx,
     /location = \/rpc[\s\S]*proxy_set_header Authorization ""/,

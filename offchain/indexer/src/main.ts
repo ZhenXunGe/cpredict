@@ -36,10 +36,17 @@ export async function runIndexerServiceProcess(
   try {
     runtime = await startIndexerService(environment);
     if (shutdownRequested) await runtime.stop();
-  } catch {
+  } catch (error: unknown) {
     // RPC and PostgreSQL errors can contain credentials. Detailed diagnostics belong in provider
     // logs; startup output is deliberately generic and fail-closed.
-    process.stderr.write("indexer service failed to start\n");
+    const detail =
+      error instanceof Error &&
+      /^(?:indexer startup stage failed: (rpc-chain|database|initial-sync|http-listen)|indexer sync stage failed: (reconcile|checkpoint-read|chain-head|discovery-logs|registered-markets|event-logs|canonical-blocks|batch-write))$/.test(
+        error.message,
+      )
+        ? ` (${error.message})`
+        : "";
+    process.stderr.write(`indexer service failed to start${detail}\n`);
     process.exitCode = 1;
   }
 }

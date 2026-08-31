@@ -55,9 +55,13 @@ export class ChainIndexer {
   }
 
   async runBatch(): Promise<BatchResult | undefined> {
-    await this.reconcileCheckpoint();
-    const checkpoint = await this.store.checkpoint(this.options.chainId);
-    const chainHead = await this.client.getBlockNumber();
+    await syncStage("reconcile", () => this.reconcileCheckpoint());
+    const checkpoint = await syncStage("checkpoint-read", () =>
+      this.store.checkpoint(this.options.chainId),
+    );
+    const chainHead = await syncStage("chain-head", () =>
+      this.client.getBlockNumber(),
+    );
     if (chainHead < this.options.confirmations) return undefined;
     const safeHead = chainHead - this.options.confirmations;
     const fromBlock =
@@ -68,9 +72,13 @@ export class ChainIndexer {
     const toBlock = min(fromBlock + this.options.batchSize - 1n, safeHead);
     const confirmationStatus = confirmationFor(this.options.confirmations);
 
-    const discoveryLogs = await this.discoveryLogs(fromBlock, toBlock);
+    const discoveryLogs = await syncStage("discovery-logs", () =>
+      this.discoveryLogs(fromBlock, toBlock),
+    );
     const discovered = discoverMarketAddresses(discoveryLogs);
-    const registered = await this.store.registeredMarkets(this.options.chainId);
+    const registered = await syncStage("registered-markets", () =>
+      this.store.registeredMarkets(this.options.chainId),
+    );
     const addresses = uniqueAddresses([
       ...this.options.addresses,
       ...(this.options.factoryAddress === undefined
@@ -79,18 +87,18 @@ export class ChainIndexer {
       ...registered,
       ...discovered,
     ]);
-    const logs = await this.client.getLogs({
-      address: [...addresses],
-      fromBlock,
-      toBlock,
-    });
+    const logs = await syncStage("event-logs", () =>
+      this.client.getLogs({
+        address: [...addresses],
+        fromBlock,
+        toBlock,
+      }),
+    );
     const events = deduplicateLogs([...discoveryLogs, ...logs])
       .map((log) => normalizeLog(this.options.chainId, log, confirmationStatus))
       .sort(compareEvents);
-    const blocks = await this.loadCanonicalBlocks(
-      fromBlock,
-      toBlock,
-      confirmationStatus,
+    const blocks = await syncStage("canonical-blocks", () =>
+      this.loadCanonicalBlocks(fromBlock, toBlock, confirmationStatus),
     );
     validateLineage(blocks, checkpoint);
     const endBlock = blocks.at(-1);
@@ -101,7 +109,9 @@ export class ChainIndexer {
       blockNumber: endBlock.blockNumber,
       blockHash: endBlock.blockHash,
     };
-    await this.store.applyBatch(events, blocks, next);
+    await syncStage("batch-write", () =>
+      this.store.applyBatch(events, blocks, next),
+    );
     return {
       fromBlock,
       toBlock,
@@ -158,38 +168,68 @@ export class ChainIndexer {
     toBlock: bigint,
     confirmationStatus: "provisional" | "confirmed",
   ): Promise<readonly CanonicalBlock[]> {
-    const result: CanonicalBlock[] = [];
-    // Keep RPC concurrency bounded even when the configured event batch is large.
-    for (let cursor = fromBlock; cursor <= toBlock;) {
-      const end = min(cursor + 49n, toBlock);
-      const numbers: bigint[] = [];
-      for (let number = cursor; number <= end; number += 1n)
-        numbers.push(number);
-      const blocks = await Promise.all(
-        numbers.map((blockNumber) => this.client.getBlock({ blockNumber })),
-      );
-      for (let index = 0; index < blocks.length; index += 1) {
-        const block = blocks[index];
-        const blockNumber = numbers[index];
-        if (
-          block === undefined ||
-          blockNumber === undefined ||
-          block.hash === null
-        ) {
-          throw new Error("RPC returned an incomplete canonical block");
-        }
-        result.push({
-          chainId: this.options.chainId,
-          blockNumber,
-          blockHash: block.hash,
-          parentHash: block.parentHash,
-          timestamp: block.timestamp,
-          confirmationStatus,
-        });
+    const numbers: bigint[] = [];
+    for (let number = fromBlock; number <= toBlock; number += 1n)
+      numbers.push(number);
+    const blocks = await mapConcurrent(numbers, 4, (blockNumber) =>
+      this.client.getBlock({ blockNumber }),
+    );
+    return blocks.map((block, index) => {
+      const blockNumber = numbers[index];
+      if (
+        block === undefined ||
+        blockNumber === undefined ||
+        block.hash === null
+      ) {
+        throw new Error("RPC returned an incomplete canonical block");
       }
-      cursor = end + 1n;
-    }
-    return result;
+      return {
+        chainId: this.options.chainId,
+        blockNumber,
+        blockHash: block.hash,
+        parentHash: block.parentHash,
+        timestamp: block.timestamp,
+        confirmationStatus,
+      };
+    });
+  }
+}
+
+async function mapConcurrent<Input, Output>(
+  inputs: readonly Input[],
+  concurrency: number,
+  action: (input: Input) => Promise<Output>,
+): Promise<readonly Output[]> {
+  const outputs = new Array<Output>(inputs.length);
+  let cursor = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, inputs.length) }, async () => {
+      while (cursor < inputs.length) {
+        const index = cursor++;
+        const input = inputs[index];
+        if (input !== undefined) outputs[index] = await action(input);
+      }
+    }),
+  );
+  return outputs;
+}
+
+async function syncStage<T>(
+  stage:
+    | "reconcile"
+    | "checkpoint-read"
+    | "chain-head"
+    | "discovery-logs"
+    | "registered-markets"
+    | "event-logs"
+    | "canonical-blocks"
+    | "batch-write",
+  action: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await action();
+  } catch {
+    throw new Error(`indexer sync stage failed: ${stage}`);
   }
 }
 
