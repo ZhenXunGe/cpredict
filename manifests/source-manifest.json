@@ -1066,7 +1066,7 @@
     },
     {
       "path": "scripts/manifest-inventory.mjs",
-      "sha256": "b5ba58c000019515a595e5e8d094f57309193de5b3d67a6ab72f85733193109c"
+      "sha256": "03fdebe45407a0fe1330d1dbf9f7092d2a92eb29abae176ead0652951db969de"
     },
     {
       "path": "scripts/postgres-assert-vitest-report.mjs",

@@ -69,6 +69,11 @@ const explicitInventory = [
   "docs/zh/15-reverse-tunnel-deployment-runbook.md",
 ];
 
+const excludedInventoryPaths = new Set([
+  "deployments/arbitrum-sepolia/pending.json",
+]);
+const excludedInventoryPrefixes = ["deployments/arbitrum-sepolia/runtime/"];
+
 /**
  * Return the canonical, sorted source-manifest inventory as repository-relative
  * paths. A path that is selected by more than one rule is a configuration error:
@@ -83,7 +88,9 @@ export async function sourceManifestPaths(root) {
       absoluteDirectory,
       new Set(extensions),
     )) {
-      add(selected, relative(root, absolutePath), `recursive:${directory}`);
+      const path = relative(root, absolutePath);
+      if (isExcluded(path)) continue;
+      add(selected, path, `recursive:${directory}`);
     }
   }
 
@@ -92,6 +99,13 @@ export async function sourceManifestPaths(root) {
   }
 
   return [...selected.keys()].sort();
+}
+
+function isExcluded(path) {
+  return (
+    excludedInventoryPaths.has(path) ||
+    excludedInventoryPrefixes.some((prefix) => path.startsWith(prefix))
+  );
 }
 
 function add(selected, path, source) {
