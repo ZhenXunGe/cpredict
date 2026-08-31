@@ -1,0 +1,102 @@
+# Public edge for the loopback-only Compose Web Demo. This file belongs inside
+# nginx's http context (Ubuntu: /etc/nginx/conf.d/cpredict.conf).
+map $http_upgrade $cpredict_connection_upgrade {
+  default upgrade;
+  '' close;
+}
+
+limit_req_zone $binary_remote_addr zone=cpredict_rpc:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=cpredict_read_api:10m rate=30r/s;
+limit_conn_zone $binary_remote_addr zone=cpredict_per_ip:10m;
+
+server {
+  listen 80;
+  listen [::]:80;
+  server_name @@PUBLIC_HOST@@;
+  server_tokens off;
+
+  location ^~ /.well-known/acme-challenge/ {
+    root /var/www/cpredict-acme;
+    default_type text/plain;
+    try_files $uri =404;
+  }
+
+  location / {
+    return 308 https://@@PUBLIC_HOST@@$request_uri;
+  }
+}
+
+server {
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
+  server_name @@PUBLIC_HOST@@;
+  server_tokens off;
+
+  ssl_certificate /etc/letsencrypt/live/@@CERT_NAME@@/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/@@CERT_NAME@@/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_session_tickets off;
+  ssl_session_cache shared:cpredict_tls:10m;
+  ssl_session_timeout 1d;
+
+  auth_basic "Cpredict colleague preview";
+  auth_basic_user_file /etc/nginx/cpredict.htpasswd;
+  limit_conn cpredict_per_ip 20;
+  limit_conn_status 429;
+  limit_req_status 429;
+  client_max_body_size 128k;
+
+  add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; worker-src 'none'" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-Frame-Options "DENY" always;
+  add_header Referrer-Policy "no-referrer" always;
+  add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()" always;
+  add_header Cross-Origin-Opener-Policy "same-origin" always;
+  add_header Cross-Origin-Resource-Policy "same-origin" always;
+  add_header Strict-Transport-Security "max-age=86400" always;
+
+  # Never forward the Basic Auth credential to the Demo, Indexer or paid RPC.
+  proxy_set_header Authorization "";
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $remote_addr;
+  proxy_set_header X-Forwarded-Proto https;
+  proxy_http_version 1.1;
+
+  location = /rpc {
+    limit_except POST { deny all; }
+    client_max_body_size 64k;
+    limit_req zone=cpredict_rpc burst=30 nodelay;
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 15s;
+    proxy_send_timeout 15s;
+    proxy_pass http://127.0.0.1:4177;
+  }
+
+  # Metrics are for the local operator/monitoring agent, not preview users.
+  location = /indexer/metrics {
+    deny all;
+  }
+
+  location /indexer/ {
+    limit_except GET HEAD { deny all; }
+    limit_req zone=cpredict_read_api burst=60 nodelay;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $cpredict_connection_upgrade;
+    proxy_read_timeout 75s;
+    proxy_buffering off;
+    proxy_pass http://127.0.0.1:4177;
+  }
+
+  location /deployment/ {
+    limit_except GET HEAD { deny all; }
+    proxy_pass http://127.0.0.1:4177;
+  }
+
+  location / {
+    limit_except GET HEAD { deny all; }
+    proxy_connect_timeout 5s;
+    proxy_read_timeout 30s;
+    proxy_pass http://127.0.0.1:4177;
+  }
+}

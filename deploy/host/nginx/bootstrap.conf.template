@@ -1,0 +1,19 @@
+# Temporary HTTP-only configuration used solely for ACME issuance. The
+# application stays unavailable until the trusted certificate is installed.
+server {
+  listen 80;
+  listen [::]:80;
+  server_name @@PUBLIC_HOST@@;
+  server_tokens off;
+
+  location ^~ /.well-known/acme-challenge/ {
+    root /var/www/cpredict-acme;
+    default_type text/plain;
+    try_files $uri =404;
+  }
+
+  location / {
+    add_header Content-Type text/plain always;
+    return 503 "Cpredict TLS bootstrap in progress\n";
+  }
+}
