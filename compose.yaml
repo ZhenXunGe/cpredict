@@ -136,8 +136,18 @@
         "CPREDICT_RPC_UPSTREAM": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}"
       },
       "volumes": [
-        "${CPREDICT_STACK_RUNTIME_ROOT:?run deploy:sync first}/web-demo/runtime-config.json:/usr/share/nginx/html/runtime-config.json:ro",
-        "${CPREDICT_STACK_RUNTIME_ROOT:?run deploy:sync first}/web-demo/deployment:/usr/share/nginx/html/deployment:ro"
+        {
+          "type": "bind",
+          "source": "${CPREDICT_STACK_RUNTIME_ROOT:?run deploy:sync first}/web-demo/runtime-config.json",
+          "target": "/usr/share/nginx/html/runtime-config.json",
+          "read_only": true
+        },
+        {
+          "type": "bind",
+          "source": "${CPREDICT_STACK_RUNTIME_ROOT:?run deploy:sync first}/web-demo/deployment",
+          "target": "/usr/share/nginx/html/deployment",
+          "read_only": true
+        }
       ],
       "ports": ["127.0.0.1:${CPREDICT_STACK_DEMO_PORT:-4177}:8080"],
       "read_only": true,
@@ -179,7 +189,14 @@
         "CPREDICT_PAYMASTER_MAX_CANCEL_LISTINGS_PER_USER_DAY": "40",
         "CPREDICT_ADAPTER_DATABASE_URL": "postgresql://cpredict_paymaster:${CPREDICT_STACK_PAYMASTER_PASSWORD}@postgres/cpredict_paymaster?sslmode=disable"
       },
-      "volumes": ["${CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH:?set for sponsorship profile}:/run/cpredict/paymaster-adapter.mjs:ro"],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH:-/dev/null}",
+          "target": "/run/cpredict/paymaster-adapter.mjs",
+          "read_only": true
+        }
+      ],
       "ports": ["127.0.0.1:${CPREDICT_STACK_PAYMASTER_PORT:-8791}:8791"],
       "read_only": true,
       "tmpfs": ["/tmp:rw,noexec,nosuid,size=16m"],

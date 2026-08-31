@@ -43,6 +43,14 @@ test("host preflight accepts the supported reproducible server shape", () => {
   );
 });
 
+test("host preflight accepts Intel macOS with Docker Desktop", () => {
+  const checks = evaluateHostFacts(healthyFacts({ platform: "darwin" }));
+  assert.equal(
+    checks.some((check) => check.status === "FAIL"),
+    false,
+  );
+});
+
 test("host preflight fails before deployment on unsupported or unsafe hosts", () => {
   const checks = evaluateHostFacts(
     healthyFacts({
@@ -61,7 +69,6 @@ test("host preflight fails before deployment on unsupported or unsafe hosts", ()
       .filter((check) => check.status === "FAIL")
       .map((check) => check.name),
     [
-      "operating system",
       "architecture",
       "Node.js",
       "unprivileged operator",

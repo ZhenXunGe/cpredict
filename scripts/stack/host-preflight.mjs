@@ -36,9 +36,9 @@ export function evaluateHostFacts(facts) {
   const checks = [];
   const add = (status, name, detail) => checks.push({ status, name, detail });
   add(
-    facts.platform === "linux" ? "PASS" : "FAIL",
+    ["linux", "darwin"].includes(facts.platform) ? "PASS" : "FAIL",
     "operating system",
-    facts.platform,
+    facts.platform === "darwin" ? "darwin (Docker Desktop)" : facts.platform,
   );
   add(facts.arch === "x64" ? "PASS" : "FAIL", "architecture", facts.arch);
   add(
@@ -86,6 +86,7 @@ export function evaluateHostFacts(facts) {
 }
 
 export async function collectHostFacts({ root = ROOT, run = runCommand } = {}) {
+  const hostPlatform = platform();
   const disk = await statfs(root);
   const memoryInfo = await readFile("/proc/meminfo", "utf8").catch(() => "");
   const dockerignore = await readFile(
@@ -120,18 +121,20 @@ export async function collectHostFacts({ root = ROOT, run = runCommand } = {}) {
     ],
     root,
   );
-  const timeSync = run(
-    "timedatectl",
-    ["show", "--property=NTPSynchronized", "--value"],
-    root,
-  );
+  const timeSync = hostPlatform === "darwin"
+    ? run("launchctl", ["print", "system/com.apple.timed"], root)
+    : run(
+        "timedatectl",
+        ["show", "--property=NTPSynchronized", "--value"],
+        root,
+      );
   const git = run(
     "git",
     ["status", "--porcelain=v1", "--untracked-files=normal"],
     root,
   );
   return {
-    platform: platform(),
+    platform: hostPlatform,
     arch: arch(),
     nodeVersion: process.version,
     uid: typeof process.getuid === "function" ? process.getuid() : -1,
@@ -151,10 +154,14 @@ export async function collectHostFacts({ root = ROOT, run = runCommand } = {}) {
     buildx: commandFact(buildx),
     composeConfig: commandFact(composeConfig),
     timeSync: {
-      ok: timeSync.code === 0 && timeSync.stdout.trim() === "yes",
+      ok:
+        timeSync.code === 0 &&
+        (hostPlatform === "darwin" || timeSync.stdout.trim() === "yes"),
       detail:
         timeSync.code === 0
-          ? `NTPSynchronized=${timeSync.stdout.trim()}`
+          ? hostPlatform === "darwin"
+            ? "com.apple.timed is loaded"
+            : `NTPSynchronized=${timeSync.stdout.trim()}`
           : safeError(timeSync),
     },
     gitClean: {

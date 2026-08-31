@@ -58,7 +58,7 @@
     },
     {
       "path": "compose.yaml",
-      "sha256": "101b136368fee4b4a4ee69e682825279d58f97861637dbaf39aaea8d89ccf1fa"
+      "sha256": "ee6ddce111545e2c267905295a5a9bb80944d61d5d1925e8acbd1cb3d679574d"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
@@ -1318,11 +1318,11 @@
     },
     {
       "path": "scripts/stack/host-preflight.mjs",
-      "sha256": "653c2d14057398dd483ab546bf6c23efc2b4aa6197889272c0fdfaeae863a252"
+      "sha256": "e9622211b449299902183ea58483ac81a6b4f2ee097cad612fc0091a6c8bc3b6"
     },
     {
       "path": "scripts/stack/host-preflight.test.mjs",
-      "sha256": "2581906cff4dee32326ed30e2fb2d67c132a42dfc7f36c5d4dfae045fd12e127"
+      "sha256": "6f394408648e7b7638eac6fbaf9a9f2b1820694d87db6cf9881224ab087a87f6"
     },
     {
       "path": "scripts/stack/ops-drill.mjs",
