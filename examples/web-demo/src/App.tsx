@@ -58,6 +58,7 @@ import { mintSandboxToken } from "./sandbox-token.js";
 import { CreateMarketForm } from "./CreateMarketForm.js";
 import { MarketplacePanel } from "../../react/src/MarketplacePanel.js";
 import { MarketLifecyclePanel } from "../../react/src/MarketLifecyclePanel.js";
+import { transactionDeadline } from "../../react/src/transactionTiming.js";
 import type { CanonicalEvidenceUploader } from "../../react/src/settlementEvidence.js";
 
 type Route = "overview" | "deployment" | "markets" | "create" | "positions" | "marketplace" | "settlement" | "receipts";
@@ -598,7 +599,7 @@ function BuyCard({ market, account, client, wallet, trust, paymentTokenSymbol, w
       const slippageBps = BigInt(slippage);
       if (slippageBps < 0n || slippageBps > 1_000n) throw new RangeError("滑点必须在 0–1000 bps");
       const maximumPayment = (units * (10_000n + slippageBps) + 9_999n) / 10_000n;
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 120);
+      const deadline = transactionDeadline();
       if (mode === "allowance") {
         await execute("Primary buy", () => client.buy({ vault: market.address, outcomeId, desiredUnits: units, minimumUnits: units, maximumPayment, deadline }));
         return;

@@ -6,6 +6,7 @@ import {
   parseUsdc,
   type TransactionResult,
 } from "../../../offchain/sdk/src/index.js";
+import { transactionDeadline } from "./transactionTiming.js";
 
 export interface BuyExecutor {
   buy(input: {
@@ -54,7 +55,7 @@ export function BuyPanel({ client, vault, outcomeCount }: BuyPanelProps) {
         desiredUnits,
         minimumUnits: desiredUnits,
         maximumPayment: maximum,
-        deadline: BigInt(Math.floor(Date.now() / 1000) + 120),
+        deadline: transactionDeadline(),
       });
       setMessage(
         `Included in block ${result.blockNumber.toString()}: ${result.hash}`,

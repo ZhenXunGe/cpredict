@@ -6,6 +6,12 @@ import {
   type CpredictClient,
 } from "../../../offchain/sdk/src/index.js";
 import { useTransactionAction } from "./useTransactionAction.js";
+import {
+  transactionDeadline,
+  unixTimeSeconds,
+} from "./transactionTiming.js";
+
+const LISTING_LIFETIME_SECONDS = 24n * 60n * 60n;
 
 export function MarketplacePanel(props: {
   client: Pick<
@@ -26,7 +32,6 @@ export function MarketplacePanel(props: {
   const [unitPrice, setUnitPrice] = useState("0.9");
   const [listingId, setListingId] = useState<Hex>(`0x${"00".repeat(32)}`);
   const { state, run } = useTransactionAction();
-  const deadline = () => BigInt(Math.floor(Date.now() / 1000) + 120);
   const maximumGross = () =>
     (parseUsdc(unitPrice) * parseShareUnits(amount)) / 1_000_000n;
 
@@ -39,7 +44,7 @@ export function MarketplacePanel(props: {
         outcomeId: BigInt(outcomeId),
         amount: parseShareUnits(amount),
         unitPrice: parseUsdc(unitPrice),
-        expiresAt: deadline() + 86_400n,
+        expiresAt: unixTimeSeconds() + LISTING_LIFETIME_SECONDS,
       }),
     );
   }
@@ -124,7 +129,7 @@ export function MarketplacePanel(props: {
               desiredUnits: parseShareUnits(amount),
               minimumUnits: parseShareUnits(amount),
               maximumGross: maximumGross(),
-              deadline: deadline(),
+              deadline: transactionDeadline(),
             }),
           )
         }

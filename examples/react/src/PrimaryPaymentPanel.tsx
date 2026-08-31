@@ -5,6 +5,7 @@ import {
   type CpredictClient,
 } from "../../../offchain/sdk/src/index.js";
 import { useTransactionAction } from "./useTransactionAction.js";
+import { transactionDeadline } from "./transactionTiming.js";
 
 export interface TypedDataSigner {
   signTypedData(
@@ -25,10 +26,8 @@ export function PrimaryPaymentPanel(props: {
   permitNonce: bigint;
 }) {
   const { state, run } = useTransactionAction();
-  const deadline = () => BigInt(Math.floor(Date.now() / 1000) + 120);
-
   async function permit2Buy() {
-    const callDeadline = deadline();
+    const callDeadline = transactionDeadline();
     const permit = {
       permitted: { token: props.paymentToken, amount: props.units },
       nonce: props.permitNonce,
