@@ -19,6 +19,7 @@ RUN rm -rf /opt/yarn-v1.22.22 /usr/local/lib/node_modules/npm /usr/local/lib/nod
     && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY --from=runtime-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist/offchain/indexer ./dist/offchain/indexer
+COPY --from=build --chown=node:node /app/dist/offchain/sdk ./dist/offchain/sdk
 COPY package.json ./package.json
 USER node
 CMD ["node", "dist/offchain/indexer/src/main.js"]
@@ -30,6 +31,7 @@ RUN rm -rf /opt/yarn-v1.22.22 /usr/local/lib/node_modules/npm /usr/local/lib/nod
     && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY --from=runtime-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist/offchain/paymaster-service ./dist/offchain/paymaster-service
+COPY --from=build --chown=node:node /app/dist/offchain/sdk ./dist/offchain/sdk
 COPY package.json ./package.json
 USER node
 CMD ["node", "dist/offchain/paymaster-service/src/main.js"]

@@ -66,7 +66,7 @@
     },
     {
       "path": "deploy/compose/Dockerfile.offchain",
-      "sha256": "05bb6bf8c0688e04529ee80d15f774a875f9450566e2f7da2fabaf8aac1c6949"
+      "sha256": "50e9efd1e0695200a9f3b200893a3d214abcd1878e084d5342e234d16dbeaa38"
     },
     {
       "path": "deploy/compose/nginx/default.conf.template",
@@ -1310,7 +1310,7 @@
     },
     {
       "path": "scripts/stack/container-images.test.mjs",
-      "sha256": "aa2031166642b5d1b25d2b58c04d615dcbe64455e79b546a7092fdcc9122bfde"
+      "sha256": "fe20e6a219220066c7d4f8f7c95e4013b3b4f8bc5f42f3a7982e3228650b13af"
     },
     {
       "path": "scripts/stack/host-materials.test.mjs",

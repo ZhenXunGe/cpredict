@@ -54,6 +54,15 @@ test("Dockerfiles pin reviewed Node and Nginx image digests", () => {
   assert.match(demo, /USER root\nRUN apk upgrade --no-cache[\s\S]*USER 101/);
 });
 
+test("offchain runtime images include their compiled SDK dependency", () => {
+  assert.equal(
+    offchain.match(
+      /COPY --from=build --chown=node:node \/app\/dist\/offchain\/sdk \.\/dist\/offchain\/sdk/g,
+    )?.length,
+    2,
+  );
+});
+
 test("Docker context excludes secrets, local tools and generated runtime state", async () => {
   const ignore = await readFile(new URL(".dockerignore", root), "utf8");
   for (const entry of [
