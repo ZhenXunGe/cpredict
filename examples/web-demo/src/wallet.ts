@@ -2,7 +2,6 @@ import {
   createPublicClient,
   createWalletClient,
   custom,
-  defineChain,
   getAddress,
   http,
   type Account,
@@ -11,7 +10,10 @@ import {
   type PublicClient,
   type WalletClient,
 } from "viem";
+import { arbitrumSepolia } from "viem/chains";
 import { ARBITRUM_SEPOLIA_CHAIN_ID, type RuntimeConfig } from "./config.js";
+
+export { arbitrumSepolia };
 
 export interface WalletProviderInfo {
   uuid: string;
@@ -37,19 +39,6 @@ export interface ConnectedWallet {
   chainId: number;
   walletClient: WalletClient;
 }
-
-export const arbitrumSepolia = defineChain({
-  id: ARBITRUM_SEPOLIA_CHAIN_ID,
-  name: "Arbitrum Sepolia",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: {
-    default: { http: ["https://sepolia-rollup.arbitrum.io/rpc"] },
-  },
-  blockExplorers: {
-    default: { name: "Arbiscan", url: "https://sepolia.arbiscan.io" },
-  },
-  testnet: true,
-});
 
 export function createProtocolPublicClient(config: RuntimeConfig): PublicClient {
   return createPublicClient({
