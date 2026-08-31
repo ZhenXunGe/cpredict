@@ -85,6 +85,27 @@ test("runtime services are least privilege, bounded and health ordered", async (
     postgresInit,
     /\\getenv migrator_password CPREDICT_STACK_MIGRATOR_PASSWORD/,
   );
+  const nginx = await readFile(
+    new URL(
+      "../../deploy/compose/nginx/default.conf.template",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  assert.match(
+    compose.services["web-demo"].healthcheck.test.join(" "),
+    /\/readyz/,
+  );
+  assert.match(
+    nginx,
+    /location = \/readyz[\s\S]*proxy_pass http:\/\/indexer:8787\/readyz/,
+  );
+  assert.match(nginx, /location = \/rpc[\s\S]*limit_except POST/);
+  assert.match(
+    nginx,
+    /location = \/rpc[\s\S]*proxy_set_header Authorization ""/,
+  );
+  assert.match(nginx, /location \/indexer\/[\s\S]*limit_except GET HEAD/);
 });
 
 test("Compose never carries browser-prefixed or embedded secret values", () => {

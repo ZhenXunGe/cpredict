@@ -213,11 +213,12 @@
                   "-q",
                   "-O",
                   "/dev/null",
-                  "http://127.0.0.1:8080/healthz",
+                  "http://127.0.0.1:8080/readyz",
                 ],
               "interval": "10s",
               "timeout": "5s",
               "retries": 12,
+              "start_period": "15s",
             },
           "networks": ["app"],
           "deploy":
