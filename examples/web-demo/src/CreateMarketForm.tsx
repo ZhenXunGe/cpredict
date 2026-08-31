@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { keccak256, parseUnits, toBytes, type Address } from "viem";
 import type { CpredictClient, CreateMarketInput, TransactionResult } from "../../../offchain/sdk/src/index.js";
+import { buildCreateMarketTimes } from "./create-market-times.js";
 
 interface CreateMarketFormProps {
   client: CpredictClient;
@@ -37,6 +38,7 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
   function draft(): CreateMarketInput {
     const now = BigInt(Math.floor(Date.now() / 1000));
     const days = parseInteger(durationDays, 1, 90, "市场期限");
+    const { closeAt, earlyBirdStart } = buildCreateMarketTimes(now, days);
     const outcomes = parseInteger(outcomeCount, 2, 32, "outcomeCount");
     const cap = parsePositiveUsdc(marketCap, "market cap");
     const bondAmount = parsePositiveUsdc(bond, "creator bond");
@@ -59,8 +61,8 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
         resolutionSourceHash: keccak256(toBytes(source)),
         resolutionSourceURI: source,
         outcomeCount: outcomes,
-        closeAt: now + BigInt(days * 86_400),
-        earlyBirdStart: now,
+        closeAt,
+        earlyBirdStart,
         creatorTreasury: props.creator,
         deploymentMode: mode === "0" ? 0 : 1,
         featureFlags: (earlyBird ? 1n : 0n) | (permit2 ? 2n : 0n),
