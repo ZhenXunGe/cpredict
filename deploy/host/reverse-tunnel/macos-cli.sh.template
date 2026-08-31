@@ -1,0 +1,336 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+export LC_ALL=C
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin:/usr/local/bin
+
+label="com.cpredict.reverse-tunnel"
+uid="$(id -u)"
+support_dir="${HOME}/.cpredict/reverse-tunnel"
+launch_agents_dir="${HOME}/Library/LaunchAgents"
+plist_path="$launch_agents_dir/$label.plist"
+worker_path="$support_dir/cpredict-tunnel-worker"
+cli_path="$support_dir/cpredict-tunnel"
+key_path="$support_dir/id_ed25519"
+known_hosts_path="$support_dir/known_hosts"
+package_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+package_root="$(cd -- "$package_dir/.." && pwd)"
+ssh_host="@@SSH_HOST@@"
+ssh_port="@@SSH_PORT@@"
+host_key_sha256="@@HOST_KEY_SHA256@@"
+public_host="@@PUBLIC_HOST@@"
+
+die() { echo "$*" >&2; exit 1; }
+usage() {
+  cat <<'EOF'
+Usage:
+  cpredict-tunnel deploy-cloud --admin-user USER --admin-key PATH --basic-auth-user USER
+      [--install-autossh] [--disable-default-site] [--reuse-htpasswd]
+  cpredict-tunnel install [--install-autossh] [--defer-start]
+  cpredict-tunnel status|verify|logs|restart
+  cpredict-tunnel uninstall [--delete-key]
+
+Run deploy-cloud from the generated package. It prepares the Mac, uploads the package,
+runs the interactive cloud installer, starts launchd and verifies both ends.
+EOF
+}
+require_macos_user() {
+  [[ $(uname -s) == Darwin ]] || die "this command must run on macOS"
+  [[ $EUID -ne 0 ]] || die "run this command as the logged-in macOS user, not root"
+  [[ "$HOME" == /* && "$HOME" != *$'\n'* && "$HOME" != *$'\r'* \
+    && "$HOME" != *'&'* && "$HOME" != *'<'* && "$HOME" != *'>'* && "$HOME" != *'|'* ]] \
+    || die "HOME contains characters that cannot be rendered safely into launchd"
+}
+reject_local_symlinks() {
+  local path
+  for path in \
+    "${HOME}/.cpredict" "$support_dir" "$support_dir/logs" "$launch_agents_dir" \
+    "$key_path" "$key_path.pub" "$known_hosts_path" "$worker_path" "$cli_path" \
+    "$support_dir/autossh.path" "$support_dir/com.cpredict.reverse-tunnel.plist.template" \
+    "$plist_path"; do
+    [[ ! -L "$path" ]] || die "managed path must not be a symlink: $path"
+  done
+}
+verify_package() {
+  if [[ ! -f "$package_root/SHA256SUMS" ]]; then
+    [[ "$package_dir" == "$support_dir" ]] \
+      || die "SHA256SUMS is missing"
+    return 0
+  fi
+  (cd "$package_root" && /usr/bin/shasum -a 256 -c SHA256SUMS >/dev/null) || die "package checksum verification failed"
+}
+find_autossh() {
+  local candidate
+  for candidate in /opt/homebrew/bin/autossh /usr/local/bin/autossh; do
+    if [[ -x "$candidate" ]]; then printf '%s\n' "$candidate"; return 0; fi
+  done
+  return 1
+}
+verify_host_key() {
+  local temporary actual
+  temporary="$(mktemp "${TMPDIR:-/tmp}/cpredict-known-hosts.XXXXXX")"
+  if ! /usr/bin/ssh-keyscan -T 10 -p "$ssh_port" -t ed25519 "$ssh_host" >"$temporary" 2>/dev/null; then
+    rm -f "$temporary"
+    die "could not read the cloud Ed25519 host key"
+  fi
+  actual="$(/usr/bin/ssh-keygen -lf "$temporary" -E sha256 | awk '{print $2}' | sort -u)"
+  if [[ "$actual" != "$host_key_sha256" ]]; then
+    rm -f "$temporary"
+    die "cloud host key mismatch: expected $host_key_sha256, got ${actual:-none}"
+  fi
+  install -m 0600 "$temporary" "$known_hosts_path"
+  rm -f "$temporary"
+}
+render_plist() {
+  local escaped temporary
+  escaped="$(printf '%s' "$worker_path" | sed -e 's/&/\\\&amp;/g' -e 's/</\\\&lt;/g' -e 's/>/\\\&gt;/g')"
+  temporary="$(mktemp "${TMPDIR:-/tmp}/cpredict-launchd.XXXXXX")"
+  sed "s|__WORKER_PATH__|$escaped|g" "$package_dir/com.cpredict.reverse-tunnel.plist.template" >"$temporary"
+  if ! /usr/bin/plutil -lint "$temporary" >/dev/null; then
+    rm -f "$temporary"
+    die "rendered launchd plist is invalid"
+  fi
+  install -m 0600 "$temporary" "$plist_path"
+  rm -f "$temporary"
+}
+launch_loaded() {
+  /bin/launchctl print "gui/$uid/$label" >/dev/null 2>&1
+}
+start_launch_agent() {
+  if launch_loaded; then
+    /bin/launchctl kickstart -k "gui/$uid/$label"
+  else
+    /bin/launchctl bootstrap "gui/$uid" "$plist_path"
+  fi
+}
+validate_admin_identity() {
+  local admin_user="$1" admin_key="$2" key_mode
+  [[ "$admin_user" =~ ^[a-z_][a-z0-9_-]{0,31}$ && "$admin_user" != root ]] \
+    || die "--admin-user must be one non-root Linux account name"
+  [[ -f "$admin_key" && ! -L "$admin_key" ]] || die "--admin-key must be a regular private-key file"
+  key_mode="$(stat -f %Lp "$admin_key")"
+  [[ "$key_mode" == 400 || "$key_mode" == 600 ]] \
+    || die "admin private key mode must be 0400 or 0600"
+  [[ "$admin_key" != "$key_path" ]] || die "the admin key must not be the dedicated tunnel key"
+}
+deploy_cloud_command() {
+  local admin_user="" admin_key="" basic_user="" install_autossh=false
+  local disable_default=false reuse_htpasswd=false remote_dir="" remote_target=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --admin-user) [[ $# -ge 2 ]] || die "$1 requires a value"; admin_user="$2"; shift ;;
+      --admin-key) [[ $# -ge 2 ]] || die "$1 requires a value"; admin_key="$2"; shift ;;
+      --basic-auth-user) [[ $# -ge 2 ]] || die "$1 requires a value"; basic_user="$2"; shift ;;
+      --install-autossh) install_autossh=true ;;
+      --disable-default-site) disable_default=true ;;
+      --reuse-htpasswd) reuse_htpasswd=true ;;
+      *) die "unknown deploy-cloud option: $1" ;;
+    esac
+    shift
+  done
+  [[ -n "$admin_user" && -n "$admin_key" && -n "$basic_user" ]] \
+    || die "deploy-cloud requires --admin-user, --admin-key and --basic-auth-user"
+  [[ "$basic_user" =~ ^[A-Za-z0-9._-]{1,64}$ ]] || die "invalid Basic Auth username"
+  [[ -f "$package_root/SHA256SUMS" ]] \
+    || die "run deploy-cloud from the generated package, not the installed helper"
+  validate_admin_identity "$admin_user" "$admin_key"
+  verify_package
+  for command in /usr/bin/ssh /usr/bin/scp; do
+    [[ -x "$command" ]] || die "$command is required"
+  done
+  /usr/bin/curl --fail --silent --show-error --max-time 5 \
+    http://127.0.0.1:@@LOCAL_PORT@@/readyz >/dev/null \
+    || die "local Cpredict readiness failed; start and verify Compose before upload"
+
+  local -a install_args=(--defer-start)
+  if [[ "$install_autossh" == true ]]; then install_args+=(--install-autossh); fi
+  install_command "${install_args[@]}"
+
+  local -a ssh_options=(
+    -F /dev/null
+    -o ConnectTimeout=10
+    -o IdentitiesOnly=yes
+    -o ServerAliveCountMax=3
+    -o ServerAliveInterval=30
+    -o StrictHostKeyChecking=yes
+    -o UserKnownHostsFile="$known_hosts_path"
+    -i "$admin_key"
+    -p "$ssh_port"
+  )
+  local -a scp_options=(
+    -F /dev/null
+    -o ConnectTimeout=10
+    -o IdentitiesOnly=yes
+    -o StrictHostKeyChecking=yes
+    -o UserKnownHostsFile="$known_hosts_path"
+    -i "$admin_key"
+    -P "$ssh_port"
+  )
+  remote_target="$admin_user@$ssh_host"
+  remote_dir="$(/usr/bin/ssh "${ssh_options[@]}" "$remote_target" \
+    'umask 077; mktemp -d /tmp/cpredict-reverse-tunnel.XXXXXX')"
+  [[ "$remote_dir" =~ ^/tmp/cpredict-reverse-tunnel\.[A-Za-z0-9]+$ ]] \
+    || die "cloud host returned an unsafe temporary path: ${remote_dir:-empty}"
+  echo "Uploading verified package to $remote_target:$remote_dir"
+  if ! /usr/bin/scp "${scp_options[@]}" -r "$package_root" "$remote_target:$remote_dir/package"; then
+    die "package upload failed; remote temporary directory retained at $remote_dir"
+  fi
+  if ! /usr/bin/scp "${scp_options[@]}" "$key_path.pub" "$remote_target:$remote_dir/id_ed25519.pub"; then
+    die "public-key upload failed; remote temporary directory retained at $remote_dir"
+  fi
+  /usr/bin/ssh "${ssh_options[@]}" "$remote_target" \
+    "bash '$remote_dir/package/verify-package.sh'" \
+    || die "remote package checksum verification failed; material retained at $remote_dir"
+
+  local remote_install
+  remote_install="sudo bash '$remote_dir/package/cloud/cpredict-tunnel-cloud' install --public-key-file '$remote_dir/id_ed25519.pub' --basic-auth-user '$basic_user'"
+  if [[ "$disable_default" == true ]]; then remote_install+=" --disable-default-site"; fi
+  if [[ "$reuse_htpasswd" == true ]]; then remote_install+=" --reuse-htpasswd"; fi
+  echo "Starting interactive cloud installation. Sudo and Basic Auth may prompt in this terminal."
+  /usr/bin/ssh -tt "${ssh_options[@]}" "$remote_target" "$remote_install" \
+    || die "cloud installation failed; material retained at $remote_dir"
+
+  start_launch_agent
+  verify_command
+  local remote_verify
+  remote_verify="for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do if sudo /usr/local/sbin/cpredict-tunnel-cloud verify; then exit 0; fi; sleep 5; done; exit 1"
+  /usr/bin/ssh -tt "${ssh_options[@]}" "$remote_target" "$remote_verify" \
+    || die "cloud tunnel verification did not pass within 60 seconds; material retained at $remote_dir"
+
+  if ! /usr/bin/ssh "${ssh_options[@]}" "$remote_target" "rm -r -- '$remote_dir'"; then
+    echo "WARNING: deployment passed but temporary upload remains at $remote_target:$remote_dir" >&2
+  fi
+  echo "CPREDICT REVERSE TUNNEL DEPLOY PASS"
+  echo "Public URL: https://$public_host"
+}
+install_command() {
+  local install_autossh=false defer_start=false autossh_bin=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --install-autossh) install_autossh=true ;;
+      --defer-start) defer_start=true ;;
+      *) die "unknown install option: $1" ;;
+    esac
+    shift
+  done
+  verify_package
+  reject_local_symlinks
+  for command in /usr/bin/curl /usr/bin/ssh-keygen /usr/bin/ssh-keyscan /usr/bin/plutil /usr/bin/caffeinate /bin/launchctl; do
+    [[ -x "$command" ]] || die "$command is required"
+  done
+  if ! autossh_bin="$(find_autossh)"; then
+    if [[ "$install_autossh" != true ]]; then
+      die "autossh is missing; rerun install with --install-autossh after reviewing the Homebrew change"
+    fi
+    local brew_bin
+    brew_bin="$(command -v brew)"
+    [[ "$brew_bin" == /* && -x "$brew_bin" ]] || die "Homebrew is required to install autossh"
+    "$brew_bin" install autossh
+    autossh_bin="$(find_autossh)" || die "autossh installation did not produce an approved absolute path"
+  fi
+
+  install -d -m 0700 "$support_dir" "$support_dir/logs"
+  mkdir -p "$launch_agents_dir"
+  if [[ -e "$key_path" || -e "$key_path.pub" ]]; then
+    [[ -f "$key_path" && -f "$key_path.pub" ]] || die "partial keypair exists; refusing to overwrite it"
+    chmod 0600 "$key_path"
+    chmod 0644 "$key_path.pub"
+  else
+    /usr/bin/ssh-keygen -q -t ed25519 -a 100 -N "" \
+      -C "cpredict reverse tunnel" -f "$key_path"
+    chmod 0600 "$key_path"
+    chmod 0644 "$key_path.pub"
+  fi
+  verify_host_key
+  if [[ "$package_dir/cpredict-tunnel-worker" != "$worker_path" ]]; then
+    install -m 0700 "$package_dir/cpredict-tunnel-worker" "$worker_path"
+  fi
+  if [[ "$package_dir/cpredict-tunnel" != "$cli_path" ]]; then
+    install -m 0700 "$package_dir/cpredict-tunnel" "$cli_path"
+  fi
+  if [[ "$package_dir/com.cpredict.reverse-tunnel.plist.template" != "$support_dir/com.cpredict.reverse-tunnel.plist.template" ]]; then
+    install -m 0600 "$package_dir/com.cpredict.reverse-tunnel.plist.template" \
+      "$support_dir/com.cpredict.reverse-tunnel.plist.template"
+  fi
+  printf '%s\n' "$autossh_bin" >"$support_dir/autossh.path"
+  chmod 0600 "$support_dir/autossh.path"
+  render_plist
+
+  if [[ "$defer_start" == true ]]; then
+    echo "Local tunnel installed but not started. Install the cloud side with this public key:"
+  else
+    start_launch_agent
+    echo "Local tunnel installed and launchd started. The cloud side must already trust this public key:"
+  fi
+  echo "$key_path.pub"
+  /bin/cat "$key_path.pub"
+}
+status_command() {
+  echo "public_host=$public_host"
+  echo "ssh_target=@@TUNNEL_USER@@@$ssh_host:$ssh_port"
+  echo "local_upstream=127.0.0.1:@@LOCAL_PORT@@"
+  if launch_loaded; then
+    /bin/launchctl print "gui/$uid/$label" | sed -n '1,35p'
+  else
+    echo "launchd=not-loaded"
+    return 1
+  fi
+}
+verify_command() {
+  reject_local_symlinks
+  [[ -f "$plist_path" && -x "$worker_path" && -x "$cli_path" ]] || die "local installation is incomplete"
+  [[ -f "$key_path" && -f "$known_hosts_path" ]] || die "key or known_hosts is missing"
+  [[ $(stat -f %Lp "$key_path") == 600 ]] || die "private key mode must be 0600"
+  verify_host_key
+  launch_loaded || die "launchd agent is not loaded"
+  /usr/bin/curl --fail --silent --show-error --max-time 5 \
+    http://127.0.0.1:@@LOCAL_PORT@@/readyz >/dev/null \
+    || die "local Cpredict readiness failed"
+  local status
+  status="$(/usr/bin/curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+    --max-time 10 "https://$public_host/readyz")"
+  [[ "$status" == 401 ]] || die "public edge must return 401 without credentials; got $status"
+  echo "LOCAL REVERSE TUNNEL VERIFY PASS"
+  echo "Run sudo cpredict-tunnel-cloud verify on the cloud host to prove the live tunnel upstream."
+}
+logs_command() {
+  local log_path="$support_dir/logs/tunnel.log"
+  [[ -f "$log_path" ]] || die "no tunnel log exists yet"
+  /usr/bin/tail -n 200 "$log_path"
+}
+restart_command() {
+  [[ -f "$plist_path" ]] || die "launchd plist is missing; run install first"
+  start_launch_agent
+  echo "Cpredict reverse tunnel restart requested"
+}
+uninstall_command() {
+  local delete_key=false
+  if [[ ${1:-} == "--delete-key" ]]; then delete_key=true; shift; fi
+  [[ $# -eq 0 ]] || die "unknown uninstall option: $1"
+  reject_local_symlinks
+  if launch_loaded; then /bin/launchctl bootout "gui/$uid" "$plist_path"; fi
+  rm -f "$plist_path" "$worker_path" "$cli_path" "$support_dir/autossh.path" \
+    "$support_dir/com.cpredict.reverse-tunnel.plist.template"
+  if [[ "$delete_key" == true ]]; then
+    rm -f "$key_path" "$key_path.pub" "$known_hosts_path"
+    echo "Dedicated tunnel key and known_hosts removed"
+  else
+    echo "Dedicated tunnel key retained at $key_path; use uninstall --delete-key to remove it explicitly"
+  fi
+  echo "Tunnel logs retained at $support_dir/logs"
+}
+
+require_macos_user
+command_name="${1:-}"
+if [[ -z "$command_name" ]]; then usage; exit 1; fi
+shift
+case "$command_name" in
+  help|-h|--help) [[ $# -eq 0 ]] || die "help takes no options"; usage ;;
+  deploy-cloud) deploy_cloud_command "$@" ;;
+  install) install_command "$@" ;;
+  status) [[ $# -eq 0 ]] || die "status takes no options"; status_command ;;
+  verify) [[ $# -eq 0 ]] || die "verify takes no options"; verify_command ;;
+  logs) [[ $# -eq 0 ]] || die "logs takes no options"; logs_command ;;
+  restart) [[ $# -eq 0 ]] || die "restart takes no options"; restart_command ;;
+  uninstall) uninstall_command "$@" ;;
+  *) die "unknown command: $command_name" ;;
+esac

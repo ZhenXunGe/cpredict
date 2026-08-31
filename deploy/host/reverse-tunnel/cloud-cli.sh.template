@@ -1,0 +1,285 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+export LC_ALL=C
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+
+tunnel_user="@@TUNNEL_USER@@"
+tunnel_home="/var/lib/cpredict-tunnel"
+remote_port="@@REMOTE_PORT@@"
+public_host="@@PUBLIC_HOST@@"
+state_dir="/var/lib/cpredict-reverse-tunnel"
+state_file="$state_dir/install.state"
+sshd_dropin="/etc/ssh/sshd_config.d/60-cpredict-reverse-tunnel.conf"
+authorized_keys="$tunnel_home/.ssh/authorized_keys"
+nginx_config="/etc/nginx/conf.d/cpredict.conf"
+htpasswd_path="/etc/nginx/cpredict.htpasswd"
+renewal_hook="/etc/letsencrypt/renewal-hooks/deploy/reload-cpredict-nginx"
+installed_cli="/usr/local/sbin/cpredict-tunnel-cloud"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+package_root="$(cd -- "$script_dir/.." && pwd)"
+
+die() { echo "$*" >&2; exit 1; }
+usage() {
+  cat <<'EOF'
+Usage:
+  cpredict-tunnel-cloud install --public-key-file PATH --basic-auth-user USER
+      [--disable-default-site] [--reuse-htpasswd]
+  cpredict-tunnel-cloud status|verify|logs|restart|uninstall
+EOF
+}
+require_root() { [[ $EUID -eq 0 ]] || die "run this command as root"; }
+reject_managed_symlinks() {
+  local path
+  for path in \
+    "$state_dir" "$state_file" "$sshd_dropin" "$authorized_keys" \
+    "$nginx_config" "$htpasswd_path" "$renewal_hook" "$installed_cli" \
+    "$tunnel_home" "$tunnel_home/.ssh"; do
+    [[ ! -L "$path" ]] || die "managed path must not be a symlink: $path"
+  done
+}
+verify_package() {
+  [[ -f "$package_root/SHA256SUMS" ]] || die "SHA256SUMS is missing"
+  (cd "$package_root" && sha256sum --check --strict SHA256SUMS >/dev/null) \
+    || die "package checksum verification failed"
+}
+require_ubuntu_2404() {
+  [[ -r /etc/os-release ]] || die "/etc/os-release is missing"
+  . /etc/os-release
+  [[ ${ID:-} == ubuntu && ${VERSION_ID:-} == 24.04 ]] \
+    || die "this installer supports Ubuntu 24.04 only"
+}
+install_dependencies() {
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update
+  apt-get install --yes apache2-utils ca-certificates curl iproute2 nginx openssh-server procps snapd
+  systemctl enable --now ssh nginx snapd.socket
+  snap install core
+  snap refresh core
+  snap install --classic certbot
+  if [[ ! -e /usr/local/bin/certbot ]]; then
+    ln -s /snap/bin/certbot /usr/local/bin/certbot
+  fi
+  command -v certbot >/dev/null || die "certbot is unavailable after installation"
+}
+validate_public_key() {
+  local key_file="$1" line_count
+  [[ -f "$key_file" && ! -L "$key_file" ]] || die "--public-key-file must be a regular file"
+  line_count="$(awk '!/^[[:space:]]*(#|$)/ {count += 1} END {print count + 0}' "$key_file")"
+  [[ "$line_count" == 1 ]] || die "public key file must contain exactly one key"
+  public_key="$(awk '!/^[[:space:]]*(#|$)/ {print}' "$key_file")"
+  [[ "$public_key" =~ ^ssh-ed25519[[:space:]][A-Za-z0-9+/]+={0,3}([[:space:]].*)?$ ]] \
+    || die "only one OpenSSH Ed25519 public key is accepted"
+  ssh-keygen -lf "$key_file" -E sha256 >/dev/null || die "public key validation failed"
+}
+create_tunnel_account() {
+  if id "$tunnel_user" >/dev/null 2>&1; then
+    local existing_home existing_shell
+    existing_home="$(getent passwd "$tunnel_user" | cut -d: -f6)"
+    existing_shell="$(getent passwd "$tunnel_user" | cut -d: -f7)"
+    [[ "$existing_home" == "$tunnel_home" && "$existing_shell" == /usr/sbin/nologin ]] \
+      || die "existing $tunnel_user account is not the managed tunnel account"
+  else
+    useradd --create-home --home-dir "$tunnel_home" --shell /usr/sbin/nologin "$tunnel_user"
+  fi
+  # '*' can never authenticate as a password, but unlike a leading '!' it does not block public-key auth.
+  usermod --password '*' "$tunnel_user"
+  install -d -o "$tunnel_user" -g "$tunnel_user" -m 0700 "$tunnel_home/.ssh"
+  printf '%s %s\n' 'restrict,port-forwarding,permitlisten="127.0.0.1:@@REMOTE_PORT@@"' "$public_key" \
+    >"$authorized_keys"
+  chown "$tunnel_user:$tunnel_user" "$authorized_keys"
+  chmod 0600 "$authorized_keys"
+}
+verify_sshd_effective_policy() {
+  local effective
+  effective="$(/usr/sbin/sshd -T -C "user=$tunnel_user,host=localhost,addr=127.0.0.1")"
+  for expected in \
+    'authenticationmethods publickey' \
+    'passwordauthentication no' \
+    'kbdinteractiveauthentication no' \
+    'gatewayports no' \
+    'allowtcpforwarding remote' \
+    'allowagentforwarding no' \
+    'allowstreamlocalforwarding no' \
+    'maxsessions 0' \
+    "permitlisten 127.0.0.1:$remote_port"; do
+    grep -Fxq "$expected" <<<"$effective" || die "effective sshd policy is missing: $expected"
+  done
+}
+install_sshd_policy() {
+  if [[ -e "$sshd_dropin" ]] && ! grep -q '^# Managed by the Cpredict reverse-tunnel package' "$sshd_dropin"; then
+    die "$sshd_dropin exists but is not managed by this package"
+  fi
+  install -m 0644 "$script_dir/sshd-cpredict-tunnel.conf" "$sshd_dropin"
+  /usr/sbin/sshd -t
+  verify_sshd_effective_policy
+  systemctl reload ssh
+}
+prepare_basic_auth() {
+  local basic_user="$1" reuse_htpasswd="$2"
+  [[ "$basic_user" =~ ^[A-Za-z0-9._-]{1,64}$ ]] || die "invalid Basic Auth username"
+  if [[ ! -s "$htpasswd_path" ]]; then
+    htpasswd -c "$htpasswd_path" "$basic_user"
+    printf '%s\n' 'htpasswd_created=1' >>"$state_file"
+  elif ! cut -d: -f1 "$htpasswd_path" | grep -Fxq "$basic_user"; then
+    if grep -Fxq 'htpasswd_created=1' "$state_file"; then
+      htpasswd "$htpasswd_path" "$basic_user"
+    else
+      die "reused htpasswd does not contain $basic_user; add it explicitly before rerunning"
+    fi
+  fi
+  chown root:www-data "$htpasswd_path"
+  chmod 0640 "$htpasswd_path"
+}
+disable_default_site() {
+  local allowed="$1"
+  [[ -e /etc/nginx/sites-enabled/default ]] || return 0
+  [[ "$allowed" == true ]] || die "Ubuntu default Nginx site is enabled; rerun with --disable-default-site after reviewing it"
+  [[ -L /etc/nginx/sites-enabled/default ]] || die "default Nginx site is not a symlink; refusing to remove it"
+  [[ $(readlink -f /etc/nginx/sites-enabled/default) == /etc/nginx/sites-available/default ]] \
+    || die "default Nginx symlink has an unexpected target"
+  unlink /etc/nginx/sites-enabled/default
+  printf '%s\n' 'default_site_disabled=1' >>"$state_file"
+}
+install_command() {
+  local public_key_file="" basic_user="" disable_default=false reuse_htpasswd=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --public-key-file) [[ $# -ge 2 ]] || die "$1 requires a value"; public_key_file="$2"; shift ;;
+      --basic-auth-user) [[ $# -ge 2 ]] || die "$1 requires a value"; basic_user="$2"; shift ;;
+      --disable-default-site) disable_default=true ;;
+      --reuse-htpasswd) reuse_htpasswd=true ;;
+      *) die "unknown install option: $1" ;;
+    esac
+    shift
+  done
+  [[ -n "$public_key_file" && -n "$basic_user" ]] \
+    || die "install requires --public-key-file and --basic-auth-user"
+  verify_package
+  require_ubuntu_2404
+  reject_managed_symlinks
+  validate_public_key "$public_key_file"
+  if [[ -e "$nginx_config" && ! -f "$state_file" ]]; then
+    die "$nginx_config already exists without managed installation state"
+  fi
+  if [[ -e "$htpasswd_path" && ! -f "$state_file" && "$reuse_htpasswd" != true ]]; then
+    die "$htpasswd_path already exists; use --reuse-htpasswd only after reviewing it"
+  fi
+  if [[ -e "$renewal_hook" && ! -f "$state_file" ]]; then
+    die "$renewal_hook already exists without managed installation state"
+  fi
+  install_dependencies
+  install -d -m 0700 "$state_dir"
+  if [[ ! -f "$state_file" ]]; then
+    printf '%s\n' 'status=installing' >"$state_file"
+    chmod 0600 "$state_file"
+  fi
+  create_tunnel_account
+  install_sshd_policy
+  prepare_basic_auth "$basic_user" "$reuse_htpasswd"
+  disable_default_site "$disable_default"
+  bash "$script_dir/proxy/issue-certificate.sh"
+  install -m 0755 "$script_dir/cpredict-tunnel-cloud" "$installed_cli"
+  sed -i 's/^status=.*/status=installed/' "$state_file"
+  echo "Cpredict cloud reverse-tunnel edge installed for https://$public_host"
+  echo "Start or restart the macOS launch agent, then run: sudo $installed_cli verify"
+}
+listener_lines() {
+  ss -ltnH | awk -v suffix=":$remote_port" '$4 ~ suffix "$" {print $4}'
+}
+status_command() {
+  systemctl --no-pager --full status ssh nginx || true
+  echo "tunnel_listener:"
+  listener_lines || true
+  echo "tunnel_processes:"
+  pgrep -a -u "$tunnel_user" sshd || true
+}
+verify_command() {
+  reject_managed_symlinks
+  [[ -f "$state_file" ]] || die "managed installation state is missing"
+  grep -Fxq 'status=installed' "$state_file" || die "installation did not finish"
+  [[ -f "$sshd_dropin" && -f "$authorized_keys" && -f "$nginx_config" ]] \
+    || die "managed configuration is incomplete"
+  [[ $(stat -c '%U:%G:%a' "$authorized_keys") == "$tunnel_user:$tunnel_user:600" ]] \
+    || die "authorized_keys ownership or mode is unsafe"
+  systemctl is-active --quiet ssh || die "SSH service is not active"
+  systemctl is-active --quiet nginx || die "Nginx service is not active"
+  /usr/sbin/sshd -t
+  verify_sshd_effective_policy
+  nginx -t
+  local listeners listener
+  listeners="$(listener_lines)"
+  [[ -n "$listeners" ]] || die "reverse tunnel is not listening on 127.0.0.1:$remote_port"
+  while IFS= read -r listener; do
+    [[ "$listener" == "127.0.0.1:$remote_port" ]] \
+      || die "unsafe tunnel listener detected: $listener"
+  done <<<"$listeners"
+  curl --fail --silent --show-error --max-time 5 "http://127.0.0.1:$remote_port/readyz" >/dev/null \
+    || die "tunnel upstream readiness failed"
+  local edge_status
+  edge_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+    --max-time 10 --connect-to "$public_host:443:127.0.0.1:443" "https://$public_host/readyz")"
+  [[ "$edge_status" == 401 ]] || die "public edge must return 401 without credentials; got $edge_status"
+  echo "CLOUD REVERSE TUNNEL VERIFY PASS"
+}
+logs_command() {
+  journalctl --no-pager -n 200 -u ssh -u nginx
+}
+restart_command() {
+  /usr/sbin/sshd -t
+  nginx -t
+  systemctl reload ssh nginx
+  pkill -TERM -u "$tunnel_user" || true
+  echo "Cloud edge reloaded and the dedicated tunnel connection was recycled"
+}
+uninstall_command() {
+  reject_managed_symlinks
+  [[ -f "$state_file" ]] || die "managed installation state is missing; refusing an unbounded uninstall"
+  if [[ -f "$nginx_config" ]]; then
+    grep -q 'Cpredict colleague preview' "$nginx_config" \
+      || die "$nginx_config no longer looks package-managed"
+  fi
+  if [[ -f "$sshd_dropin" ]]; then
+    grep -q '^# Managed by the Cpredict reverse-tunnel package' "$sshd_dropin" \
+      || die "$sshd_dropin no longer looks package-managed"
+  fi
+  if [[ -f "$renewal_hook" ]]; then
+    grep -q '^# Managed by the Cpredict public proxy' "$renewal_hook" \
+      || die "$renewal_hook no longer looks package-managed"
+  fi
+  if id "$tunnel_user" >/dev/null 2>&1; then
+    [[ $(getent passwd "$tunnel_user" | cut -d: -f6) == "$tunnel_home" ]] \
+      || die "managed tunnel user home changed; refusing to delete it"
+  fi
+  rm -f "$nginx_config" "$sshd_dropin" "$installed_cli" "$renewal_hook"
+  if grep -Fxq 'htpasswd_created=1' "$state_file"; then rm -f "$htpasswd_path"; fi
+  if id "$tunnel_user" >/dev/null 2>&1; then
+    pkill -TERM -u "$tunnel_user" || true
+    userdel --remove "$tunnel_user"
+  fi
+  if grep -Fxq 'default_site_disabled=1' "$state_file" && [[ ! -e /etc/nginx/sites-enabled/default ]] \
+    && [[ -f /etc/nginx/sites-available/default ]]; then
+    ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+  fi
+  rm -f "$state_file"
+  rmdir "$state_dir" 2>/dev/null || true
+  /usr/sbin/sshd -t
+  nginx -t
+  systemctl reload ssh nginx
+  echo "Cpredict reverse-tunnel configuration removed"
+  echo "Nginx/Certbot packages and the certificate for $public_host were intentionally retained"
+}
+
+require_root
+command_name="${1:-}"
+if [[ -z "$command_name" ]]; then usage; exit 1; fi
+shift
+case "$command_name" in
+  help|-h|--help) [[ $# -eq 0 ]] || die "help takes no options"; usage ;;
+  install) install_command "$@" ;;
+  status) [[ $# -eq 0 ]] || die "status takes no options"; status_command ;;
+  verify) [[ $# -eq 0 ]] || die "verify takes no options"; verify_command ;;
+  logs) [[ $# -eq 0 ]] || die "logs takes no options"; logs_command ;;
+  restart) [[ $# -eq 0 ]] || die "restart takes no options"; restart_command ;;
+  uninstall) [[ $# -eq 0 ]] || die "uninstall takes no options"; uninstall_command ;;
+  *) die "unknown command: $command_name" ;;
+esac

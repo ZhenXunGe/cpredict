@@ -1,0 +1,20 @@
+# Managed by the Cpredict reverse-tunnel package. Global binding stays loopback-only.
+GatewayPorts no
+
+Match User @@TUNNEL_USER@@
+    AuthenticationMethods publickey
+    PubkeyAuthentication yes
+    PasswordAuthentication no
+    KbdInteractiveAuthentication no
+    AllowTcpForwarding remote
+    AllowStreamLocalForwarding no
+    PermitListen 127.0.0.1:@@REMOTE_PORT@@
+    PermitOpen none
+    X11Forwarding no
+    AllowAgentForwarding no
+    PermitTTY no
+    PermitUserRC no
+    MaxSessions 0
+
+# Do not leak the Match block into later files included by the host sshd_config.
+Match all

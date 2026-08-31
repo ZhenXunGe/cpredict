@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+export LC_ALL=C
+export PATH=/usr/bin:/bin:/usr/sbin:/sbin
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+autossh_path_file="$script_dir/autossh.path"
+key_path="$script_dir/id_ed25519"
+known_hosts_path="$script_dir/known_hosts"
+log_dir="$script_dir/logs"
+log_path="$log_dir/tunnel.log"
+
+mkdir -p -m 0700 "$log_dir"
+if [[ -f "$log_path" ]] && [[ $(stat -f %z "$log_path") -gt 1048576 ]]; then
+  mv -f "$log_path" "$log_path.1"
+fi
+exec >>"$log_path" 2>&1
+
+printf '%s worker starting\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+[[ -r "$autossh_path_file" ]] || { echo "autossh path is missing"; exit 78; }
+IFS= read -r autossh_bin < "$autossh_path_file"
+[[ "$autossh_bin" == /* && -x "$autossh_bin" ]] || { echo "autossh path is invalid"; exit 78; }
+[[ -r "$key_path" && -r "$known_hosts_path" ]] || { echo "key or known_hosts is missing"; exit 78; }
+
+if ! /usr/bin/curl --fail --silent --show-error --max-time 5 \
+  http://127.0.0.1:@@LOCAL_PORT@@/readyz >/dev/null; then
+  echo "local Cpredict readiness failed on 127.0.0.1:@@LOCAL_PORT@@"
+  exit 69
+fi
+
+# Keep an AC-powered Mac awake for the lifetime of this exact worker PID.
+/usr/bin/caffeinate -s -w "$$" &
+
+export AUTOSSH_GATETIME=0
+export AUTOSSH_POLL=30
+exec "$autossh_bin" -M 0 -NT -F /dev/null \
+  -o BatchMode=yes \
+  -o ConnectTimeout=10 \
+  -o ExitOnForwardFailure=yes \
+  -o IdentitiesOnly=yes \
+  -o KbdInteractiveAuthentication=no \
+  -o LogLevel=ERROR \
+  -o NumberOfPasswordPrompts=0 \
+  -o PasswordAuthentication=no \
+  -o PreferredAuthentications=publickey \
+  -o ServerAliveCountMax=3 \
+  -o ServerAliveInterval=30 \
+  -o StrictHostKeyChecking=yes \
+  -o TCPKeepAlive=yes \
+  -o UserKnownHostsFile="$known_hosts_path" \
+  -i "$key_path" \
+  -p @@SSH_PORT@@ \
+  -R 127.0.0.1:@@REMOTE_PORT@@:127.0.0.1:@@LOCAL_PORT@@ \
+  @@TUNNEL_USER@@@@SSH_HOST@@

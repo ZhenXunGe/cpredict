@@ -1,0 +1,79 @@
+# Cpredict reverse-tunnel package for @@PUBLIC_HOST@@
+
+This generated package exposes the local Cpredict service without running Docker on the cloud host:
+
+```text
+colleague -> HTTPS/Basic Auth -> cloud Nginx -> 127.0.0.1:@@REMOTE_PORT@@
+          -> restricted SSH reverse tunnel -> local 127.0.0.1:@@LOCAL_PORT@@
+```
+
+The package is bound to SSH endpoint `@@SSH_HOST@@:@@SSH_PORT@@` and Ed25519 host-key fingerprint
+`@@HOST_KEY_SHA256@@`. Verify `SHA256SUMS` before installation. Never copy the generated private key to
+the cloud host.
+
+## Ordered installation
+
+### Recommended two-command path
+
+After generating this package, the Mac helper can prepare the local key/launchd service, upload the
+package with pinned host-key checking, run the interactive cloud installer, start the tunnel, and run
+both verification commands:
+
+```bash
+bash macos/cpredict-tunnel deploy-cloud \
+  --admin-user ubuntu \
+  --admin-key /absolute/path/to/cloud-admin-key \
+  --basic-auth-user colleague \
+  --install-autossh \
+  --disable-default-site
+```
+
+The admin key may be passphrase protected. Sudo and the new Basic Auth password can prompt in the same
+terminal; passwords are never command arguments. If upload, installation or verification fails, the
+command prints and retains the exact remote `/tmp/cpredict-reverse-tunnel.*` directory for diagnosis.
+On success it removes that temporary upload.
+
+### Manual/recovery path
+
+1. On the Mac, keep the local Compose stack ready on `127.0.0.1:@@LOCAL_PORT@@`, then prepare the key
+   without starting the tunnel:
+
+   ```bash
+   bash macos/cpredict-tunnel install --install-autossh --defer-start
+   ```
+
+2. Copy only `~/.cpredict/reverse-tunnel/id_ed25519.pub` and this generated package to the cloud host.
+
+3. On a clean Ubuntu 24.04 cloud host, run:
+
+   ```bash
+   sudo bash cloud/cpredict-tunnel-cloud install \
+     --public-key-file ./id_ed25519.pub \
+     --basic-auth-user colleague \
+     --disable-default-site
+   ```
+
+   The password prompt comes from `htpasswd`; do not place the password on the command line. Use
+   `--reuse-htpasswd` only after reviewing an existing `/etc/nginx/cpredict.htpasswd`.
+
+4. Back on the Mac, start the launch agent and verify both sides:
+
+   ```bash
+   ~/.cpredict/reverse-tunnel/cpredict-tunnel restart
+   ~/.cpredict/reverse-tunnel/cpredict-tunnel verify
+   sudo cpredict-tunnel-cloud verify
+   ```
+
+The cloud `verify` command is the acceptance point that proves the live loopback listener and the local
+`/readyz` response. The Mac must remain plugged in; the worker uses `caffeinate -s` while it is running,
+and launchd restarts it after network loss or process exit.
+
+## Operations
+
+Both commands support `status`, `verify`, `logs`, `restart`, and `uninstall`. The Mac uninstall retains
+the dedicated key unless `--delete-key` is explicit. The cloud uninstall removes only package-managed
+configuration and the dedicated tunnel user; it intentionally retains Nginx, Certbot and certificates.
+
+Do not expose TCP @@REMOTE_PORT@@ in the cloud security group or firewall. Only 80/443 are public; SSH
+must be restricted to the operator and Mac egress source CIDRs. The installer deliberately does not
+change provider security groups or UFW because guessing the management CIDR could lock out the host.
