@@ -1,0 +1,42 @@
+# Keep the Docker build context limited to reviewed source inputs. Docker does
+# not honor .gitignore, so secrets and project-local toolchains must be listed
+# explicitly here.
+.git
+.github
+.agents
+.codex
+.DS_Store
+.idea
+.vscode
+
+# Secrets and local runtime state
+.env
+.env.*
+runtime
+deployments/local
+deployments/arbitrum-sepolia/pending.json
+deployments/arbitrum-sepolia/runtime
+*.log
+
+# Project-local tools, dependencies, build and test outputs
+.tools
+node_modules
+dist
+cache
+out
+broadcast
+artifacts
+coverage
+test/coverage
+playwright-report
+test-results
+crytic-export
+scripts/security/crytic-export
+
+# Inputs not consumed by the Compose Dockerfiles
+docs
+reports
+ref
+lib
+load
+

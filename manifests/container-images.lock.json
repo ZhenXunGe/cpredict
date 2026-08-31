@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "cpredict.container-images.v1",
+  "updatedAt": "2026-08-30",
+  "images": {
+    "node": {
+      "reference": "node:22.23.2-bookworm-slim",
+      "digest": "sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5"
+    },
+    "nginx": {
+      "reference": "nginxinc/nginx-unprivileged:1.30.4-alpine",
+      "digest": "sha256:93722936b82ec8a1178d48448e619226680d2de3706a1640800e186cd5fa7fd3"
+    },
+    "postgres": {
+      "reference": "postgres:17.10-bookworm",
+      "digest": "sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f"
+    }
+  },
+  "scannerExceptions": [
+    {
+      "image": "postgres",
+      "path": "usr/local/bin/gosu",
+      "reason": "Upstream gosu requires reachability analysis for Go stdlib reports and does not rebuild for APIs the binary never invokes; the exact PostgreSQL OS packages remain scanned.",
+      "source": "https://github.com/tianon/gosu/blob/master/SECURITY.md",
+      "reviewedAt": "2026-08-30"
+    }
+  ]
+}
