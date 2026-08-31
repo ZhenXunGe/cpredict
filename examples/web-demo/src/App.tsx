@@ -261,7 +261,7 @@ export default function App() {
       const nextMarket = await readMarket(publicClient, getAddress(marketAddress));
       setMarket(nextMarket);
       if (wallet !== null && trust?.addresses !== null && trust?.addresses !== undefined) {
-        setAccountSnapshot(await readAccount(publicClient, wallet.address, nextMarket, trust.addresses.usdc, trust.addresses.contracts.factory, trust.addresses.contracts.marketplace));
+        setAccountSnapshot(await readAccount(publicClient, wallet.address, nextMarket, trust.addresses.usdc, trust.addresses.contracts.factory, trust.addresses.contracts.marketplace, trust.addresses.permit2));
       }
       if (trust?.addresses !== null && trust?.addresses !== undefined) {
         setProtocolSnapshot(await readProtocol(publicClient, trust.addresses.contracts.config, trust.addresses.contracts.paymaster));
@@ -586,6 +586,32 @@ function BuyCard({ market, account, client, wallet, trust, paymentTokenSymbol, w
   const [slippage, setSlippage] = useState("0");
   const [formError, setFormError] = useState("");
 
+  function paymentAmounts() {
+    const units = parsePositive(shares, 6, "份额");
+    const slippageBps = BigInt(slippage);
+    if (slippageBps < 0n || slippageBps > 1_000n) throw new RangeError("滑点必须在 0–1000 bps");
+    return {
+      units,
+      maximumPayment: (units * (10_000n + slippageBps) + 9_999n) / 10_000n,
+    };
+  }
+
+  async function approvePermit2() {
+    setFormError("");
+    try {
+      if (client === null || trust?.addresses === null || trust?.addresses === undefined) {
+        throw new Error("协议写入上下文尚未就绪");
+      }
+      const { maximumPayment } = paymentAmounts();
+      await execute(
+        `Approve Permit2 ${paymentTokenSymbol}`,
+        () => client.approvePaymentToken(trust.addresses!.usdc, trust.addresses!.permit2, maximumPayment),
+      );
+    } catch (error: unknown) {
+      setFormError(messageOf(error));
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError("");
@@ -593,12 +619,9 @@ function BuyCard({ market, account, client, wallet, trust, paymentTokenSymbol, w
       if (client === null || wallet === null || trust?.addresses === null || trust?.addresses === undefined) {
         throw new Error("钱包或协议写入上下文尚未就绪");
       }
-      const units = parsePositive(shares, 6, "份额");
+      const { units, maximumPayment } = paymentAmounts();
       const outcomeId = BigInt(outcome);
       if (outcomeId < 0n || outcomeId >= BigInt(market.outcomeCount)) throw new RangeError("outcome 越界");
-      const slippageBps = BigInt(slippage);
-      if (slippageBps < 0n || slippageBps > 1_000n) throw new RangeError("滑点必须在 0–1000 bps");
-      const maximumPayment = (units * (10_000n + slippageBps) + 9_999n) / 10_000n;
       const deadline = transactionDeadline();
       if (mode === "allowance") {
         await execute("Primary buy", () => client.buy({ vault: market.address, outcomeId, desiredUnits: units, minimumUnits: units, maximumPayment, deadline }));
@@ -634,8 +657,46 @@ function BuyCard({ market, account, client, wallet, trust, paymentTokenSymbol, w
         <button className="button primary wide" disabled={!writeReady || busy}>{busy ? "处理中…" : writeReady ? mode === "permit2" ? "签名并购买" : "模拟并购买" : "写操作已锁定"}</button>
       </form>
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}
-      {mode === "allowance" ? <div className="allowance-row"><span>Vault allowance</span><strong>{account === null ? "—" : formatPaymentToken(account.vaultAllowance, paymentTokenSymbol)}</strong>{client !== null && trust?.addresses !== null && trust?.addresses !== undefined ? <button className="text-button" disabled={!writeReady || busy} onClick={() => void execute(`Approve vault ${paymentTokenSymbol}`, () => client.approvePaymentToken(trust.addresses!.usdc, market.address, parseUnits(shares, 6)))}>精确授权</button> : null}</div> : <p className="callout">Permit2 签名绑定 chainId、Vault、selector、outcome、金额、nonce 与 deadline；页面不保存签名。</p>}
+      {mode === "allowance" ? (
+        <PrimaryAllowanceRow
+          label="Vault allowance"
+          allowance={account?.vaultAllowance ?? null}
+          paymentTokenSymbol={paymentTokenSymbol}
+          actionLabel="精确授权"
+          disabled={!writeReady || busy}
+          onApprove={() => void execute(`Approve vault ${paymentTokenSymbol}`, () => client!.approvePaymentToken(trust!.addresses!.usdc, market.address, parseUnits(shares, 6)))}
+        />
+      ) : (
+        <>
+          <PrimaryAllowanceRow
+            label="Permit2 allowance"
+            allowance={account?.permit2Allowance ?? null}
+            paymentTokenSymbol={paymentTokenSymbol}
+            actionLabel={`精确授权 ${paymentTokenSymbol} → Permit2`}
+            disabled={!writeReady || busy}
+            onApprove={() => void approvePermit2()}
+          />
+          <p className="callout">Permit2 签名绑定 chainId、Vault、selector、outcome、金额、nonce 与 deadline；页面不保存签名。</p>
+        </>
+      )}
     </Panel>
+  );
+}
+
+export function PrimaryAllowanceRow(props: {
+  label: string;
+  allowance: bigint | null;
+  paymentTokenSymbol: string;
+  actionLabel: string;
+  disabled: boolean;
+  onApprove: () => void;
+}) {
+  return (
+    <div className="allowance-row">
+      <span>{props.label}</span>
+      <strong>{props.allowance === null ? "—" : formatPaymentToken(props.allowance, props.paymentTokenSymbol)}</strong>
+      <button className="text-button" disabled={props.disabled} onClick={props.onApprove}>{props.actionLabel}</button>
+    </div>
   );
 }
 

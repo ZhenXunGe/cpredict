@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import App, { SandboxTokenPanel } from "../src/App.js";
+import App, { PrimaryAllowanceRow, SandboxTokenPanel } from "../src/App.js";
 
 describe("web demo application shell", () => {
   it("renders the trust-first Chinese console without fabricated runtime state", () => {
@@ -33,5 +33,21 @@ describe("web demo application shell", () => {
     expect(html).toContain("12.5 ctUSD");
     expect(html).toContain("不是 USDC");
     expect(html).toContain("领取 ctUSD");
+  });
+
+  it("renders the exact Permit2 token allowance required before signing", () => {
+    const html = renderToStaticMarkup(
+      <PrimaryAllowanceRow
+        label="Permit2 allowance"
+        allowance={0n}
+        paymentTokenSymbol="ctUSD"
+        actionLabel="精确授权 ctUSD → Permit2"
+        disabled={false}
+        onApprove={() => {}}
+      />,
+    );
+    expect(html).toContain("Permit2 allowance");
+    expect(html).toContain("0 ctUSD");
+    expect(html).toContain("精确授权 ctUSD → Permit2");
   });
 });

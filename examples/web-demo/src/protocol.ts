@@ -82,6 +82,7 @@ export interface AccountSnapshot {
   factoryAllowance: bigint;
   vaultAllowance: bigint;
   marketplaceAllowance: bigint;
+  permit2Allowance: bigint;
   positions: bigint[];
   cumulativePrimaryBought: bigint;
   earlyBirdScore: bigint;
@@ -140,12 +141,14 @@ export async function readAccount(
   usdc: Address,
   factory: Address,
   marketplace: Address,
+  permit2: Address,
 ): Promise<AccountSnapshot> {
-  const [usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, cumulativePrimaryBought, earlyBirdScore] = await Promise.all([
+  const [usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, permit2Allowance, cumulativePrimaryBought, earlyBirdScore] = await Promise.all([
     client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "balanceOf", args: [account] }),
     client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, factory] }),
     client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, market.address] }),
     client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, marketplace] }),
+    client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, permit2] }),
     client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "cumulativePrimaryBought", args: [account] }),
     client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "earlyBirdScore", args: [account] }),
   ]);
@@ -154,7 +157,7 @@ export async function readAccount(
       client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "balanceOf", args: [account, BigInt(outcomeId)] }),
     ),
   );
-  return { usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, positions, cumulativePrimaryBought, earlyBirdScore };
+  return { usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, permit2Allowance, positions, cumulativePrimaryBought, earlyBirdScore };
 }
 
 export async function readPaymentTokenBalance(
