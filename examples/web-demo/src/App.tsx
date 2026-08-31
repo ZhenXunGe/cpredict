@@ -276,7 +276,12 @@ export default function App() {
   async function executeOperation(label: string, operation: () => Promise<{ hash: `0x${string}`; blockNumber: bigint; gasUsed: bigint }>) {
     if (operationBusy || !writeReady) return;
     setOperationBusy(true);
-    push(setActivity, "info", `${label}: simulating`, "validate → simulate → submit once → receipt");
+    push(
+      setActivity,
+      "info",
+      `${label}: simulating`,
+      "validate → simulate → bound gas/fees → submit once → receipt",
+    );
     try {
       const result = await operation();
       push(setActivity, "success", label, `block ${result.blockNumber} · gas ${result.gasUsed}`, result.hash);
@@ -288,7 +293,12 @@ export default function App() {
       if (market !== null) await handleMarketLoad();
     } catch (error: unknown) {
       const classified = classifyProtocolError(error);
-      push(setActivity, "error", `${label}: reverted`, classified.message);
+      push(
+        setActivity,
+        "error",
+        `${label}: ${classified.kind === "gas-safety" ? "blocked before signing" : "failed"}`,
+        classified.message,
+      );
     } finally {
       setOperationBusy(false);
     }

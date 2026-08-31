@@ -34,6 +34,10 @@ import {
   type FillListingWithPermit2Input,
 } from "./schemas.js";
 import { normalizeEvidenceHash, ZERO_EVIDENCE_HASH } from "./evidence.js";
+import {
+  sendTransactionWithGasPolicy,
+  type GasPolicyOperation,
+} from "./transaction-policy.js";
 
 export interface TransactionResult {
   hash: `0x${string}`;
@@ -52,7 +56,7 @@ type MutableFunction<TAbi extends Abi> = ContractFunctionName<
 
 /**
  * Transaction SDK with a single invariant for every economic write:
- * validate -> simulate -> submit once -> wait receipt -> require success.
+ * validate -> simulate -> bound gas/fees -> submit once -> receipt -> require success.
  */
 export class CpredictClient {
   constructor(
@@ -67,7 +71,13 @@ export class CpredictClient {
     amount: bigint,
   ): Promise<TransactionResult> {
     if (amount < 0n) throw new RangeError("approval amount cannot be negative");
-    return this.execute(token, erc20Abi, "approve", [spender, amount]);
+    return this.execute(
+      "token-approval",
+      token,
+      erc20Abi,
+      "approve",
+      [spender, amount],
+    );
   }
 
   async setMarketplaceApproval(
@@ -75,15 +85,21 @@ export class CpredictClient {
     marketplace: Address,
     approved = true,
   ): Promise<TransactionResult> {
-    return this.execute(vault, marketVaultAbi, "setApprovalForAll", [
-      marketplace,
-      approved,
-    ]);
+    return this.execute(
+      "operator-approval",
+      vault,
+      marketVaultAbi,
+      "setApprovalForAll",
+      [marketplace, approved],
+    );
   }
 
   async createMarket(input: CreateMarketInput): Promise<CreateMarketResult> {
     const value = createMarketInputSchema.parse(input);
     const result = await this.execute(
+      value.params.deploymentMode === 0
+        ? "market-create-full"
+        : "market-create-clone",
       value.factory,
       marketFactoryAbi,
       "createMarket",
@@ -108,7 +124,7 @@ export class CpredictClient {
 
   async buy(input: BuyInput): Promise<TransactionResult> {
     const value = buyInputSchema.parse(input);
-    return this.execute(value.vault, marketVaultAbi, "buy", [
+    return this.execute("primary-buy", value.vault, marketVaultAbi, "buy", [
       value.outcomeId,
       value.desiredUnits,
       value.minimumUnits,
@@ -119,16 +135,22 @@ export class CpredictClient {
 
   async buyWithPermit2(input: BuyWithPermit2Input): Promise<TransactionResult> {
     const value = buyWithPermit2InputSchema.parse(input);
-    return this.execute(value.vault, marketVaultAbi, "buyWithPermit2", [
-      value.owner,
-      value.outcomeId,
-      value.desiredUnits,
-      value.minimumUnits,
-      value.maximumPayment,
-      value.deadline,
-      value.permit,
-      value.signature,
-    ]);
+    return this.execute(
+      "primary-buy-permit2",
+      value.vault,
+      marketVaultAbi,
+      "buyWithPermit2",
+      [
+        value.owner,
+        value.outcomeId,
+        value.desiredUnits,
+        value.minimumUnits,
+        value.maximumPayment,
+        value.deadline,
+        value.permit,
+        value.signature,
+      ],
+    );
   }
 
   async updateBeforeFirstBuy(
@@ -144,16 +166,22 @@ export class CpredictClient {
       featureFlags: bigint;
     },
   ): Promise<TransactionResult> {
-    return this.execute(vault, marketVaultAbi, "updateBeforeFirstBuy", [
-      input.rulesHash,
-      input.metadataURI,
-      input.resolutionSourceHash,
-      input.resolutionSourceURI,
-      input.closeAt,
-      input.earlyBirdStart,
-      input.creatorTreasury,
-      input.featureFlags,
-    ]);
+    return this.execute(
+      "market-update",
+      vault,
+      marketVaultAbi,
+      "updateBeforeFirstBuy",
+      [
+        input.rulesHash,
+        input.metadataURI,
+        input.resolutionSourceHash,
+        input.resolutionSourceURI,
+        input.closeAt,
+        input.earlyBirdStart,
+        input.creatorTreasury,
+        input.featureFlags,
+      ],
+    );
   }
 
   async resolve(
@@ -162,7 +190,7 @@ export class CpredictClient {
     evidenceHash: `0x${string}` = ZERO_EVIDENCE_HASH,
   ): Promise<TransactionResult> {
     if (outcomeId < 0n) throw new RangeError("outcomeId cannot be negative");
-    return this.execute(vault, marketVaultAbi, "resolve", [
+    return this.execute("market-resolve", vault, marketVaultAbi, "resolve", [
       outcomeId,
       normalizeEvidenceHash(evidenceHash),
     ]);
@@ -172,35 +200,53 @@ export class CpredictClient {
     vault: Address,
     evidenceHash: `0x${string}` = ZERO_EVIDENCE_HASH,
   ): Promise<TransactionResult> {
-    return this.execute(vault, marketVaultAbi, "creatorVoid", [
+    return this.execute("market-void", vault, marketVaultAbi, "creatorVoid", [
       normalizeEvidenceHash(evidenceHash),
     ]);
   }
 
   async voidAfterDeadline(vault: Address): Promise<TransactionResult> {
-    return this.execute(vault, marketVaultAbi, "voidAfterDeadline", []);
+    return this.execute(
+      "market-void",
+      vault,
+      marketVaultAbi,
+      "voidAfterDeadline",
+      [],
+    );
   }
 
   async createListing(input: CreateListingInput): Promise<TransactionResult> {
     const value = createListingInputSchema.parse(input);
-    return this.execute(value.marketplace, marketplaceAbi, "createListing", [
-      value.vault,
-      value.outcomeId,
-      value.amount,
-      value.unitPrice,
-      value.expiresAt,
-    ]);
+    return this.execute(
+      "listing-create",
+      value.marketplace,
+      marketplaceAbi,
+      "createListing",
+      [
+        value.vault,
+        value.outcomeId,
+        value.amount,
+        value.unitPrice,
+        value.expiresAt,
+      ],
+    );
   }
 
   async fillListing(input: FillListingInput): Promise<TransactionResult> {
     const value = fillListingInputSchema.parse(input);
-    return this.execute(value.marketplace, marketplaceAbi, "fillListing", [
-      value.listingId,
-      value.desiredUnits,
-      value.minimumUnits,
-      value.maximumGross,
-      value.deadline,
-    ]);
+    return this.execute(
+      "listing-fill",
+      value.marketplace,
+      marketplaceAbi,
+      "fillListing",
+      [
+        value.listingId,
+        value.desiredUnits,
+        value.minimumUnits,
+        value.maximumGross,
+        value.deadline,
+      ],
+    );
   }
 
   async fillListingWithPermit2(
@@ -208,6 +254,7 @@ export class CpredictClient {
   ): Promise<TransactionResult> {
     const value = fillListingWithPermit2InputSchema.parse(input);
     return this.execute(
+      "listing-fill-permit2",
       value.marketplace,
       marketplaceAbi,
       "fillListingWithPermit2",
@@ -228,63 +275,94 @@ export class CpredictClient {
     marketplace: Address,
     listingId: `0x${string}`,
   ): Promise<TransactionResult> {
-    return this.execute(marketplace, marketplaceAbi, "cancelListing", [
-      listingId,
-    ]);
+    return this.execute(
+      "listing-maintenance",
+      marketplace,
+      marketplaceAbi,
+      "cancelListing",
+      [listingId],
+    );
   }
 
   async returnTerminalListing(
     marketplace: Address,
     listingId: `0x${string}`,
   ): Promise<TransactionResult> {
-    return this.execute(marketplace, marketplaceAbi, "returnTerminalListing", [
-      listingId,
-    ]);
+    return this.execute(
+      "listing-maintenance",
+      marketplace,
+      marketplaceAbi,
+      "returnTerminalListing",
+      [listingId],
+    );
   }
 
   async claimWinner(
     vault: Address,
     owner: Address,
   ): Promise<TransactionResult> {
-    return this.execute(vault, marketVaultAbi, "claimWinningsFor", [owner]);
+    return this.execute("claim", vault, marketVaultAbi, "claimWinningsFor", [
+      owner,
+    ]);
   }
 
   async refund(vault: Address, owner: Address): Promise<TransactionResult> {
-    return this.execute(vault, marketVaultAbi, "refundFor", [owner]);
+    return this.execute("claim", vault, marketVaultAbi, "refundFor", [owner]);
   }
 
   async claimEarlyBird(
     vault: Address,
     owner: Address,
   ): Promise<TransactionResult> {
-    return this.execute(vault, marketVaultAbi, "claimEarlyBirdFor", [owner]);
+    return this.execute("claim", vault, marketVaultAbi, "claimEarlyBirdFor", [
+      owner,
+    ]);
   }
 
   async claimTimeoutBonus(
     vault: Address,
     owner: Address,
   ): Promise<TransactionResult> {
-    return this.execute(vault, marketVaultAbi, "claimTimeoutBonusFor", [owner]);
+    return this.execute(
+      "claim",
+      vault,
+      marketVaultAbi,
+      "claimTimeoutBonusFor",
+      [owner],
+    );
   }
 
   async settleBond(
     bondEscrow: Address,
     market: Address,
   ): Promise<TransactionResult> {
-    return this.execute(bondEscrow, bondEscrowAbi, "settleBond", [market]);
+    return this.execute(
+      "bond-settlement",
+      bondEscrow,
+      bondEscrowAbi,
+      "settleBond",
+      [market],
+    );
   }
 
   async syncExposure(
     exposureGuard: Address,
     market: Address,
   ): Promise<TransactionResult> {
-    return this.execute(exposureGuard, exposureGuardAbi, "sync", [market]);
+    return this.execute(
+      "exposure-sync",
+      exposureGuard,
+      exposureGuardAbi,
+      "sync",
+      [market],
+    );
   }
 
   private async execute<
     const TAbi extends Abi,
     const TFunctionName extends MutableFunction<TAbi>,
   >(
+    operation: GasPolicyOperation,
     address: Address,
     abi: TAbi,
     functionName: TFunctionName,
@@ -300,12 +378,16 @@ export class CpredictClient {
     // viem cannot retain the correlated ABI/function/args generic through this private helper;
     // the public call sites above remain fully typed and this is the single encoding boundary.
     const data = encodeFunctionData({ abi, functionName, args } as never);
-    const hash = await this.walletClient.sendTransaction({
-      account: this.account,
-      chain: this.walletClient.chain,
-      to: address,
-      data,
-    });
+    const hash = await sendTransactionWithGasPolicy(
+      this.publicClient,
+      this.walletClient,
+      operation,
+      {
+        account: this.account,
+        to: address,
+        data,
+      },
+    );
     const receipt = await this.publicClient.waitForTransactionReceipt({
       hash,
       confirmations: 1,

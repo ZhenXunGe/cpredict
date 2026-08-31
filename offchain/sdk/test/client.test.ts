@@ -15,10 +15,22 @@ const vault = "0x00000000000000000000000000000000000000B1";
 const marketplace = "0x00000000000000000000000000000000000000C1";
 const hash = `0x${"12".repeat(32)}` as const;
 
+function gasRpc() {
+  return {
+    estimateGas: vi.fn(async () => 200_000n),
+    getBlock: vi.fn(async () => ({ baseFeePerGas: 50_000_000n })),
+    estimateFeesPerGas: vi.fn(async () => ({
+      maxFeePerGas: 70_000_000n,
+      maxPriorityFeePerGas: 10_000_000n,
+    })),
+  };
+}
+
 describe("CpredictClient transaction discipline", () => {
   it("simulates, submits once and waits for a successful receipt", async () => {
     const actions: string[] = [];
     const publicClient = {
+      ...gasRpc(),
       simulateContract: vi.fn(async () => {
         actions.push("simulate");
         return { request: {} };
@@ -53,10 +65,18 @@ describe("CpredictClient transaction discipline", () => {
     ).resolves.toEqual({ hash, blockNumber: 10n, gasUsed: 20n });
     expect(actions).toEqual(["simulate", "send", "receipt"]);
     expect(walletClient.sendTransaction).toHaveBeenCalledTimes(1);
+    expect(walletClient.sendTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        gas: 240_000n,
+        maxFeePerGas: 110_000_000n,
+        maxPriorityFeePerGas: 10_000_000n,
+      }),
+    );
   });
 
   it("does not submit when simulation rejects a stale listing", async () => {
     const publicClient = {
+      ...gasRpc(),
       simulateContract: vi.fn(async () => {
         throw new Error("ListingNotActive");
       }),
@@ -86,6 +106,7 @@ describe("CpredictClient transaction discipline", () => {
   it("binds explicit or absent evidence hashes into terminal calls", async () => {
     const simulateContract = vi.fn(async () => ({ request: {} }));
     const publicClient = {
+      ...gasRpc(),
       simulateContract,
       waitForTransactionReceipt: vi.fn(async () => ({
         status: "success",

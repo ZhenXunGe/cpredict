@@ -10,15 +10,21 @@ const hash = `0x${"ab".repeat(32)}` as const;
 describe("sandbox token faucet transaction", () => {
   it("simulates once, submits once, and requires a successful receipt", async () => {
     const simulateContract = vi.fn(async () => ({ request: { address: token } }));
+    const estimateGas = vi.fn(async () => 50_000n);
+    const getBlock = vi.fn(async () => ({ baseFeePerGas: 50_000_000n }));
+    const estimateFeesPerGas = vi.fn(async () => ({
+      maxFeePerGas: 70_000_000n,
+      maxPriorityFeePerGas: 10_000_000n,
+    }));
     const waitForTransactionReceipt = vi.fn(async () => ({
       status: "success",
       blockNumber: 42n,
       gasUsed: 55_000n,
     }));
-    const writeContract = vi.fn(async () => hash);
+    const sendTransaction = vi.fn(async () => hash);
     const result = await mintSandboxToken(
-      { simulateContract, waitForTransactionReceipt } as unknown as PublicClient,
-      { address: account, account: { address: account }, walletClient: { writeContract } } as unknown as ConnectedWallet,
+      { simulateContract, estimateGas, getBlock, estimateFeesPerGas, waitForTransactionReceipt } as unknown as PublicClient,
+      { address: account, account: { address: account }, walletClient: { sendTransaction } } as unknown as ConnectedWallet,
       token,
       10_000_000_000n,
     );
@@ -27,7 +33,11 @@ describe("sandbox token faucet transaction", () => {
       functionName: "mint",
       args: [account, 10_000_000_000n],
     }));
-    expect(writeContract).toHaveBeenCalledTimes(1);
+    expect(sendTransaction).toHaveBeenCalledWith(expect.objectContaining({
+      gas: 60_000n,
+      maxFeePerGas: 110_000_000n,
+      maxPriorityFeePerGas: 10_000_000n,
+    }));
     expect(waitForTransactionReceipt).toHaveBeenCalledWith({ hash });
     expect(result).toEqual({ hash, blockNumber: 42n, gasUsed: 55_000n });
   });
@@ -38,12 +48,18 @@ describe("sandbox token faucet transaction", () => {
     await expect(mintSandboxToken(
       {
         simulateContract: async () => ({ request: {} }),
+        estimateGas: async () => 50_000n,
+        getBlock: async () => ({ baseFeePerGas: 50_000_000n }),
+        estimateFeesPerGas: async () => ({
+          maxFeePerGas: 70_000_000n,
+          maxPriorityFeePerGas: 10_000_000n,
+        }),
         waitForTransactionReceipt: async () => ({ status: "reverted" }),
       } as unknown as PublicClient,
       {
         address: account,
         account: { address: account },
-        walletClient: { writeContract: async () => hash },
+        walletClient: { sendTransaction: async () => hash },
       } as unknown as ConnectedWallet,
       token,
       1n,

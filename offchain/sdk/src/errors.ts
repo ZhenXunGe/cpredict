@@ -1,4 +1,5 @@
 import { BaseError, ContractFunctionRevertedError, type Hex } from "viem";
+import { GasPolicyError } from "./transaction-policy.js";
 
 export type ProtocolErrorKind =
   | "expected-race"
@@ -6,6 +7,7 @@ export type ProtocolErrorKind =
   | "configuration"
   | "accounting-critical"
   | "transport"
+  | "gas-safety"
   | "unknown";
 
 export interface ProtocolErrorDetails {
@@ -39,6 +41,13 @@ const accountingErrors = new Set([
 
 /** Reduces viem errors to stable UI/telemetry categories without exposing calldata or signatures. */
 export function classifyProtocolError(error: unknown): ProtocolErrorDetails {
+  if (error instanceof GasPolicyError) {
+    return {
+      kind: "gas-safety",
+      retryableAfterRefresh: true,
+      message: safeMessage(error.message),
+    };
+  }
   if (error instanceof BaseError) {
     const reverted = error.walk(
       (candidate) => candidate instanceof ContractFunctionRevertedError,

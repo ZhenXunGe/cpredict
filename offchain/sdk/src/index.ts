@@ -6,4 +6,5 @@ export * from "./evidence.js";
 export * from "./market-rules.js";
 export * from "./permit2.js";
 export * from "./schemas.js";
+export * from "./transaction-policy.js";
 export * from "./units.js";
