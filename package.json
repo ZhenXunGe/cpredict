@@ -71,7 +71,7 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
-    "@fastify/helmet": "13.1.0",
+    "@fastify/helmet": "13.1.1",
     "@fastify/rate-limit": "11.2.0",
     "fastify": "5.10.0",
     "pino": "10.3.1",
