@@ -19,7 +19,10 @@ export const gasLimitByOperation = {
   "primary-buy-permit2": 370_000n,
   "market-resolve": 350_000n,
   "market-void": 300_000n,
-  "listing-create": 230_000n,
+  // Arbitrum's estimate includes network overhead beyond the Solidity gas gate.
+  // Keep enough room for the policy's 20% send buffer without weakening the
+  // contract-side 230k implementation target.
+  "listing-create": 300_000n,
   "listing-fill": 350_000n,
   "listing-fill-permit2": 430_000n,
   "listing-maintenance": 250_000n,

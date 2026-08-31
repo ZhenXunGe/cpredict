@@ -59,6 +59,24 @@ describe("browser transaction gas policy", () => {
     );
   });
 
+  it("allows the observed Arbitrum listing estimate with bounded headroom", async () => {
+    const wallet = walletClient();
+    const rpc = publicClient({
+      estimateGas: vi.fn(async () => 232_563n),
+    });
+
+    await sendTransactionWithGasPolicy(
+      rpc,
+      wallet,
+      "listing-create",
+      { account, to, data: "0x1234" },
+    );
+
+    expect(wallet.sendTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ gas: 279_076n }),
+    );
+  });
+
   it("replaces an implausible RPC estimate with the reviewed operation ceiling", async () => {
     const wallet = walletClient();
     const rpc = publicClient({
