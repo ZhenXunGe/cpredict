@@ -1,0 +1,23 @@
+[Unit]
+Description=Cpredict verified PostgreSQL backup and retention
+Requires=docker.service
+After=docker.service network-online.target
+ConditionPathExists=@@REPO_ROOT@@/.env.compose.local
+
+[Service]
+Type=oneshot
+User=@@OPERATOR@@
+WorkingDirectory=@@REPO_ROOT@@
+UMask=0077
+ExecStart=/usr/local/bin/npm run stack:backup:verified
+ExecStart=/usr/local/bin/npm run stack:backup:prune -- --keep 14 --minimum-age-days 7 --apply
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ReadOnlyPaths=@@REPO_ROOT@@
+ReadWritePaths=@@REPO_ROOT@@/runtime

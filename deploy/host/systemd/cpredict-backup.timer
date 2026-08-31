@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the Cpredict verified backup daily
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+RandomizedDelaySec=30m
+Unit=cpredict-backup.service
+
+[Install]
+WantedBy=timers.target
+
