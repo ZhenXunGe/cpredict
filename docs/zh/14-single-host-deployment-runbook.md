@@ -132,30 +132,34 @@ npm run stack:preflight
 它会检查 Linux/x64/Node 22、非 root、内存/磁盘、NTP、Docker daemon、Compose `--wait`、Buildx、
 Compose 静态配置、干净 Git 和 Docker context 排除策略。
 
-## 5. Debug 测试网部署（会产生链上交易）
+## 5. Sandbox 测试网部署（会产生链上交易）
 
 只在明确授权后广播。复制模板、填入测试网角色/RPC/预算并限制权限；不要 `source` 文件：
 
 ```bash
 cp deployments/arbitrum-sepolia/deploy.env.example .env.arbitrum-sepolia.local
 chmod 600 .env.arbitrum-sepolia.local
-npm run deploy:arbitrum-sepolia -- preflight --profile debug
-npm run deploy:arbitrum-sepolia -- plan --profile debug
-npm run deploy:arbitrum-sepolia -- deploy --profile debug
+npm run deploy:arbitrum-sepolia -- preflight --profile sandbox
+npm run deploy:arbitrum-sepolia -- plan --profile sandbox
+npm run deploy:arbitrum-sepolia -- deploy --profile sandbox
 ```
+
+Web 演示统一使用 `sandbox`：部署脚本会新建 6 位精度 `Cpredict Test USD (ctUSD)`，它只能部署在
+Arbitrum Sepolia，任何地址都可任意 mint，且不是 USDC、没有真实价值。不要把本段命令改成 `formal`；
+正式清单仍只接受 canonical USDC。所有命令必须持续使用同一 `sandbox` 档位。
 
 `deploy` 会再次 preflight、preview 和精确模拟，并在广播前确认。广播错误或连接中断后，先运行：
 
 ```bash
-npm run deploy:arbitrum-sepolia -- status --profile debug
+npm run deploy:arbitrum-sepolia -- status --profile sandbox
 ```
 
 状态为 `BROADCAST_FAILED_REQUIRES_INSPECTION` 时才按工具提示使用 `--resume`。不要重新执行 `deploy`、更换
 nonce 或盲发同一交易。等待一小时 Timelock 后：
 
 ```bash
-npm run deploy:arbitrum-sepolia -- finalize --profile debug
-npm run deploy:arbitrum-sepolia -- status --profile debug
+npm run deploy:arbitrum-sepolia -- finalize --profile sandbox
+npm run deploy:arbitrum-sepolia -- status --profile sandbox
 npm run deploy:sync -- candidate \
   --pending deployments/arbitrum-sepolia/pending.json
 ```

@@ -15,8 +15,10 @@ import { fileURLToPath } from "node:url";
 import { getAddress } from "viem";
 import {
   CHAIN_ID,
+  CANONICAL_USDC_KIND,
   ENTRY_POINT,
   PERMIT2,
+  SANDBOX_TOKEN_KIND,
   USDC,
   validatePendingManifest,
 } from "./deploy-arbitrum-sepolia.mjs";
@@ -46,6 +48,25 @@ const CONTRACT_KEYS = [
   "marketplace",
   "paymaster",
 ];
+
+const PAYMENT_TOKENS = Object.freeze({
+  [CANONICAL_USDC_KIND]: Object.freeze({
+    kind: CANONICAL_USDC_KIND,
+    name: "USD Coin",
+    symbol: "USDC",
+    decimals: 6,
+    faucetEnabled: false,
+    faucetAmount: "0",
+  }),
+  [SANDBOX_TOKEN_KIND]: Object.freeze({
+    kind: SANDBOX_TOKEN_KIND,
+    name: "Cpredict Test USD",
+    symbol: "ctUSD",
+    decimals: 6,
+    faucetEnabled: true,
+    faucetAmount: "10000000000",
+  }),
+});
 
 export function parseSyncArgs(argv) {
   if (argv.length === 0 || !["candidate", "final"].includes(argv[0]))
@@ -84,6 +105,12 @@ export function buildRuntimePackage({ mode, deployment, deploymentBlock, inputSh
   if (!Number.isSafeInteger(deploymentBlock) || deploymentBlock < 1)
     throw new Error("deploymentBlock must be a positive safe integer");
   const finalMode = mode === "final";
+  const paymentTokenKind = finalMode
+    ? CANONICAL_USDC_KIND
+    : deployment.paymentTokenKind;
+  const paymentToken = PAYMENT_TOKENS[paymentTokenKind];
+  if (paymentToken === undefined)
+    throw new Error("candidate paymentTokenKind must be canonical-usdc or sandbox-test-token");
   const sourceManifestSha256 = finalMode
     ? deployment.source.sourceManifestSha256
     : deployment.sourceManifestSha256;
@@ -151,6 +178,7 @@ export function buildRuntimePackage({ mode, deployment, deploymentBlock, inputSh
       requiredStatus: "FINALIZED_VERIFIED",
       allowDebugAddresses: !finalMode,
     },
+    paymentToken,
     indexer: { enabled: true, basePath: "/indexer" },
     evidence: { uploadEnabled: false, endpointPath: "/evidence" },
   };
@@ -163,6 +191,7 @@ export function buildRuntimePackage({ mode, deployment, deploymentBlock, inputSh
     deploymentBlock,
     contracts: normalizedAddresses,
     externalContracts: normalizedExternal,
+    paymentToken,
     actors: Object.fromEntries(
       Object.entries(actors).map(([key, value]) => [key, getAddress(value)]),
     ),
@@ -373,6 +402,7 @@ async function writeCurrentEnv(root, values) {
 
 function candidateChecklist(addresses) {
   return `# Arbitrum Sepolia DEBUG candidate\n\n` +
+    `${addresses.paymentToken.kind === SANDBOX_TOKEN_KIND ? "WARNING: This candidate uses unrestricted-mint ctUSD for demonstrations only. It is not USDC and has no monetary value.\n\n" : ""}` +
     `This package is not finalized runtime evidence. Before final sync:\n\n` +
     `- [ ] Verify both independent RPC origins, codehashes and deployment blocks.\n` +
     `- [ ] Verify Factory wiring and activation fingerprint.\n` +

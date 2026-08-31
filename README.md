@@ -116,7 +116,9 @@ normative design and review boundary.
 
 `examples/web-demo` 是可运行的中文合约验证与交互控制台，固定 chainId `421614`，包含
 EIP-6963 钱包、正式 manifest/reference-block/codehash/完整 wiring 门禁、市场创建、Allowance/Permit2 一级购买、
-C2C、结算证据和 claim/refund 入口。默认部署状态仍为 `BLOCKED_NOT_DEPLOYED`，因此默认锁定写操作。
+C2C、结算证据和 claim/refund 入口。`sandbox` 测试网 runtime 会明确显示可任意增发、无真实价值的
+`ctUSD`，提供领取按钮，并让创建/购买/C2C 使用同一测试币。默认部署状态仍为
+`BLOCKED_NOT_DEPLOYED`，因此默认锁定写操作。
 
 ```bash
 npm run demo:dev

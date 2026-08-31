@@ -7,6 +7,26 @@ import {
 
 export const ARBITRUM_SEPOLIA_CHAIN_ID = 421614 as const;
 
+export type PaymentTokenKind = "canonical-usdc" | "sandbox-test-token";
+
+export interface PaymentTokenConfig {
+  kind: PaymentTokenKind;
+  name: "USD Coin" | "Cpredict Test USD";
+  symbol: "USDC" | "ctUSD";
+  decimals: 6;
+  faucetEnabled: boolean;
+  faucetAmount: string;
+}
+
+export const CANONICAL_PAYMENT_TOKEN: PaymentTokenConfig = {
+  kind: "canonical-usdc",
+  name: "USD Coin",
+  symbol: "USDC",
+  decimals: 6,
+  faucetEnabled: false,
+  faucetAmount: "0",
+};
+
 export type ContractKey =
   | "timelock"
   | "config"
@@ -47,6 +67,7 @@ export interface RuntimeConfig {
     requiredStatus: "FINALIZED_VERIFIED";
     allowDebugAddresses: boolean;
   };
+  paymentToken: PaymentTokenConfig;
   indexer: { enabled: boolean; basePath: string };
   evidence: { uploadEnabled: boolean; endpointPath: string };
 }
@@ -136,7 +157,7 @@ export async function loadRuntime(): Promise<LoadedRuntime> {
         return {
           config,
           manifest: null,
-          debugAddresses: parseDebugAddressPackage(manifestValue),
+          debugAddresses: parseDebugAddressPackage(manifestValue, config.paymentToken),
           manifestError: "DEBUG 地址包已加载；仅通过实时 code/wiring 检查后允许测试网交互",
         };
       } catch (error: unknown) {
@@ -163,7 +184,10 @@ export async function loadRuntime(): Promise<LoadedRuntime> {
   }
 }
 
-export function parseDebugAddressPackage(value: unknown): DebugAddressInput {
+export function parseDebugAddressPackage(
+  value: unknown,
+  expectedPaymentToken: PaymentTokenConfig = CANONICAL_PAYMENT_TOKEN,
+): DebugAddressInput {
   if (value === null || typeof value !== "object" || Array.isArray(value))
     throw new Error("DEBUG 地址包必须是对象");
   const candidate = value as Record<string, unknown>;
@@ -177,6 +201,8 @@ export function parseDebugAddressPackage(value: unknown): DebugAddressInput {
   const external = candidate.externalContracts;
   if (contracts === null || typeof contracts !== "object" || external === null || typeof external !== "object")
     throw new Error("DEBUG 地址包缺少合约地址");
+  if (!samePaymentToken(candidate.paymentToken, expectedPaymentToken))
+    throw new Error("DEBUG 地址包与 runtime 的支付测试币配置不一致");
   const contractValues = contracts as Record<string, unknown>;
   const externalValues = external as Record<string, unknown>;
   const result = Object.fromEntries([
@@ -201,6 +227,12 @@ function isJsonResponse(response: Response): boolean {
 export function parseRuntimeConfig(value: unknown): RuntimeConfig {
   if (!runtimeValidator(value)) {
     throw new Error(`invalid runtime config: ${formatErrors(runtimeValidator.errors)}`);
+  }
+  if (
+    value.deployment.allowDebugAddresses === false &&
+    value.paymentToken.kind !== "canonical-usdc"
+  ) {
+    throw new Error("invalid runtime config: finalized runtime must use canonical USDC");
   }
   return value;
 }
@@ -229,6 +261,19 @@ export function normalizeManifest(manifest: FinalManifest): FinalManifest {
 
 function normalizeRecord(record: CodeRecord): CodeRecord {
   return { ...record, address: getAddress(record.address) };
+}
+
+function samePaymentToken(value: unknown, expected: PaymentTokenConfig): boolean {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    candidate.kind === expected.kind &&
+    candidate.name === expected.name &&
+    candidate.symbol === expected.symbol &&
+    candidate.decimals === expected.decimals &&
+    candidate.faucetEnabled === expected.faucetEnabled &&
+    candidate.faucetAmount === expected.faucetAmount
+  );
 }
 
 function formatErrors(errors: readonly { instancePath: string; message?: string }[] | null | undefined): string {

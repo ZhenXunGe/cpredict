@@ -3,7 +3,7 @@
   "$id": "https://cpredict.example/schemas/web-demo-runtime-v1.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "chain", "deployment", "indexer", "evidence"],
+  "required": ["schemaVersion", "chain", "deployment", "paymentToken", "indexer", "evidence"],
   "properties": {
     "schemaVersion": { "const": "cpredict.web-demo.runtime.v1" },
     "chain": {
@@ -26,6 +26,36 @@
         "requiredStatus": { "const": "FINALIZED_VERIFIED" },
         "allowDebugAddresses": { "type": "boolean" }
       }
+    },
+    "paymentToken": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "name", "symbol", "decimals", "faucetEnabled", "faucetAmount"],
+          "properties": {
+            "kind": { "const": "canonical-usdc" },
+            "name": { "const": "USD Coin" },
+            "symbol": { "const": "USDC" },
+            "decimals": { "const": 6 },
+            "faucetEnabled": { "const": false },
+            "faucetAmount": { "const": "0" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "name", "symbol", "decimals", "faucetEnabled", "faucetAmount"],
+          "properties": {
+            "kind": { "const": "sandbox-test-token" },
+            "name": { "const": "Cpredict Test USD" },
+            "symbol": { "const": "ctUSD" },
+            "decimals": { "const": 6 },
+            "faucetEnabled": { "const": true },
+            "faucetAmount": { "const": "10000000000" }
+          }
+        }
+      ]
     },
     "indexer": {
       "type": "object",

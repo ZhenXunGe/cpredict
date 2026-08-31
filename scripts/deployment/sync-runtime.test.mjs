@@ -9,6 +9,7 @@ const address = (digit) => `0x${digit.repeat(40)}`;
 const pending = {
   chainId: 421614,
   status: "BOOTSTRAP_SCHEDULED_NOT_FINAL",
+  paymentTokenKind: "canonical-usdc",
   sourceManifestSha256: "a".repeat(64),
   timelock: address("1"), config: address("2"), emergencyController: address("3"),
   exposureGuard: address("4"), feeVault: address("5"), bondEscrow: address("6"),
@@ -57,8 +58,34 @@ test("candidate package remains DEBUG and never emits final.json", () => {
   assert.equal(result.packageManifest.mode, "DEBUG");
   assert.equal(result.files["web-demo/deployment/final.json"], undefined);
   assert.match(result.files["web-demo/deployment/debug-addresses.json"], /DEBUG_NOT_FINALIZED/);
+  assert.match(result.files["web-demo/runtime-config.json"], /canonical-usdc/);
   assert.match(result.files["compose.env"], /CPREDICT_INDEXER_DEPLOYMENT_BLOCK=123/);
   assert.doesNotMatch(result.files["compose.env"], /RPC|PASSWORD|PRIVATE|TOKEN/);
+});
+
+test("sandbox candidate binds the Web Demo to explicit faucet-enabled ctUSD", () => {
+  const result = buildRuntimePackage({
+    mode: "candidate",
+    deployment: {
+      ...pending,
+      paymentTokenKind: "sandbox-test-token",
+      usdc: address("f"),
+    },
+    deploymentBlock: 124,
+    inputSha256: "1".repeat(64),
+  });
+  const config = JSON.parse(result.files["web-demo/runtime-config.json"]);
+  const addresses = JSON.parse(result.files["web-demo/deployment/debug-addresses.json"]);
+  assert.deepEqual(config.paymentToken, {
+    kind: "sandbox-test-token",
+    name: "Cpredict Test USD",
+    symbol: "ctUSD",
+    decimals: 6,
+    faucetEnabled: true,
+    faucetAmount: "10000000000",
+  });
+  assert.deepEqual(addresses.paymentToken, config.paymentToken);
+  assert.match(result.files["HUMAN-REVIEW.md"], /unrestricted-mint ctUSD/);
 });
 
 test("argument parser rejects ambiguous or duplicate input", () => {

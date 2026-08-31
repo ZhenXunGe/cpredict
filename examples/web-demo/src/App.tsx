@@ -24,12 +24,15 @@ import {
   loadRuntime,
   type ContractKey,
   type LoadedRuntime,
+  type PaymentTokenConfig,
 } from "./config.js";
 import {
-  formatUsdc,
+  formatPaymentToken,
+  formatShareUnits,
   MARKET_STATE_LABELS,
   readAccount,
   readMarket,
+  readPaymentTokenBalance,
   readProtocol,
   type AccountSnapshot,
   type MarketSnapshot,
@@ -51,6 +54,7 @@ import {
   type ConnectedWallet,
   type DiscoveredWallet,
 } from "./wallet.js";
+import { mintSandboxToken } from "./sandbox-token.js";
 import { CreateMarketForm } from "./CreateMarketForm.js";
 import { MarketplacePanel } from "../../react/src/MarketplacePanel.js";
 import { MarketLifecyclePanel } from "../../react/src/MarketLifecyclePanel.js";
@@ -112,6 +116,7 @@ export default function App() {
   const [market, setMarket] = useState<MarketSnapshot | null>(null);
   const [accountSnapshot, setAccountSnapshot] = useState<AccountSnapshot | null>(null);
   const [protocolSnapshot, setProtocolSnapshot] = useState<ProtocolSnapshot | null>(null);
+  const [paymentTokenBalance, setPaymentTokenBalance] = useState<bigint | null>(null);
   const [operationBusy, setOperationBusy] = useState(false);
   const [activity, setActivity] = useState<ActivityItem[]>([
     { id: 1, at: new Date(), level: "info", label: "Console initialized", detail: "等待 runtime config 与部署清单" },
@@ -145,6 +150,7 @@ export default function App() {
         if (address === null || address.toLowerCase() !== wallet.address.toLowerCase()) {
           setWallet(null);
           setAccountSnapshot(null);
+          setPaymentTokenBalance(null);
           push(setActivity, "warning", "Wallet account changed", "为防止角色混淆，已锁定并要求重新连接");
         }
       },
@@ -168,6 +174,20 @@ export default function App() {
       .catch((error: unknown) => { if (active) push(setActivity, "warning", "Protocol snapshot unavailable", messageOf(error)); });
     return () => { active = false; };
   }, [publicClient, trust]);
+
+  useEffect(() => {
+    if (publicClient === null || wallet === null || trust?.addresses === null || trust?.addresses === undefined) {
+      setPaymentTokenBalance(null);
+      return;
+    }
+    let active = true;
+    void readPaymentTokenBalance(publicClient, wallet.address, trust.addresses.usdc)
+      .then((balance) => { if (active) setPaymentTokenBalance(balance); })
+      .catch((error: unknown) => {
+        if (active) push(setActivity, "warning", "Payment token balance unavailable", messageOf(error));
+      });
+    return () => { active = false; };
+  }, [publicClient, trust?.addresses?.usdc, wallet?.address]);
 
   const client = useMemo(() => {
     if (publicClient === null || wallet === null) return null;
@@ -219,7 +239,7 @@ export default function App() {
     if (publicClient === null || runtime?.config.deployment.allowDebugAddresses !== true) return;
     setTrustBusy(true);
     try {
-      const report = await verifyDebugAddresses(publicClient, debug);
+      const report = await verifyDebugAddresses(publicClient, debug, runtime.config.paymentToken);
       setTrust(report);
       push(setActivity, report.level === "debug" ? "warning" : "error", "Debug address verification", report.level === "debug" ? "调试地址通过最低 code/wiring 检查；仍非正式清单" : "调试地址验证失败");
     } catch (error: unknown) {
@@ -260,6 +280,11 @@ export default function App() {
     try {
       const result = await operation();
       push(setActivity, "success", label, `block ${result.blockNumber} · gas ${result.gasUsed}`, result.hash);
+      if (publicClient !== null && wallet !== null && trust?.addresses !== null && trust?.addresses !== undefined) {
+        setPaymentTokenBalance(
+          await readPaymentTokenBalance(publicClient, wallet.address, trust.addresses.usdc),
+        );
+      }
       if (market !== null) await handleMarketLoad();
     } catch (error: unknown) {
       const classified = classifyProtocolError(error);
@@ -269,7 +294,28 @@ export default function App() {
     }
   }
 
+  async function handleSandboxMint() {
+    if (
+      publicClient === null ||
+      wallet === null ||
+      trust?.addresses === null ||
+      trust?.addresses === undefined ||
+      trust.paymentToken.kind !== "sandbox-test-token"
+    ) return;
+    await executeOperation(
+      `领取 ${trust.paymentToken.symbol}`,
+      () => mintSandboxToken(
+        publicClient,
+        wallet,
+        trust.addresses!.usdc,
+        BigInt(trust.paymentToken.faucetAmount),
+      ),
+    );
+  }
+
   const currentTitle = NAV_ITEMS.find((item) => item.route === route)?.label ?? "概览";
+  const paymentToken = trust?.paymentToken ?? runtime?.config.paymentToken ?? null;
+  const paymentTokenSymbol = paymentToken?.symbol ?? "USDC";
 
   return (
     <div className="app-shell">
@@ -313,18 +359,18 @@ export default function App() {
         </header>
 
         <div className="trust-banner" data-level={trust?.level ?? "blocked"}>
-          <strong>{trust?.level === "verified" ? "正式清单与链上代码已验证" : trust?.level === "debug" ? "调试地址模式：非正式发布证据" : "写操作已锁定"}</strong>
+          <strong>{paymentToken?.kind === "sandbox-test-token" ? "TEST ONLY：ctUSD 可由任何人任意增发，无真实价值" : trust?.level === "verified" ? "正式清单与链上代码已验证" : trust?.level === "debug" ? "调试地址模式：非正式发布证据" : "写操作已锁定"}</strong>
           <span>{runtimeError ?? runtime?.manifestError ?? trustSummary(trust)}</span>
         </div>
 
         <main className="page-grid">
           <section className="main-column">
-            {route === "overview" ? <Overview runtime={runtime} trust={trust} wallet={wallet} market={market} protocol={protocolSnapshot} onNavigate={setRoute} /> : null}
+            {route === "overview" ? <Overview runtime={runtime} trust={trust} wallet={wallet} market={market} protocol={protocolSnapshot} paymentToken={paymentToken} paymentTokenBalance={paymentTokenBalance} writeReady={writeReady} busy={operationBusy} onMint={handleSandboxMint} onNavigate={setRoute} /> : null}
             {route === "deployment" ? <DeploymentPage runtime={runtime} trust={trust} debug={debug} setDebug={setDebug} onVerify={handleDebugVerify} busy={trustBusy} /> : null}
-            {route === "markets" ? <MarketPage marketAddress={marketAddress} setMarketAddress={setMarketAddress} market={market} account={accountSnapshot} protocol={protocolSnapshot} onLoad={handleMarketLoad} busy={operationBusy} client={client} wallet={wallet} trust={trust} writeReady={writeReady} execute={executeOperation} /> : null}
-            {route === "create" ? <CreatePage writeReady={writeReady} trust={trust} client={client} wallet={wallet} protocol={protocolSnapshot} busy={operationBusy} execute={executeOperation} /> : null}
+            {route === "markets" ? <MarketPage marketAddress={marketAddress} setMarketAddress={setMarketAddress} market={market} account={accountSnapshot} protocol={protocolSnapshot} onLoad={handleMarketLoad} busy={operationBusy} client={client} wallet={wallet} trust={trust} paymentTokenSymbol={paymentTokenSymbol} writeReady={writeReady} execute={executeOperation} /> : null}
+            {route === "create" ? <CreatePage writeReady={writeReady} trust={trust} client={client} wallet={wallet} protocol={protocolSnapshot} paymentTokenSymbol={paymentTokenSymbol} busy={operationBusy} execute={executeOperation} /> : null}
             {route === "positions" ? <PositionsPage market={market} account={accountSnapshot} wallet={wallet} /> : null}
-            {route === "marketplace" ? <MarketplacePage writeReady={writeReady} market={market} trust={trust} client={client} /> : null}
+            {route === "marketplace" ? <MarketplacePage writeReady={writeReady} market={market} trust={trust} client={client} paymentTokenSymbol={paymentTokenSymbol} /> : null}
             {route === "settlement" ? <SettlementPage writeReady={writeReady} market={market} wallet={wallet} client={client} execute={executeOperation} evidenceUploader={runtime === null ? undefined : makeEvidenceUploader(runtime)} /> : null}
             {route === "receipts" ? <ReceiptsPage activity={activity} explorerOrigin={runtime?.config.chain.explorerOrigin ?? "https://sepolia.arbiscan.io"} /> : null}
           </section>
@@ -344,18 +390,25 @@ export default function App() {
   );
 }
 
-function Overview({ runtime, trust, wallet, market, protocol, onNavigate }: {
+function Overview({ runtime, trust, wallet, market, protocol, paymentToken, paymentTokenBalance, writeReady, busy, onMint, onNavigate }: {
   runtime: LoadedRuntime | null;
   trust: TrustReport | null;
   wallet: ConnectedWallet | null;
   market: MarketSnapshot | null;
   protocol: ProtocolSnapshot | null;
+  paymentToken: PaymentTokenConfig | null;
+  paymentTokenBalance: bigint | null;
+  writeReady: boolean;
+  busy: boolean;
+  onMint: () => Promise<void>;
   onNavigate: (route: Route) => void;
 }) {
+  const paymentTokenSymbol = paymentToken?.symbol ?? "USDC";
   const cards = [
-    { label: "部署状态", value: runtime?.manifest?.status ?? "BLOCKED_NOT_DEPLOYED", hint: runtime?.manifest ? runtime.manifest.source.tag : "需加载 final manifest", state: trust?.level === "verified" ? "success" : "warning" },
+    { label: "部署状态", value: runtime?.manifest?.status ?? (runtime?.debugAddresses ? "DEBUG_NOT_FINALIZED" : "BLOCKED_NOT_DEPLOYED"), hint: runtime?.manifest ? runtime.manifest.source.tag : "需加载部署地址包", state: trust?.level === "verified" ? "success" : "warning" },
     { label: "钱包网络", value: wallet === null ? "未连接" : wallet.chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "Arbitrum Sepolia" : `Wrong chain ${wallet.chainId}`, hint: wallet === null ? "EIP-6963 / injected" : short(wallet.address), state: wallet?.chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "success" : "warning" },
-    { label: "当前市场", value: market === null ? "未选择" : MARKET_STATE_LABELS[market.marketState] ?? "UNKNOWN", hint: market === null ? "从市场页加载 Vault" : formatUsdc(market.totalPrincipal), state: market === null ? "muted" : "success" },
+    { label: "支付币", value: paymentToken === null ? "待加载" : paymentTokenSymbol, hint: paymentToken?.kind === "sandbox-test-token" ? "TEST / 任意增发 / 无真实价值" : "Canonical Arbitrum Sepolia USDC", state: paymentToken?.kind === "sandbox-test-token" ? "warning" : "success" },
+    { label: "当前市场", value: market === null ? "未选择" : MARKET_STATE_LABELS[market.marketState] ?? "UNKNOWN", hint: market === null ? "从市场页加载 Vault" : formatPaymentToken(market.totalPrincipal, paymentTokenSymbol), state: market === null ? "muted" : "success" },
     { label: "Paymaster", value: protocol === null ? "只读待加载" : formatEtherCompact(protocol.paymasterDeposit), hint: protocol === null ? "本 Demo 不发送 UserOperation" : `policy v${protocol.paymasterPolicyVersion}`, state: protocol === null ? "muted" : "success" },
   ];
   return (
@@ -367,6 +420,15 @@ function Overview({ runtime, trust, wallet, market, protocol, onNavigate }: {
       <div className="status-grid">
         {cards.map((card) => <StatusCard key={card.label} {...card} />)}
       </div>
+      {paymentToken?.kind === "sandbox-test-token" ? (
+        <SandboxTokenPanel
+          token={paymentToken}
+          balance={paymentTokenBalance}
+          canMint={writeReady}
+          busy={busy}
+          onMint={onMint}
+        />
+      ) : null}
       <Panel title="协议操作路径" action={<button className="text-button" onClick={() => onNavigate("markets")}>打开市场交互 →</button>}>
         <div className="workflow-list">
           {["加载正式部署清单并校验 schema", "核对 chainId、runtime codehash 与关键 wiring", "连接三个一次性测试钱包并切换角色", "simulate → sign/send → receipt → event"].map((item, index) => (
@@ -375,6 +437,31 @@ function Overview({ runtime, trust, wallet, market, protocol, onNavigate }: {
         </div>
       </Panel>
     </>
+  );
+}
+
+export function SandboxTokenPanel({ token, balance, canMint, busy, onMint }: {
+  token: PaymentTokenConfig;
+  balance: bigint | null;
+  canMint: boolean;
+  busy: boolean;
+  onMint: () => Promise<void>;
+}) {
+  return (
+    <Panel
+      title="Sandbox 测试币"
+      subtitle="仅限 Arbitrum Sepolia 演示；任何地址都能任意 mint；不是 USDC，也没有真实价值"
+      action={<span className="sandbox-chip">TEST TOKEN</span>}
+    >
+      <div className="sandbox-token-row">
+        <div><small>当前余额</small><strong>{balance === null ? "—" : formatPaymentToken(balance, token.symbol)}</strong></div>
+        <div><small>每次领取</small><strong>{formatPaymentToken(BigInt(token.faucetAmount), token.symbol)}</strong></div>
+        <button className="button warning" disabled={!canMint || busy} onClick={() => void onMint()}>
+          {busy ? "处理中…" : canMint ? `领取 ${token.symbol}` : "连接钱包并通过部署验证"}
+        </button>
+      </div>
+      <p className="callout danger">该币可无限增发，禁止用于主网、真实结算、估值或对外宣称为 USDC。</p>
+    </Panel>
   );
 }
 
@@ -424,6 +511,7 @@ function MarketPage(props: {
   client: CpredictClient | null;
   wallet: ConnectedWallet | null;
   trust: TrustReport | null;
+  paymentTokenSymbol: string;
   writeReady: boolean;
   execute: (label: string, op: () => Promise<{ hash: `0x${string}`; blockNumber: bigint; gasUsed: bigint }>) => Promise<void>;
 }) {
@@ -439,7 +527,7 @@ function MarketPage(props: {
         <>
           <div className="market-header">
             <div><p className="eyebrow">MARKET VAULT</p><h2>{short(props.market.address)} <StatusPill value={MARKET_STATE_LABELS[props.market.marketState] ?? "UNKNOWN"} /></h2><p className="mono">rulesHash {shortHash(props.market.rulesHash)}</p></div>
-            <div className="market-stat"><small>Pool</small><strong>{formatUsdc(props.market.totalPrincipal)}</strong></div>
+            <div className="market-stat"><small>Pool</small><strong>{formatPaymentToken(props.market.totalPrincipal, props.paymentTokenSymbol)}</strong></div>
           </div>
           <BuyCard
             market={props.market}
@@ -447,6 +535,7 @@ function MarketPage(props: {
             client={props.client}
             wallet={props.wallet}
             trust={props.trust}
+            paymentTokenSymbol={props.paymentTokenSymbol}
             writeReady={props.writeReady}
             busy={props.busy}
             execute={props.execute}
@@ -455,12 +544,12 @@ function MarketPage(props: {
             <dl className="definition-grid four">
               <div><dt>Outcomes</dt><dd>{props.market.outcomeCount}</dd></div>
               <div><dt>Close at</dt><dd>{formatTimestamp(props.market.closeAt)}</dd></div>
-              <div><dt>Market cap</dt><dd>{formatUsdc(props.market.marketPrimaryCap)}</dd></div>
-              <div><dt>Creator bond</dt><dd>{formatUsdc(props.market.creatorBond)}</dd></div>
+              <div><dt>Market cap</dt><dd>{formatPaymentToken(props.market.marketPrimaryCap, props.paymentTokenSymbol)}</dd></div>
+              <div><dt>Creator bond</dt><dd>{formatPaymentToken(props.market.creatorBond, props.paymentTokenSymbol)}</dd></div>
               <div><dt>Permit2</dt><dd>{props.market.permit2Enabled ? "Enabled" : "Disabled"}</dd></div>
               <div><dt>Early bird</dt><dd>{props.market.earlyBirdEnabled ? "Enabled" : "Disabled"}</dd></div>
               <div><dt>Creator</dt><dd className="mono">{short(props.market.creator)}</dd></div>
-              <div><dt>Wallet USDC</dt><dd>{props.account === null ? "—" : formatUsdc(props.account.usdcBalance)}</dd></div>
+              <div><dt>Wallet {props.paymentTokenSymbol}</dt><dd>{props.account === null ? "—" : formatPaymentToken(props.account.usdcBalance, props.paymentTokenSymbol)}</dd></div>
             </dl>
           </Panel>
         </>
@@ -469,12 +558,13 @@ function MarketPage(props: {
   );
 }
 
-function BuyCard({ market, account, client, wallet, trust, writeReady, busy, execute }: {
+function BuyCard({ market, account, client, wallet, trust, paymentTokenSymbol, writeReady, busy, execute }: {
   market: MarketSnapshot;
   account: AccountSnapshot | null;
   client: CpredictClient | null;
   wallet: ConnectedWallet | null;
   trust: TrustReport | null;
+  paymentTokenSymbol: string;
   writeReady: boolean;
   busy: boolean;
   execute: (label: string, op: () => Promise<{ hash: `0x${string}`; blockNumber: bigint; gasUsed: bigint }>) => Promise<void>;
@@ -524,7 +614,7 @@ function BuyCard({ market, account, client, wallet, trust, writeReady, busy, exe
   }
 
   return (
-    <Panel title="一级购买" subtitle="1 整份 = 1,000,000 units；输入与支付均按 USDC 6 decimals 精确解析">
+    <Panel title="一级购买" subtitle={`1 整份 = 1,000,000 units；输入与支付均按 ${paymentTokenSymbol} 6 decimals 精确解析`}>
       <div className="tabs"><button className={mode === "allowance" ? "active" : ""} onClick={() => setMode("allowance")}>Allowance</button><button className={mode === "permit2" ? "active" : ""} onClick={() => setMode("permit2")}>Permit2</button></div>
       <form className="buy-form" onSubmit={(event) => void submit(event)}>
         <label><span>Outcome</span><select value={outcome} onChange={(event) => setOutcome(event.currentTarget.value)}>{Array.from({ length: market.outcomeCount }, (_, index) => <option value={index} key={index}>Outcome {index}</option>)}</select></label>
@@ -533,23 +623,23 @@ function BuyCard({ market, account, client, wallet, trust, writeReady, busy, exe
         <button className="button primary wide" disabled={!writeReady || busy}>{busy ? "处理中…" : writeReady ? mode === "permit2" ? "签名并购买" : "模拟并购买" : "写操作已锁定"}</button>
       </form>
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}
-      {mode === "allowance" ? <div className="allowance-row"><span>Vault allowance</span><strong>{account === null ? "—" : formatUsdc(account.vaultAllowance)}</strong>{client !== null && trust?.addresses !== null && trust?.addresses !== undefined ? <button className="text-button" disabled={!writeReady || busy} onClick={() => void execute("Approve vault USDC", () => client.approvePaymentToken(trust.addresses!.usdc, market.address, parseUnits(shares, 6)))}>精确授权</button> : null}</div> : <p className="callout">Permit2 签名绑定 chainId、Vault、selector、outcome、金额、nonce 与 deadline；页面不保存签名。</p>}
+      {mode === "allowance" ? <div className="allowance-row"><span>Vault allowance</span><strong>{account === null ? "—" : formatPaymentToken(account.vaultAllowance, paymentTokenSymbol)}</strong>{client !== null && trust?.addresses !== null && trust?.addresses !== undefined ? <button className="text-button" disabled={!writeReady || busy} onClick={() => void execute(`Approve vault ${paymentTokenSymbol}`, () => client.approvePaymentToken(trust.addresses!.usdc, market.address, parseUnits(shares, 6)))}>精确授权</button> : null}</div> : <p className="callout">Permit2 签名绑定 chainId、Vault、selector、outcome、金额、nonce 与 deadline；页面不保存签名。</p>}
     </Panel>
   );
 }
 
-function CreatePage({ writeReady, trust, client, wallet, protocol, busy, execute }: { writeReady: boolean; trust: TrustReport | null; client: CpredictClient | null; wallet: ConnectedWallet | null; protocol: ProtocolSnapshot | null; busy: boolean; execute: (label: string, op: () => Promise<{ hash: `0x${string}`; blockNumber: bigint; gasUsed: bigint }>) => Promise<void> }) {
+function CreatePage({ writeReady, trust, client, wallet, protocol, paymentTokenSymbol, busy, execute }: { writeReady: boolean; trust: TrustReport | null; client: CpredictClient | null; wallet: ConnectedWallet | null; protocol: ProtocolSnapshot | null; paymentTokenSymbol: string; busy: boolean; execute: (label: string, op: () => Promise<{ hash: `0x${string}`; blockNumber: bigint; gasUsed: bigint }>) => Promise<void> }) {
   const addresses = trust?.addresses;
-  return <Panel title="创建市场" subtitle="创建费、bond、deployment mode 和全部经济参数在提交前做不可变复核">{client === null || wallet === null || addresses === null || addresses === undefined || protocol === null ? <Empty title="创建上下文不足" detail="需要通过部署验证、连接钱包并读取 ProtocolConfig。" /> : <CreateMarketForm client={client} factory={addresses.contracts.factory} paymentToken={addresses.usdc} creator={wallet.address} creationFee={protocol.creationFee} writeReady={writeReady} busy={busy} execute={execute} />}<p className="callout">建议试运行仅开放 Full；Clone 需要甲方显式接受 delegatecall 风险和 500 USDC 硬上限。</p></Panel>;
+  return <Panel title="创建市场" subtitle="创建费、bond、deployment mode 和全部经济参数在提交前做不可变复核">{client === null || wallet === null || addresses === null || addresses === undefined || protocol === null ? <Empty title="创建上下文不足" detail="需要通过部署验证、连接钱包并读取 ProtocolConfig。" /> : <CreateMarketForm client={client} factory={addresses.contracts.factory} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} creator={wallet.address} creationFee={protocol.creationFee} writeReady={writeReady} busy={busy} execute={execute} />}<p className="callout">建议试运行仅开放 Full；Clone 需要甲方显式接受 delegatecall 风险和 500 {paymentTokenSymbol} 硬上限。</p></Panel>;
 }
 
 function PositionsPage({ market, account, wallet }: { market: MarketSnapshot | null; account: AccountSnapshot | null; wallet: ConnectedWallet | null }) {
-  return <Panel title="我的持仓" subtitle={wallet === null ? "连接钱包后读取 ERC-1155 余额" : short(wallet.address)}>{market === null || account === null ? <Empty title="暂无链上快照" detail="先从市场页加载 Vault。" /> : <div className="position-grid">{account.positions.map((value, index) => <div key={index}><small>Outcome {index}</small><strong>{formatUsdc(value)}</strong></div>)}</div>}</Panel>;
+  return <Panel title="我的持仓" subtitle={wallet === null ? "连接钱包后读取 ERC-1155 余额" : short(wallet.address)}>{market === null || account === null ? <Empty title="暂无链上快照" detail="先从市场页加载 Vault。" /> : <div className="position-grid">{account.positions.map((value, index) => <div key={index}><small>Outcome {index}</small><strong>{formatShareUnits(value)}</strong></div>)}</div>}</Panel>;
 }
 
-function MarketplacePage({ writeReady, market, trust, client }: { writeReady: boolean; market: MarketSnapshot | null; trust: TrustReport | null; client: CpredictClient | null }) {
+function MarketplacePage({ writeReady, market, trust, client, paymentTokenSymbol }: { writeReady: boolean; market: MarketSnapshot | null; trust: TrustReport | null; client: CpredictClient | null; paymentTokenSymbol: string }) {
   const addresses = trust?.addresses;
-  return <><Panel title="固定价 C2C" subtitle="仅卖单托管；部分成交；终局可 permissionless return">{market !== null && addresses !== null && addresses !== undefined && client !== null && writeReady ? <div className="embedded-example"><MarketplacePanel client={client} paymentToken={addresses.usdc} vault={market.address} marketplace={addresses.contracts.marketplace} /></div> : <Empty title={market === null ? "先选择市场" : "C2C 写操作已锁定"} detail="部署、钱包、网络与 Vault 上下文通过后开放 allowance listing/fill/cancel；Permit2 fill 由 SDK 提供。" />}</Panel><Panel title="安全参数"><dl className="definition-grid"><div><dt>Marketplace</dt><dd className="mono">{addresses ? short(addresses.contracts.marketplace) : "—"}</dd></div><div><dt>Fill protection</dt><dd>minUnits / maxGross / deadline</dd></div></dl></Panel></>;
+  return <><Panel title="固定价 C2C" subtitle="仅卖单托管；部分成交；终局可 permissionless return">{market !== null && addresses !== null && addresses !== undefined && client !== null && writeReady ? <div className="embedded-example"><MarketplacePanel client={client} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} vault={market.address} marketplace={addresses.contracts.marketplace} /></div> : <Empty title={market === null ? "先选择市场" : "C2C 写操作已锁定"} detail="部署、钱包、网络与 Vault 上下文通过后开放 allowance listing/fill/cancel；Permit2 fill 由 SDK 提供。" />}</Panel><Panel title="安全参数"><dl className="definition-grid"><div><dt>Marketplace</dt><dd className="mono">{addresses ? short(addresses.contracts.marketplace) : "—"}</dd></div><div><dt>Fill protection</dt><dd>minUnits / maxGross / deadline</dd></div></dl></Panel></>;
 }
 
 function SettlementPage({ writeReady, market, wallet, client, execute, evidenceUploader }: { writeReady: boolean; market: MarketSnapshot | null; wallet: ConnectedWallet | null; client: CpredictClient | null; execute: (label: string, op: () => Promise<{ hash: `0x${string}`; blockNumber: bigint; gasUsed: bigint }>) => Promise<void>; evidenceUploader: CanonicalEvidenceUploader | undefined }) {
@@ -568,7 +658,7 @@ function Inspector({ trust, runtime, market, wallet }: { trust: TrustReport | nu
     ["Wallet", wallet === null ? "—" : short(wallet.address)],
     ["Factory", trust?.addresses ? short(trust.addresses.contracts.factory) : "—"],
     ["Marketplace", trust?.addresses ? short(trust.addresses.contracts.marketplace) : "—"],
-    ["USDC", trust?.addresses ? short(trust.addresses.usdc) : "—"],
+    [trust?.paymentToken.symbol ?? "Payment token", trust?.addresses ? short(trust.addresses.usdc) : "—"],
     ["Permit2", trust?.addresses ? short(trust.addresses.permit2) : "—"],
     ["Market", market === null ? "—" : short(market.address)],
   ];
@@ -627,8 +717,8 @@ async function refreshTrust(client: PublicClient, runtime: LoadedRuntime, setTru
   setBusy(true);
   try {
     const report = runtime.debugAddresses === null
-      ? await verifyManifest(client, runtime.manifest)
-      : await verifyDebugAddresses(client, runtime.debugAddresses);
+      ? await verifyManifest(client, runtime.manifest, runtime.config.paymentToken)
+      : await verifyDebugAddresses(client, runtime.debugAddresses, runtime.config.paymentToken);
     setTrust(report);
     push(setActivity, report.level === "verified" ? "success" : "warning", "Deployment verification", report.level === "verified" ? `${report.checks.length} checks passed` : trustSummary(report));
   } catch (error: unknown) {

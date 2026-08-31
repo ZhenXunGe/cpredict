@@ -157,6 +157,19 @@ export async function readAccount(
   return { usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, positions, cumulativePrimaryBought, earlyBirdScore };
 }
 
+export async function readPaymentTokenBalance(
+  client: PublicClient,
+  account: Address,
+  paymentToken: Address,
+): Promise<bigint> {
+  return client.readContract({
+    address: paymentToken,
+    abi: erc20ReadAbi,
+    functionName: "balanceOf",
+    args: [account],
+  });
+}
+
 export async function readProtocol(
   client: PublicClient,
   config: Address,
@@ -178,8 +191,12 @@ export async function readProtocol(
   return { creationFee, protocolShareBps, earlyBirdShareBps, platformC2CFeeBps, maxFullMarketCap, maxCloneMarketCap, paymasterDeposit, paymasterPolicyVersion: policyVersion, paymasterBudgets: [operation, userDay, globalDay] };
 }
 
-export function formatUsdc(value: bigint): string {
-  return `${formatUnits(value, 6)} USDC`;
+export function formatPaymentToken(value: bigint, symbol: string): string {
+  return `${formatUnits(value, 6)} ${symbol}`;
+}
+
+export function formatShareUnits(value: bigint): string {
+  return `${formatUnits(value, 6)} shares`;
 }
 
 export const MARKET_STATE_LABELS = ["OPEN", "RESOLVED", "VOIDED_CREATOR", "VOIDED_TIMEOUT"] as const;

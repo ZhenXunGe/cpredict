@@ -5,6 +5,7 @@ import {
   type CodeRecord,
   type ContractKey,
   type FinalManifest,
+  type PaymentTokenConfig,
 } from "../src/config.js";
 import { verifyDebugAddresses, verifyManifest } from "../src/trust.js";
 
@@ -56,6 +57,28 @@ describe("web demo write-gate verification", () => {
       expect.objectContaining({ id: "debug-addresses", state: "fail" }),
     ]);
   });
+
+  it("requires the explicit marker and metadata for a sandbox payment token", async () => {
+    const sandbox: PaymentTokenConfig = {
+      kind: "sandbox-test-token",
+      name: "Cpredict Test USD",
+      symbol: "ctUSD",
+      decimals: 6,
+      faucetEnabled: true,
+      faucetAmount: "10000000000",
+    };
+    const report = await verifyDebugAddresses(client(), {
+      ...addresses,
+      usdc,
+      permit2,
+      entryPoint,
+    }, sandbox);
+    expect(report.level).toBe("debug");
+    expect(report.paymentToken.symbol).toBe("ctUSD");
+    expect(report.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "sandbox-token-marker", state: "pass" }),
+    ]));
+  });
 });
 
 function client(): PublicClient {
@@ -67,6 +90,9 @@ function client(): PublicClient {
       if (functionName === "active") return true;
       if (functionName === "dependencyFingerprint" || functionName === "activationFingerprint") return fingerprint;
       if (functionName === "decimals") return 6;
+      if (functionName === "name") return "Cpredict Test USD";
+      if (functionName === "symbol") return "ctUSD";
+      if (functionName === "IS_CPREDICT_SANDBOX_TOKEN") return true;
       if (target.toLowerCase() === addresses.factory.toLowerCase()) {
         const factoryValues: Record<string, Address> = {
           marketplace: addresses.marketplace,

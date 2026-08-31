@@ -46,8 +46,9 @@ runtime-config schema PASS
   → manifest finalized reference block hash PASS
   → reference block 每个 runtime codehash PASS
   → Factory active/fingerprint/全部 dependency wiring PASS
-  → Marketplace Factory/Emergency/FeeVault/USDC/Permit2 wiring PASS
-  → USDC decimals=6
+  → Marketplace Factory/Emergency/FeeVault/payment-token/Permit2 wiring PASS
+  → payment token decimals=6
+  → sandbox 时 name=Cpredict Test USD、symbol=ctUSD、marker=true
   → EIP-6963/injected wallet connected
   → wallet chainId=421614
   → economic write enabled
@@ -56,8 +57,10 @@ runtime-config schema PASS
 状态语义：
 
 - `VERIFIED`：正式清单和全部链上检查通过。
-- `DEBUG`：当前会话手工输入 11 个协议合约和 USDC/Permit2/EntryPoint，全部地址有代码且关键
-  wiring 通过；没有正式 codehash 清单，仍非发布证明，页面持续警告。
+- `DEBUG`：runtime 地址包或当前会话手工输入的 11 个协议合约和 payment-token/Permit2/EntryPoint
+  全部有代码且关键 wiring 通过；没有正式 codehash 清单，仍非发布证明，页面持续警告。
+- `TEST TOKEN`：DEBUG 的子类型。runtime 必须显式绑定 `sandbox-test-token`；链上 ctUSD 的名称、符号、
+  6 位精度和 sandbox marker 全部通过后，页面才显示领取按钮并允许用同一 ctUSD 创建/购买/C2C。
 - `LOCKED`：任何先决条件失败；所有写按钮禁用。
 
 调试地址不进入 localStorage/sessionStorage，刷新即丢失。钱包 account 变化会清空连接并强制重新连接，
@@ -68,8 +71,9 @@ Paymaster signer；任何浏览器 runtime config 都视为公开数据。
 
 | 页面 | 读 | 写 |
 | --- | --- | --- |
-| 部署验证 | schema、chainId、codehash、Factory/Marketplace/USDC wiring | 无治理写 |
-| 市场 | Vault 状态、cap、bond、flags、pool、ERC-1155/USDC/allowance | exact allowance、buy、Permit2 buy |
+| 部署验证 | schema、chainId、codehash、Factory/Marketplace/payment-token wiring | 无治理写 |
+| 概览 | payment token 类型、钱包余额、Sandbox 警告 | sandbox mint 10,000 ctUSD |
+| 市场 | Vault 状态、cap、bond、flags、pool、ERC-1155/payment-token/allowance | exact allowance、buy、Permit2 buy |
 | 创建市场 | Config fee、不可变参数、rules/source hash、Full/Clone 风险 | fee+bond approval、createMarket |
 | 我的持仓 | ERC-1155 outcomes、累计一级购买、early score | 领取入口在结算页 |
 | C2C | Marketplace/Vault 地址与状态 | ERC-1155 approval、listing、allowance fill、cancel |
@@ -99,7 +103,8 @@ application/vnd.cpredict.settlement-evidence+json;version=1
 
 ## 6. 三钱包完整验收
 
-准备三个没有真实资产的一次性账户，并只领取测试 ETH/USDC：
+准备三个没有真实资产的一次性账户。每个账户仍需领取 Arbitrum Sepolia 测试 ETH 支付钱包 gas；
+在 Sandbox runtime 中，从概览页领取 ctUSD，不需要外部 USDC faucet：
 
 1. `A / Creator`：连接、验证网络、创建 Full 市场，保存 MarketCreated receipt 和 Vault 地址。
 2. `B / Trader`：普通 allowance 购买 outcome 0；批准 ERC-1155 托管并创建部分卖单。

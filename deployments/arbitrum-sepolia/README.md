@@ -61,8 +61,25 @@ The default profile is `formal`. It requires two distinct RPC origins, a clean c
 signed audit tag, exact 4/6 Governance and 2/6 Emergency Safes, separated roles and an independently
 reviewed fingerprint for every broadcast. Run `plan`, review its value outside the deployment
 session, place it in `EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT`, then run `deploy`. `debug` permits
-test EOAs or reused roles and can derive the value inside one command for a Web Demo, but its output
-must never be labelled `FINALIZED_VERIFIED`.
+test EOAs or reused roles while retaining canonical testnet USDC. `sandbox` has the same relaxed role
+boundary and additionally deploys `Cpredict Test USD (ctUSD)`, an unrestricted-mint, 6-decimal token
+that is hard-locked to chainId `421614`. Both profiles can derive the fingerprint inside one command
+for a Web Demo, but neither output may be labelled `FINALIZED_VERIFIED`.
+
+For the public Web Demo sandbox requested here, use one profile consistently for every command:
+
+```sh
+npm run deploy:arbitrum-sepolia -- preflight --profile sandbox
+npm run deploy:arbitrum-sepolia -- deploy --profile sandbox
+# after the one-hour Timelock
+npm run deploy:arbitrum-sepolia -- finalize --profile sandbox
+npm run deploy:sync -- candidate --pending deployments/arbitrum-sepolia/pending.json
+```
+
+The generated runtime binds the ctUSD address and exact metadata, and the Web Demo verifies its code,
+Factory/Marketplace wiring, decimals, name, symbol and sandbox marker before enabling the faucet or any
+economic write. The faucet mints `10,000 ctUSD` per click to the connected wallet. Users still need
+Arbitrum Sepolia ETH for wallet-submitted gas until sponsorship is configured.
 
 After Finalize, construct runtime evidence outside the repository and run the existing strict
 validator through the same entrypoint:
@@ -101,7 +118,7 @@ Deployment requires explicit release authorization plus all of the following out
 - two independent Arbitrum Sepolia RPC providers with different origins;
 - funded, short-lived deployer and hardware-backed 4/6 Governance Safe and 2/6 Emergency Safe;
 - distinct protocol treasury and sponsor signer; production sponsor signing must use KMS/HSM;
-- exact Arbitrum Sepolia USDC, Permit2 and EntryPoint v0.8 addresses and code identities;
+- exact Arbitrum Sepolia Permit2 and EntryPoint v0.8 code identities; formal/debug also require canonical USDC;
 - an audit commit and signed tag whose source manifest, ABI and bytecode are frozen;
 - source-verification credentials, immutable evidence storage, monitoring/alert routing and on-call;
 - a funded Paymaster EntryPoint deposit with a finite loss cap.
@@ -126,7 +143,8 @@ ARBITRUM_SEPOLIA_RPC_URL_B
 Use `deploy.env.example` as the complete operator template. The filled
 `.env.arbitrum-sepolia.local` must have mode `0600` and is ignored by Git.
 
-The deployment script deliberately has no token/Permit2/EntryPoint address overrides. Any upstream
+The deployment script deliberately has no token/Permit2/EntryPoint address overrides. The `sandbox`
+profile deploys its own marked ctUSD and does not accept a caller-supplied token address. Any upstream
 address change requires a reviewed source change and a new frozen candidate. Current constants:
 
 ```text

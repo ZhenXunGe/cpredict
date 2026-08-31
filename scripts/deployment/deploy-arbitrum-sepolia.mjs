@@ -32,6 +32,8 @@ export const ZERO_HASH = `0x${"0".repeat(64)}`;
 export const USDC = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d";
 export const PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 export const ENTRY_POINT = "0x4337084D9E255Ff0702461CF8895CE9E3b5Ff108";
+export const CANONICAL_USDC_KIND = "canonical-usdc";
+export const SANDBOX_TOKEN_KIND = "sandbox-test-token";
 export const DEFAULT_MIN_BALANCE_WEI = 20_000_000_000_000_000n;
 export const FINGERPRINT_MARKER = "CPREDICT_FACTORY_DEPENDENCY_FINGERPRINT";
 
@@ -187,8 +189,8 @@ export function parseArgs(argv) {
     "all",
   ]);
   if (!commands.has(options.command)) fail(`unknown command ${options.command}`, 2);
-  if (!new Set(["formal", "debug", undefined]).has(options.profile))
-    fail("--profile must be formal or debug", 2);
+  if (!new Set(["formal", "debug", "sandbox", undefined]).has(options.profile))
+    fail("--profile must be formal, debug, or sandbox", 2);
   return options;
 }
 
@@ -234,8 +236,8 @@ async function loadConfig(
   }
   const env = { ...fileEnv, ...process.env };
   const profile = options.profile ?? env.CPREDICT_DEPLOYMENT_PROFILE ?? "formal";
-  if (profile !== "formal" && profile !== "debug")
-    fail("CPREDICT_DEPLOYMENT_PROFILE must be formal or debug", 2);
+  if (!new Set(["formal", "debug", "sandbox"]).has(profile))
+    fail("CPREDICT_DEPLOYMENT_PROFILE must be formal, debug, or sandbox", 2);
   const rpcA = env.ARBITRUM_SEPOLIA_RPC_URL_A ?? env.ARBITRUM_SEPOLIA_RPC_URL;
   const rpcB = env.ARBITRUM_SEPOLIA_RPC_URL_B;
   if (!rpcA) fail("ARBITRUM_SEPOLIA_RPC_URL_A is required", 2);
@@ -305,20 +307,21 @@ function codehash(code) {
   return keccak256(code);
 }
 
-async function inspectExternalContracts(publicClient) {
+async function inspectExternalContracts(publicClient, { includeUsdc = true } = {}) {
   const [usdcCode, permit2Code, entryPointCode, decimals] = await Promise.all([
-    publicClient.getBytecode({ address: USDC }),
+    includeUsdc ? publicClient.getBytecode({ address: USDC }) : undefined,
     publicClient.getBytecode({ address: PERMIT2 }),
     publicClient.getBytecode({ address: ENTRY_POINT }),
-    publicClient.readContract({
+    includeUsdc ? publicClient.readContract({
       address: USDC,
       abi: ERC20_METADATA_ABI,
       functionName: "decimals",
-    }),
+    }) : undefined,
   ]);
-  if (Number(decimals) !== 6) fail("Arbitrum Sepolia USDC decimals must equal 6");
+  if (includeUsdc && Number(decimals) !== 6)
+    fail("Arbitrum Sepolia USDC decimals must equal 6");
   return {
-    usdc: codehash(usdcCode),
+    ...(includeUsdc ? { usdc: codehash(usdcCode) } : {}),
     permit2: codehash(permit2Code),
     entryPoint: codehash(entryPointCode),
   };
@@ -388,12 +391,13 @@ export async function preflight(config) {
     fail("formal profile requires two RPC providers with distinct origins");
   const primary = client(config.rpcA);
   const secondary = config.rpcB ? client(config.rpcB) : undefined;
+  const includeUsdc = config.profile !== "sandbox";
   const [chainA, chainB, balance, externalA, externalB, source] = await Promise.all([
     primary.getChainId(),
     secondary?.getChainId(),
     primary.getBalance({ address: config.deployer }),
-    inspectExternalContracts(primary),
-    secondary ? inspectExternalContracts(secondary) : undefined,
+    inspectExternalContracts(primary, { includeUsdc }),
+    secondary ? inspectExternalContracts(secondary, { includeUsdc }) : undefined,
     gitSourceStatus(),
   ]);
   if (chainA !== CHAIN_ID || (chainB !== undefined && chainB !== CHAIN_ID))
@@ -445,9 +449,11 @@ export async function preflight(config) {
     externalContracts: externalA,
     safes: safeEvidence,
     warning:
-      config.profile === "debug"
-        ? "DEBUG profile permits EOA/reused roles and cannot produce FINALIZED_VERIFIED evidence"
-        : undefined,
+      config.profile === "sandbox"
+        ? "SANDBOX profile deploys an unrestricted-mint ctUSD token and can never produce FINALIZED_VERIFIED evidence"
+        : config.profile === "debug"
+          ? "DEBUG profile permits EOA/reused roles and cannot produce FINALIZED_VERIFIED evidence"
+          : undefined,
   };
 }
 
@@ -536,17 +542,30 @@ export function extractFingerprint(output) {
   return match[0].toLowerCase();
 }
 
-export function validatePendingManifest(value) {
+export function validatePendingManifest(value, { profile } = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value))
     fail("pending manifest must be an object");
   if (value.chainId !== CHAIN_ID) fail(`pending.chainId must equal ${CHAIN_ID}`);
   if (value.status !== "BOOTSTRAP_SCHEDULED_NOT_FINAL")
     fail("pending.status must equal BOOTSTRAP_SCHEDULED_NOT_FINAL");
+  if (![CANONICAL_USDC_KIND, SANDBOX_TOKEN_KIND].includes(value.paymentTokenKind))
+    fail("pending.paymentTokenKind must be canonical-usdc or sandbox-test-token");
+  const expectedKind = profile === "sandbox" ? SANDBOX_TOKEN_KIND :
+    profile === "formal" || profile === "debug" ? CANONICAL_USDC_KIND : undefined;
+  if (expectedKind !== undefined && value.paymentTokenKind !== expectedKind)
+    fail(`pending.paymentTokenKind does not match ${profile} profile`);
   for (const key of ADDRESS_KEYS) value[key] = normalizeAddress(value[key], `pending.${key}`);
   if (!HASH_RE.test(value.factoryActivationFingerprint ?? ""))
     fail("pending.factoryActivationFingerprint must be bytes32");
   value.factoryActivationFingerprint = value.factoryActivationFingerprint.toLowerCase();
-  if (value.usdc.toLowerCase() !== USDC.toLowerCase()) fail("pending.usdc mismatch");
+  if (
+    value.paymentTokenKind === CANONICAL_USDC_KIND &&
+    value.usdc.toLowerCase() !== USDC.toLowerCase()
+  ) fail("pending.usdc mismatch");
+  if (
+    value.paymentTokenKind === SANDBOX_TOKEN_KIND &&
+    value.usdc.toLowerCase() === USDC.toLowerCase()
+  ) fail("pending sandbox payment token must not equal canonical USDC");
   if (value.permit2.toLowerCase() !== PERMIT2.toLowerCase()) fail("pending.permit2 mismatch");
   if (value.entryPoint.toLowerCase() !== ENTRY_POINT.toLowerCase())
     fail("pending.entryPoint mismatch");
@@ -599,7 +618,7 @@ async function runLocalGates(config, logRoot) {
     [process.execPath, ["scripts/deployment/validate-deployment-abi.mjs"]],
     [process.execPath, ["scripts/deployment/check-deployment-links.mjs"]],
   ];
-  if (config.profile === "formal") {
+  if (config.profile === "formal" || config.profile === "sandbox") {
     commands.push(
       ["npm", ["run", "check:artifacts"]],
       ["npm", ["run", "scan:secrets"]],
@@ -631,6 +650,8 @@ function forgeEnvironment(config, extra = {}) {
     FOUNDRY_BROADCAST: resolve(config.stateDir, "foundry/broadcast"),
     FOUNDRY_CACHE_PATH: resolve(config.stateDir, "foundry/cache"),
     ...extra,
+    // The selected CLI profile owns this flag; an env file cannot silently switch tokens.
+    CPREDICT_SANDBOX_TOKEN_ENABLED: config.profile === "sandbox" ? "true" : "false",
   };
 }
 
@@ -738,7 +759,9 @@ async function broadcastEvidence(path, minimumReceipts) {
 async function finishDeployment(config, plan, logRoot) {
   if (!(await fileExists(STATIC_PENDING)))
     fail("broadcast returned success but pending.json was not written");
-  const pending = validatePendingManifest(await readJson(STATIC_PENDING));
+  const pending = validatePendingManifest(await readJson(STATIC_PENDING), {
+    profile: config.profile,
+  });
   if (pending.temporaryAdmin.toLowerCase() !== config.deployer.toLowerCase())
     fail("pending temporaryAdmin does not match deployer");
   if (pending.factoryActivationFingerprint !== plan.fingerprint)
@@ -747,10 +770,15 @@ async function finishDeployment(config, plan, logRoot) {
     config.stateDir,
     "foundry/broadcast/DeployArbitrumSepolia.s.sol/421614/run-latest.json",
   );
-  const broadcast = await broadcastEvidence(broadcastPath, 12);
+  const broadcast = await broadcastEvidence(
+    broadcastPath,
+    config.profile === "sandbox" ? 13 : 12,
+  );
   await persistState(config, {
     status: "BOOTSTRAP_SCHEDULED_NOT_FINAL",
     pendingManifest: STATIC_PENDING,
+    paymentTokenKind: pending.paymentTokenKind,
+    paymentToken: pending.usdc,
     factoryDependencyFingerprint: plan.fingerprint,
     deploymentBroadcast: broadcast,
     logs: { root: logRoot },
@@ -920,11 +948,17 @@ async function publicStatus(config) {
   if (!(await fileExists(STATIC_PENDING))) {
     return { status: "NOT_DEPLOYED", chainId: CHAIN_ID, network: NETWORK };
   }
-  const pending = validatePendingManifest(await readJson(STATIC_PENDING));
+  const pending = validatePendingManifest(await readJson(STATIC_PENDING), {
+    profile: config.profile,
+  });
   const publicClient = client(config.rpcA);
   if ((await publicClient.getChainId()) !== CHAIN_ID) fail("status RPC is on the wrong chain");
   const missingCode = [];
-  for (const key of ADDRESS_KEYS.slice(0, 11)) {
+  const codeKeys = [
+    ...ADDRESS_KEYS.slice(0, 11),
+    ...(pending.paymentTokenKind === SANDBOX_TOKEN_KIND ? ["usdc"] : []),
+  ];
+  for (const key of codeKeys) {
     const code = await publicClient.getBytecode({ address: pending[key] });
     if (!code || code === "0x") missingCode.push(key);
   }
@@ -951,7 +985,9 @@ async function publicStatus(config) {
 
 async function runFinalize(options, config) {
   if (!(await fileExists(STATIC_PENDING))) fail("pending.json is required before finalize");
-  const pending = validatePendingManifest(await readJson(STATIC_PENDING));
+  const pending = validatePendingManifest(await readJson(STATIC_PENDING), {
+    profile: config.profile,
+  });
   if (pending.temporaryAdmin.toLowerCase() !== config.deployer.toLowerCase())
     fail("current deployer does not match pending temporaryAdmin");
   const logRoot = resolve(config.stateDir, "logs", timestampId());
@@ -1045,7 +1081,9 @@ async function runFinalize(options, config) {
 }
 
 async function waitUntilReady(config) {
-  const pending = validatePendingManifest(await readJson(STATIC_PENDING));
+  const pending = validatePendingManifest(await readJson(STATIC_PENDING), {
+    profile: config.profile,
+  });
   const publicClient = client(config.rpcA);
   for (;;) {
     const status = await bootstrapStatus(publicClient, pending);
@@ -1124,7 +1162,8 @@ Commands:
 
 Options:
   --env-file <path>          Default: .env.arbitrum-sepolia.local (safe KEY=VALUE parser)
-  --profile formal|debug     Default: formal
+  --profile formal|debug|sandbox
+                              Default: formal; sandbox deploys unrestricted-mint ctUSD
   --state-dir <path>         Default: deployments/arbitrum-sepolia/runtime
   --yes                      Non-interactive; requires CPREDICT_DEPLOYMENT_ACKNOWLEDGEMENT
   --resume                   Resume only a recorded partial deployment broadcast
@@ -1140,6 +1179,7 @@ Examples:
   scripts/deployment/deploy-arbitrum-sepolia.sh preflight --profile debug
   scripts/deployment/deploy-arbitrum-sepolia.sh deploy --profile debug
   scripts/deployment/deploy-arbitrum-sepolia.sh finalize --profile debug
+  scripts/deployment/deploy-arbitrum-sepolia.sh all --profile sandbox --wait-for-timelock
 `);
 }
 

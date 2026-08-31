@@ -6,6 +6,7 @@ interface CreateMarketFormProps {
   client: CpredictClient;
   factory: Address;
   paymentToken: Address;
+  paymentTokenSymbol: string;
   creator: Address;
   creationFee: bigint;
   writeReady: boolean;
@@ -40,9 +41,9 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
     const cap = parsePositiveUsdc(marketCap, "market cap");
     const bondAmount = parsePositiveUsdc(bond, "creator bond");
     const minimumRequiredBond = cap * 200n / 10_000n > 10_000_000n ? (cap * 200n + 9_999n) / 10_000n : 10_000_000n;
-    if (bondAmount < minimumRequiredBond) throw new RangeError("creator bond 低于 max(10 USDC, cap×2%)");
-    if (mode === "0" && cap > 5_000_000_000n) throw new RangeError("Full market cap 超过 5,000 USDC");
-    if (mode === "1" && cap > 500_000_000n) throw new RangeError("Clone market cap 超过 500 USDC");
+    if (bondAmount < minimumRequiredBond) throw new RangeError(`creator bond 低于 max(10 ${props.paymentTokenSymbol}, cap×2%)`);
+    if (mode === "0" && cap > 5_000_000_000n) throw new RangeError(`Full market cap 超过 5,000 ${props.paymentTokenSymbol}`);
+    if (mode === "1" && cap > 500_000_000n) throw new RangeError(`Clone market cap 超过 500 ${props.paymentTokenSymbol}`);
     const source = validatedUri(resolutionSourceURI, "resolution source URI");
     const metadata = validatedUri(metadataURI, "metadata URI");
     const normalizedRules = rules.trim().normalize("NFC");
@@ -99,9 +100,9 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
         <label><span>Outcomes (2–32)</span><input inputMode="numeric" value={outcomeCount} onChange={(event) => setOutcomeCount(event.currentTarget.value)} /></label>
         <label><span>Duration days (1–90)</span><input inputMode="numeric" value={durationDays} onChange={(event) => setDurationDays(event.currentTarget.value)} /></label>
         <label><span>Deployment mode</span><select value={mode} onChange={(event) => setMode(event.currentTarget.value as "0" | "1")}><option value="0">Full — recommended</option><option value="1">Clone — higher risk</option></select></label>
-        <label><span>Market cap (USDC)</span><input inputMode="decimal" value={marketCap} onChange={(event) => setMarketCap(event.currentTarget.value)} /></label>
+        <label><span>Market cap ({props.paymentTokenSymbol})</span><input inputMode="decimal" value={marketCap} onChange={(event) => setMarketCap(event.currentTarget.value)} /></label>
         <label><span>Per-user primary cap</span><input inputMode="decimal" value={perUserCap} onChange={(event) => setPerUserCap(event.currentTarget.value)} /></label>
-        <label><span>Creator bond (USDC)</span><input inputMode="decimal" value={bond} onChange={(event) => setBond(event.currentTarget.value)} /></label>
+        <label><span>Creator bond ({props.paymentTokenSymbol})</span><input inputMode="decimal" value={bond} onChange={(event) => setBond(event.currentTarget.value)} /></label>
         <label><span>Minimum primary shares</span><input inputMode="decimal" value={minimumPrimary} onChange={(event) => setMinimumPrimary(event.currentTarget.value)} /></label>
         <label><span>Minimum C2C shares</span><input inputMode="decimal" value={minimumC2C} onChange={(event) => setMinimumC2C(event.currentTarget.value)} /></label>
         <label><span>Creator rake (bps)</span><input inputMode="numeric" value={rakeBps} onChange={(event) => setRakeBps(event.currentTarget.value)} /></label>
@@ -115,7 +116,7 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
         <div><dt>rulesHash</dt><dd className="mono">{preview?.params.rulesHash ?? "invalid"}</dd></div>
         <div><dt>sourceHash</dt><dd className="mono">{preview?.params.resolutionSourceHash ?? "invalid"}</dd></div>
         <div><dt>userSalt</dt><dd className="mono">{salt}</dd></div>
-        <div><dt>fee + bond</dt><dd>{requiredPayment === null ? "invalid" : `${Number(requiredPayment) / 1e6} USDC`}</dd></div>
+        <div><dt>fee + bond</dt><dd>{requiredPayment === null ? "invalid" : `${Number(requiredPayment) / 1e6} ${props.paymentTokenSymbol}`}</dd></div>
       </dl>
       <label className="confirmation"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.currentTarget.checked)} /> 我已核对锁定规则、时间、上限、费用、bond、Full/Clone 风险，并理解创建后经济参数不可改。</label>
       {error ? <p className="form-error" role="alert">{error}</p> : null}

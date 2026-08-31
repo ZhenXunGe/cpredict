@@ -17,6 +17,7 @@ export function MarketplacePanel(props: {
     | "cancelListing"
   >;
   paymentToken: Address;
+  paymentTokenSymbol?: string;
   vault: Address;
   marketplace: Address;
 }) {
@@ -80,7 +81,7 @@ export function MarketplacePanel(props: {
           />
         </label>
         <label>
-          USDC per share{" "}
+          {props.paymentTokenSymbol ?? "USDC"} per share{" "}
           <input
             value={unitPrice}
             onChange={(event) => setUnitPrice(event.currentTarget.value)}
@@ -110,7 +111,7 @@ export function MarketplacePanel(props: {
           )
         }
       >
-        Approve exact USDC for fill
+        Approve exact {props.paymentTokenSymbol ?? "USDC"} for fill
       </button>
       <button
         disabled={state.pending}

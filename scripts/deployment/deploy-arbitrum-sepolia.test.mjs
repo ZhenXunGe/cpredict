@@ -6,6 +6,7 @@ import {
   ENTRY_POINT,
   FINGERPRINT_MARKER,
   PERMIT2,
+  SANDBOX_TOKEN_KIND,
   USDC,
   extractFingerprint,
   parseArgs,
@@ -21,6 +22,7 @@ function pendingManifest() {
   return {
     chainId: CHAIN_ID,
     status: "BOOTSTRAP_SCHEDULED_NOT_FINAL",
+    paymentTokenKind: "canonical-usdc",
     temporaryAdmin: address(1),
     governanceSafe: address(2),
     emergencySafe: address(3),
@@ -74,6 +76,7 @@ test("CLI parser exposes staged and one-command deployment flows", () => {
   assert.equal(parsed.yes, true);
   assert.throws(() => parseArgs(["deploy", "--poll-seconds", "1"]), />= 5/);
   assert.throws(() => parseArgs(["launch"]), /unknown command/);
+  assert.equal(parseArgs(["deploy", "--profile", "sandbox"]).profile, "sandbox");
 });
 
 test("fingerprint parser requires the explicit Solidity preview marker", () => {
@@ -100,6 +103,18 @@ test("pending manifest binds canonical Arbitrum Sepolia dependencies", () => {
   const wrongBudget = pendingManifest();
   wrongBudget.paymasterMaxCostPerUserDay = "1";
   assert.throws(() => validatePendingManifest(wrongBudget), /budget ordering/);
+
+  const sandbox = pendingManifest();
+  sandbox.paymentTokenKind = SANDBOX_TOKEN_KIND;
+  sandbox.usdc = address(999);
+  assert.equal(
+    validatePendingManifest(sandbox, { profile: "sandbox" }).usdc.toLowerCase(),
+    address(999),
+  );
+  assert.throws(
+    () => validatePendingManifest(sandbox, { profile: "debug" }),
+    /does not match debug profile/,
+  );
 });
 
 test("broadcast evidence requires enough successful transaction receipts", () => {

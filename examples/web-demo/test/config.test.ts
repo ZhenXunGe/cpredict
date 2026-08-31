@@ -19,6 +19,14 @@ const validRuntime = {
     requiredStatus: "FINALIZED_VERIFIED",
     allowDebugAddresses: true,
   },
+  paymentToken: {
+    kind: "canonical-usdc",
+    name: "USD Coin",
+    symbol: "USDC",
+    decimals: 6,
+    faucetEnabled: false,
+    faucetAmount: "0",
+  },
   indexer: { enabled: false, basePath: "/indexer" },
   evidence: { uploadEnabled: false, endpointPath: "/evidence" },
 };
@@ -48,8 +56,27 @@ describe("web demo runtime trust configuration", () => {
       chainId: 421614,
       contracts,
       externalContracts: { usdc: address("c"), permit2: address("d"), entryPoint: address("e") },
+      paymentToken: validRuntime.paymentToken,
     };
     expect(parseDebugAddressPackage(value).factory).toMatch(/^0x/);
     expect(() => parseDebugAddressPackage({ ...value, mode: "FINALIZED_VERIFIED" })).toThrow(/状态或链/);
+    expect(() => parseDebugAddressPackage({ ...value, paymentToken: { ...validRuntime.paymentToken, symbol: "ctUSD" } })).toThrow(/支付测试币配置不一致/);
+  });
+
+  it("accepts the exact sandbox token profile only for debug runtime", () => {
+    const sandbox = {
+      kind: "sandbox-test-token",
+      name: "Cpredict Test USD",
+      symbol: "ctUSD",
+      decimals: 6,
+      faucetEnabled: true,
+      faucetAmount: "10000000000",
+    } as const;
+    expect(parseRuntimeConfig({ ...validRuntime, paymentToken: sandbox }).paymentToken.symbol).toBe("ctUSD");
+    expect(() => parseRuntimeConfig({
+      ...validRuntime,
+      deployment: { ...validRuntime.deployment, allowDebugAddresses: false },
+      paymentToken: sandbox,
+    })).toThrow(/finalized runtime must use canonical USDC/);
   });
 });

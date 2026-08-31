@@ -29,6 +29,7 @@ test("candidate runtime package conforms to its checked-in schema", async () => 
   const deployment = {
     chainId: 421614,
     status: "BOOTSTRAP_SCHEDULED_NOT_FINAL",
+    paymentTokenKind: "canonical-usdc",
     sourceManifestSha256: "a".repeat(64),
     timelock: address("1"), config: address("2"), emergencyController: address("3"),
     exposureGuard: address("4"), feeVault: address("5"), bondEscrow: address("6"),

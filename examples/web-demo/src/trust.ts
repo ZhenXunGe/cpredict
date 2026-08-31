@@ -9,9 +9,11 @@ import {
 } from "viem";
 import {
   ARBITRUM_SEPOLIA_CHAIN_ID,
+  CANONICAL_PAYMENT_TOKEN,
   CONTRACT_KEYS,
   type ContractKey,
   type FinalManifest,
+  type PaymentTokenConfig,
 } from "./config.js";
 
 export type TrustLevel = "verified" | "debug" | "blocked";
@@ -29,6 +31,7 @@ export interface TrustReport {
   writeEnabled: boolean;
   checks: TrustCheck[];
   addresses: ProtocolAddresses | null;
+  paymentToken: PaymentTokenConfig;
 }
 
 export interface ProtocolAddresses {
@@ -44,7 +47,12 @@ export type DebugAddressInput = Record<ContractKey, string> & {
   entryPoint: string;
 };
 
-const erc20Abi = parseAbi(["function decimals() view returns (uint8)"]);
+const erc20Abi = parseAbi([
+  "function decimals() view returns (uint8)",
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function IS_CPREDICT_SANDBOX_TOKEN() view returns (bool)",
+]);
 const factoryAbi = parseAbi([
   "function active() view returns (bool)",
   "function marketplace() view returns (address)",
@@ -71,12 +79,14 @@ const marketplaceAbi = parseAbi([
 export async function verifyManifest(
   client: PublicClient,
   manifest: FinalManifest | null,
+  paymentToken: PaymentTokenConfig = CANONICAL_PAYMENT_TOKEN,
 ): Promise<TrustReport> {
   if (manifest === null) {
     return {
       level: "blocked",
       writeEnabled: false,
       addresses: null,
+      paymentToken,
       checks: [{ id: "manifest", label: "Final deployment manifest", state: "fail", detail: "未加载 FINALIZED_VERIFIED 清单" }],
     };
   }
@@ -129,14 +139,15 @@ export async function verifyManifest(
   }
 
   const addresses = addressesFromManifest(manifest);
-  await verifyWiring(client, addresses, checks);
+  await verifyWiring(client, addresses, paymentToken, checks);
   const writeEnabled = checks.every((check) => check.state === "pass");
-  return { level: writeEnabled ? "verified" : "blocked", writeEnabled, checks, addresses };
+  return { level: writeEnabled ? "verified" : "blocked", writeEnabled, checks, addresses, paymentToken };
 }
 
 export async function verifyDebugAddresses(
   client: PublicClient,
   input: DebugAddressInput,
+  paymentToken: PaymentTokenConfig = CANONICAL_PAYMENT_TOKEN,
 ): Promise<TrustReport> {
   const required = Object.entries(input);
   if (required.some(([, value]) => !isAddress(value))) {
@@ -144,6 +155,7 @@ export async function verifyDebugAddresses(
       level: "blocked",
       writeEnabled: false,
       addresses: null,
+      paymentToken,
       checks: [{ id: "debug-addresses", label: "调试地址格式", state: "fail", detail: "所有调试地址必须是有效 EVM 地址" }],
     };
   }
@@ -172,9 +184,9 @@ export async function verifyDebugAddresses(
     permit2: parsed.permit2,
     entryPoint: parsed.entryPoint,
   };
-  await verifyWiring(client, addresses, checks);
+  await verifyWiring(client, addresses, paymentToken, checks);
   const valid = checks.every((check) => check.state === "pass");
-  return { level: valid ? "debug" : "blocked", writeEnabled: valid, checks, addresses };
+  return { level: valid ? "debug" : "blocked", writeEnabled: valid, checks, addresses, paymentToken };
 }
 
 export function addressesFromManifest(manifest: FinalManifest): ProtocolAddresses {
@@ -186,7 +198,12 @@ export function addressesFromManifest(manifest: FinalManifest): ProtocolAddresse
   };
 }
 
-async function verifyWiring(client: PublicClient, addresses: ProtocolAddresses, checks: TrustCheck[]): Promise<void> {
+async function verifyWiring(
+  client: PublicClient,
+  addresses: ProtocolAddresses,
+  paymentTokenConfig: PaymentTokenConfig,
+  checks: TrustCheck[],
+): Promise<void> {
   try {
     const [
       active,
@@ -239,16 +256,28 @@ async function verifyWiring(client: PublicClient, addresses: ProtocolAddresses, 
       check("factory-bond", "Factory → BondEscrow", sameAddress(bondEscrow, addresses.contracts.bondEscrow), bondEscrow),
       check("factory-clone", "Factory → Clone implementation", sameAddress(cloneImplementation, addresses.contracts.cloneImplementation), cloneImplementation),
       check("factory-full", "Factory → Full deployer", sameAddress(fullMarketDeployer, addresses.contracts.fullMarketDeployer), fullMarketDeployer),
-      check("factory-token", "Factory → USDC", sameAddress(factoryPaymentToken, addresses.usdc), factoryPaymentToken),
+      check("factory-token", `Factory → ${paymentTokenConfig.symbol}`, sameAddress(factoryPaymentToken, addresses.usdc), factoryPaymentToken),
       check("factory-permit2", "Factory → Permit2", sameAddress(factoryPermit2, addresses.permit2), factoryPermit2),
       check("fingerprint", "Factory dependency fingerprint", dependency === activation, dependency),
       check("marketplace-factory", "Marketplace → Factory", sameAddress(marketFactory, addresses.contracts.factory), marketFactory),
       check("marketplace-emergency", "Marketplace → EmergencyController", sameAddress(marketEmergencyController, addresses.contracts.emergencyController), marketEmergencyController),
       check("marketplace-fee-vault", "Marketplace → FeeVault", sameAddress(marketFeeVault, addresses.contracts.feeVault), marketFeeVault),
-      check("marketplace-token", "Marketplace → USDC", sameAddress(paymentToken, addresses.usdc), paymentToken),
+      check("marketplace-token", `Marketplace → ${paymentTokenConfig.symbol}`, sameAddress(paymentToken, addresses.usdc), paymentToken),
       check("marketplace-permit2", "Marketplace → Permit2", sameAddress(permit2, addresses.permit2), permit2),
-      check("usdc-decimals", "USDC decimals", decimals === 6, String(decimals)),
+      check("payment-token-decimals", `${paymentTokenConfig.symbol} decimals`, decimals === paymentTokenConfig.decimals, String(decimals)),
     );
+    if (paymentTokenConfig.kind === "sandbox-test-token") {
+      const [name, symbol, marker] = await Promise.all([
+        client.readContract({ address: addresses.usdc, abi: erc20Abi, functionName: "name" }),
+        client.readContract({ address: addresses.usdc, abi: erc20Abi, functionName: "symbol" }),
+        client.readContract({ address: addresses.usdc, abi: erc20Abi, functionName: "IS_CPREDICT_SANDBOX_TOKEN" }),
+      ]);
+      checks.push(
+        check("sandbox-token-name", "Sandbox token name", name === paymentTokenConfig.name, name),
+        check("sandbox-token-symbol", "Sandbox token symbol", symbol === paymentTokenConfig.symbol, symbol),
+        check("sandbox-token-marker", "Sandbox token marker", marker === true, marker),
+      );
+    }
   } catch (error: unknown) {
     checks.push({ id: "wiring", label: "关键 wiring/getter", state: "fail", detail: errorMessage(error) });
   }

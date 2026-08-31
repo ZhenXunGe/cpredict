@@ -16,6 +16,7 @@ import { MarketFactoryV1 } from "../src/core/MarketFactoryV1.sol";
 import { CloneMarketVaultV1 } from "../src/market/CloneMarketVaultV1.sol";
 import { FixedPriceMarketplaceV1 } from "../src/marketplace/FixedPriceMarketplaceV1.sol";
 import { SponsorshipPaymasterV1 } from "../src/paymaster/SponsorshipPaymasterV1.sol";
+import { CpredictSandboxToken } from "../src/testnet/CpredictSandboxToken.sol";
 
 /// @notice Deploys V1 and schedules the one-time factory wiring through the 1-hour timelock.
 /// @dev Run only on Arbitrum Sepolia (421614). Finalize with FinalizeBootstrap after the delay.
@@ -29,6 +30,7 @@ contract DeployArbitrumSepolia is Script {
     bytes32 internal constant BOOTSTRAP_SALT = keccak256("CPREDICT_V1_BOOTSTRAP");
 
     struct Deployment {
+        CpredictSandboxToken sandboxToken;
         TimelockController timelock;
         ProtocolConfigV1 config;
         EmergencyControllerV1 emergency;
@@ -50,13 +52,16 @@ contract DeployArbitrumSepolia is Script {
         address emergencySafe = vm.envAddress("EMERGENCY_SAFE");
         address treasury = vm.envAddress("PROTOCOL_TREASURY");
         address sponsorSigner = vm.envAddress("SPONSOR_SIGNER");
-        address usdc = ARBITRUM_SEPOLIA_USDC;
+        bool sandboxTokenEnabled = vm.envOr("CPREDICT_SANDBOX_TOKEN_ENABLED", false);
+        address paymentToken = ARBITRUM_SEPOLIA_USDC;
         address permit2 = CANONICAL_PERMIT2;
         address entryPoint = ENTRY_POINT_V08;
-        require(usdc.code.length != 0, "USDC code missing");
         require(permit2.code.length != 0, "Permit2 code missing");
         require(entryPoint.code.length != 0, "EntryPoint code missing");
-        require(IERC20Metadata(usdc).decimals() == 6, "USDC decimals mismatch");
+        if (!sandboxTokenEnabled) {
+            require(paymentToken.code.length != 0, "USDC code missing");
+            require(IERC20Metadata(paymentToken).decimals() == 6, "USDC decimals mismatch");
+        }
 
         address[] memory proposers = new address[](2);
         proposers[0] = governanceSafe;
@@ -65,13 +70,17 @@ contract DeployArbitrumSepolia is Script {
         executors[0] = address(0);
 
         vm.startBroadcast(deployerKey);
+        if (sandboxTokenEnabled) {
+            deployed.sandboxToken = new CpredictSandboxToken();
+            paymentToken = address(deployed.sandboxToken);
+        }
         deployed.timelock = new TimelockController(TIMELOCK_DELAY, proposers, executors, deployer);
         address governance = address(deployed.timelock);
-        deployed.config = new ProtocolConfigV1(governance, usdc, treasury);
+        deployed.config = new ProtocolConfigV1(governance, paymentToken, treasury);
         deployed.emergency = new EmergencyControllerV1(governance, emergencySafe);
         deployed.guard = new LaunchExposureGuardV1(governance, INITIAL_EXPOSURE_CAP);
-        deployed.feeVault = new FeeVaultV1(governance, usdc);
-        deployed.bondEscrow = new BondEscrowV1(governance, usdc);
+        deployed.feeVault = new FeeVaultV1(governance, paymentToken);
+        deployed.bondEscrow = new BondEscrowV1(governance, paymentToken);
         deployed.cloneImplementation = new CloneMarketVaultV1();
         deployed.fullDeployer = new FullMarketDeployerV1(governance);
         deployed.factory = _deployFactory(deployed, governance, permit2);
@@ -79,7 +88,7 @@ contract DeployArbitrumSepolia is Script {
             address(deployed.factory),
             address(deployed.emergency),
             address(deployed.feeVault),
-            usdc,
+            paymentToken,
             permit2
         );
         deployed.paymaster = new SponsorshipPaymasterV1(
@@ -115,7 +124,14 @@ contract DeployArbitrumSepolia is Script {
         // A dry-run must never leave an address file that could be mistaken for broadcast evidence.
         if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
             _writePendingManifest(
-                deployed, governanceSafe, emergencySafe, deployer, usdc, permit2, entryPoint
+                deployed,
+                governanceSafe,
+                emergencySafe,
+                deployer,
+                paymentToken,
+                sandboxTokenEnabled,
+                permit2,
+                entryPoint
             );
         }
         console2.log("Timelock", address(deployed.timelock));
@@ -185,13 +201,17 @@ contract DeployArbitrumSepolia is Script {
         address governanceSafe,
         address emergencySafe,
         address deployer,
-        address usdc,
+        address paymentToken,
+        bool sandboxTokenEnabled,
         address permit2,
         address entryPoint
     ) internal {
         string memory root = "cpredict-v1-arbitrum-sepolia";
         vm.serializeUint(root, "chainId", block.chainid);
         vm.serializeString(root, "status", "BOOTSTRAP_SCHEDULED_NOT_FINAL");
+        vm.serializeString(
+            root, "paymentTokenKind", sandboxTokenEnabled ? "sandbox-test-token" : "canonical-usdc"
+        );
         vm.serializeAddress(root, "temporaryAdmin", deployer);
         vm.serializeAddress(root, "governanceSafe", governanceSafe);
         vm.serializeAddress(root, "emergencySafe", emergencySafe);
@@ -227,7 +247,7 @@ contract DeployArbitrumSepolia is Script {
             deployed.factory.dependencyFingerprintFor(address(deployed.marketplace))
         );
         vm.serializeAddress(root, "paymaster", address(deployed.paymaster));
-        vm.serializeAddress(root, "usdc", usdc);
+        vm.serializeAddress(root, "usdc", paymentToken);
         vm.serializeAddress(root, "permit2", permit2);
         string memory json = vm.serializeAddress(root, "entryPoint", entryPoint);
         vm.writeJson(json, "deployments/arbitrum-sepolia/pending.json");

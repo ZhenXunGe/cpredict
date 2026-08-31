@@ -11,6 +11,14 @@
     "requiredStatus": "FINALIZED_VERIFIED",
     "allowDebugAddresses": true
   },
+  "paymentToken": {
+    "kind": "canonical-usdc",
+    "name": "USD Coin",
+    "symbol": "USDC",
+    "decimals": 6,
+    "faucetEnabled": false,
+    "faucetAmount": "0"
+  },
   "indexer": {
     "enabled": false,
     "basePath": "/indexer"
