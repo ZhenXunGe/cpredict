@@ -154,7 +154,8 @@ cp .env.compose.example .env.compose.local
 chmod 600 .env.compose.local
 npm run stack:up
 npm run stack:status
-npm run stack:backup
+npm run stack:verify
+npm run stack:backup:verified
 npm run stack:down
 ```
 
@@ -163,3 +164,15 @@ there is no built-in raw-key adapter. Candidate sync stays yellow DEBUG and neve
 manifest. The complete config-sync, Arbiscan, canary, backup/restore, fault-drill and proof boundary is
 documented in `docs/zh/13-compose-runtime-operations.md`. Docker is unavailable on the current
 development host, so this delivery is static/build verified, not local Compose runtime verified.
+The end-to-end single-host purchasing, Ubuntu hardening, pinned Node bootstrap, public-IP/domain TLS,
+Basic Auth, renewal, reboot, backup and rollback checklist is in
+`docs/zh/14-single-host-deployment-runbook.md`.
+
+For a lowest-cost preview where Docker Compose remains on an always-on Mac and the cloud host only
+runs Nginx/Certbot/OpenSSH, generate the checksum-bound reverse-tunnel package with
+`npm run stack:tunnel:render`. Its dedicated cloud/macOS `install`, `status`, `verify`, `logs`,
+`restart` and bounded `uninstall` flow is documented in
+`docs/zh/15-reverse-tunnel-deployment-runbook.md`. This mode never publishes port 4177 and pins the
+cloud Ed25519 host-key fingerprint before launchd starts unattended reconnection. The generated Mac
+helper also provides `deploy-cloud`, which performs the checksum-verified SCP upload, interactive
+remote installation, local startup and dual-end verification in one command.

@@ -6,11 +6,14 @@ const recursiveInventory = [
   ["test", [".sol"]],
   ["script", [".sol"]],
   ["offchain", [".ts", ".tsx", ".sql", ".md", ".json"]],
-  ["examples", [".ts", ".tsx", ".js", ".md", ".conf", ".css", ".html", ".json"]],
+  [
+    "examples",
+    [".ts", ".tsx", ".js", ".md", ".conf", ".css", ".html", ".json"],
+  ],
   ["scripts", [".py", ".sh", ".mjs", ".yaml"]],
   ["load", [".js", ".json", ".mjs", ".sh", ".md"]],
   ["monitoring", [".yml", ".yaml", ".json", ".md"]],
-  ["deploy", [".sh", ".mjs", ".conf", ".json", ".md"]],
+  ["deploy", [".sh", ".mjs", ".conf", ".json", ".md", ".template", ".timer"]],
   ["deployments", [".md", ".json", ".example"]],
   [".github/workflows", [".yml", ".yaml"]],
 ];
@@ -19,6 +22,8 @@ const explicitInventory = [
   "README.md",
   "LICENSE",
   ".gitignore",
+  ".dockerignore",
+  ".github/dependabot.yml",
   ".env.example",
   ".env.compose.example",
   "compose.yaml",
@@ -54,9 +59,14 @@ const explicitInventory = [
   "manifests/canary-state.schema.json",
   "manifests/backup-manifest.schema.json",
   "manifests/local-ops-drill.schema.json",
+  "manifests/container-images.lock.json",
   "manifests/sbom.spdx.json",
   "manifests/licenses.json",
   "manifests/third-party-notices.md",
+  "docs/zh/00-delivery-status.md",
+  "docs/zh/13-compose-runtime-operations.md",
+  "docs/zh/14-single-host-deployment-runbook.md",
+  "docs/zh/15-reverse-tunnel-deployment-runbook.md",
 ];
 
 /**

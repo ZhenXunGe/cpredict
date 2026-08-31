@@ -120,6 +120,11 @@ jobs:
           docker build --file deploy/compose/Dockerfile.offchain --target indexer --tag cpredict-indexer:ci .
           docker build --file deploy/compose/Dockerfile.offchain --target paymaster --tag cpredict-paymaster:ci .
           docker build --file deploy/compose/Dockerfile.demo --tag cpredict-web-demo:ci .
+      - name: Scan container images for fixable high-severity vulnerabilities
+        run: |
+          bash scripts/security/bootstrap-trivy.sh
+          npm run scan:container-config
+          npm run scan:container-images
       - name: Full offchain tests with PostgreSQL available
         run: npm run test:offchain -- --maxWorkers=1
       - name: PostgreSQL integration zero-skip gate

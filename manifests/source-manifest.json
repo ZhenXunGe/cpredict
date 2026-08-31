@@ -13,6 +13,10 @@
   },
   "files": [
     {
+      "path": ".dockerignore",
+      "sha256": "4150915182e56d2a4db8796b0986d2ec4ad35b998bc614b092c3ff33fdfc2fa3"
+    },
+    {
       "path": ".env.compose.example",
       "sha256": "f096601fcaa945002b7f98f49858f28bfa76df1923d69f40d26f5a15db3cd097"
     },
@@ -21,8 +25,12 @@
       "sha256": "a1ec344ef20e36d24aa639aaa29c3eabde1cb672006b5958a8c0ebabfb24d8e0"
     },
     {
+      "path": ".github/dependabot.yml",
+      "sha256": "7a649a79509d8080c89bba6d305fac58ace0b1751abc4abe9823bb46fd3ef218"
+    },
+    {
       "path": ".github/workflows/ci.yml",
-      "sha256": "51bd3f930c0d07053665eafd81f2f195c6acd427f58ba5d99ba8cb9f6fba1080"
+      "sha256": "cf98a385b95938ad0f89b52393e98113f3f4277c5f98b7e52e99c68826538966"
     },
     {
       "path": ".github/workflows/nightly.yml",
@@ -46,19 +54,23 @@
     },
     {
       "path": "README.md",
-      "sha256": "311d4616d2e897bf06da20143273176071a870bd2b7c90f2150902d15e626109"
+      "sha256": "270f362389e858fb3c37e4f6cc2ab428e115451638a57d1302b14195908108f5"
     },
     {
       "path": "compose.yaml",
-      "sha256": "d84da9bdd260ea28d43d467cfa55fab8f092dca21c081c2fd52bb03d161b210f"
+      "sha256": "101b136368fee4b4a4ee69e682825279d58f97861637dbaf39aaea8d89ccf1fa"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
-      "sha256": "9f30c1c5c623d0739a0611d312f624fcf8a0c4044ff5d14b6e1da3cbaeedcd1d"
+      "sha256": "73849386de051a32d2021df73b6b10d1f28b46b0ab3e58bf0d410a1d367c56c4"
     },
     {
       "path": "deploy/compose/Dockerfile.offchain",
-      "sha256": "bae1a90032f50f1909dc7e20ce6cb8cf00e172b1db64e90bc0ec7e9c6b09f3c0"
+      "sha256": "05bb6bf8c0688e04529ee80d15f774a875f9450566e2f7da2fabaf8aac1c6949"
+    },
+    {
+      "path": "deploy/compose/nginx/default.conf.template",
+      "sha256": "a715e86c9562d3c6ac323e811c12f05f405436a87f19039ebbaa65e0b01ae80b"
     },
     {
       "path": "deploy/compose/postgres/init/00-create-databases.sh",
@@ -67,6 +79,54 @@
     {
       "path": "deploy/compose/postgres/run-migrations.sh",
       "sha256": "a8c30740fda173bf77ac4e5e7485ea4a249248288fa25b2c42b36631c06f9d96"
+    },
+    {
+      "path": "deploy/host/bootstrap-node.sh",
+      "sha256": "5e7e4777728522369ca52bd2ef6e8cf803d38caaba174b2dea86fb889e1e5bfd"
+    },
+    {
+      "path": "deploy/host/nginx/bootstrap.conf.template",
+      "sha256": "05729bacf846d789dee86a79327dababf12fafa7767dfa69dc0463b481284a07"
+    },
+    {
+      "path": "deploy/host/nginx/cpredict.conf.template",
+      "sha256": "6d83275fbf101e188858ca4f338be23ce3db2564c1aff999bc36ffa31e51a085"
+    },
+    {
+      "path": "deploy/host/reverse-tunnel/README.md.template",
+      "sha256": "2952fb31dcac998d7c7abe2304d4c63a5d07a08d3d734141ee53cd53472d2399"
+    },
+    {
+      "path": "deploy/host/reverse-tunnel/cloud-cli.sh.template",
+      "sha256": "a8d0b2a891ec4e151475146e5c8d6a8f35c00f214df65c75d614c6e7e401fb42"
+    },
+    {
+      "path": "deploy/host/reverse-tunnel/launchd.plist.template",
+      "sha256": "39177c287f0202ea4a2eb977303866f04a711615c0337428fda0027a13f3a5db"
+    },
+    {
+      "path": "deploy/host/reverse-tunnel/macos-cli.sh.template",
+      "sha256": "9a0a854da8d56d938ca75d2cc4452d942fa6df893822d054cdaf66e78cec5c39"
+    },
+    {
+      "path": "deploy/host/reverse-tunnel/macos-worker.sh.template",
+      "sha256": "274edcc9501817db1e2fc11812d70b10c862beb42627fbdb1bfdc369183609a3"
+    },
+    {
+      "path": "deploy/host/reverse-tunnel/sshd.conf.template",
+      "sha256": "6a31138ca792a0c72062fa5fbd4379308acdde4a70c3a2ee658293c13d790905"
+    },
+    {
+      "path": "deploy/host/reverse-tunnel/verify-package.sh.template",
+      "sha256": "3c994ee43377aaef518bbebb6df6f6fd530bd77b53b4062fcb3655bdc1cd75c3"
+    },
+    {
+      "path": "deploy/host/systemd/cpredict-backup.service.template",
+      "sha256": "383a6ac8f887a916ac6740b05ba11ea3bcd14b77cecfe8e4d6f239b2f7b2b733"
+    },
+    {
+      "path": "deploy/host/systemd/cpredict-backup.timer",
+      "sha256": "58d5e6ba73e4bfc2c6fd034b506eafe8c07a35cbab2c6b32a2df5a8c84d981d6"
     },
     {
       "path": "deployments/arbitrum-sepolia/CANARY-ADAPTER.md",
@@ -78,7 +138,7 @@
     },
     {
       "path": "deployments/arbitrum-sepolia/README.md",
-      "sha256": "213552df34f6aa142e77af204932909bdbbaa3c8b857d364b81aa8286a6627a0"
+      "sha256": "9fe9e41db5af4016a2f6a1249d6f5255dbd56268429c07927483b486eaaca027"
     },
     {
       "path": "deployments/arbitrum-sepolia/deploy.env.example",
@@ -99,6 +159,22 @@
     {
       "path": "deployments/arbitrum-sepolia/templates/ops-drill-evidence.template.json",
       "sha256": "2a8b5520068e5259ee0d0104badafed8329355edc1a9f29289847436bf3029c5"
+    },
+    {
+      "path": "docs/zh/00-delivery-status.md",
+      "sha256": "6ba55e57a038842236e4b3acda05bef0c2946e3e17dc1b31d7f6783bc7eff1bc"
+    },
+    {
+      "path": "docs/zh/13-compose-runtime-operations.md",
+      "sha256": "1a4a3ee02f6e4afec7ac63830945cc3279e016ea362a1a14727ffc035d4619d9"
+    },
+    {
+      "path": "docs/zh/14-single-host-deployment-runbook.md",
+      "sha256": "ad1c4298700cd4b479a0e96417f192e7177c3031d2d46a418656beccf46b5089"
+    },
+    {
+      "path": "docs/zh/15-reverse-tunnel-deployment-runbook.md",
+      "sha256": "b9188cf98923ba6f9c670d0566be58dc1fce792d409b78a6747b60d6f69a22bb"
     },
     {
       "path": "examples/react/README.md",
@@ -349,6 +425,10 @@
       "sha256": "e828f0cab0b0216a6054cd2018f75a3533a64fed0a54132291cc18e9dd87545a"
     },
     {
+      "path": "manifests/container-images.lock.json",
+      "sha256": "baf8677df8d1333169a4dfd0d94dfff30bc69ad166f336aa503fdce97573905a"
+    },
+    {
       "path": "manifests/dependencies.lock",
       "sha256": "df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f"
     },
@@ -422,7 +502,7 @@
     },
     {
       "path": "manifests/sbom.spdx.json",
-      "sha256": "e6d7b39cbba3537160f2d90cfa740d78c9069fa26f607d1eab68167f957aa5e1"
+      "sha256": "b795e6376100fd62de5e01cc3863b105462fdd253c9f2a4acb939c63b5f14813"
     },
     {
       "path": "manifests/security-tools.lock",
@@ -754,7 +834,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "ed1129e78960f728bc012271717373d630bb0c4e87bab7059ff4e92a55e3d61b"
+      "sha256": "d13fcac2e03b4d1e117dacdd698c2633d7e68a389d37e7725cad9d5326d3c5f1"
     },
     {
       "path": "remappings.txt",
@@ -978,7 +1058,7 @@
     },
     {
       "path": "scripts/manifest-inventory.mjs",
-      "sha256": "4663129cbc8c994cb06f06b83ae38d6806227eb99f1c2877c2f202b6e51c2e73"
+      "sha256": "597676d52d02db0a1f369bddc54debe3b5abf48ec3eaad0aa5e90eee34f44cc7"
     },
     {
       "path": "scripts/postgres-assert-vitest-report.mjs",
@@ -1038,7 +1118,7 @@
     },
     {
       "path": "scripts/release/release-bundle.test.mjs",
-      "sha256": "60804f474280177cdf24b143d9adc448b007be0d3184ae48999636754217a038"
+      "sha256": "64a95969d8ee269d1f1554c765a89a81cc74b0f7c8b8b096815b2981d42d10f9"
     },
     {
       "path": "scripts/release/release-gates-common.mjs",
@@ -1079,6 +1159,10 @@
     {
       "path": "scripts/sbom/sbom.test.mjs",
       "sha256": "b0ca23b7abb992daf901d7b521ca32fabcc68c0408e430221e45624b2cfbb953"
+    },
+    {
+      "path": "scripts/security/bootstrap-trivy.sh",
+      "sha256": "d1b0a948e1eb095f74531ce48026b85b308ffd60d07a3588cda68f6a98e9b517"
     },
     {
       "path": "scripts/security/echidna.yaml",
@@ -1149,6 +1233,10 @@
       "sha256": "c9ca7d6ea48d7880f0c9f94b8a157c6ac96fe684c70215120c09b7a2ed239ae5"
     },
     {
+      "path": "scripts/security/scan-container-images.sh",
+      "sha256": "be99df653e8a878853fd306e4f3081ff482348ef3db5d873a3905aa99922a1af"
+    },
+    {
       "path": "scripts/security/scan-delivery-secrets.mjs",
       "sha256": "236ee022ca14b3bd50088377df134d8ee9313d744ae87cfb8be207caecf1aab0"
     },
@@ -1189,6 +1277,10 @@
       "sha256": "a04a56e29dd3a8d68ad27f88bcfc40843cba5da7de49b3fbb462954e386c0c0e"
     },
     {
+      "path": "scripts/stack/backup-policy.test.mjs",
+      "sha256": "cdecf78d5618e066a4cd2561d95063b9c33289f09fb667c9c8dbd3cf6fbcb1e8"
+    },
+    {
       "path": "scripts/stack/backup-restore.test.mjs",
       "sha256": "4301acac2b79ffb7e1430a831031570fa858d7f5ef8028472a32ca955e00ab34"
     },
@@ -1198,7 +1290,7 @@
     },
     {
       "path": "scripts/stack/compose.test.mjs",
-      "sha256": "7f88f87f5007babe7d176269620e6c3d4ed9ce3d343e7896ba458a22b81db486"
+      "sha256": "42a33f8999f7cc75e62e8d9043a1dd07f8b47f3516c0f666ddb89fadede9e99a"
     },
     {
       "path": "scripts/stack/config.mjs",
@@ -1209,12 +1301,32 @@
       "sha256": "6e0c846b5e7811a13208cf3fd58babbd388edeec3c50223b2d015d93ec0c3656"
     },
     {
+      "path": "scripts/stack/container-images.test.mjs",
+      "sha256": "2faa6322171394053e254e7e8fa5fd0ee10000455864f4f8efb7b1cb0e17c338"
+    },
+    {
+      "path": "scripts/stack/host-materials.test.mjs",
+      "sha256": "51c8f3a6222399c3fc265a3562fa25d82285870968ff04961a2bd06215b7de36"
+    },
+    {
+      "path": "scripts/stack/host-preflight.mjs",
+      "sha256": "71f12776f514bd49d8f581a8a9a7d41244870f47a567144b266b5771d0041f3b"
+    },
+    {
+      "path": "scripts/stack/host-preflight.test.mjs",
+      "sha256": "125f9601d2c982b9632482724cb6cd3d1ef837f9f902d115f408d74cef456bcc"
+    },
+    {
       "path": "scripts/stack/ops-drill.mjs",
       "sha256": "7526692c321282eb4532a977a55d7a37813312037523f940fc6cf6364f268e91"
     },
     {
       "path": "scripts/stack/ops-drill.test.mjs",
       "sha256": "be7c6b3ec964f07e656ad68fa9ff5a450055718670a25155461a379a66711bc7"
+    },
+    {
+      "path": "scripts/stack/prune-backups.mjs",
+      "sha256": "ad451a4e08880dda7c37a3393d2d1bbaca8437b53232e98063c61feffaaa9765"
     },
     {
       "path": "scripts/stack/redact.mjs",
@@ -1225,8 +1337,32 @@
       "sha256": "a127139b331b394d192b6826ddf970bfc6e1972ba6b4f11470f62edd73145af3"
     },
     {
+      "path": "scripts/stack/render-backup-service.mjs",
+      "sha256": "d827f3fbd1df2694d9a8d984fcea2f95d0e4a3981bdf78ae795afdd2be08d99b"
+    },
+    {
+      "path": "scripts/stack/render-backup-service.test.mjs",
+      "sha256": "75e707453a43bc26ad6b040896e5de967ee2a987b8203621376449169f82320b"
+    },
+    {
+      "path": "scripts/stack/render-public-proxy.mjs",
+      "sha256": "673c8925da751782e9e39fb88e0de4f66e83dc79488144622186f6389c8c1949"
+    },
+    {
+      "path": "scripts/stack/render-public-proxy.test.mjs",
+      "sha256": "a0429ca8d916db92445156243dd41986bb221e15a1cdff42349f5da2dd6d7c40"
+    },
+    {
+      "path": "scripts/stack/render-reverse-tunnel.mjs",
+      "sha256": "39ed1183b39fbfdcfe8a4d351176f834412d3cc0ea618de73f0107dc6d9d4a38"
+    },
+    {
+      "path": "scripts/stack/render-reverse-tunnel.test.mjs",
+      "sha256": "228a21346c2ffcdd970162d17126b62dd20ae4ef1202d1afc6b4f88fea41f36d"
+    },
+    {
       "path": "scripts/stack/restore-drill.mjs",
-      "sha256": "c21e064cdccf7cf3fcced21563a0c87a869918b1aca9eb3c605dc85e903e82d1"
+      "sha256": "80f578ccb6f1640610dc4f66a513320af838e500666f274341b849a0cc74346b"
     },
     {
       "path": "scripts/stack/scan-demo-bundle.mjs",
@@ -1243,6 +1379,26 @@
     {
       "path": "scripts/stack/stack.mjs",
       "sha256": "7c2791b9a4a54a1422bd778b96982d39a9e95757ae2895e43122250c38110b55"
+    },
+    {
+      "path": "scripts/stack/upgrade-checkpoint.mjs",
+      "sha256": "c56f8ef92f3a640a6e8833a9df42858454c6e3f0e0bf887a43a0e75a090b07d5"
+    },
+    {
+      "path": "scripts/stack/upgrade-checkpoint.test.mjs",
+      "sha256": "03af6eb4ff63a66f93cabaa5fc3821bb190e3a9008cbdf1b4b0661d6f4f160e7"
+    },
+    {
+      "path": "scripts/stack/verified-backup.mjs",
+      "sha256": "f3e063b080ac777ce73f1601a319394f0f6273361f16476b404a212bf43f875a"
+    },
+    {
+      "path": "scripts/stack/verify-runtime.mjs",
+      "sha256": "12ab5270edc88cbbfd28185045f8c96cd6d608f49a3d3507a68d4d18f36d595e"
+    },
+    {
+      "path": "scripts/stack/verify-runtime.test.mjs",
+      "sha256": "4f00a835ec0e5dc91bb31a62bf89f7c2b3cf7644e45049628cca24fa30865737"
     },
     {
       "path": "scripts/test-all.sh",

@@ -18,6 +18,13 @@ Formal ops evidence: NOT RUN
 
 要求 Docker Engine + Compose v2、Node.js 22。复制服务端配置并限制权限：
 
+单机云主机从购买、加固、证书、公网验收到备份/升级的可执行顺序见
+`docs/zh/14-single-host-deployment-runbook.md`。先运行宿主机预检：
+
+```bash
+npm run stack:preflight
+```
+
 ```bash
 cp .env.compose.example .env.compose.local
 chmod 600 .env.compose.local
@@ -34,11 +41,12 @@ Debug 部署完成后，使用 Foundry receipt 中最早的部署区块：
 
 ```bash
 npm run deploy:sync -- candidate \
-  --pending deployments/arbitrum-sepolia/pending.json \
-  --broadcast broadcast/DeployArbitrumSepolia.s.sol/421614/run-latest.json
+  --pending deployments/arbitrum-sepolia/pending.json
 ```
 
-也可人工传入已复核的 `--deployment-block`。候选模式原子生成 immutable runtime 目录、
+默认从部署 orchestrator 的受限 state 文件读取实际 Foundry receipt 路径；不要传仓库根目录下的旧
+`broadcast/...` 路径。只有脱离 orchestrator 导入外部部署时，才显式传入已复核的 `--broadcast` 或
+`--deployment-block`。候选模式原子生成 immutable runtime 目录、
 `current.env`、Demo DEBUG 地址包、SDK/Indexer/Paymaster/Compose 配置和逐文件 SHA-256；它永远不生成
 `final.json`。Demo 自动加载 DEBUG 地址并实时检查 chainId、所有 code 和 Factory/Marketplace wiring，
 黄色 DEBUG 不等于最终验证。
@@ -66,8 +74,10 @@ npm run deploy:sync -- final \
 ## 4. 一键运行栈
 
 ```bash
+npm run stack:preflight -- runtime --network
 npm run stack:config
 npm run stack:up
+npm run stack:verify
 npm run stack:status
 npm run stack:logs
 npm run stack:down
@@ -128,7 +138,8 @@ resume 方法，禁止盲发。Paymaster 不 ready 时在任何交易前写 `BLO
 ## 7. 备份、恢复与故障演练
 
 ```bash
-npm run stack:backup
+npm run stack:backup:verified
+npm run stack:backup:prune
 npm run stack:restore-drill -- --backup runtime/arbitrum-sepolia/backups/<id>
 npm run stack:drill -- --adapter /secure/adapters/local-ops.mjs
 ```
@@ -142,6 +153,11 @@ source/deployment identity、关键表行数、文件大小和 SHA-256。恢复�
 到期、Indexer reorg、backup/restore、KMS rotation 和 deposit loss cap。状态在每项前落盘并支持恢复。
 输出固定为 `LOCAL_SIMULATION`，不能通过 formal ops validator；正式 evidence 仍需真实监控/KMS、durable
 URI 和三名独立操作者签署。接口见 `deployments/arbitrum-sepolia/OPS-ADAPTER.md`。
+
+升级前应运行 `npm run stack:checkpoint`；它先要求 runtime PASS，再创建并恢复验证备份，记录旧 commit、
+runtime package SHA 和实际 Compose image/process inventory。每日备份的 systemd unit 可用
+`npm run stack:backup:render-service -- --operator <user>` 生成。生产数据库原地恢复与 Paymaster 预算回滚
+不是自动流程，具体边界见单机部署手册。
 
 ## 8. 门禁与故障排查
 
@@ -164,6 +180,7 @@ npm run demo:test
 npm run demo:build
 npm run scan:demo-bundle
 npm run scan:secrets
+npm run scan:container-images
 npm run check:artifacts
 ```
 
@@ -171,3 +188,8 @@ npm run check:artifacts
 TypeScript、Demo build/secret scan 和工具 fixture；不能声称镜像或本地 Compose runtime 已验证。具备 Docker
 的干净环境还必须执行镜像构建、新鲜 PostgreSQL migration、API/WS/Demo health、真实 backup/restore
 zero-skip。Arbitrum Sepolia 广播、Arbiscan、24h canary 和 formal ops 需要另行授权与外部资源。
+
+容器扫描对三个最终应用镜像和固定 PostgreSQL digest 检查可修复的 HIGH/CRITICAL。PostgreSQL 官方镜像
+内 `usr/local/bin/gosu` 的 Go stdlib 报告使用唯一、显式的 path exception；gosu 上游说明未调用的
+`net/http`、TLS、archive 等 API 不能仅凭编译器 stdlib 版本判为可达漏洞。该例外绑定 exact image digest
+和 `manifests/container-images.lock.json`，镜像升级时必须复核；PostgreSQL 的 Debian OS 包仍完整扫描。

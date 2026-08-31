@@ -78,10 +78,14 @@ After a debug broadcast, generate consumer configuration without claiming finali
 
 ```sh
 npm run deploy:sync -- candidate \
-  --pending deployments/arbitrum-sepolia/pending.json \
-  --broadcast broadcast/DeployArbitrumSepolia.s.sol/421614/run-latest.json
+  --pending deployments/arbitrum-sepolia/pending.json
 npm run stack:up
 ```
+
+The sync command reads the actual restricted Foundry receipt path from the
+orchestrator state. Pass `--broadcast` only when importing a separately reviewed
+deployment outside this orchestrator; the repository-root `broadcast/` path is
+not used by this workflow.
 
 `pending.json` records the actual protocol treasury, sponsorship signer,
 Paymaster policy version, and all three Paymaster budget limits. Runtime sync
