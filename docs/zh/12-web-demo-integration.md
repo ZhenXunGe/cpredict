@@ -1,5 +1,9 @@
 # Arbitrum Sepolia 合约验证与交互 Web Demo
 
+面向甲方体验验收的操作步骤、测试物料、已知限制和问题记录模板见
+[Web Demo 甲方手测体验指南](16-web-demo-client-manual-test-guide.md)。本文件继续说明技术集成、信任门禁
+和证明边界。
+
 ## 1. 交付结论
 
 Demo 位于 `examples/web-demo`，面向接入合约的前端、后端、QA、审计和甲方技术人员。它固定使用

@@ -28,6 +28,7 @@ function pendingManifest() {
     emergencySafe: address(3),
     protocolTreasury: address(16),
     sponsorSigner: address(17),
+    marketResolutionWindowSeconds: 86_400,
     paymasterPolicyVersion: 1,
     paymasterMaxCostPerOperation: "2000000000000000",
     paymasterMaxCostPerUserDay: "20000000000000000",
@@ -103,6 +104,9 @@ test("pending manifest binds canonical Arbitrum Sepolia dependencies", () => {
   const wrongBudget = pendingManifest();
   wrongBudget.paymasterMaxCostPerUserDay = "1";
   assert.throws(() => validatePendingManifest(wrongBudget), /budget ordering/);
+  const wrongWindow = pendingManifest();
+  wrongWindow.marketResolutionWindowSeconds = 899;
+  assert.throws(() => validatePendingManifest(wrongWindow), /ResolutionWindowSeconds/);
 
   const sandbox = pendingManifest();
   sandbox.paymentTokenKind = SANDBOX_TOKEN_KIND;

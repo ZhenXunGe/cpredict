@@ -6,7 +6,10 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-import { writeGateEvidence } from "./write-gate-evidence.mjs";
+import {
+  hashInputInventory,
+  writeGateEvidence,
+} from "./write-gate-evidence.mjs";
 
 const ARTIFACT_SHA = "a".repeat(64);
 const verifier = fileURLToPath(
@@ -107,6 +110,36 @@ test("verifier detects source, raw evidence, sidecar, and PASS-status drift", as
     });
     assert.equal(result.status, 1);
     assert.match(result.stderr, /sidecar mismatch/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("writer rejects inputs that drift after the gate snapshot is captured", async () => {
+  const root = await mkdtemp(join(tmpdir(), "cpredict-security-evidence."));
+  try {
+    await writeFile(join(root, "input.sol"), "contract Input {}\n");
+    await writeFile(join(root, "gate.log"), "ok\n");
+    const expectedSourceSnapshotSha256 = await hashInputInventory(root, [
+      "input.sol",
+    ]);
+    await writeFile(join(root, "input.sol"), "contract Changed {}\n");
+    await assert.rejects(
+      writeGateEvidence({
+        root,
+        gate: "gate",
+        tool: "tool",
+        version: "1.0.0",
+        artifactSha256: ARTIFACT_SHA,
+        toolExitCode: "0",
+        validatorExitCode: "0",
+        output: "gate.json",
+        inputs: ["input.sol"],
+        evidence: ["gate.log"],
+        expectedSourceSnapshotSha256,
+      }),
+      /inputs drifted during gate execution/,
+    );
   } finally {
     await rm(root, { recursive: true, force: true });
   }

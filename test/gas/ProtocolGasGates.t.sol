@@ -218,6 +218,7 @@ contract ProtocolGasGatesTest is ProtocolTestBase {
             createdAt: uint64(block.timestamp),
             closeAt: uint64(block.timestamp + 1 days),
             earlyBirdStart: uint64(block.timestamp),
+            resolutionWindow: uint64(1 days),
             creatorTreasury: CREATOR_TREASURY,
             deploymentMode: ProtocolTypes.DeploymentMode.CLONE,
             featureFlags: ProtocolTypes.FEATURE_EARLY_BIRD,

@@ -138,6 +138,17 @@ echo "production gas assertion context: PASS (10/10, 0 failed, 0 skipped)" \
 echo "coverage-full exit code: 0" | tee -a "$summary_path"
 summary_finalized=true
 
+# Preserve tool semantics while keeping generated evidence reviewable by Git. Forge occasionally
+# emits box-drawing rows padded with spaces; normalizing after validation and before hashing prevents
+# generated evidence from reintroducing `git diff --check` failures.
+for text_log in \
+  "$summary_path" \
+  "$production_build_log" \
+  "$production_gas_log"
+do
+  node scripts/normalize-text-log.mjs "$text_log"
+done
+
 shasum -a 256 \
   reports/coverage/full.lcov \
   reports/coverage/full.summary.txt \

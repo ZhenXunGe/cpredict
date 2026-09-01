@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 14471,
+      "astId": 53261,
       "contract": "src/core/LaunchExposureGuardV1.sol:LaunchExposureGuardV1",
       "label": "factory",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_address"
     },
     {
-      "astId": 14473,
+      "astId": 53263,
       "contract": "src/core/LaunchExposureGuardV1.sol:LaunchExposureGuardV1",
       "label": "exposureCap",
       "offset": 0,
@@ -17,7 +17,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14475,
+      "astId": 53265,
       "contract": "src/core/LaunchExposureGuardV1.sol:LaunchExposureGuardV1",
       "label": "totalReportedExposure",
       "offset": 0,
@@ -25,7 +25,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 14477,
+      "astId": 53267,
       "contract": "src/core/LaunchExposureGuardV1.sol:LaunchExposureGuardV1",
       "label": "retired",
       "offset": 0,
@@ -33,7 +33,7 @@
       "type": "t_bool"
     },
     {
-      "astId": 14481,
+      "astId": 53271,
       "contract": "src/core/LaunchExposureGuardV1.sol:LaunchExposureGuardV1",
       "label": "registeredMarket",
       "offset": 0,
@@ -41,7 +41,7 @@
       "type": "t_mapping(t_address,t_bool)"
     },
     {
-      "astId": 14485,
+      "astId": 53275,
       "contract": "src/core/LaunchExposureGuardV1.sol:LaunchExposureGuardV1",
       "label": "reportedExposure",
       "offset": 0,

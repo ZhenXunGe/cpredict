@@ -45,6 +45,8 @@ contract MarketFactoryV1 is ReentrancyGuard {
     uint256 public constant BOND_RATE_BPS = 200;
     uint256 public constant MIN_CONFIGURED_UNITS = 10_000;
     uint256 public constant MAX_CONFIGURED_UNITS = 5e6;
+    uint64 public constant MIN_RESOLUTION_WINDOW = 15 minutes;
+    uint64 public constant MAX_RESOLUTION_WINDOW = 30 days;
     uint256 public constant SUPPORTED_FEATURE_FLAGS =
         ProtocolTypes.FEATURE_EARLY_BIRD | ProtocolTypes.FEATURE_PERMIT2;
     bytes32 public constant FEE_KIND_CREATION = keccak256("MARKET_CREATION");
@@ -59,6 +61,7 @@ contract MarketFactoryV1 is ReentrancyGuard {
     IFullMarketDeployerV1 public immutable fullMarketDeployer;
     address public immutable cloneImplementation;
     address public immutable permit2;
+    uint64 public immutable resolutionWindow;
 
     address public marketplace;
     bool public active;
@@ -94,6 +97,7 @@ contract MarketFactoryV1 is ReentrancyGuard {
         address feeVault_,
         address fullMarketDeployer_,
         address cloneImplementation_,
+        uint64 resolutionWindow_,
         address permit2_
     ) {
         if (
@@ -111,6 +115,13 @@ contract MarketFactoryV1 is ReentrancyGuard {
         feeVault = IFeeVaultV1(feeVault_);
         fullMarketDeployer = IFullMarketDeployerV1(fullMarketDeployer_);
         cloneImplementation = cloneImplementation_;
+        if (resolutionWindow_ < MIN_RESOLUTION_WINDOW || resolutionWindow_ > MAX_RESOLUTION_WINDOW)
+        {
+            revert ValueOutOfRange(
+                "resolutionWindow", resolutionWindow_, MIN_RESOLUTION_WINDOW, MAX_RESOLUTION_WINDOW
+            );
+        }
+        resolutionWindow = resolutionWindow_;
         permit2 = permit2_;
     }
 
@@ -312,6 +323,7 @@ contract MarketFactoryV1 is ReentrancyGuard {
             createdAt: block.timestamp.toUint64(),
             closeAt: params.closeAt,
             earlyBirdStart: params.earlyBirdStart,
+            resolutionWindow: resolutionWindow,
             creatorTreasury: params.creatorTreasury,
             deploymentMode: params.deploymentMode,
             featureFlags: params.featureFlags,

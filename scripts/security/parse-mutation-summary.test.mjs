@@ -108,6 +108,10 @@ test("full runner pins the exact unique production contract inventory", () => {
   assert.equal(sources.length, contracts.length);
   assert.equal(new Set(sources).size, sources.length);
   assert.doesNotMatch(runner, /"\$mutator" src \\/);
+  assert.match(runner, /evidence_inputs=\([\s\S]*scripts\/normalize-text-log\.mjs/);
+  assert.match(runner, /evidence_inputs=\([\s\S]*scripts\/security\/hash-input-inventory\.mjs/);
+  assert.match(runner, /--expected-source-snapshot-sha256 "\$input_snapshot_before"/);
+  assert.equal((runner.match(/mutation_require_input_snapshot/g) ?? []).length, 2);
 });
 
 test("bounded runner targets the exact FeeVault source and stages evidence", () => {
@@ -119,6 +123,10 @@ test("bounded runner targets the exact FeeVault source and stages evidence", () 
   assert.doesNotMatch(runner, /"\$mutator" \. \\/);
   assert.match(runner, /\.mutation-feevault-evidence\.XXXXXX/);
   assert.match(runner, /--expected-contract FeeVaultV1/);
+  assert.match(runner, /evidence_inputs=\([\s\S]*scripts\/normalize-text-log\.mjs/);
+  assert.match(runner, /evidence_inputs=\([\s\S]*scripts\/security\/hash-input-inventory\.mjs/);
+  assert.match(runner, /--expected-source-snapshot-sha256 "\$input_snapshot_before"/);
+  assert.equal((runner.match(/mutation_require_input_snapshot/g) ?? []).length, 2);
 });
 
 test("synthetic lifecycle fixture cleans process groups and publishes atomically", () => {

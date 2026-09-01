@@ -6,13 +6,18 @@
 
 ```text
 Compose/tooling: STATIC VERIFIED; LOCAL DOCKER RUNTIME NOT RUN ON THIS HOST
-Arbitrum Sepolia deployment: BLOCKED_NOT_DEPLOYED
-24h canary: NOT RUN
+Arbitrum Sepolia deployment: SANDBOX BOOTSTRAP DONE; FACTORY ACTIVE;
+  FINALIZED_PENDING_EVIDENCE_VERIFICATION
+15m debug E2E: COMPLETE; FORMAL 24h canary: NOT RUN
 Formal ops evidence: NOT RUN
 ```
 
-本地 Compose、Anvil 或 `LOCAL_SIMULATION` 报告不能生成 `FINALIZED_VERIFIED`。Kafka、Nacos、撮合服务
-和 CLOB Helm Chart 不属于单池 parimutuel 协议范围。
+本地忽略的验收状态记录了 15 分钟三钱包场景 47 operations、phase-two 65 operations 和
+control-plane 13 笔链上操作全部完成；三钱包 timeout 与 phase-two F1 均经过真实链上等待。
+orchestrator 仍是 `FINALIZED_PENDING_EVIDENCE_VERIFICATION`，且该 sandbox 使用 dirty source、
+单 RPC 和 unrestricted-mint ctUSD，因此不能生成 `FINALIZED_VERIFIED`，也不等于正式 24 小时
+canary 或 source/role/双 RPC 核验。本地 Compose、Anvil 或 `LOCAL_SIMULATION` 报告同样不能生成
+`FINALIZED_VERIFIED`。Kafka、Nacos、撮合服务和 CLOB Helm Chart 不属于单池 parimutuel 协议范围。
 
 ## 2. 准备环境
 
@@ -187,7 +192,8 @@ npm run check:artifacts
 当前主机没有 Docker/Compose，因此本轮只能证明 Compose JSON 解析、权限/端口/profile/依赖静态断言、
 TypeScript、Demo build/secret scan 和工具 fixture；不能声称镜像或本地 Compose runtime 已验证。具备 Docker
 的干净环境还必须执行镜像构建、新鲜 PostgreSQL migration、API/WS/Demo health、真实 backup/restore
-zero-skip。Arbitrum Sepolia 广播、Arbiscan、24h canary 和 formal ops 需要另行授权与外部资源。
+zero-skip。sandbox Arbitrum Sepolia 广播和 15 分钟 DEBUG E2E 已执行；Arbiscan、正式 24h canary、
+双 RPC final evidence 和 formal ops 仍需要另行授权与外部资源。
 
 容器扫描对三个最终应用镜像和固定 PostgreSQL digest 检查可修复的 HIGH/CRITICAL。PostgreSQL 官方镜像
 内 `usr/local/bin/gosu` 的 Go stdlib 报告使用唯一、显式的 path exception；gosu 上游说明未调用的

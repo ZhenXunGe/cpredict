@@ -264,6 +264,14 @@ async function loadConfig(
     env.DEPLOYER_MIN_BALANCE_WEI ?? DEFAULT_MIN_BALANCE_WEI,
   );
   if (minimumBalance < 0n) fail("DEPLOYER_MIN_BALANCE_WEI must be >= 0", 2);
+  const resolutionWindowSeconds = Number(
+    env.MARKET_RESOLUTION_WINDOW_SECONDS ?? 86_400,
+  );
+  if (
+    !Number.isSafeInteger(resolutionWindowSeconds)
+      || resolutionWindowSeconds < 900
+      || resolutionWindowSeconds > 2_592_000
+  ) fail("MARKET_RESOLUTION_WINDOW_SECONDS must be an integer from 900 to 2592000", 2);
   for (const secret of [privateKey, rpcA, rpcB]) if (secret) ACTIVE_SECRETS.add(secret);
   return {
     env,
@@ -275,6 +283,7 @@ async function loadConfig(
     roles,
     expectedFingerprint: expectedFingerprint?.toLowerCase(),
     minimumBalance,
+    resolutionWindowSeconds,
     stateDir: options.stateDir,
     statePath: resolve(options.stateDir, "state.json"),
   };
@@ -571,6 +580,11 @@ export function validatePendingManifest(value, { profile } = {}) {
     fail("pending.entryPoint mismatch");
   if (!Number.isSafeInteger(value.paymasterPolicyVersion) || value.paymasterPolicyVersion < 1)
     fail("pending.paymasterPolicyVersion must be a positive safe integer");
+  if (
+    !Number.isSafeInteger(value.marketResolutionWindowSeconds)
+      || value.marketResolutionWindowSeconds < 900
+      || value.marketResolutionWindowSeconds > 2_592_000
+  ) fail("pending.marketResolutionWindowSeconds must be an integer from 900 to 2592000");
   for (const key of [
     "paymasterMaxCostPerOperation",
     "paymasterMaxCostPerUserDay",
@@ -766,6 +780,8 @@ async function finishDeployment(config, plan, logRoot) {
     fail("pending temporaryAdmin does not match deployer");
   if (pending.factoryActivationFingerprint !== plan.fingerprint)
     fail("pending fingerprint does not match reviewed plan");
+  if (pending.marketResolutionWindowSeconds !== config.resolutionWindowSeconds)
+    fail("pending market resolution window does not match reviewed config");
   const broadcastPath = resolve(
     config.stateDir,
     "foundry/broadcast/DeployArbitrumSepolia.s.sol/421614/run-latest.json",
@@ -990,6 +1006,8 @@ async function runFinalize(options, config) {
   });
   if (pending.temporaryAdmin.toLowerCase() !== config.deployer.toLowerCase())
     fail("current deployer does not match pending temporaryAdmin");
+  const deployerIsGovernanceSafe =
+    config.deployer.toLowerCase() === pending.governanceSafe.toLowerCase();
   const logRoot = resolve(config.stateDir, "logs", timestampId());
   await preflight(config);
   await runLocalGates(config, logRoot);
@@ -1000,6 +1018,7 @@ async function runFinalize(options, config) {
   if (!before.ready)
     fail(`bootstrap is not ready; Timelock timestamp is ${before.scheduledTimestamp}`, 75);
   const finalizeEnv = {
+    GOVERNANCE_SAFE: pending.governanceSafe,
     EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT: pending.factoryActivationFingerprint,
     TIMELOCK_ADDRESS: pending.timelock,
     FACTORY_ADDRESS: pending.factory,
@@ -1031,7 +1050,10 @@ async function runFinalize(options, config) {
       config.stateDir,
       "foundry/broadcast/FinalizeBootstrap.s.sol/421614/run-latest.json",
     );
-    const broadcast = await broadcastEvidence(broadcastPath, 4);
+    const broadcast = await broadcastEvidence(
+      broadcastPath,
+      deployerIsGovernanceSafe ? 2 : 4,
+    );
     const after = await bootstrapStatus(publicClient, pending);
     if (!after.done || !after.factoryActive) fail("post-finalize bootstrap state is incomplete");
     if (
@@ -1061,14 +1083,20 @@ async function runFinalize(options, config) {
         }),
       ),
     );
-    if (roles.some(Boolean)) fail("temporary deployer Timelock role remains after finalize");
+    if (deployerIsGovernanceSafe) {
+      if (!roles[0] || !roles[1] || roles[2]) {
+        fail("overlapping governanceSafe roles are incorrect after finalize");
+      }
+    } else if (roles.some(Boolean)) {
+      fail("temporary deployer Timelock role remains after finalize");
+    }
     await persistState(config, {
       status: "FINALIZED_PENDING_EVIDENCE_VERIFICATION",
       finalizeBroadcast: broadcast,
       bootstrap: after,
       logs: { root: logRoot },
     });
-    process.stdout.write("\nBootstrap finalized and temporary deployer roles revoked.\n");
+    process.stdout.write("\nBootstrap finalized and temporary deployer-only roles revoked.\n");
     process.stdout.write("Next: build final runtime manifest, then run verify.\n");
     return after;
   } catch (error) {

@@ -142,7 +142,7 @@
     },
     {
       "path": "deployments/arbitrum-sepolia/deploy.env.example",
-      "sha256": "1801f79e35017c98ccbcb579e2a691412f3b7895c2cdc9dc287bc35a66f3c3f7"
+      "sha256": "0323396860e46db983a7b6869b59c5dc4154b08174b211453665bd178486fe79"
     },
     {
       "path": "deployments/arbitrum-sepolia/final-manifest.schema.json",
@@ -162,11 +162,11 @@
     },
     {
       "path": "docs/zh/00-delivery-status.md",
-      "sha256": "2e0f0c53f5e92b82a5bb8b2c36f13a811a37d52479e3c0f160b077d17bfdf873"
+      "sha256": "8127be2db20ffb7b7595a19401e75ccc447929fe3418db283619ba97f17d53f9"
     },
     {
       "path": "docs/zh/13-compose-runtime-operations.md",
-      "sha256": "1a4a3ee02f6e4afec7ac63830945cc3279e016ea362a1a14727ffc035d4619d9"
+      "sha256": "ff1bdc37e09eccd6da1eec5601277bdd60beac71aa8da05290b614e24154bbf5"
     },
     {
       "path": "docs/zh/14-single-host-deployment-runbook.md",
@@ -530,7 +530,7 @@
     },
     {
       "path": "manifests/sbom.spdx.json",
-      "sha256": "b795e6376100fd62de5e01cc3863b105462fdd253c9f2a4acb939c63b5f14813"
+      "sha256": "abd779e738b9d0d7d00d7cbedb80c86067721c48fecd16aa4911332ba65246c9"
     },
     {
       "path": "manifests/security-tools.lock",
@@ -870,7 +870,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "d13fcac2e03b4d1e117dacdd698c2633d7e68a389d37e7725cad9d5326d3c5f1"
+      "sha256": "5438e9793770434e87e8d7810a83668121538de2d78b277677046af6c6c8d40a"
     },
     {
       "path": "remappings.txt",
@@ -878,11 +878,11 @@
     },
     {
       "path": "script/DeployArbitrumSepolia.s.sol",
-      "sha256": "13bb138967e6c50da5f89feba09ded6a4cdab20f16d50ea9e75c5fcb954e06b9"
+      "sha256": "ccd94cf0fc305d23b1f2eb663c5a6ad93059667966eee18f5aa51dafa8e40a09"
     },
     {
       "path": "script/FinalizeBootstrap.s.sol",
-      "sha256": "3415b10d6fb9bd7428d26e839b11145a1a8a5e892f279a0f03646405e5456863"
+      "sha256": "9a2626276189521c9f951ad462b18e53622c9886f2237eb7f2721403b3832ff1"
     },
     {
       "path": "scripts/bootstrap-deps.sh",
@@ -906,7 +906,7 @@
     },
     {
       "path": "scripts/coverage-full.sh",
-      "sha256": "e854ed9665d5418737e7e96e5dda4027c6abd48ccfc6d7b00ad4b0c77caf09cc"
+      "sha256": "cce4c19fa4e196ffba78af8459b9e6a5ddd37ba96b79ab538425f6a9381e5d0b"
     },
     {
       "path": "scripts/coverage-summary.sh",
@@ -926,7 +926,7 @@
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.mjs",
-      "sha256": "3d529385fe6ccd530a70c55bb94cbec4928f7ff24cf23b9e389359d36168f65a"
+      "sha256": "23d139b5cbe223b0e127c0a9aeb714801f73c292806e27565ded62192d304c04"
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.sh",
@@ -934,7 +934,7 @@
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.test.mjs",
-      "sha256": "b410b504c4aa586e82a4c4dae763e16b4968d8478485868a0d4dfdc169927dd7"
+      "sha256": "83a2bf3edf7069e344bd58eefaadcdae18a85e4c3003033ea0de02375c75a8cd"
     },
     {
       "path": "scripts/deployment/deployment-evidence.test.mjs",
@@ -950,7 +950,7 @@
     },
     {
       "path": "scripts/deployment/sync-runtime.test.mjs",
-      "sha256": "b77dc3089d43b4fe781d9d86c33a425f3e01f994fc3b819e3f4dc6765ce7e9d8"
+      "sha256": "07a88f9357555b555c1243aa3ed7f847ea40af8854af974bd6fa333c7d913422"
     },
     {
       "path": "scripts/deployment/validate-canary-evidence.mjs",
@@ -958,7 +958,7 @@
     },
     {
       "path": "scripts/deployment/validate-deployment-abi.mjs",
-      "sha256": "b55019a2f8f80718dea4bf28f1d7decd7d3492713dd89dacf7a39f34bcc92421"
+      "sha256": "5387bdad883cebe503fc2a3bc431f0d907e546cb483810686628d63d2343bcd9"
     },
     {
       "path": "scripts/deployment/validate-final-manifest.mjs",
@@ -1097,6 +1097,14 @@
       "sha256": "03fdebe45407a0fe1330d1dbf9f7092d2a92eb29abae176ead0652951db969de"
     },
     {
+      "path": "scripts/normalize-text-log.mjs",
+      "sha256": "24758e55d375e12117fc4eda8eaebd9d6bf602febaca112f006f809982847078"
+    },
+    {
+      "path": "scripts/normalize-text-log.test.mjs",
+      "sha256": "f8d4b927f82bfaf586518a11cfc77abc87ad026d8ddf265e3d01c521e4bd3195"
+    },
+    {
       "path": "scripts/postgres-assert-vitest-report.mjs",
       "sha256": "e65acab0b489e7ee96c256d6f49b8d660aa0d9e92cc11a57dfb3505ca965c96f"
     },
@@ -1209,6 +1217,10 @@
       "sha256": "36ee951b19e8781e3cb8a572393e2d140f08fd8e719f16b3cd23033130b179fb"
     },
     {
+      "path": "scripts/security/hash-input-inventory.mjs",
+      "sha256": "e1f663deda83aa492b8e6627f5d6186eac31f2a5f4b39e19067c7addbc9c2200"
+    },
+    {
       "path": "scripts/security/medusa.json",
       "sha256": "e1372465cc330a3cc85a94c5c16e57bb12c70a1c388b5ee040f92e30c5859607"
     },
@@ -1218,7 +1230,7 @@
     },
     {
       "path": "scripts/security/parse-mutation-summary.test.mjs",
-      "sha256": "c7a3428de82ca525f84124e9ed023a796eef198b0e71e715362601a1e336aa22"
+      "sha256": "bf886bada2794beb9f9afcb9e39cf345f27aba6590d4f10d731532bfc64e9ee1"
     },
     {
       "path": "scripts/security/refinalize-mutation-feevault-evidence.sh",
@@ -1246,19 +1258,19 @@
     },
     {
       "path": "scripts/security/run-mutation-common.sh",
-      "sha256": "ddd9547a55d4db0c00d043edd2f13972a9c9b3a82c39643cad92e497ba5f7ca0"
+      "sha256": "ff040d236cd3412b245291b0013837a3394b4699f181d3ddf28b4d5bfebd237e"
     },
     {
       "path": "scripts/security/run-mutation-feevault.sh",
-      "sha256": "ddfd5806f6c2682622906f6ce5f783fae18d1be2fefdd36817a30b958d7ce185"
+      "sha256": "5940d9b06b00f6bd58b46ec891e4aa0ba903668dad4f277756a40bd65691fc3c"
     },
     {
       "path": "scripts/security/run-mutation-full.sh",
-      "sha256": "5f9ab439d94da4d3ef07f3609336a770e96e9c451e7d6a9e6f1f79641a832ad8"
+      "sha256": "2f87c55a704fe911a198443c8807e02679b15fcaadf911d944efb31a6b594205"
     },
     {
       "path": "scripts/security/run-mutation-lifecycle.test.sh",
-      "sha256": "db57a6c19ec3d34c40509b743602ab367be340b25fbe02d6ae73474b4b1d04a5"
+      "sha256": "291beb6522045afc08b8c7c761ff133df7ed1c74672f5499c2559ee525037823"
     },
     {
       "path": "scripts/security/run-slither.sh",
@@ -1306,11 +1318,11 @@
     },
     {
       "path": "scripts/security/write-gate-evidence.mjs",
-      "sha256": "351512a44d982ac6b07e86d15d854a09dc5035c96d7e6c2c8bb930e2a88200b3"
+      "sha256": "ab138214f83f7f13d129854bce15dfdcc9ea27f80e5f5f5a2f8ebe6ea8b81090"
     },
     {
       "path": "scripts/security/write-gate-evidence.test.mjs",
-      "sha256": "a04a56e29dd3a8d68ad27f88bcfc40843cba5da7de49b3fbb462954e386c0c0e"
+      "sha256": "3d7472debd03e71aa738909d79325bc1672cfb7597e232816f4d90571f01ccdf"
     },
     {
       "path": "scripts/stack/backup-policy.test.mjs",
@@ -1470,7 +1482,7 @@
     },
     {
       "path": "src/core/MarketFactoryV1.sol",
-      "sha256": "981ba91b77e341c58fa9d6f5f5f17988ddd03c815a0be3e97091a036e3f2c434"
+      "sha256": "f00c9919df6921aa256c7b76cc64d2623754da01c16276126a56d04d4f63ceb1"
     },
     {
       "path": "src/core/ProtocolConfigV1.sol",
@@ -1502,11 +1514,11 @@
     },
     {
       "path": "src/interfaces/IMarketFactoryV1.sol",
-      "sha256": "cb83ec6153d04ef3070c665850a8b5a054b720d62ad817b22cc243c5fb8d0347"
+      "sha256": "28af31fbc2e46ddd2616e032680d50d86a7b2e0d193e6dc445e0d33e1fab885e"
     },
     {
       "path": "src/interfaces/IMarketVaultV1.sol",
-      "sha256": "b86ad4057afb462bee3596a1d2f23fecf6e8b831760db4922d49968de4e5b026"
+      "sha256": "2bc2ab2ecd247f9c835253fe0d6b29c37426c09633ab7b952b3a1c0695b5b580"
     },
     {
       "path": "src/interfaces/IProtocolConfigV1.sol",
@@ -1518,7 +1530,7 @@
     },
     {
       "path": "src/libraries/ProtocolTypes.sol",
-      "sha256": "3f6b8a88337d5ca66ba84f3066a461c0f82e37a3061441200e3ebe8c2fe94a64"
+      "sha256": "359221a246a3d34946c96b3eaf3338719395b89eaf33af23a2018b0e7a5c6448"
     },
     {
       "path": "src/market/CloneMarketVaultV1.sol",
@@ -1530,7 +1542,7 @@
     },
     {
       "path": "src/market/MarketVaultCoreV1.sol",
-      "sha256": "fff58b5e35752899701013eb57a030f955c27c71635b70c088314d282626d23e"
+      "sha256": "8ac224c352837c5e011625ab52d2fbbeae5caf33bb3b38856b2dbbefad3541ee"
     },
     {
       "path": "src/marketplace/FixedPriceMarketplaceV1.sol",
@@ -1545,16 +1557,20 @@
       "sha256": "3d1034f7ff8ae90f03f7fa19d49de4a9df7a40db9045f7b2879e0efb0d47210f"
     },
     {
+      "path": "test/deployment/DeployArbitrumSepolia.t.sol",
+      "sha256": "3baf2117e19519282b13fdf1d487793333ef0e61d973e1edcf80bdce69a684dc"
+    },
+    {
       "path": "test/gas/ProtocolGasGates.t.sol",
-      "sha256": "481a84f3851b24612969dd1f6aa1db01f5f2eed915fc43cf41248ad5c0a5fb71"
+      "sha256": "d4d8deffd430f6a37b9d916eb286a3d49ea49744ee0c3871d2c738305adc49a3"
     },
     {
       "path": "test/helpers/ProtocolTestBase.sol",
-      "sha256": "f38f0d5605a3134f5dc3292fec3b52a145dd1c0acbb553cecaa677b54e7c8ff5"
+      "sha256": "e192f8966db64fdc89a10c2ac6be1212bf824467fcfdd114d07deb9ce944d61c"
     },
     {
       "path": "test/invariant/MarketAccounting.invariant.t.sol",
-      "sha256": "d7cef3b6c8126dbb830af3e22006b92db1d52428e2bc9fdc4c8b27042b4cdfed"
+      "sha256": "dd4b631572a214270f42c3b6eb8bb4178442b1410fc43c64edcc6d78af698ecd"
     },
     {
       "path": "test/mocks/MockUSDC.sol",
@@ -1562,7 +1578,7 @@
     },
     {
       "path": "test/security/EchidnaMarketAccounting.sol",
-      "sha256": "78a6b21f09a9da77dadb95451abd54cd1aa6a1661a59e9aa6a95062f7b8a25c3"
+      "sha256": "bbabb81e8ca12ba6aaa4c0bffb5b1d4e6401bb092ddd5fa3c44923b947e6a17e"
     },
     {
       "path": "test/security/ProtocolMath.smt.sol",
@@ -1582,7 +1598,7 @@
     },
     {
       "path": "test/unit/FactoryValidation.t.sol",
-      "sha256": "cdbf1a4a4dd743ecdc8a42285e5cc2c552bf3b41bbb2367b27bdec14bc0ff375"
+      "sha256": "64b4a7ae2eb55d24576f9d490d3323999b3bde04aa018bd632e1c23a58b582d1"
     },
     {
       "path": "test/unit/FeeVaultMutationResistance.t.sol",
@@ -1590,7 +1606,7 @@
     },
     {
       "path": "test/unit/MarketVaultEdges.t.sol",
-      "sha256": "fca74a960144bc6342b39b7088011d076a9b16d8a615b3ee2e9fb8c5271a198e"
+      "sha256": "1de842b7034eead99e17f0f9ae068934e48ac2f910009371bd91a0922ab5f27f"
     },
     {
       "path": "test/unit/MarketVaultInternalHarness.t.sol",
@@ -1606,7 +1622,7 @@
     },
     {
       "path": "test/unit/Permit2Flows.t.sol",
-      "sha256": "60c03665c4aec105b620428aed3b2b25a376f734a2d00707f15f1e805bc1a5ac"
+      "sha256": "47681c010df6cd167ff0bc0ac1ebc74c534fb593de7aaa47ab80cc4618eda470"
     },
     {
       "path": "test/unit/ProtocolControls.t.sol",
@@ -1614,7 +1630,7 @@
     },
     {
       "path": "test/unit/ProtocolFlows.t.sol",
-      "sha256": "211e9f89da0481e725fe48b6d479689c5fc5c644639c56023e2e2f3e32426054"
+      "sha256": "7dd2a9617eba2832d5c723d808abb185f9d8c76baec35c8d209d4aff671b489a"
     },
     {
       "path": "test/unit/SponsorshipPaymaster.t.sol",
@@ -1622,7 +1638,7 @@
     },
     {
       "path": "test/unit/TokenTransferIntegrity.t.sol",
-      "sha256": "43352a3a10ca68cbd9ec82fa87e0692039d880e7711eb824357b5413aa392ada"
+      "sha256": "2b9807107027f011d5fe01b9f93f80e78fbe69eb5d7eb2b00d0560250ec48611"
     },
     {
       "path": "test/viair/SponsorshipDigest.t.sol",
@@ -1675,31 +1691,31 @@
     },
     {
       "contract": "FullMarketDeployerV1",
-      "creationBytecodeSha256": "ecead89c51a2e34c8851cfcb8f02c0f94c38615c011d83d299948ddbf3046bde",
-      "runtimeBytecodeSha256": "212f73597e97024e6b87cf4efab2b306ec5235c4c7c97868a613968ff43d5f2d",
-      "creationBytes": 23916,
-      "runtimeBytes": 23763
+      "creationBytecodeSha256": "c119efef97444092d65a9a85fdb64b623d771139db7aa64e5c517eaec06a290f",
+      "runtimeBytecodeSha256": "d3566578e8aa4d5315555df2b65c312c4fe20a4b655ba8d7d5847898764865ae",
+      "creationBytes": 24179,
+      "runtimeBytes": 24026
     },
     {
       "contract": "MarketFactoryV1",
-      "creationBytecodeSha256": "6e0344aee264f99e287e64142c2c0c281b2f35bc6bd373a6e390062b060c3a74",
-      "runtimeBytecodeSha256": "ffe5f36e67c6bafa15e8a33bc11176e26c15ca69d8c68512b2c21e88e6d99bf0",
-      "creationBytes": 16969,
-      "runtimeBytes": 15838
+      "creationBytecodeSha256": "3fef49e0ff06ba3e64bf63f707797c37763cf2a710ec5bd8dc2dad58102fe0d7",
+      "runtimeBytecodeSha256": "dc3b639bb408431aedcaeecae1748631087f94e873c7d4af37529a2ed7aee4d9",
+      "creationBytes": 17349,
+      "runtimeBytes": 16074
     },
     {
       "contract": "FullMarketVaultV1",
-      "creationBytecodeSha256": "265c3fe9a0395b8f35b90accf5586b214a3c852873538c8c8763f8dcfdbc3a10",
-      "runtimeBytecodeSha256": "d87cedece592716a547bf716b15688b50f81669f8dacf6ff717c58e13701c1fd",
-      "creationBytes": 23195,
-      "runtimeBytes": 22975
+      "creationBytecodeSha256": "f6a3cabd3a5a559df8afa74af04161db463f5fec1e49fa4c18abf8071a537f3f",
+      "runtimeBytecodeSha256": "11b003d0560152f935727056147e1ddb6f45c6f4e9854ab13150994116b3eba5",
+      "creationBytes": 23458,
+      "runtimeBytes": 23238
     },
     {
       "contract": "CloneMarketVaultV1",
-      "creationBytecodeSha256": "3f311523a614bea0337d9cbb7cdd2a1c80c6223f798ce3c3ab741193a0fda50f",
-      "runtimeBytecodeSha256": "d87cedece592716a547bf716b15688b50f81669f8dacf6ff717c58e13701c1fd",
-      "creationBytes": 23208,
-      "runtimeBytes": 22975
+      "creationBytecodeSha256": "7ccb942cb7a4a13f0f4ebb5458106a6a89917c784b6b393398e9fcac9a1a6759",
+      "runtimeBytecodeSha256": "11b003d0560152f935727056147e1ddb6f45c6f4e9854ab13150994116b3eba5",
+      "creationBytes": 23471,
+      "runtimeBytes": 23238
     },
     {
       "contract": "FixedPriceMarketplaceV1",

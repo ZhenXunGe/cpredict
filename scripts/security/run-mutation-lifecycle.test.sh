@@ -44,15 +44,27 @@ if mutation_process_group_alive "$term_group"; then
 fi
 
 printf '%s\n' old >"$fixture_root/destination"
-printf '%s\n' new >"$fixture_root/source"
+printf 'new   \r\n\r\n' >"$fixture_root/source"
 mutation_atomic_copy "$fixture_root/source" "$fixture_root/destination"
 grep -Fxq new "$fixture_root/destination"
+[[ "$(wc -l <"$fixture_root/destination" | tr -d ' ')" -eq 1 ]]
 mutation_atomic_write_line "$fixture_root/destination" final
 grep -Fxq final "$fixture_root/destination"
-printf '%s\n' appended >"$fixture_root/source"
+printf 'appended\t\n\n' >"$fixture_root/source"
 mutation_atomic_append_file "$fixture_root/source" "$fixture_root/destination"
 [[ "$(sed -n '1p' "$fixture_root/destination")" == final ]]
 [[ "$(sed -n '2p' "$fixture_root/destination")" == appended ]]
+[[ "$(wc -l <"$fixture_root/destination" | tr -d ' ')" -eq 2 ]]
+
+printf '%s\n' stable >"$fixture_root/input"
+input_snapshot="$(mutation_input_snapshot "$fixture_root" input)"
+mutation_require_input_snapshot "$input_snapshot" "$fixture_root" input
+printf '%s\n' changed >"$fixture_root/input"
+set +e
+mutation_require_input_snapshot "$input_snapshot" "$fixture_root" input >/dev/null 2>&1
+snapshot_status=$?
+set -e
+[[ "$snapshot_status" -eq 74 ]]
 
 set +e
 mutation_require_positive_integer FIXTURE 0 >/dev/null 2>&1

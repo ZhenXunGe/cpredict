@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 1116,
+      "astId": 38048,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_balances",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_mapping(t_uint256,t_mapping(t_address,t_uint256))"
     },
     {
-      "astId": 1122,
+      "astId": 38054,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_operatorApprovals",
       "offset": 0,
@@ -17,7 +17,7 @@
       "type": "t_mapping(t_address,t_mapping(t_address,t_bool))"
     },
     {
-      "astId": 1124,
+      "astId": 38056,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_uri",
       "offset": 0,
@@ -25,7 +25,7 @@
       "type": "t_string_storage"
     },
     {
-      "astId": 2217,
+      "astId": 39149,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_totalSupply",
       "offset": 0,
@@ -33,7 +33,7 @@
       "type": "t_mapping(t_uint256,t_uint256)"
     },
     {
-      "astId": 2219,
+      "astId": 39151,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_totalSupplyAll",
       "offset": 0,
@@ -41,7 +41,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 18003,
+      "astId": 56839,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_initialized",
       "offset": 0,
@@ -49,7 +49,7 @@
       "type": "t_bool"
     },
     {
-      "astId": 18005,
+      "astId": 56841,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "factory",
       "offset": 1,
@@ -57,15 +57,15 @@
       "type": "t_address"
     },
     {
-      "astId": 18008,
+      "astId": 56844,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_paymentToken",
       "offset": 0,
       "slot": "6",
-      "type": "t_contract(IERC20)3145"
+      "type": "t_contract(IERC20)40158"
     },
     {
-      "astId": 18010,
+      "astId": 56846,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "config",
       "offset": 0,
@@ -73,23 +73,23 @@
       "type": "t_address"
     },
     {
-      "astId": 18013,
+      "astId": 56849,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "emergencyController",
       "offset": 0,
       "slot": "8",
-      "type": "t_contract(IEmergencyControllerV1)17140"
+      "type": "t_contract(IEmergencyControllerV1)55961"
     },
     {
-      "astId": 18016,
+      "astId": 56852,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "exposureGuard",
       "offset": 0,
       "slot": "9",
-      "type": "t_contract(ILaunchExposureGuardV1)17262"
+      "type": "t_contract(ILaunchExposureGuardV1)56083"
     },
     {
-      "astId": 18018,
+      "astId": 56854,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "bondEscrow",
       "offset": 0,
@@ -97,23 +97,23 @@
       "type": "t_address"
     },
     {
-      "astId": 18021,
+      "astId": 56857,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "feeVault",
       "offset": 0,
       "slot": "11",
-      "type": "t_contract(IFeeVaultV1)17181"
+      "type": "t_contract(IFeeVaultV1)56002"
     },
     {
-      "astId": 18024,
+      "astId": 56860,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "permit2",
       "offset": 0,
       "slot": "12",
-      "type": "t_contract(ISignatureTransfer)13175"
+      "type": "t_contract(ISignatureTransfer)50623"
     },
     {
-      "astId": 18026,
+      "astId": 56862,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "creator",
       "offset": 0,
@@ -121,7 +121,7 @@
       "type": "t_address"
     },
     {
-      "astId": 18028,
+      "astId": 56864,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "creatorTreasury",
       "offset": 0,
@@ -129,7 +129,7 @@
       "type": "t_address"
     },
     {
-      "astId": 18030,
+      "astId": 56866,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "rulesHash",
       "offset": 0,
@@ -137,7 +137,7 @@
       "type": "t_bytes32"
     },
     {
-      "astId": 18032,
+      "astId": 56868,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "resolutionSourceHash",
       "offset": 0,
@@ -145,7 +145,7 @@
       "type": "t_bytes32"
     },
     {
-      "astId": 18034,
+      "astId": 56870,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "resolutionSourceURI",
       "offset": 0,
@@ -153,7 +153,7 @@
       "type": "t_string_storage"
     },
     {
-      "astId": 18036,
+      "astId": 56872,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "outcomeCount",
       "offset": 0,
@@ -161,7 +161,7 @@
       "type": "t_uint8"
     },
     {
-      "astId": 18038,
+      "astId": 56874,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "createdAt",
       "offset": 1,
@@ -169,7 +169,7 @@
       "type": "t_uint64"
     },
     {
-      "astId": 18040,
+      "astId": 56876,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "closeAt",
       "offset": 9,
@@ -177,7 +177,7 @@
       "type": "t_uint64"
     },
     {
-      "astId": 18042,
+      "astId": 56878,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "earlyBirdStart",
       "offset": 17,
@@ -185,187 +185,195 @@
       "type": "t_uint64"
     },
     {
-      "astId": 18045,
+      "astId": 56880,
+      "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
+      "label": "resolutionWindow",
+      "offset": 0,
+      "slot": "19",
+      "type": "t_uint64"
+    },
+    {
+      "astId": 56883,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "deploymentMode",
-      "offset": 25,
-      "slot": "18",
-      "type": "t_enum(DeploymentMode)17749"
+      "offset": 8,
+      "slot": "19",
+      "type": "t_enum(DeploymentMode)56580"
     },
     {
-      "astId": 18048,
+      "astId": 56886,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "marketState",
-      "offset": 26,
-      "slot": "18",
-      "type": "t_enum(MarketState)17754"
+      "offset": 9,
+      "slot": "19",
+      "type": "t_enum(MarketState)56585"
     },
     {
-      "astId": 18050,
+      "astId": 56888,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "featureFlags",
       "offset": 0,
-      "slot": "19",
+      "slot": "20",
       "type": "t_uint256"
     },
     {
-      "astId": 18052,
+      "astId": 56890,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "perUserPrimaryCap",
       "offset": 0,
-      "slot": "20",
+      "slot": "21",
       "type": "t_uint128"
     },
     {
-      "astId": 18054,
+      "astId": 56892,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "marketPrimaryCap",
       "offset": 16,
-      "slot": "20",
+      "slot": "21",
       "type": "t_uint128"
     },
     {
-      "astId": 18056,
+      "astId": 56894,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "minimumPrimaryUnits",
-      "offset": 0,
-      "slot": "21",
-      "type": "t_uint128"
-    },
-    {
-      "astId": 18058,
-      "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
-      "label": "minimumC2CUnits",
-      "offset": 16,
-      "slot": "21",
-      "type": "t_uint128"
-    },
-    {
-      "astId": 18060,
-      "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
-      "label": "creatorBond",
       "offset": 0,
       "slot": "22",
       "type": "t_uint128"
     },
     {
-      "astId": 18063,
+      "astId": 56896,
+      "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
+      "label": "minimumC2CUnits",
+      "offset": 16,
+      "slot": "22",
+      "type": "t_uint128"
+    },
+    {
+      "astId": 56898,
+      "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
+      "label": "creatorBond",
+      "offset": 0,
+      "slot": "23",
+      "type": "t_uint128"
+    },
+    {
+      "astId": 56901,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_economics",
       "offset": 0,
-      "slot": "23",
-      "type": "t_struct(EconomicSnapshot)17803_storage"
+      "slot": "24",
+      "type": "t_struct(EconomicSnapshot)56634_storage"
     },
     {
-      "astId": 18066,
+      "astId": 56904,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "payoutBreakdown",
       "offset": 0,
-      "slot": "24",
-      "type": "t_struct(PayoutBreakdown)17871_storage"
+      "slot": "25",
+      "type": "t_struct(PayoutBreakdown)56704_storage"
     },
     {
-      "astId": 18068,
+      "astId": 56906,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "winningOutcome",
       "offset": 0,
-      "slot": "30",
+      "slot": "31",
       "type": "t_uint8"
     },
     {
-      "astId": 18070,
+      "astId": 56908,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_packedMarketAccounting",
-      "offset": 0,
-      "slot": "31",
-      "type": "t_uint256"
-    },
-    {
-      "astId": 18072,
-      "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
-      "label": "remainingWinningUnits",
       "offset": 0,
       "slot": "32",
       "type": "t_uint256"
     },
     {
-      "astId": 18074,
+      "astId": 56910,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
-      "label": "remainingWinnerPool",
+      "label": "remainingWinningUnits",
       "offset": 0,
       "slot": "33",
       "type": "t_uint256"
     },
     {
-      "astId": 18076,
+      "astId": 56912,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
-      "label": "remainingEarlyBirdScore",
+      "label": "remainingWinnerPool",
       "offset": 0,
       "slot": "34",
       "type": "t_uint256"
     },
     {
-      "astId": 18078,
+      "astId": 56914,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
-      "label": "remainingEarlyBirdPool",
+      "label": "remainingEarlyBirdScore",
       "offset": 0,
       "slot": "35",
       "type": "t_uint256"
     },
     {
-      "astId": 18080,
+      "astId": 56916,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
-      "label": "remainingRefundPrincipal",
+      "label": "remainingEarlyBirdPool",
       "offset": 0,
       "slot": "36",
       "type": "t_uint256"
     },
     {
-      "astId": 18082,
+      "astId": 56918,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
-      "label": "remainingTimeoutBonusUnits",
+      "label": "remainingRefundPrincipal",
       "offset": 0,
       "slot": "37",
       "type": "t_uint256"
     },
     {
-      "astId": 18084,
+      "astId": 56920,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
-      "label": "remainingTimeoutBonusPool",
+      "label": "remainingTimeoutBonusUnits",
       "offset": 0,
       "slot": "38",
       "type": "t_uint256"
     },
     {
-      "astId": 18086,
+      "astId": 56922,
+      "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
+      "label": "remainingTimeoutBonusPool",
+      "offset": 0,
+      "slot": "39",
+      "type": "t_uint256"
+    },
+    {
+      "astId": 56924,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "timeoutBonusFunded",
       "offset": 0,
-      "slot": "39",
+      "slot": "40",
       "type": "t_bool"
     },
     {
-      "astId": 18090,
+      "astId": 56928,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "principalByOutcome",
       "offset": 0,
-      "slot": "40",
+      "slot": "41",
       "type": "t_mapping(t_uint256,t_uint256)"
     },
     {
-      "astId": 18094,
+      "astId": 56932,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "_packedBuyerAccounting",
       "offset": 0,
-      "slot": "41",
+      "slot": "42",
       "type": "t_mapping(t_address,t_uint256)"
     },
     {
-      "astId": 18098,
+      "astId": 56936,
       "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
       "label": "timeoutBonusUnits",
       "offset": 0,
-      "slot": "42",
+      "slot": "43",
       "type": "t_mapping(t_address,t_uint256)"
     }
   ],
@@ -385,37 +393,37 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_contract(IERC20)3145": {
+    "t_contract(IERC20)40158": {
       "encoding": "inplace",
       "label": "contract IERC20",
       "numberOfBytes": "20"
     },
-    "t_contract(IEmergencyControllerV1)17140": {
+    "t_contract(IEmergencyControllerV1)55961": {
       "encoding": "inplace",
       "label": "contract IEmergencyControllerV1",
       "numberOfBytes": "20"
     },
-    "t_contract(IFeeVaultV1)17181": {
+    "t_contract(IFeeVaultV1)56002": {
       "encoding": "inplace",
       "label": "contract IFeeVaultV1",
       "numberOfBytes": "20"
     },
-    "t_contract(ILaunchExposureGuardV1)17262": {
+    "t_contract(ILaunchExposureGuardV1)56083": {
       "encoding": "inplace",
       "label": "contract ILaunchExposureGuardV1",
       "numberOfBytes": "20"
     },
-    "t_contract(ISignatureTransfer)13175": {
+    "t_contract(ISignatureTransfer)50623": {
       "encoding": "inplace",
       "label": "contract ISignatureTransfer",
       "numberOfBytes": "20"
     },
-    "t_enum(DeploymentMode)17749": {
+    "t_enum(DeploymentMode)56580": {
       "encoding": "inplace",
       "label": "enum ProtocolTypes.DeploymentMode",
       "numberOfBytes": "1"
     },
-    "t_enum(MarketState)17754": {
+    "t_enum(MarketState)56585": {
       "encoding": "inplace",
       "label": "enum ProtocolTypes.MarketState",
       "numberOfBytes": "1"
@@ -460,13 +468,13 @@
       "label": "string",
       "numberOfBytes": "32"
     },
-    "t_struct(EconomicSnapshot)17803_storage": {
+    "t_struct(EconomicSnapshot)56634_storage": {
       "encoding": "inplace",
       "label": "struct ProtocolTypes.EconomicSnapshot",
       "numberOfBytes": "32",
       "members": [
         {
-          "astId": 17792,
+          "astId": 56623,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "creatorRakeBps",
           "offset": 0,
@@ -474,7 +482,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 17794,
+          "astId": 56625,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "protocolShareBps",
           "offset": 2,
@@ -482,7 +490,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 17796,
+          "astId": 56627,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "earlyBirdShareBps",
           "offset": 4,
@@ -490,7 +498,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 17798,
+          "astId": 56629,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "platformC2CFeeBps",
           "offset": 6,
@@ -498,7 +506,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 17800,
+          "astId": 56631,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "creatorC2CFeeBps",
           "offset": 8,
@@ -506,7 +514,7 @@
           "type": "t_uint16"
         },
         {
-          "astId": 17802,
+          "astId": 56633,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "protocolTreasury",
           "offset": 10,
@@ -515,13 +523,13 @@
         }
       ]
     },
-    "t_struct(PayoutBreakdown)17871_storage": {
+    "t_struct(PayoutBreakdown)56704_storage": {
       "encoding": "inplace",
       "label": "struct ProtocolTypes.PayoutBreakdown",
       "numberOfBytes": "192",
       "members": [
         {
-          "astId": 17860,
+          "astId": 56693,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "totalPrincipal",
           "offset": 0,
@@ -529,7 +537,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 17862,
+          "astId": 56695,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "totalRake",
           "offset": 0,
@@ -537,7 +545,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 17864,
+          "astId": 56697,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "protocolFee",
           "offset": 0,
@@ -545,7 +553,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 17866,
+          "astId": 56699,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "earlyBirdPool",
           "offset": 0,
@@ -553,7 +561,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 17868,
+          "astId": 56701,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "creatorFee",
           "offset": 0,
@@ -561,7 +569,7 @@
           "type": "t_uint256"
         },
         {
-          "astId": 17870,
+          "astId": 56703,
           "contract": "src/market/CloneMarketVaultV1.sol:CloneMarketVaultV1",
           "label": "winnerPool",
           "offset": 0,

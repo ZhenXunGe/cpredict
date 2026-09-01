@@ -58,6 +58,19 @@
   },
   {
     "type": "function",
+    "name": "MAX_RESOLUTION_WINDOW",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "MAX_URI_LENGTH",
     "inputs": [],
     "outputs": [
@@ -71,7 +84,7 @@
   },
   {
     "type": "function",
-    "name": "RESOLUTION_WINDOW",
+    "name": "MIN_RESOLUTION_WINDOW",
     "inputs": [],
     "outputs": [
       {
@@ -831,6 +844,11 @@
             "internalType": "uint64"
           },
           {
+            "name": "resolutionWindow",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
             "name": "creatorTreasury",
             "type": "address",
             "internalType": "address"
@@ -1308,6 +1326,19 @@
         "name": "",
         "type": "string",
         "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "resolutionWindow",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
       }
     ],
     "stateMutability": "view"
@@ -1802,6 +1833,12 @@
       },
       {
         "name": "closeAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "resolutionWindow",
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"

@@ -42,13 +42,14 @@ contract MarketVaultInitializationTest is ProtocolTestBase {
         assertEq(fresh.paymentToken(), address(usdc));
         assertEq(fresh.creator(), CREATOR);
         assertEq(fresh.outcomeCount(), 2);
+        assertEq(fresh.resolutionWindow(), init.resolutionWindow);
         assertEq(fresh.uri(0), "ipfs://direct/{id}.json");
         ProtocolTypes.EconomicSnapshot memory economics = fresh.economics();
         assertEq(economics.creatorRakeBps, 500);
         assertTrue(fresh.earlyBirdEnabled());
         assertFalse(fresh.permit2Enabled());
         assertFalse(fresh.isTerminal());
-        assertEq(fresh.resolutionDeadline(), init.closeAt + 1 days);
+        assertEq(fresh.resolutionDeadline(), init.closeAt + init.resolutionWindow);
 
         vm.expectRevert(AlreadyInitialized.selector);
         fresh.initialize(init);
@@ -83,6 +84,12 @@ contract MarketVaultInitializationTest is ProtocolTestBase {
         init.featureFlags = 1 << 200;
         _expectInitRevert(init, UnsupportedFeatureFlags.selector);
         init = _validInit();
+        init.resolutionWindow = 15 minutes - 1;
+        _expectInitRevert(init, InvalidConfiguration.selector);
+        init = _validInit();
+        init.resolutionWindow = 30 days + 1;
+        _expectInitRevert(init, InvalidConfiguration.selector);
+        init = _validInit();
         init.closeAt = init.createdAt + 5 minutes - 1;
         _expectInitRevert(init, InvalidConfiguration.selector);
         init = _validInit();
@@ -115,6 +122,7 @@ contract MarketVaultInitializationTest is ProtocolTestBase {
             createdAt: uint64(block.timestamp),
             closeAt: uint64(block.timestamp + 1 days),
             earlyBirdStart: uint64(block.timestamp),
+            resolutionWindow: uint64(1 days),
             creatorTreasury: CREATOR_TREASURY,
             deploymentMode: ProtocolTypes.DeploymentMode.FULL,
             featureFlags: ProtocolTypes.FEATURE_EARLY_BIRD,

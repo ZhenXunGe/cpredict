@@ -3,3 +3,4 @@ caught mutants: 133
 mutation score: 98.52%
 bounded mutation gate: PASS (>=90%)
 tool lifecycle gate: PASS
+input snapshot gate: PASS

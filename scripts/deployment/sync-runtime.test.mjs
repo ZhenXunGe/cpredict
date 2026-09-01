@@ -17,6 +17,7 @@ const pending = {
   marketplace: address("a"), paymaster: address("b"), governanceSafe: address("c"),
   emergencySafe: address("d"), temporaryAdmin: address("e"),
   protocolTreasury: address("f"), sponsorSigner: address("e"),
+  marketResolutionWindowSeconds: 86_400,
   paymasterPolicyVersion: 1,
   paymasterMaxCostPerOperation: "2000000000000000",
   paymasterMaxCostPerUserDay: "20000000000000000",

@@ -31,6 +31,15 @@ export async function writeGateEvidence(options) {
     throw new Error("security evidence input inventory is empty");
   if (evidence.length === 0)
     throw new Error("security evidence artifact inventory is empty");
+  const sourceSnapshotSha256 = hashInventory(inputs);
+  if (options.expectedSourceSnapshotSha256 !== undefined) {
+    if (!SHA256.test(options.expectedSourceSnapshotSha256)) {
+      throw new Error("expected source snapshot SHA-256 is invalid");
+    }
+    if (sourceSnapshotSha256 !== options.expectedSourceSnapshotSha256) {
+      throw new Error("security evidence inputs drifted during gate execution");
+    }
+  }
 
   const result =
     acceptedToolExitCodes.includes(toolExitCode) && validatorExitCode === 0
@@ -49,7 +58,7 @@ export async function writeGateEvidence(options) {
     },
     validatorExitCode,
     platform: `${process.platform}-${process.arch}`,
-    sourceSnapshotSha256: hashInventory(inputs),
+    sourceSnapshotSha256,
     inputs,
     evidence,
   };
@@ -62,6 +71,14 @@ export async function writeGateEvidence(options) {
     "utf8",
   );
   return document;
+}
+
+export async function hashInputInventory(root, requestedPaths) {
+  const resolvedRoot = resolve(root ?? process.cwd());
+  const inputs = await inventory(resolvedRoot, requestedPaths, "input");
+  if (inputs.length === 0)
+    throw new Error("security evidence input inventory is empty");
+  return hashInventory(inputs);
 }
 
 async function inventory(root, requestedPaths, label) {
@@ -175,6 +192,7 @@ function parseArguments(arguments_) {
     ["--accepted-tool-exits", "acceptedToolExitCodes"],
     ["--validator-exit", "validatorExitCode"],
     ["--output", "output"],
+    ["--expected-source-snapshot-sha256", "expectedSourceSnapshotSha256"],
   ]);
   const options = { inputs: [], evidence: [] };
   for (let index = 0; index < arguments_.length; index += 2) {

@@ -13,7 +13,7 @@
   },
   "validatorExitCode": 0,
   "platform": "darwin-arm64",
-  "sourceSnapshotSha256": "880364a698fd98509ea70fdb2ca1b3b698094e17fc7a73f05908e21a9e42fb34",
+  "sourceSnapshotSha256": "e7e9d4fe89ec389a25d97528e3b7935c78b4b3e9e8e94407a25df54b168f3e06",
   "inputs": [
     {
       "path": "foundry.toml",
@@ -31,9 +31,29 @@
       "sha256": "c03068e82f0a3616d4b3549c380f964426f7d3dc6f440baee1aa6fce15499dd1"
     },
     {
+      "path": "script/DeployArbitrumSepolia.s.sol",
+      "bytes": 13857,
+      "sha256": "ccd94cf0fc305d23b1f2eb663c5a6ad93059667966eee18f5aa51dafa8e40a09"
+    },
+    {
+      "path": "script/FinalizeBootstrap.s.sol",
+      "bytes": 3309,
+      "sha256": "9a2626276189521c9f951ad462b18e53622c9886f2237eb7f2721403b3832ff1"
+    },
+    {
       "path": "scripts/forge.sh",
       "bytes": 189,
       "sha256": "0f378e68a17a193417c4db33f17eeca9d22e41a2e8490d00a986bd25c9ff4ba0"
+    },
+    {
+      "path": "scripts/normalize-text-log.mjs",
+      "bytes": 885,
+      "sha256": "24758e55d375e12117fc4eda8eaebd9d6bf602febaca112f006f809982847078"
+    },
+    {
+      "path": "scripts/security/hash-input-inventory.mjs",
+      "bytes": 798,
+      "sha256": "e1f663deda83aa492b8e6627f5d6186eac31f2a5f4b39e19067c7addbc9c2200"
     },
     {
       "path": "scripts/security/parse-mutation-summary.mjs",
@@ -42,23 +62,23 @@
     },
     {
       "path": "scripts/security/parse-mutation-summary.test.mjs",
-      "bytes": 6445,
-      "sha256": "c7a3428de82ca525f84124e9ed023a796eef198b0e71e715362601a1e336aa22"
+      "bytes": 7151,
+      "sha256": "bf886bada2794beb9f9afcb9e39cf345f27aba6590d4f10d731532bfc64e9ee1"
     },
     {
       "path": "scripts/security/run-mutation-common.sh",
-      "bytes": 5391,
-      "sha256": "ddd9547a55d4db0c00d043edd2f13972a9c9b3a82c39643cad92e497ba5f7ca0"
+      "bytes": 6291,
+      "sha256": "ff040d236cd3412b245291b0013837a3394b4699f181d3ddf28b4d5bfebd237e"
     },
     {
       "path": "scripts/security/run-mutation-feevault.sh",
-      "bytes": 9751,
-      "sha256": "ddfd5806f6c2682622906f6ce5f783fae18d1be2fefdd36817a30b958d7ce185"
+      "bytes": 10576,
+      "sha256": "5940d9b06b00f6bd58b46ec891e4aa0ba903668dad4f277756a40bd65691fc3c"
     },
     {
       "path": "scripts/security/run-mutation-lifecycle.test.sh",
-      "bytes": 2258,
-      "sha256": "db57a6c19ec3d34c40509b743602ab367be340b25fbe02d6ae73474b4b1d04a5"
+      "bytes": 2774,
+      "sha256": "291beb6522045afc08b8c7c761ff133df7ed1c74672f5499c2559ee525037823"
     },
     {
       "path": "scripts/security/verify-gate-evidence.mjs",
@@ -77,13 +97,258 @@
     },
     {
       "path": "scripts/security/write-gate-evidence.mjs",
-      "bytes": 6585,
-      "sha256": "351512a44d982ac6b07e86d15d854a09dc5035c96d7e6c2c8bb930e2a88200b3"
+      "bytes": 7375,
+      "sha256": "ab138214f83f7f13d129854bce15dfdcc9ea27f80e5f5f5a2f8ebe6ea8b81090"
+    },
+    {
+      "path": "src/core/BondEscrowV1.sol",
+      "bytes": 5259,
+      "sha256": "0ad1524032048957963c7676e374fdc1b25db0bafa59cf30851de617bae98c10"
+    },
+    {
+      "path": "src/core/EmergencyControllerV1.sol",
+      "bytes": 2830,
+      "sha256": "2efb5a4baf906df076c7e41ed6519154d81fbc0e659d5240a18c67b2c71ef60d"
     },
     {
       "path": "src/core/FeeVaultV1.sol",
       "bytes": 3571,
       "sha256": "3809c803815804fd44351df94a99529a045c566edf1da23b0636da474045c289"
+    },
+    {
+      "path": "src/core/FullMarketDeployerV1.sol",
+      "bytes": 1378,
+      "sha256": "2bc6320300255d4caf976206d3aa205047f0303eb3f668a992c2c572550f39ff"
+    },
+    {
+      "path": "src/core/LaunchExposureGuardV1.sol",
+      "bytes": 4155,
+      "sha256": "45ab1f242cfaa74b64b02042aa9a7df2efc1545d1e062a371646c241d230361b"
+    },
+    {
+      "path": "src/core/MarketFactoryV1.sol",
+      "bytes": 20643,
+      "sha256": "f00c9919df6921aa256c7b76cc64d2623754da01c16276126a56d04d4f63ceb1"
+    },
+    {
+      "path": "src/core/ProtocolConfigV1.sol",
+      "bytes": 7212,
+      "sha256": "ef354663cdafab05ba1ad3957dd418197774fb71098d2e6cd867cf3abf2179b5"
+    },
+    {
+      "path": "src/interfaces/IBondEscrowV1.sol",
+      "bytes": 342,
+      "sha256": "0b39066dd12085021aaea3bc600912a94cd7be97390bf9a7bb3ad07c1ac309dd"
+    },
+    {
+      "path": "src/interfaces/IEmergencyControllerV1.sol",
+      "bytes": 219,
+      "sha256": "1ac9d81e7f3987b76922fdade8ff0edcbd342a50dcdbfb1d58eac0963be6664f"
+    },
+    {
+      "path": "src/interfaces/IFeeVaultV1.sol",
+      "bytes": 507,
+      "sha256": "012bcf604eae7946ad0baa85dfba573fe856a254f8f6ce53f88195796a9c64e0"
+    },
+    {
+      "path": "src/interfaces/IFixedPriceMarketplaceV1.sol",
+      "bytes": 481,
+      "sha256": "f717ac0bd3a24274dc598617066f1545b45fb7fa51764f204beb5063a7216441"
+    },
+    {
+      "path": "src/interfaces/IFullMarketDeployerV1.sol",
+      "bytes": 277,
+      "sha256": "e2e27b6e167968b1ca1a9ed8e191c2d8e4eb5fc11073307dc15d5c23264f8aae"
+    },
+    {
+      "path": "src/interfaces/ILaunchExposureGuardV1.sol",
+      "bytes": 430,
+      "sha256": "f5264fd44b63db04d953b32bd2ec7f5ca4ab0a788470117f222edaa2234c9fbf"
+    },
+    {
+      "path": "src/interfaces/IMarketFactoryV1.sol",
+      "bytes": 445,
+      "sha256": "28af31fbc2e46ddd2616e032680d50d86a7b2e0d193e6dc445e0d33e1fab885e"
+    },
+    {
+      "path": "src/interfaces/IMarketVaultV1.sol",
+      "bytes": 1981,
+      "sha256": "2bc2ab2ecd247f9c835253fe0d6b29c37426c09633ab7b952b3a1c0695b5b580"
+    },
+    {
+      "path": "src/interfaces/IProtocolConfigV1.sol",
+      "bytes": 1082,
+      "sha256": "2a89d2c237a88cd609f54ffd6cfcaafa55f22ae298793665a7b38495ccdf837e"
+    },
+    {
+      "path": "src/libraries/ProtocolErrors.sol",
+      "bytes": 2695,
+      "sha256": "d39bf99a3c77e910bd04c9abbc8287043b3740e25d745476a0aa1677ee97f359"
+    },
+    {
+      "path": "src/libraries/ProtocolTypes.sol",
+      "bytes": 2853,
+      "sha256": "359221a246a3d34946c96b3eaf3338719395b89eaf33af23a2018b0e7a5c6448"
+    },
+    {
+      "path": "src/market/CloneMarketVaultV1.sol",
+      "bytes": 326,
+      "sha256": "414c017877d97133a4d4db9597fc21f1d0b185d1f55116e7cc8b3572a5b9ed0d"
+    },
+    {
+      "path": "src/market/FullMarketVaultV1.sol",
+      "bytes": 399,
+      "sha256": "e8985694384abff3fdd2883b93b6f328692d1c96bec9595ba969b6adf49211e8"
+    },
+    {
+      "path": "src/market/MarketVaultCoreV1.sol",
+      "bytes": 34875,
+      "sha256": "8ac224c352837c5e011625ab52d2fbbeae5caf33bb3b38856b2dbbefad3541ee"
+    },
+    {
+      "path": "src/marketplace/FixedPriceMarketplaceV1.sol",
+      "bytes": 17342,
+      "sha256": "4cad16fc35b6ca673768f15541b39dd6ad06fcfad65e2759e0fee3c7feed2724"
+    },
+    {
+      "path": "src/paymaster/SponsorshipPaymasterV1.sol",
+      "bytes": 17346,
+      "sha256": "e0bcad2a5c93764b1bd0c4053079ec7c0a07ee8ae79b8894ae73d9e882ddb8a6"
+    },
+    {
+      "path": "src/testnet/CpredictSandboxToken.sol",
+      "bytes": 1138,
+      "sha256": "3d1034f7ff8ae90f03f7fa19d49de4a9df7a40db9045f7b2879e0efb0d47210f"
+    },
+    {
+      "path": "test/coverage/full.initial-fail.lcov",
+      "bytes": 35965,
+      "sha256": "6943de5187ccee2beb527ff2a4a658e52b72c304b42fb36a077fd98f3d8f0ae6"
+    },
+    {
+      "path": "test/coverage/full.initial-fail.summary.txt",
+      "bytes": 2134462,
+      "sha256": "b092f3ac919155e7591b36f955b75700483314b7ab9a5256cafb150241e4a9a6"
+    },
+    {
+      "path": "test/coverage/full.lcov",
+      "bytes": 41522,
+      "sha256": "5e8386072e42de380c9dd0513af64bccc6d1e619b69bff472f441f0ab422cb8c"
+    },
+    {
+      "path": "test/coverage/full.runner.stdout.log",
+      "bytes": 2192142,
+      "sha256": "25aaaf8d7b88f2fc44ef241ff41dcee99a0bc16cd11e3d889289bfe654808e76"
+    },
+    {
+      "path": "test/coverage/full.sha256",
+      "bytes": 187,
+      "sha256": "7f0e59746dccf85ccc6990f980bc6e271e5562be9b0bcb523f11aab250a1d51b"
+    },
+    {
+      "path": "test/coverage/full.summary.txt",
+      "bytes": 2191863,
+      "sha256": "fd9133a6c983aeace8bacc953394574c5f2ec3b65ec5d5be3d5bd67662034d93"
+    },
+    {
+      "path": "test/coverage/isolated-copy-final.runner.log",
+      "bytes": 186,
+      "sha256": "4f0050a5bdf371d280720a438ac9d023e0645e7c253ba2d78f335e60d6db0320"
+    },
+    {
+      "path": "test/coverage/isolated-copy-lib-final.runner.log",
+      "bytes": 186,
+      "sha256": "4f0050a5bdf371d280720a438ac9d023e0645e7c253ba2d78f335e60d6db0320"
+    },
+    {
+      "path": "test/coverage/isolated-copy-relative-final.runner.log",
+      "bytes": 2192593,
+      "sha256": "5e17ef26f72bd5bdef0139e39dd8d93645d164e6d2202431e94c55f38ba50a94"
+    },
+    {
+      "path": "test/coverage/isolated-reports-final.runner.log",
+      "bytes": 2191583,
+      "sha256": "dfd429ba0bbc395ea5d5b9463d21395b45de2549c5a8589d0c7d8f570fb6d4c9"
+    },
+    {
+      "path": "test/coverage/non-ir-compile-check.log",
+      "bytes": 2172589,
+      "sha256": "fcde819fe942ae11bc1412962a659942e0d78186c38fb4fe8ad034f8c6ca4e86"
+    },
+    {
+      "path": "test/coverage/non-ir-optimized.comparison.summary.txt",
+      "bytes": 779,
+      "sha256": "15165a035e4c4aff93ba6cf634075ac13400ff01e3ffff04f26f19e016794c5c"
+    },
+    {
+      "path": "test/coverage/non-ir.comparison.summary.txt",
+      "bytes": 779,
+      "sha256": "77e98b46ae74582ee7f7c30e6cdede15bed2f6cc7a96348e349bdc4784ee1198"
+    },
+    {
+      "path": "test/coverage/non-ir.current.lcov",
+      "bytes": 41522,
+      "sha256": "0da3e5889cfdb0995f6db3bec363facc191bfb1a32adf79ecd514a09aa7c364a"
+    },
+    {
+      "path": "test/coverage/non-ir.current.raw.log",
+      "bytes": 2191471,
+      "sha256": "6c0ab0b07f0d324f6b028786b68611ca477f83830b5b7cff78df5c4350200d19"
+    },
+    {
+      "path": "test/coverage/production-gas-assertion-check.log",
+      "bytes": 1357,
+      "sha256": "8ed2101151acc0275fe839a7b24802fa0bc3e28c06c7001b457947a930bf62b5"
+    },
+    {
+      "path": "test/coverage/production-viair-forced-build.log",
+      "bytes": 45852,
+      "sha256": "7cdf957d1595df349827664c1a2d38bd5521878f15dad03db18e58406c49dc02"
+    },
+    {
+      "path": "test/coverage/reports-root-final.runner.log",
+      "bytes": 2191958,
+      "sha256": "f409b76a0ec04cf8be8f99099c44e2dc0e3bb311ad8a351f80dc7fc3d39a1183"
+    },
+    {
+      "path": "test/coverage/viair-production.comparison.summary.txt",
+      "bytes": 779,
+      "sha256": "d2270d48cb51202b69da113ed175b520e1be495cda23248e15e5d64544026ba8"
+    },
+    {
+      "path": "test/deployment/DeployArbitrumSepolia.t.sol",
+      "bytes": 6398,
+      "sha256": "3baf2117e19519282b13fdf1d487793333ef0e61d973e1edcf80bdce69a684dc"
+    },
+    {
+      "path": "test/gas/ProtocolGasGates.t.sol",
+      "bytes": 10075,
+      "sha256": "d4d8deffd430f6a37b9d916eb286a3d49ea49744ee0c3871d2c738305adc49a3"
+    },
+    {
+      "path": "test/helpers/ProtocolTestBase.sol",
+      "bytes": 5629,
+      "sha256": "e192f8966db64fdc89a10c2ac6be1212bf824467fcfdd114d07deb9ce944d61c"
+    },
+    {
+      "path": "test/invariant/MarketAccounting.invariant.t.sol",
+      "bytes": 9129,
+      "sha256": "dd4b631572a214270f42c3b6eb8bb4178442b1410fc43c64edcc6d78af698ecd"
+    },
+    {
+      "path": "test/mocks/MockUSDC.sol",
+      "bytes": 390,
+      "sha256": "10429e52c82a4dc132b47a2aa42ad1e45fd2d72c5cffb673ee9975ed8d77c077"
+    },
+    {
+      "path": "test/security/EchidnaMarketAccounting.sol",
+      "bytes": 12055,
+      "sha256": "bbabb81e8ca12ba6aaa4c0bffb5b1d4e6401bb092ddd5fa3c44923b947e6a17e"
+    },
+    {
+      "path": "test/security/ProtocolMath.smt.sol",
+      "bytes": 2671,
+      "sha256": "60a6382c1ec980413c5552bfa01df9ca590b6327d7b3c03a0a3ad0d245f64040"
     },
     {
       "path": "test/unit/BondEscrowMutationResistance.t.sol",
@@ -102,8 +367,8 @@
     },
     {
       "path": "test/unit/FactoryValidation.t.sol",
-      "bytes": 22353,
-      "sha256": "cdbf1a4a4dd743ecdc8a42285e5cc2c552bf3b41bbb2367b27bdec14bc0ff375"
+      "bytes": 25641,
+      "sha256": "64b4a7ae2eb55d24576f9d490d3323999b3bde04aa018bd632e1c23a58b582d1"
     },
     {
       "path": "test/unit/FeeVaultMutationResistance.t.sol",
@@ -112,8 +377,8 @@
     },
     {
       "path": "test/unit/MarketVaultEdges.t.sol",
-      "bytes": 25598,
-      "sha256": "fca74a960144bc6342b39b7088011d076a9b16d8a615b3ee2e9fb8c5271a198e"
+      "bytes": 26005,
+      "sha256": "1de842b7034eead99e17f0f9ae068934e48ac2f910009371bd91a0922ab5f27f"
     },
     {
       "path": "test/unit/MarketVaultInternalHarness.t.sol",
@@ -132,8 +397,8 @@
     },
     {
       "path": "test/unit/Permit2Flows.t.sol",
-      "bytes": 20050,
-      "sha256": "60c03665c4aec105b620428aed3b2b25a376f734a2d00707f15f1e805bc1a5ac"
+      "bytes": 20070,
+      "sha256": "47681c010df6cd167ff0bc0ac1ebc74c534fb593de7aaa47ab80cc4618eda470"
     },
     {
       "path": "test/unit/ProtocolControls.t.sol",
@@ -142,8 +407,8 @@
     },
     {
       "path": "test/unit/ProtocolFlows.t.sol",
-      "bytes": 17001,
-      "sha256": "211e9f89da0481e725fe48b6d479689c5fc5c644639c56023e2e2f3e32426054"
+      "bytes": 17021,
+      "sha256": "7dd2a9617eba2832d5c723d808abb185f9d8c76baec35c8d209d4aff671b489a"
     },
     {
       "path": "test/unit/SponsorshipPaymaster.t.sol",
@@ -152,20 +417,25 @@
     },
     {
       "path": "test/unit/TokenTransferIntegrity.t.sol",
-      "bytes": 15230,
-      "sha256": "43352a3a10ca68cbd9ec82fa87e0692039d880e7711eb824357b5413aa392ada"
+      "bytes": 15250,
+      "sha256": "2b9807107027f011d5fe01b9f93f80e78fbe69eb5d7eb2b00d0560250ec48611"
+    },
+    {
+      "path": "test/viair/SponsorshipDigest.t.sol",
+      "bytes": 4385,
+      "sha256": "23e74ac18a6382b2b32143e403c262c4afdb78f6d0a3342e34a185cb8ecd2a07"
     }
   ],
   "evidence": [
     {
       "path": "reports/security/mutation-feevault-summary.txt",
-      "bytes": 127,
-      "sha256": "f8347628f357d8ffc7bd40d49252b3a6efc661f83ee6d45616c39b2495ca4ac6"
+      "bytes": 153,
+      "sha256": "763ca9fe333e0ab2ea85abe0c7569f417c68fe720796f91ca6428d3c419d069f"
     },
     {
       "path": "reports/security/mutation-feevault.log",
-      "bytes": 75995,
-      "sha256": "93aa3728bf619349d99ed46536135d09011ba4d5cc8b35cabf29f0c6bda269e0"
+      "bytes": 75985,
+      "sha256": "b1b99c8ffeeb3395158f635c97c5e065a537585501a837bcffb71cebea0df5b6"
     }
   ]
 }

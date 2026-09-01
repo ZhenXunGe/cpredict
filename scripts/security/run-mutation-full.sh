@@ -76,6 +76,28 @@ completed_contracts=0
 campaign_timed_out=0
 post_report_timeout=0
 group_leak=0
+input_snapshot_before=""
+evidence_inputs=(
+  src
+  test
+  script
+  scripts/forge.sh
+  scripts/normalize-text-log.mjs
+  scripts/test-all.sh
+  scripts/security/hash-input-inventory.mjs
+  scripts/security/run-mutation-common.sh
+  scripts/security/run-mutation-full.sh
+  scripts/security/run-mutation-lifecycle.test.sh
+  scripts/security/parse-mutation-summary.mjs
+  scripts/security/parse-mutation-summary.test.mjs
+  scripts/security/write-gate-evidence.mjs
+  scripts/security/verify-gate-evidence.mjs
+  scripts/security/verify-python-record.mjs
+  scripts/security/verify-slither-install.sh
+  manifests/security-tools.lock
+  foundry.toml
+  remappings.txt
+)
 
 contract_marker_present() {
   local file="$1"
@@ -117,13 +139,17 @@ publish_summary_file() {
 }
 
 write_evidence() {
-  local stage_dir stage_relative staged_json staged_sidecar
+  local stage_dir stage_relative staged_json staged_sidecar requested_path
+  local input_arguments=()
   if [[ "$evidence_attempted" -eq 1 || ! -f "$log_path" || ! -f "$summary_path" ]]; then return; fi
   evidence_attempted=1
   stage_dir="$(mktemp -d "$repo_root/reports/security/.mutation-full-evidence.XXXXXX")"
   stage_relative="${stage_dir#"$repo_root/"}/mutation-full-evidence.json"
   staged_json="$stage_dir/mutation-full-evidence.json"
   staged_sidecar="$staged_json.sha256"
+  for requested_path in "${evidence_inputs[@]}"; do
+    input_arguments+=(--input "$requested_path")
+  done
 
   if ! node "$evidence_writer" \
     --root "$repo_root" \
@@ -135,28 +161,8 @@ write_evidence() {
     --accepted-tool-exits 0 \
     --validator-exit "$validator_status" \
     --output "$stage_relative" \
-    --input src \
-    --input test/gas \
-    --input test/helpers \
-    --input test/invariant \
-    --input test/mocks \
-    --input test/security \
-    --input test/unit \
-    --input test/viair \
-    --input scripts/forge.sh \
-    --input scripts/test-all.sh \
-    --input scripts/security/run-mutation-common.sh \
-    --input scripts/security/run-mutation-full.sh \
-    --input scripts/security/run-mutation-lifecycle.test.sh \
-    --input scripts/security/parse-mutation-summary.mjs \
-    --input scripts/security/parse-mutation-summary.test.mjs \
-    --input scripts/security/write-gate-evidence.mjs \
-    --input scripts/security/verify-gate-evidence.mjs \
-    --input scripts/security/verify-python-record.mjs \
-    --input scripts/security/verify-slither-install.sh \
-    --input manifests/security-tools.lock \
-    --input foundry.toml \
-    --input remappings.txt \
+    --expected-source-snapshot-sha256 "$input_snapshot_before" \
+    "${input_arguments[@]}" \
     --evidence reports/security/mutation-full.log \
     --evidence reports/security/mutation-full-summary.txt \
     || ! (cd "$repo_root" && node "$evidence_verifier" "$stage_relative"); then
@@ -233,12 +239,15 @@ aggregate_log="$work_root/mutation-full.log"
 }
 bash "$install_verifier"
 
+input_snapshot_before="$(mutation_input_snapshot "$repo_root" "${evidence_inputs[@]}")"
+
 mkdir -p "$work_repo/scripts" "$(dirname "$log_path")"
 cp -R "$repo_root/src" "$repo_root/test" "$repo_root/script" "$work_repo/"
 cp "$repo_root/scripts/forge.sh" "$repo_root/scripts/test-all.sh" "$work_repo/scripts/"
 cp "$repo_root/foundry.toml" "$repo_root/remappings.txt" "$work_repo/"
 ln -s "$repo_root/lib" "$work_repo/lib"
 ln -s "$repo_root/.tools" "$work_repo/.tools"
+mutation_require_input_snapshot "$input_snapshot_before" "$repo_root" "${evidence_inputs[@]}"
 
 export PATH="$repo_root/.tools/slither/bin:$repo_root/.tools/foundry/bin:$PATH"
 export SVM_HOME="$repo_root/.tools/svm"
@@ -297,6 +306,10 @@ for contract_index in "${!expected_contracts[@]}"; do
 done
 
 publish_log
+input_snapshot_status=0
+if ! mutation_require_input_snapshot "$input_snapshot_before" "$repo_root" "${evidence_inputs[@]}"; then
+  input_snapshot_status=74
+fi
 summary_temp="$(mktemp "$work_root/mutation-full-summary.XXXXXX")"
 parser_arguments=(
   --input "$log_path"
@@ -329,6 +342,13 @@ elif [[ "$tool_status" -ne 0 ]]; then
     "$tool_status" "$current_contract" "$completed_contracts" >>"$summary_temp"
 else
   printf '%s\n' 'tool lifecycle gate: PASS' >>"$summary_temp"
+fi
+
+if [[ "$input_snapshot_status" -ne 0 ]]; then
+  if [[ "$lifecycle_status" -eq 0 ]]; then lifecycle_status="$input_snapshot_status"; fi
+  printf '%s\n' 'input snapshot gate: FAIL (repository inputs drifted during campaign)' >>"$summary_temp"
+else
+  printf '%s\n' 'input snapshot gate: PASS' >>"$summary_temp"
 fi
 
 if [[ "$completed_contracts" -eq 12 && "$score_status" -eq 0 && "$lifecycle_status" -eq 0 ]]; then

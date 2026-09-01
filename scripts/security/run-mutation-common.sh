@@ -17,6 +17,28 @@ mutation_require_positive_integer() {
   fi
 }
 
+mutation_input_snapshot() {
+  local root="$1"
+  shift
+  local arguments=(--root "$root")
+  local requested_path
+  for requested_path in "$@"; do
+    arguments+=(--input "$requested_path")
+  done
+  node "$repo_root/scripts/security/hash-input-inventory.mjs" "${arguments[@]}"
+}
+
+mutation_require_input_snapshot() {
+  local expected="$1"
+  shift
+  local current
+  if ! current="$(mutation_input_snapshot "$@")"; then return 74; fi
+  if [[ "$current" != "$expected" ]]; then
+    printf '%s\n' 'mutation input inventory drifted during campaign' >&2
+    return 74
+  fi
+}
+
 mutation_process_group_alive() {
   local pgid="${1:-}"
   [[ -n "$pgid" ]] && kill -0 -- "-$pgid" 2>/dev/null
@@ -144,7 +166,7 @@ mutation_atomic_copy() {
   local source_path="$1"
   local destination_path="$2"
   local temporary_path="${destination_path}.tmp.$$.$RANDOM"
-  if ! cp "$source_path" "$temporary_path"; then
+  if ! node "$repo_root/scripts/normalize-text-log.mjs" "$source_path" "$temporary_path"; then
     rm -f -- "$temporary_path"
     return 1
   fi
@@ -172,15 +194,21 @@ mutation_atomic_append_file() {
   local source_path="$1"
   local destination_path="$2"
   local temporary_path="${destination_path}.tmp.$$.$RANDOM"
+  local combined_path="${destination_path}.combined.$$.$RANDOM"
   if [[ -f "$destination_path" ]]; then
-    if ! { cat "$destination_path"; cat "$source_path"; } >"$temporary_path"; then
-      rm -f -- "$temporary_path"
+    if ! { cat "$destination_path"; cat "$source_path"; } >"$combined_path"; then
+      rm -f -- "$combined_path" "$temporary_path"
       return 1
     fi
-  elif ! cp "$source_path" "$temporary_path"; then
-    rm -f -- "$temporary_path"
+  elif ! cp "$source_path" "$combined_path"; then
+    rm -f -- "$combined_path" "$temporary_path"
     return 1
   fi
+  if ! node "$repo_root/scripts/normalize-text-log.mjs" "$combined_path" "$temporary_path"; then
+    rm -f -- "$combined_path" "$temporary_path"
+    return 1
+  fi
+  rm -f -- "$combined_path"
   if ! mv -f -- "$temporary_path" "$destination_path"; then
     rm -f -- "$temporary_path"
     return 1

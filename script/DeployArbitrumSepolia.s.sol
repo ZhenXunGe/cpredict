@@ -51,6 +51,7 @@ contract DeployArbitrumSepolia is Script {
         address treasury;
         address sponsorSigner;
         bool sandboxTokenEnabled;
+        uint64 resolutionWindow;
     }
 
     function run() external returns (Deployment memory deployed) {
@@ -101,6 +102,9 @@ contract DeployArbitrumSepolia is Script {
         inputs.treasury = vm.envAddress("PROTOCOL_TREASURY");
         inputs.sponsorSigner = vm.envAddress("SPONSOR_SIGNER");
         inputs.sandboxTokenEnabled = vm.envOr("CPREDICT_SANDBOX_TOKEN_ENABLED", false);
+        uint256 resolutionWindow = vm.envOr("MARKET_RESOLUTION_WINDOW_SECONDS", uint256(24 hours));
+        require(resolutionWindow <= type(uint64).max, "resolution window overflow");
+        inputs.resolutionWindow = uint64(resolutionWindow);
     }
 
     function _validateExternalDependencies(bool sandboxTokenEnabled) internal view {
@@ -137,7 +141,8 @@ contract DeployArbitrumSepolia is Script {
         deployed.bondEscrow = new BondEscrowV1(governance, paymentToken);
         deployed.cloneImplementation = new CloneMarketVaultV1();
         deployed.fullDeployer = new FullMarketDeployerV1(governance);
-        deployed.factory = _deployFactory(deployed, governance, CANONICAL_PERMIT2);
+        deployed.factory =
+            _deployFactory(deployed, governance, inputs.resolutionWindow, CANONICAL_PERMIT2);
         deployed.marketplace = new FixedPriceMarketplaceV1(
             address(deployed.factory),
             address(deployed.emergency),
@@ -177,10 +182,12 @@ contract DeployArbitrumSepolia is Script {
 
     /// @dev Isolated only to keep the deployment script compilable in Foundry's unoptimized,
     /// non-viaIR coverage build. Deployment order and constructor arguments remain unchanged.
-    function _deployFactory(Deployment memory deployed, address governance, address permit2)
-        internal
-        returns (MarketFactoryV1)
-    {
+    function _deployFactory(
+        Deployment memory deployed,
+        address governance,
+        uint64 resolutionWindow,
+        address permit2
+    ) internal returns (MarketFactoryV1) {
         return new MarketFactoryV1(
             governance,
             address(deployed.config),
@@ -190,6 +197,7 @@ contract DeployArbitrumSepolia is Script {
             address(deployed.feeVault),
             address(deployed.fullDeployer),
             address(deployed.cloneImplementation),
+            resolutionWindow,
             permit2
         );
     }
@@ -236,6 +244,7 @@ contract DeployArbitrumSepolia is Script {
         vm.serializeAddress(root, "protocolTreasury", deployed.config.protocolTreasury());
         vm.serializeAddress(root, "sponsorSigner", deployed.paymaster.sponsorSigner());
         vm.serializeUint(root, "paymasterPolicyVersion", deployed.paymaster.policyVersion());
+        vm.serializeUint(root, "marketResolutionWindowSeconds", inputs.resolutionWindow);
         vm.serializeString(
             root,
             "paymasterMaxCostPerOperation",

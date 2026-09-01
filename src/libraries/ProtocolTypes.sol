@@ -75,6 +75,7 @@ library ProtocolTypes {
         uint64 createdAt;
         uint64 closeAt;
         uint64 earlyBirdStart;
+        uint64 resolutionWindow;
         address creatorTreasury;
         DeploymentMode deploymentMode;
         uint256 featureFlags;
@@ -95,4 +96,3 @@ library ProtocolTypes {
         uint256 winnerPool;
     }
 }
-

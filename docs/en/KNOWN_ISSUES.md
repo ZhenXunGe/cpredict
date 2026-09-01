@@ -6,16 +6,17 @@ reports remain evidence for their own source snapshots but must not override tha
 ## Release blockers
 
 - Independent audits and remediation reviews have not occurred.
-- Current production `src/**` coverage passes at 100% line, 100% function and 99.13% branch across
-  20 suites / 121 tests. The production-context gas/size gate passes 10/10. These local PASS results
+- Current production `src/**` coverage passes at 100% line, 100% function and 99.15% branch across
+  24 suites / 137 tests. The production-context gas/size gate passes 10/10. These local PASS results
   remove the prior percentage/gas blockers but do not close the aggregate release gate.
-- Retained prior-snapshot Slither, Aderyn, Medusa (1,024,046 calls; 27/27), Halmos, SMTChecker and
-  Echidna arm64 (1,000,053 calls; 4/4) runs passed their stated scopes, but the current evidence verifier
-  rejects all of them because `foundry.toml` or validator inputs drifted. The x86_64/Rosetta diagnostic
+- A fresh current-input FeeVault mutation run catches 133/135 mutants (98.52%) with raw rc 0,
+  validator rc 0, lifecycle PASS and input-snapshot PASS. It is a bounded result, not a whole-protocol
+  score. Retained Slither, Aderyn, Halmos, SMTChecker, Echidna and Medusa records are rejected for
+  current-input drift. The x86_64/Rosetta diagnostic
   executes 1,032 calls and 4/4 properties after the same harness fix but hangs while saving coverage,
-  so its million-call lifecycle remains open. FeeVault's retained mutation result is 133/135 (98.52%)
-  with raw rc 143 and remains FAIL; the prior whole-protocol run completed 0/12 contracts. The runners
-  are hardened, but fresh bounded and whole-protocol campaigns have not run.
+  so its million-call lifecycle remains open. The retained whole-protocol mutation run completed only
+  2/12 contracts and has no release score; the current-source FeeVault result is reported separately in
+  `reports/security/security-gates.md`.
 - Commercial load is not accepted. The schema-v4 three-host SUT/load/chain runners, telemetry,
   source/runtime binding, host-distinctness checks and signed evidence collector are statically and
   fixture verified, but the formal distributed run is **NOT RUN**. The retained same-host schema-v3
@@ -31,8 +32,13 @@ reports remain evidence for their own source snapshots but must not override tha
   provenance must end no later than the assessment time and the deployment inventory must match the
   audit commit, addresses and runtime code hashes exactly. These tools do not change V1 Solidity or
   execute governance actions.
-- Arbitrum Sepolia deployment, source verification, role verification, real AA/Permit2/C2C flows and the
-  24-hour timeout canary have not occurred.
+- Local ignored acceptance state records a chain-421614 sandbox deployment whose bootstrap is done and
+  Factory is active; the orchestrator remains `FINALIZED_PENDING_EVIDENCE_VERIFICATION`. The 15-minute
+  three-wallet run completed 47 operations (46 successful transactions and one expected revert),
+  including its real-wait timeout path. Phase two completed C1 and F1 with 65 operations (30 receipt-backed
+  transactions and 35 expected reverts). The control-plane run records 13 on-chain operations, including
+  three expected on-chain reverts. This is complete DEBUG runtime coverage for those scenarios, not a
+  `FINALIZED_VERIFIED` manifest, clean source/audit binding, dual-RPC canary or release approval.
 - Production KMS/HSM, Bundler, external USDC Paymaster, RPC quorum, indexer HA and incident
   exercises are not integrated. A dedicated disposable PostgreSQL 17.10 lane passes 9/9 with zero
   skips, but it does not prove production TLS, HA, backup or restore behavior.

@@ -54,6 +54,7 @@ contract ProtocolFlowsTest is Test {
             address(feeVault),
             address(fullDeployer),
             address(cloneImplementation),
+            1 days,
             address(0)
         );
         guard.setFactory(address(factory));

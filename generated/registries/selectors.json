@@ -756,13 +756,13 @@
   },
   {
     "contract": "CloneMarketVaultV1",
-    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
-    "selector": "0x0f431f11"
+    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
+    "selector": "0xa71d63be"
   },
   {
     "contract": "FullMarketVaultV1",
-    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
-    "selector": "0x0f431f11"
+    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
+    "selector": "0xa71d63be"
   },
   {
     "contract": "CloneMarketVaultV1",
@@ -855,6 +855,21 @@
     "selector": "0x2600e041"
   },
   {
+    "contract": "CloneMarketVaultV1",
+    "signature": "MAX_RESOLUTION_WINDOW()",
+    "selector": "0x8198dfee"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "MAX_RESOLUTION_WINDOW()",
+    "selector": "0x8198dfee"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "MAX_RESOLUTION_WINDOW()",
+    "selector": "0x8198dfee"
+  },
+  {
     "contract": "FixedPriceMarketplaceV1",
     "signature": "MAX_UNIT_PRICE()",
     "selector": "0xd2715d4e"
@@ -933,6 +948,21 @@
     "contract": "SponsorshipPaymasterV1",
     "signature": "MIN_PAYMASTER_VERIFICATION_GAS_LIMIT()",
     "selector": "0x72219437"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "MIN_RESOLUTION_WINDOW()",
+    "selector": "0x1d23c574"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "MIN_RESOLUTION_WINDOW()",
+    "selector": "0x1d23c574"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "MIN_RESOLUTION_WINDOW()",
+    "selector": "0x1d23c574"
   },
   {
     "contract": "FixedPriceMarketplaceV1",
@@ -1296,16 +1326,6 @@
   },
   {
     "contract": "CloneMarketVaultV1",
-    "signature": "RESOLUTION_WINDOW()",
-    "selector": "0x734c8544"
-  },
-  {
-    "contract": "FullMarketVaultV1",
-    "signature": "RESOLUTION_WINDOW()",
-    "selector": "0x734c8544"
-  },
-  {
-    "contract": "CloneMarketVaultV1",
     "signature": "resolutionDeadline()",
     "selector": "0x528f734f"
   },
@@ -1333,6 +1353,21 @@
     "contract": "FullMarketVaultV1",
     "signature": "resolutionSourceURI()",
     "selector": "0x0dd9968a"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "resolutionWindow()",
+    "selector": "0x3a0ea704"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "resolutionWindow()",
+    "selector": "0x3a0ea704"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "resolutionWindow()",
+    "selector": "0x3a0ea704"
   },
   {
     "contract": "CloneMarketVaultV1",

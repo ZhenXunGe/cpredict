@@ -60,6 +60,50 @@ contract DuplicateMarketDeployer is IFullMarketDeployerV1 {
 }
 
 contract FactoryValidationTest is ProtocolTestBase {
+    function testFactorySnapshotsFifteenMinuteResolutionWindowIntoFullAndClone() public {
+        (
+            MarketFactoryV1 localFactory,
+            LaunchExposureGuardV1 localGuard,
+            FeeVaultV1 localFeeVault,
+            BondEscrowV1 localBondEscrow,
+            FullMarketDeployerV1 localDeployer
+        ) = _newFactoryWithWindow(address(emergency), address(0), 15 minutes);
+        assertEq(localFactory.resolutionWindow(), 15 minutes);
+
+        localGuard.setFactory(address(localFactory));
+        localFeeVault.setFactory(address(localFactory));
+        localBondEscrow.setFactory(address(localFactory));
+        localDeployer.setFactory(address(localFactory));
+        FixedPriceMarketplaceV1 localMarketplace = new FixedPriceMarketplaceV1(
+            address(localFactory),
+            address(emergency),
+            address(localFeeVault),
+            address(usdc),
+            address(0)
+        );
+        localFactory.setMarketplace(address(localMarketplace));
+        localFactory.activate(localFactory.dependencyFingerprint());
+
+        vm.startPrank(CREATOR);
+        usdc.approve(address(localFactory), 20e6);
+        MarketVaultCoreV1 full = MarketVaultCoreV1(
+            localFactory.createMarket(
+                _defaultParams(ProtocolTypes.DeploymentMode.FULL), keccak256("window-full")
+            )
+        );
+        MarketVaultCoreV1 clone = MarketVaultCoreV1(
+            localFactory.createMarket(
+                _defaultParams(ProtocolTypes.DeploymentMode.CLONE), keccak256("window-clone")
+            )
+        );
+        vm.stopPrank();
+
+        assertEq(full.resolutionWindow(), 15 minutes);
+        assertEq(clone.resolutionWindow(), 15 minutes);
+        assertEq(full.resolutionDeadline(), full.closeAt() + 15 minutes);
+        assertEq(clone.resolutionDeadline(), clone.closeAt() + 15 minutes);
+    }
+
     function testClonePredictionCreationFeeBondAndEconomicSnapshot() public {
         config.setCreationFee(2e6);
         config.setProtocolShareBps(2500);
@@ -271,6 +315,7 @@ contract FactoryValidationTest is ProtocolTestBase {
             address(feeVault),
             address(fullDeployer),
             address(cloneImplementation),
+            1 days,
             address(0)
         );
         vm.expectRevert(ZeroAddress.selector);
@@ -283,6 +328,36 @@ contract FactoryValidationTest is ProtocolTestBase {
             address(feeVault),
             address(fullDeployer),
             address(0),
+            1 days,
+            address(0)
+        );
+    }
+
+    function testFactoryConstructorRejectsResolutionWindowOutsideBounds() public {
+        vm.expectPartialRevert(ValueOutOfRange.selector);
+        new MarketFactoryV1(
+            address(this),
+            address(config),
+            address(emergency),
+            address(guard),
+            address(bondEscrow),
+            address(feeVault),
+            address(fullDeployer),
+            address(cloneImplementation),
+            15 minutes - 1,
+            address(0)
+        );
+        vm.expectPartialRevert(ValueOutOfRange.selector);
+        new MarketFactoryV1(
+            address(this),
+            address(config),
+            address(emergency),
+            address(guard),
+            address(bondEscrow),
+            address(feeVault),
+            address(fullDeployer),
+            address(cloneImplementation),
+            30 days + 1,
             address(0)
         );
     }
@@ -304,6 +379,7 @@ contract FactoryValidationTest is ProtocolTestBase {
             address(localFeeVault),
             address(duplicateDeployer),
             address(localClone),
+            1 days,
             address(0)
         );
         localGuard.setFactory(address(localFactory));
@@ -491,6 +567,19 @@ contract FactoryValidationTest is ProtocolTestBase {
             FullMarketDeployerV1 localDeployer
         )
     {
+        return _newFactoryWithWindow(emergency_, permit2_, 1 days);
+    }
+
+    function _newFactoryWithWindow(address emergency_, address permit2_, uint64 resolutionWindow_)
+        internal
+        returns (
+            MarketFactoryV1 localFactory,
+            LaunchExposureGuardV1 localGuard,
+            FeeVaultV1 localFeeVault,
+            BondEscrowV1 localBondEscrow,
+            FullMarketDeployerV1 localDeployer
+        )
+    {
         localGuard = new LaunchExposureGuardV1(address(this), 50_000e6);
         localFeeVault = new FeeVaultV1(address(this), address(usdc));
         localBondEscrow = new BondEscrowV1(address(this), address(usdc));
@@ -504,6 +593,7 @@ contract FactoryValidationTest is ProtocolTestBase {
             address(localFeeVault),
             address(localDeployer),
             address(new CloneMarketVaultV1()),
+            resolutionWindow_,
             permit2_
         );
     }

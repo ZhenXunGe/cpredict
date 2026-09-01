@@ -70,6 +70,7 @@ const CONTRACTS = {
       "address",
       "address",
       "address",
+      "uint64",
       "address",
     ],
     functions: [
@@ -83,6 +84,7 @@ const CONTRACTS = {
       "cloneImplementation()address",
       "paymentToken()address",
       "permit2()address",
+      "resolutionWindow()uint64",
       "marketplace()address",
       "active()bool",
       "deprecated()bool",

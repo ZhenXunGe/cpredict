@@ -1166,8 +1166,8 @@
   {
     "contract": "CloneMarketVaultV1",
     "name": "MarketInitialized",
-    "signature": "MarketInitialized(address,address,uint8,uint8,uint64,uint128,uint128)",
-    "selector": "0xece02717a7701a90e52e79972c8054aed251597a2c108b41938a7f469199b298",
+    "signature": "MarketInitialized(address,address,uint8,uint8,uint64,uint64,uint128,uint128)",
+    "selector": "0xceb266feee4d19aa4d598018167bc98ee9cbec37dcfbab456631dc871443ba79",
     "inputs": [
       {
         "name": "market",
@@ -1200,6 +1200,12 @@
         "internalType": "uint64"
       },
       {
+        "name": "resolutionWindow",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
         "name": "marketPrimaryCap",
         "type": "uint128",
         "indexed": false,
@@ -1216,8 +1222,8 @@
   {
     "contract": "FullMarketVaultV1",
     "name": "MarketInitialized",
-    "signature": "MarketInitialized(address,address,uint8,uint8,uint64,uint128,uint128)",
-    "selector": "0xece02717a7701a90e52e79972c8054aed251597a2c108b41938a7f469199b298",
+    "signature": "MarketInitialized(address,address,uint8,uint8,uint64,uint64,uint128,uint128)",
+    "selector": "0xceb266feee4d19aa4d598018167bc98ee9cbec37dcfbab456631dc871443ba79",
     "inputs": [
       {
         "name": "market",
@@ -1245,6 +1251,12 @@
       },
       {
         "name": "closeAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "resolutionWindow",
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"

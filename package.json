@@ -64,7 +64,7 @@
     "check:release-gates": "node scripts/release/check-release-gates.mjs",
     "build:ci-attestation-predicate": "node scripts/release/build-ci-attestation-predicate.mjs",
     "verify:ci-attestation": "node scripts/release/verify-ci-attestation.mjs",
-    "test:gate-parsers": "node --test scripts/security/validate-gate-evidence.test.mjs scripts/security/scan-delivery-secrets.test.mjs scripts/security/write-gate-evidence.test.mjs scripts/security/parse-mutation-summary.test.mjs",
+    "test:gate-parsers": "node --test scripts/normalize-text-log.test.mjs scripts/security/validate-gate-evidence.test.mjs scripts/security/scan-delivery-secrets.test.mjs scripts/security/write-gate-evidence.test.mjs scripts/security/parse-mutation-summary.test.mjs",
     "scan:secrets": "node scripts/security/scan-delivery-secrets.mjs",
     "scan:container-images": "bash scripts/security/scan-container-images.sh",
     "scan:container-config": ".tools/trivy/bin/trivy config --cache-dir .tools/trivy/cache --severity HIGH,CRITICAL --exit-code 1 --skip-check-update --skip-version-check --disable-telemetry deploy/compose",

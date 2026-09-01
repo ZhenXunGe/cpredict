@@ -78,6 +78,7 @@ contract Permit2FlowsTest is Test {
             address(feeVault),
             address(fullDeployer),
             address(cloneImplementation),
+            1 days,
             address(permit2)
         );
         guard.setFactory(address(factory));

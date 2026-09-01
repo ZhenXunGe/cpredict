@@ -9,7 +9,7 @@ import { BondEscrowV1 } from "../src/core/BondEscrowV1.sol";
 import { FullMarketDeployerV1 } from "../src/core/FullMarketDeployerV1.sol";
 import { MarketFactoryV1 } from "../src/core/MarketFactoryV1.sol";
 
-/// @notice Executes the scheduled bootstrap batch and removes every temporary deployer role.
+/// @notice Executes the scheduled bootstrap batch and removes temporary deployer-only roles.
 contract FinalizeBootstrap is Script {
     uint256 internal constant ARBITRUM_SEPOLIA_CHAIN_ID = 421_614;
     bytes32 internal constant BOOTSTRAP_SALT = keccak256("CPREDICT_V1_BOOTSTRAP");
@@ -18,6 +18,7 @@ contract FinalizeBootstrap is Script {
         require(block.chainid == ARBITRUM_SEPOLIA_CHAIN_ID, "wrong chain");
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address deployer = vm.addr(deployerKey);
+        address governanceSafe = vm.envAddress("GOVERNANCE_SAFE");
         TimelockController timelock = TimelockController(payable(vm.envAddress("TIMELOCK_ADDRESS")));
         address factory = vm.envAddress("FACTORY_ADDRESS");
         address marketplace = vm.envAddress("MARKETPLACE_ADDRESS");
@@ -46,9 +47,19 @@ contract FinalizeBootstrap is Script {
             MarketFactoryV1(factory).activationFingerprint() == expectedFactoryFingerprint,
             "factory activation fingerprint mismatch"
         );
-        timelock.renounceRole(timelock.PROPOSER_ROLE(), deployer);
-        timelock.renounceRole(timelock.CANCELLER_ROLE(), deployer);
+        if (shouldRenounceGovernanceRoles(deployer, governanceSafe)) {
+            timelock.renounceRole(timelock.PROPOSER_ROLE(), deployer);
+            timelock.renounceRole(timelock.CANCELLER_ROLE(), deployer);
+        }
         timelock.renounceRole(timelock.DEFAULT_ADMIN_ROLE(), deployer);
         vm.stopBroadcast();
+    }
+
+    function shouldRenounceGovernanceRoles(address deployer, address governanceSafe)
+        public
+        pure
+        returns (bool)
+    {
+        return deployer != governanceSafe;
     }
 }

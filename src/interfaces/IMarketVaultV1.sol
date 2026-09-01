@@ -12,6 +12,7 @@ interface IMarketVaultV1 is IERC1155 {
     function protocolTreasury() external view returns (address);
     function paymentToken() external view returns (address);
     function outcomeCount() external view returns (uint8);
+    function resolutionWindow() external view returns (uint64);
     function minimumC2CUnits() external view returns (uint128);
     function marketState() external view returns (ProtocolTypes.MarketState);
     function isTerminal() external view returns (bool);

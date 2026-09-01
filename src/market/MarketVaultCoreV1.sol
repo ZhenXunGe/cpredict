@@ -49,7 +49,8 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
-    uint64 public constant RESOLUTION_WINDOW = 24 hours;
+    uint64 public constant MIN_RESOLUTION_WINDOW = 15 minutes;
+    uint64 public constant MAX_RESOLUTION_WINDOW = 30 days;
     uint256 public constant MAX_URI_LENGTH = 512;
     uint256 public constant SUPPORTED_FEATURE_FLAGS =
         ProtocolTypes.FEATURE_EARLY_BIRD | ProtocolTypes.FEATURE_PERMIT2;
@@ -82,6 +83,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     uint64 public createdAt;
     uint64 public closeAt;
     uint64 public earlyBirdStart;
+    uint64 public resolutionWindow;
     ProtocolTypes.DeploymentMode public deploymentMode;
     ProtocolTypes.MarketState public marketState;
     uint256 public featureFlags;
@@ -119,6 +121,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         ProtocolTypes.DeploymentMode indexed mode,
         uint8 outcomeCount,
         uint64 closeAt,
+        uint64 resolutionWindow,
         uint128 marketPrimaryCap,
         uint128 creatorBond
     );
@@ -246,7 +249,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     }
 
     function resolutionDeadline() public view returns (uint256) {
-        return uint256(closeAt) + RESOLUTION_WINDOW;
+        return uint256(closeAt) + resolutionWindow;
     }
 
     function earlyBirdEnabled() public view returns (bool) {
@@ -295,6 +298,10 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         if ((params.featureFlags & ~SUPPORTED_FEATURE_FLAGS) != 0) {
             revert UnsupportedFeatureFlags(params.featureFlags);
         }
+        if (
+            params.resolutionWindow < MIN_RESOLUTION_WINDOW
+                || params.resolutionWindow > MAX_RESOLUTION_WINDOW
+        ) revert InvalidConfiguration("resolutionWindow");
         _validateTimes(params.createdAt, params.closeAt, params.earlyBirdStart);
 
         _initialized = true;
@@ -315,6 +322,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         createdAt = params.createdAt;
         closeAt = params.closeAt;
         earlyBirdStart = params.earlyBirdStart;
+        resolutionWindow = params.resolutionWindow;
         deploymentMode = params.deploymentMode;
         featureFlags = params.featureFlags;
         perUserPrimaryCap = params.perUserPrimaryCap;
@@ -331,6 +339,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
             params.deploymentMode,
             params.outcomeCount,
             params.closeAt,
+            params.resolutionWindow,
             params.marketPrimaryCap,
             params.creatorBond
         );
