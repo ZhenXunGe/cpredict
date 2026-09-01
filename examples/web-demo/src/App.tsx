@@ -32,7 +32,7 @@ import {
 import {
   formatPaymentToken,
   formatShareUnits,
-  MARKET_STATE_LABELS,
+  marketDisplayState,
   readAccount,
   readMarket,
   readPaymentTokenBalance,
@@ -289,7 +289,7 @@ export default function App() {
       if (trust?.addresses !== null && trust?.addresses !== undefined) {
         setProtocolSnapshot(await readProtocol(publicClient, trust.addresses.contracts.config, trust.addresses.contracts.paymaster));
       }
-      push(setActivity, "success", "Market loaded", `${short(nextMarket.address)} · ${MARKET_STATE_LABELS[nextMarket.marketState] ?? "UNKNOWN"}`);
+      push(setActivity, "success", "Market loaded", `${short(nextMarket.address)} · ${marketDisplayState(nextMarket).label}`);
     } catch (error: unknown) {
       push(setActivity, "error", "Market load failed", classifyProtocolError(error).message);
     } finally {
@@ -324,6 +324,21 @@ export default function App() {
     setMarketAddress(routeMarketAddress);
     void loadMarketAddress(routeMarketAddress);
   }, [routeMarketAddress, publicClient]);
+
+  useEffect(() => {
+    if (
+      publicClient === null ||
+      market === null ||
+      market.marketState !== 0 ||
+      market.observedAt >= market.closeAt
+    ) return;
+    const millisecondsUntilClose = Number((market.closeAt - market.observedAt) * 1_000n);
+    const timer = window.setTimeout(
+      () => void loadMarketAddress(market.address),
+      Math.min(millisecondsUntilClose + 1_000, 2_147_483_647),
+    );
+    return () => window.clearTimeout(timer);
+  }, [publicClient, market?.address, market?.closeAt, market?.marketState, market?.observedAt]);
 
   useEffect(() => {
     if (
@@ -515,11 +530,12 @@ function Overview({ runtime, trust, wallet, market, protocol, paymentToken, paym
   onNavigate: (route: Route) => void;
 }) {
   const paymentTokenSymbol = paymentToken?.symbol ?? "USDC";
+  const displayState = market === null ? null : marketDisplayState(market);
   const cards = [
     { label: "部署状态", value: runtime?.manifest?.status ?? (runtime?.debugAddresses ? "DEBUG_NOT_FINALIZED" : "BLOCKED_NOT_DEPLOYED"), hint: runtime?.manifest ? runtime.manifest.source.tag : "需加载部署地址包", state: trust?.level === "verified" ? "success" : "warning" },
     { label: "钱包网络", value: wallet === null ? "未连接" : wallet.chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "Arbitrum Sepolia" : `Wrong chain ${wallet.chainId}`, hint: wallet === null ? "EIP-6963 / injected" : short(wallet.address), state: wallet?.chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "success" : "warning" },
     { label: "支付币", value: paymentToken === null ? "待加载" : paymentTokenSymbol, hint: paymentToken?.kind === "sandbox-test-token" ? "TEST / 任意增发 / 无真实价值" : "Canonical Arbitrum Sepolia USDC", state: paymentToken?.kind === "sandbox-test-token" ? "warning" : "success" },
-    { label: "当前市场", value: market === null ? "未选择" : MARKET_STATE_LABELS[market.marketState] ?? "UNKNOWN", hint: market === null ? "从市场页加载 Vault" : formatPaymentToken(market.totalPrincipal, paymentTokenSymbol), state: market === null ? "muted" : "success" },
+    { label: "当前市场", value: displayState?.label ?? "未选择", hint: market === null ? "从市场页加载 Vault" : formatPaymentToken(market.totalPrincipal, paymentTokenSymbol), state: market === null ? "muted" : displayState?.primaryBuyOpen ? "success" : "warning" },
     { label: "Paymaster", value: protocol === null ? "只读待加载" : formatEtherCompact(protocol.paymasterDeposit), hint: protocol === null ? "本 Demo 不发送 UserOperation" : `policy v${protocol.paymasterPolicyVersion}`, state: protocol === null ? "muted" : "success" },
   ];
   return (
@@ -611,7 +627,7 @@ function DeploymentPage({ runtime, trust, debug, setDebug, onVerify, busy }: {
   );
 }
 
-function MarketPage(props: {
+export function MarketPage(props: {
   marketAddress: string;
   setMarketAddress: (value: string) => void;
   market: MarketSnapshot | null;
@@ -632,6 +648,7 @@ function MarketPage(props: {
   writeReady: boolean;
   execute: ExecuteTransaction;
 }) {
+  const displayState = props.market === null ? null : marketDisplayState(props.market);
   return (
     <>
       <Panel title="市场列表" subtitle="直接浏览已创建市场；目录来自只读 Indexer，进入后再读取 Vault 链上状态">
@@ -655,7 +672,7 @@ function MarketPage(props: {
       {props.market !== null ? (
         <>
           <div className="market-header">
-            <div><p className="eyebrow">MARKET VAULT</p><h2>{props.marketRules?.question ?? short(props.market.address)} <StatusPill value={MARKET_STATE_LABELS[props.market.marketState] ?? "UNKNOWN"} /></h2><p className="mono market-vault-address">Vault {props.market.address} <button type="button" className="text-button" onClick={() => void copyText(props.market!.address)}>复制 Vault</button></p><p className="mono">rulesHash {shortHash(props.market.rulesHash)}</p></div>
+            <div><p className="eyebrow">MARKET VAULT</p><h2>{props.marketRules?.question ?? short(props.market.address)} <StatusPill value={displayState?.label ?? "UNKNOWN"} /></h2><p className="mono market-vault-address">Vault {props.market.address} <button type="button" className="text-button" onClick={() => void copyText(props.market!.address)}>复制 Vault</button></p><p className="mono">rulesHash {shortHash(props.market.rulesHash)}</p></div>
             <div className="market-stat"><small>Pool</small><strong>{formatPaymentToken(props.market.totalPrincipal, props.paymentTokenSymbol)}</strong></div>
           </div>
           <BuyCard
@@ -667,6 +684,7 @@ function MarketPage(props: {
             trust={props.trust}
             paymentTokenSymbol={props.paymentTokenSymbol}
             writeReady={props.writeReady}
+            primaryBuyOpen={displayState?.primaryBuyOpen === true}
             busy={props.busy}
             execute={props.execute}
           />
@@ -688,7 +706,7 @@ function MarketPage(props: {
   );
 }
 
-function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymentTokenSymbol, writeReady, busy, execute }: {
+function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymentTokenSymbol, writeReady, primaryBuyOpen, busy, execute }: {
   market: MarketSnapshot;
   outcomeLabels: readonly string[] | null;
   account: AccountSnapshot | null;
@@ -697,6 +715,7 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
   trust: TrustReport | null;
   paymentTokenSymbol: string;
   writeReady: boolean;
+  primaryBuyOpen: boolean;
   busy: boolean;
   execute: ExecuteTransaction;
 }) {
@@ -705,6 +724,7 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
   const [shares, setShares] = useState("1");
   const [slippage, setSlippage] = useState("0");
   const [formError, setFormError] = useState("");
+  const primaryWriteReady = writeReady && primaryBuyOpen;
 
   function paymentAmounts() {
     const units = parsePositive(shares, 6, "份额");
@@ -736,6 +756,7 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
     event.preventDefault();
     setFormError("");
     try {
+      if (!primaryBuyOpen) throw new Error("市场已截止，一级购买已关闭");
       if (client === null || wallet === null || trust?.addresses === null || trust?.addresses === undefined) {
         throw new Error("钱包或协议写入上下文尚未就绪");
       }
@@ -769,12 +790,13 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
 
   return (
     <Panel title="一级购买" subtitle={`1 整份 = 1,000,000 units；输入与支付均按 ${paymentTokenSymbol} 6 decimals 精确解析`}>
+      {!primaryBuyOpen ? <p className="callout danger">该市场已截止，一级购买已关闭；请前往“结算与作废”。</p> : null}
       <div className="tabs"><button className={mode === "allowance" ? "active" : ""} onClick={() => setMode("allowance")}>Allowance</button><button className={mode === "permit2" ? "active" : ""} onClick={() => setMode("permit2")}>Permit2</button></div>
       <form className="buy-form" onSubmit={(event) => void submit(event)}>
         <label><span>购买结果</span><select value={outcome} onChange={(event) => setOutcome(event.currentTarget.value)}>{Array.from({ length: market.outcomeCount }, (_, index) => <option value={index} key={index}>{outcomeLabels?.[index] ?? `结果 ${index + 1}`}</option>)}</select></label>
         <label><span>Shares</span><input inputMode="decimal" value={shares} onChange={(event) => setShares(event.currentTarget.value)} /></label>
         <label><span>Max slippage (bps)</span><input inputMode="numeric" value={slippage} onChange={(event) => setSlippage(event.currentTarget.value)} /></label>
-        <button className="button primary wide" disabled={!writeReady || busy}>{busy ? "处理中…" : writeReady ? mode === "permit2" ? "签名并购买" : "模拟并购买" : "写操作已锁定"}</button>
+        <button className="button primary wide" disabled={!primaryWriteReady || busy}>{busy ? "处理中…" : !primaryBuyOpen ? "已截止，待结算" : writeReady ? mode === "permit2" ? "签名并购买" : "模拟并购买" : "写操作已锁定"}</button>
       </form>
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}
       {mode === "allowance" ? (
@@ -783,7 +805,7 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
           allowance={account?.vaultAllowance ?? null}
           paymentTokenSymbol={paymentTokenSymbol}
           actionLabel="精确授权"
-          disabled={!writeReady || busy}
+          disabled={!primaryWriteReady || busy}
           onApprove={() => void execute(`Approve vault ${paymentTokenSymbol}`, () => client!.approvePaymentToken(trust!.addresses!.usdc, market.address, parseUnits(shares, 6)))}
         />
       ) : (
@@ -793,7 +815,7 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
             allowance={account?.permit2Allowance ?? null}
             paymentTokenSymbol={paymentTokenSymbol}
             actionLabel={`精确授权 ${paymentTokenSymbol} → Permit2`}
-            disabled={!writeReady || busy}
+            disabled={!primaryWriteReady || busy}
             onApprove={() => void approvePermit2()}
           />
           <p className="callout">Permit2 签名绑定 chainId、Vault、selector、outcome、金额、nonce 与 deadline；页面不保存签名。</p>

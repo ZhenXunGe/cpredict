@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import App, { ActivityLine, PrimaryAllowanceRow, SandboxTokenPanel } from "../src/App.js";
+import App, { ActivityLine, MarketPage, PrimaryAllowanceRow, SandboxTokenPanel } from "../src/App.js";
 import { MarketCatalogCards, type CatalogEntry } from "../src/MarketCatalog.js";
+import type { MarketSnapshot } from "../src/protocol.js";
 
 describe("web demo application shell", () => {
   it("renders the trust-first Chinese console without fabricated runtime state", () => {
@@ -60,6 +61,59 @@ describe("web demo application shell", () => {
     expect(html).toContain("Permit2 allowance");
     expect(html).toContain("0 ctUSD");
     expect(html).toContain("精确授权 ctUSD → Permit2");
+  });
+
+  it("renders an expired unsettled market as closed and disables primary writes", () => {
+    const market: MarketSnapshot = {
+      address: "0x0000000000000000000000000000000000001001",
+      observedAt: 1_900_000_000n,
+      creator: "0x000000000000000000000000000000000000c001",
+      creatorTreasury: "0x000000000000000000000000000000000000c002",
+      rulesHash: `0x${"11".repeat(32)}`,
+      outcomeCount: 2,
+      createdAt: 1_899_999_000n,
+      closeAt: 1_900_000_000n,
+      earlyBirdStart: 1_899_999_500n,
+      featureFlags: 0n,
+      perUserPrimaryCap: 10_000_000n,
+      marketPrimaryCap: 20_000_000n,
+      minimumPrimaryUnits: 1_000_000n,
+      minimumC2CUnits: 1_000_000n,
+      creatorBond: 10_000_000n,
+      marketState: 0,
+      winningOutcome: 0,
+      totalPrincipal: 2_000_000n,
+      resolutionDeadline: 1_900_000_900n,
+      permit2Enabled: true,
+      earlyBirdEnabled: false,
+    };
+    const html = renderToStaticMarkup(
+      <MarketPage
+        marketAddress={market.address}
+        setMarketAddress={() => {}}
+        market={market}
+        marketRules={null}
+        account={null}
+        protocol={null}
+        onLoad={() => {}}
+        onSelect={async () => {}}
+        indexerEnabled={false}
+        indexerBasePath="/indexer"
+        metadataBasePath={null}
+        chainId={421614}
+        busy={false}
+        client={null}
+        wallet={null}
+        trust={null}
+        paymentTokenSymbol="ctUSD"
+        writeReady
+        execute={async () => null}
+      />,
+    );
+    expect(html).toContain("已截止，待结算");
+    expect(html).toContain("该市场已截止，一级购买已关闭");
+    expect(html).toContain('class="button primary wide" disabled=""');
+    expect(html).not.toContain(">模拟并购买<");
   });
 
   it("renders the created Market Vault as a copyable transaction receipt", () => {

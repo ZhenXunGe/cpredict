@@ -59,6 +59,7 @@ const paymasterReadAbi = parseAbi([
 
 export interface MarketSnapshot {
   address: Address;
+  observedAt: bigint;
   creator: Address;
   creatorTreasury: Address;
   rulesHash: Hex;
@@ -107,8 +108,10 @@ export interface ProtocolSnapshot {
 }
 
 export async function readMarket(client: PublicClient, address: Address): Promise<MarketSnapshot> {
+  const block = await client.getBlock({ blockTag: "latest" });
   const values = await client.multicall({
     allowFailure: false,
+    blockNumber: block.number,
     contracts: [
       "creator", "creatorTreasury", "rulesHash", "outcomeCount", "createdAt", "closeAt",
       "earlyBirdStart", "featureFlags", "perUserPrimaryCap", "marketPrimaryCap",
@@ -118,6 +121,7 @@ export async function readMarket(client: PublicClient, address: Address): Promis
   });
   return {
     address,
+    observedAt: block.timestamp,
     creator: values[0] as Address,
     creatorTreasury: values[1] as Address,
     rulesHash: values[2] as Hex,
@@ -212,3 +216,28 @@ export function formatShareUnits(value: bigint): string {
 }
 
 export const MARKET_STATE_LABELS = ["OPEN", "RESOLVED", "VOIDED_CREATOR", "VOIDED_TIMEOUT"] as const;
+
+export const MARKET_CLOSED_PENDING_RESOLUTION_LABEL = "已截止，待结算";
+
+export interface MarketDisplayState {
+  label: string;
+  primaryBuyOpen: boolean;
+}
+
+export function marketDisplayState(
+  market: Pick<MarketSnapshot, "marketState" | "closeAt" | "observedAt">,
+): MarketDisplayState {
+  if (market.marketState !== 0) {
+    return {
+      label: MARKET_STATE_LABELS[market.marketState] ?? "UNKNOWN",
+      primaryBuyOpen: false,
+    };
+  }
+  if (market.observedAt >= market.closeAt) {
+    return {
+      label: MARKET_CLOSED_PENDING_RESOLUTION_LABEL,
+      primaryBuyOpen: false,
+    };
+  }
+  return { label: MARKET_STATE_LABELS[0], primaryBuyOpen: true };
+}
