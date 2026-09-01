@@ -866,17 +866,24 @@ function ReceiptsPage({ activity, explorerOrigin, paymentTokenSymbol, wallet, in
   return <><Panel title="链上活动" subtitle="由 Indexer 重建；刷新或换设备后仍可按当前钱包查看"><WalletActivityPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} wallet={wallet?.address ?? null} explorerOrigin={explorerOrigin} paymentTokenSymbol={paymentTokenSymbol} onOpenMarket={onOpenMarket} /></Panel><Panel title="本会话回执" subtitle="用于显示当前页面的模拟、失败和待确认过程；成功事实以链上事件为准"><div className="receipt-list">{activity.map((item) => <ActivityLine key={item.id} item={item} explorerOrigin={explorerOrigin} />)}</div></Panel></>;
 }
 
-function Inspector({ trust, runtime, market, wallet }: { trust: TrustReport | null; runtime: LoadedRuntime | null; market: MarketSnapshot | null; wallet: ConnectedWallet | null }) {
+export function Inspector({ trust, runtime, market, wallet }: { trust: TrustReport | null; runtime: LoadedRuntime | null; market: MarketSnapshot | null; wallet: ConnectedWallet | null }) {
   const rows: readonly [string, string][] = [
     ["Chain", `${runtime?.config.chain.name ?? "—"} / ${runtime?.config.chain.id ?? "—"}`],
     ["Wallet", wallet === null ? "—" : short(wallet.address)],
     ["Factory", trust?.addresses ? short(trust.addresses.contracts.factory) : "—"],
     ["Marketplace", trust?.addresses ? short(trust.addresses.contracts.marketplace) : "—"],
     [trust?.paymentToken.symbol ?? "Payment token", trust?.addresses ? short(trust.addresses.usdc) : "—"],
+    ["Resolution window", formatResolutionWindow(trust?.resolutionWindowSeconds)],
     ["Permit2", trust?.addresses ? short(trust.addresses.permit2) : "—"],
     ["Market", market === null ? "—" : short(market.address)],
   ];
   return <aside className="inspector"><div className="panel-heading"><div><p className="eyebrow">LIVE CONTEXT</p><h3>地址检查器</h3></div><span className="status-dot" data-level={trust?.level ?? "blocked"} /></div><div className="inspector-rows">{rows.map(([key, value]) => <div key={key}><span>{key}</span><strong className="mono">{value}</strong><button type="button" aria-label={`复制 ${key}`} onClick={() => void copyText(value)}>▣</button></div>)}</div><div className="inspector-note"><strong>Write gate</strong><p>{trust?.writeEnabled ? trust.level === "debug" ? "DEBUG enabled" : "VERIFIED enabled" : "LOCKED"}</p></div></aside>;
+}
+
+export function formatResolutionWindow(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined) return "—";
+  if (seconds % 60 === 0) return `${seconds / 60} 分钟 / ${seconds} 秒`;
+  return `${seconds} 秒`;
 }
 
 function ActivityLog({ items, explorerOrigin }: { items: ActivityItem[]; explorerOrigin: string }) {

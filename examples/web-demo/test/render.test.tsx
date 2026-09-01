@@ -1,8 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import App, { ActivityLine, MarketPage, PrimaryAllowanceRow, SandboxTokenPanel } from "../src/App.js";
+import App, { ActivityLine, Inspector, MarketPage, PrimaryAllowanceRow, SandboxTokenPanel } from "../src/App.js";
 import { MarketCatalogCards, type CatalogEntry } from "../src/MarketCatalog.js";
 import type { MarketSnapshot } from "../src/protocol.js";
+import type { TrustReport } from "../src/trust.js";
 
 describe("web demo application shell", () => {
   it("renders the trust-first Chinese console without fabricated runtime state", () => {
@@ -45,6 +46,27 @@ describe("web demo application shell", () => {
     expect(html).toContain("12.5 ctUSD");
     expect(html).toContain("不是 USDC");
     expect(html).toContain("领取 ctUSD");
+  });
+
+  it("renders the live Factory resolution window in the address inspector", () => {
+    const report: TrustReport = {
+      level: "debug",
+      writeEnabled: true,
+      checks: [],
+      addresses: null,
+      paymentToken: {
+        kind: "sandbox-test-token",
+        name: "Cpredict Test USD",
+        symbol: "ctUSD",
+        decimals: 6,
+        faucetEnabled: true,
+        faucetAmount: "10000000000",
+      },
+      resolutionWindowSeconds: 900,
+    };
+    const html = renderToStaticMarkup(<Inspector trust={report} runtime={null} market={null} wallet={null} />);
+    expect(html).toContain("Resolution window");
+    expect(html).toContain("15 分钟 / 900 秒");
   });
 
   it("renders the exact Permit2 token allowance required before signing", () => {

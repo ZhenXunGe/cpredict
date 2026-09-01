@@ -32,6 +32,7 @@ export interface TrustReport {
   checks: TrustCheck[];
   addresses: ProtocolAddresses | null;
   paymentToken: PaymentTokenConfig;
+  resolutionWindowSeconds: number | null;
 }
 
 export interface ProtocolAddresses {
@@ -65,6 +66,9 @@ const factoryAbi = parseAbi([
   "function fullMarketDeployer() view returns (address)",
   "function paymentToken() view returns (address)",
   "function permit2() view returns (address)",
+  "function resolutionWindow() view returns (uint64)",
+  "function MIN_RESOLUTION_WINDOW() view returns (uint64)",
+  "function MAX_RESOLUTION_WINDOW() view returns (uint64)",
   "function dependencyFingerprint() view returns (bytes32)",
   "function activationFingerprint() view returns (bytes32)",
 ]);
@@ -87,6 +91,7 @@ export async function verifyManifest(
       writeEnabled: false,
       addresses: null,
       paymentToken,
+      resolutionWindowSeconds: null,
       checks: [{ id: "manifest", label: "Final deployment manifest", state: "fail", detail: "未加载 FINALIZED_VERIFIED 清单" }],
     };
   }
@@ -139,9 +144,9 @@ export async function verifyManifest(
   }
 
   const addresses = addressesFromManifest(manifest);
-  await verifyWiring(client, addresses, paymentToken, checks);
+  const resolutionWindowSeconds = await verifyWiring(client, addresses, paymentToken, checks);
   const writeEnabled = checks.every((check) => check.state === "pass");
-  return { level: writeEnabled ? "verified" : "blocked", writeEnabled, checks, addresses, paymentToken };
+  return { level: writeEnabled ? "verified" : "blocked", writeEnabled, checks, addresses, paymentToken, resolutionWindowSeconds };
 }
 
 export async function verifyDebugAddresses(
@@ -156,6 +161,7 @@ export async function verifyDebugAddresses(
       writeEnabled: false,
       addresses: null,
       paymentToken,
+      resolutionWindowSeconds: null,
       checks: [{ id: "debug-addresses", label: "调试地址格式", state: "fail", detail: "所有调试地址必须是有效 EVM 地址" }],
     };
   }
@@ -184,9 +190,9 @@ export async function verifyDebugAddresses(
     permit2: parsed.permit2,
     entryPoint: parsed.entryPoint,
   };
-  await verifyWiring(client, addresses, paymentToken, checks);
+  const resolutionWindowSeconds = await verifyWiring(client, addresses, paymentToken, checks);
   const valid = checks.every((check) => check.state === "pass");
-  return { level: valid ? "debug" : "blocked", writeEnabled: valid, checks, addresses, paymentToken };
+  return { level: valid ? "debug" : "blocked", writeEnabled: valid, checks, addresses, paymentToken, resolutionWindowSeconds };
 }
 
 export function addressesFromManifest(manifest: FinalManifest): ProtocolAddresses {
@@ -203,7 +209,7 @@ async function verifyWiring(
   addresses: ProtocolAddresses,
   paymentTokenConfig: PaymentTokenConfig,
   checks: TrustCheck[],
-): Promise<void> {
+): Promise<number | null> {
   try {
     const [
       active,
@@ -217,6 +223,9 @@ async function verifyWiring(
       fullMarketDeployer,
       factoryPaymentToken,
       factoryPermit2,
+      resolutionWindow,
+      minResolutionWindow,
+      maxResolutionWindow,
       dependency,
       activation,
       marketFactory,
@@ -237,6 +246,9 @@ async function verifyWiring(
       client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "fullMarketDeployer" }),
       client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "paymentToken" }),
       client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "permit2" }),
+      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "resolutionWindow" }),
+      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "MIN_RESOLUTION_WINDOW" }),
+      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "MAX_RESOLUTION_WINDOW" }),
       client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "dependencyFingerprint" }),
       client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "activationFingerprint" }),
       client.readContract({ address: addresses.contracts.marketplace, abi: marketplaceAbi, functionName: "factory" }),
@@ -258,6 +270,12 @@ async function verifyWiring(
       check("factory-full", "Factory → Full deployer", sameAddress(fullMarketDeployer, addresses.contracts.fullMarketDeployer), fullMarketDeployer),
       check("factory-token", `Factory → ${paymentTokenConfig.symbol}`, sameAddress(factoryPaymentToken, addresses.usdc), factoryPaymentToken),
       check("factory-permit2", "Factory → Permit2", sameAddress(factoryPermit2, addresses.permit2), factoryPermit2),
+      check(
+        "factory-resolution-window",
+        "Factory resolution window",
+        resolutionWindow >= minResolutionWindow && resolutionWindow <= maxResolutionWindow,
+        `${resolutionWindow}s (allowed ${minResolutionWindow}-${maxResolutionWindow}s)`,
+      ),
       check("fingerprint", "Factory dependency fingerprint", dependency === activation, dependency),
       check("marketplace-factory", "Marketplace → Factory", sameAddress(marketFactory, addresses.contracts.factory), marketFactory),
       check("marketplace-emergency", "Marketplace → EmergencyController", sameAddress(marketEmergencyController, addresses.contracts.emergencyController), marketEmergencyController),
@@ -278,8 +296,10 @@ async function verifyWiring(
         check("sandbox-token-marker", "Sandbox token marker", marker === true, marker),
       );
     }
+    return Number(resolutionWindow);
   } catch (error: unknown) {
     checks.push({ id: "wiring", label: "关键 wiring/getter", state: "fail", detail: errorMessage(error) });
+    return null;
   }
 }
 

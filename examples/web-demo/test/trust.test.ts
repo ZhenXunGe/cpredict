@@ -25,6 +25,7 @@ describe("web demo write-gate verification", () => {
     const report = await verifyManifest(client(), manifest());
     expect(report.level).toBe("verified");
     expect(report.writeEnabled).toBe(true);
+    expect(report.resolutionWindowSeconds).toBe(900);
     expect(report.checks.every((check) => check.state === "pass")).toBe(true);
     expect(report.checks.map((check) => check.id)).toEqual(expect.arrayContaining([
       "reference-block",
@@ -33,6 +34,7 @@ describe("web demo write-gate verification", () => {
       "factory-full",
       "marketplace-emergency",
       "marketplace-fee-vault",
+      "factory-resolution-window",
     ]));
   });
 
@@ -88,6 +90,8 @@ function client(): PublicClient {
     getCode: async () => code,
     readContract: async ({ address: target, functionName }: { address: Address; functionName: string }) => {
       if (functionName === "active") return true;
+      if (functionName === "resolutionWindow" || functionName === "MIN_RESOLUTION_WINDOW") return 900n;
+      if (functionName === "MAX_RESOLUTION_WINDOW") return 2_592_000n;
       if (functionName === "dependencyFingerprint" || functionName === "activationFingerprint") return fingerprint;
       if (functionName === "decimals") return 6;
       if (functionName === "name") return "Cpredict Test USD";
