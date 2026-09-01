@@ -221,8 +221,10 @@ sudo cpredict-tunnel-cloud restart
 ```
 
 Mac worker 使用 `ServerAliveInterval=30`、`ServerAliveCountMax=3` 和 `ExitOnForwardFailure=yes`；失效连接
-会退出，由 launchd/AutoSSH 重建。日志超过 1 MiB 后在下一次 worker 启动时轮换为一份 `.1`，不无限
-增长。云端 `restart` 会安全 reload SSH/Nginx 并终止专用 tunnel 会话，验证 Mac 能否自动重连。
+会退出，由 launchd/AutoSSH 重建。云端专用 SSH 用户同时使用 `ClientAliveInterval=30` 和
+`ClientAliveCountMax=3`，在 Mac 休眠、断网或 VPN 切换导致连接半开时，约 90 秒后回收旧会话并释放
+`127.0.0.1:4177`。日志超过 1 MiB 后在下一次 worker 启动时轮换为一份 `.1`，不无限增长。云端
+`restart` 会安全 reload SSH/Nginx 并终止专用 tunnel 会话，验证 Mac 能否自动重连。
 
 ## 10. 必须执行的恢复演练
 

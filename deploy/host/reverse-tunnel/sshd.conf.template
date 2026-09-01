@@ -6,6 +6,8 @@ Match User @@TUNNEL_USER@@
     PubkeyAuthentication yes
     PasswordAuthentication no
     KbdInteractiveAuthentication no
+    ClientAliveInterval 30
+    ClientAliveCountMax 3
     AllowTcpForwarding remote
     AllowStreamLocalForwarding no
     PermitListen 127.0.0.1:@@REMOTE_PORT@@

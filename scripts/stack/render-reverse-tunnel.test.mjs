@@ -121,6 +121,8 @@ test("rendered package constrains SSH, pins the host, persists launchd and verif
     "utf8",
   );
   assert.match(sshd, /GatewayPorts no/);
+  assert.match(sshd, /ClientAliveInterval 30/);
+  assert.match(sshd, /ClientAliveCountMax 3/);
   assert.match(sshd, /AllowTcpForwarding remote/);
   assert.match(sshd, /PermitListen 127\.0\.0\.1:4177/);
   assert.match(sshd, /MaxSessions 0/);
@@ -133,6 +135,8 @@ test("rendered package constrains SSH, pins the host, persists launchd and verif
   );
   assert.match(cloud, /restrict,port-forwarding,permitlisten=/);
   assert.match(cloud, /effective sshd policy is missing/);
+  assert.match(cloud, /'clientaliveinterval 30'/);
+  assert.match(cloud, /'clientalivecountmax 3'/);
   assert.match(cloud, /managed path must not be a symlink/);
   assert.match(cloud, /--public-key-file and --basic-auth-user/);
   assert.match(cloud, /Ubuntu 24\.04 only/);

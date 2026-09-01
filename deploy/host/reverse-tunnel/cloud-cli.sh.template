@@ -96,6 +96,8 @@ verify_sshd_effective_policy() {
     'authenticationmethods publickey' \
     'passwordauthentication no' \
     'kbdinteractiveauthentication no' \
+    'clientaliveinterval 30' \
+    'clientalivecountmax 3' \
     'gatewayports no' \
     'allowtcpforwarding remote' \
     'allowagentforwarding no' \

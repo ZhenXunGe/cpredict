@@ -98,7 +98,7 @@
     },
     {
       "path": "deploy/host/reverse-tunnel/cloud-cli.sh.template",
-      "sha256": "a8d0b2a891ec4e151475146e5c8d6a8f35c00f214df65c75d614c6e7e401fb42"
+      "sha256": "b0bbe9f5e963069083594d09c32701fe09c9fcaa136f6c4546f62a65c78d5d54"
     },
     {
       "path": "deploy/host/reverse-tunnel/launchd.plist.template",
@@ -114,7 +114,7 @@
     },
     {
       "path": "deploy/host/reverse-tunnel/sshd.conf.template",
-      "sha256": "6a31138ca792a0c72062fa5fbd4379308acdde4a70c3a2ee658293c13d790905"
+      "sha256": "354ee2aeffc1678916eea0f9d1de30048fd4c6dc026a4b7583ae7804e2f6fdc1"
     },
     {
       "path": "deploy/host/reverse-tunnel/verify-package.sh.template",
@@ -174,7 +174,7 @@
     },
     {
       "path": "docs/zh/15-reverse-tunnel-deployment-runbook.md",
-      "sha256": "b9188cf98923ba6f9c670d0566be58dc1fce792d409b78a6747b60d6f69a22bb"
+      "sha256": "2a10fc36991d419248e3c6b7846000871de496bd77680ee8d3141fe76edc37b6"
     },
     {
       "path": "examples/react/README.md",
@@ -1490,7 +1490,7 @@
     },
     {
       "path": "scripts/stack/render-reverse-tunnel.test.mjs",
-      "sha256": "67e9a73bffbe7f2f574029994d0bbed41bbaecb2775b248f04b1ba63b815431e"
+      "sha256": "6bb2f56184a225b176c04f1b892d95590163327bf74e60de9470975b295714a8"
     },
     {
       "path": "scripts/stack/restore-drill.mjs",
