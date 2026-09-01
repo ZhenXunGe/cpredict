@@ -9,7 +9,7 @@ COPY deployments/arbitrum-sepolia/final-manifest.schema.json ./deployments/arbit
 COPY scripts/generate-web-demo-validators.mjs ./scripts/generate-web-demo-validators.mjs
 RUN npm run demo:build
 
-FROM nginxinc/nginx-unprivileged:1.30.4-alpine@sha256:93722936b82ec8a1178d48448e619226680d2de3706a1640800e186cd5fa7fd3
+FROM nginxinc/nginx-unprivileged:1.31.4-alpine@sha256:d9083fe47768377ef55dedafd67d4da7c2f2bc2bece7554954f29359deb0dce9
 ARG CPREDICT_IMAGE_REVISION
 RUN printf '%s' "$CPREDICT_IMAGE_REVISION" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${CPREDICT_IMAGE_REVISION}"
