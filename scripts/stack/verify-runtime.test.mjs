@@ -5,6 +5,7 @@ import {
   verifyComposeState,
   verifyHostConfig,
   verifyHttpRuntime,
+  verifyImageRevision,
 } from "./verify-runtime.mjs";
 
 function row(Service, overrides = {}) {
@@ -97,6 +98,34 @@ test("runtime verifier proves resource and least-privilege settings were applied
       CapDrop: [],
     }).filter((check) => check.status === "FAIL").length,
     7,
+  );
+});
+
+test("runtime verifier requires every application image to carry the exact source revision", () => {
+  const revision = "0fb5a1962d17bda07ed627035c21ffb9765af68a";
+  assert.deepEqual(
+    verifyImageRevision(
+      "web-demo",
+      { "org.opencontainers.image.revision": revision },
+      revision,
+    ),
+    {
+      status: "PASS",
+      name: "web-demo source revision",
+      detail: `${revision}; expected ${revision}`,
+    },
+  );
+  assert.equal(
+    verifyImageRevision("indexer", {}, revision).status,
+    "FAIL",
+  );
+  assert.equal(
+    verifyImageRevision(
+      "metadata",
+      { "org.opencontainers.image.revision": "1".repeat(40) },
+      revision,
+    ).status,
+    "FAIL",
   );
 });
 

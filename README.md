@@ -161,6 +161,10 @@ npm run stack:backup:verified
 npm run stack:down
 ```
 
+The stack orchestrator resolves the exact current Git commit for every application image and writes
+it to `org.opencontainers.image.revision`; `stack:verify` fails when a running application container
+does not carry that exact 40-character revision.
+
 Paymaster is an explicit `--sponsorship` profile and requires an external Auth/KMS/budget adapter;
 there is no built-in raw-key adapter. Candidate sync stays yellow DEBUG and never writes a final
 manifest. The complete config-sync, Arbiscan, canary, backup/restore, fault-drill and proof boundary is

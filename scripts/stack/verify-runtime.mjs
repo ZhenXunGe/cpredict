@@ -4,6 +4,7 @@ import { mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadStackConfiguration } from "./config.mjs";
+import { readSourceRevision } from "./source-revision.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const REQUIRED_HEADERS = [
@@ -151,6 +152,18 @@ export function verifyHostConfig(service, hostConfig) {
   return checks;
 }
 
+export function verifyImageRevision(service, labels, expectedRevision) {
+  const actualRevision = labels?.["org.opencontainers.image.revision"];
+  return {
+    status: actualRevision === expectedRevision ? "PASS" : "FAIL",
+    name: `${service} source revision`,
+    detail:
+      actualRevision === undefined
+        ? `missing; expected ${expectedRevision}`
+        : `${actualRevision}; expected ${expectedRevision}`,
+  };
+}
+
 export async function verifyHttpRuntime({ baseUrl, fetchFn = fetch }) {
   const checks = [];
   const request = async (path, options = {}) => {
@@ -175,6 +188,12 @@ export async function verifyHttpRuntime({ baseUrl, fetchFn = fetch }) {
     status: indexer?.ok ? "PASS" : "FAIL",
     name: "Indexer readiness",
     detail: indexer === null ? "request failed" : `HTTP ${indexer.status}`,
+  });
+  const metadata = await request("/metadata/readyz");
+  checks.push({
+    status: metadata?.ok ? "PASS" : "FAIL",
+    name: "Metadata readiness",
+    detail: metadata === null ? "request failed" : `HTTP ${metadata.status}`,
   });
   const shell = await request("/");
   const missingHeaders =
@@ -248,6 +267,11 @@ export async function verifyRuntime({
   fetchFn = fetch,
   root = ROOT,
 }) {
+  const sourceRevision = readSourceRevision({ root });
+  const composeEnvironment = {
+    ...configuration.environment,
+    CPREDICT_IMAGE_REVISION: sourceRevision,
+  };
   const base = [
     "compose",
     "--project-directory",
@@ -264,7 +288,7 @@ export async function verifyRuntime({
     "docker",
     [...base, "ps", "--all", "--format", "json"],
     root,
-    configuration.environment,
+    composeEnvironment,
   );
   if (ps.code !== 0)
     return [
@@ -279,6 +303,7 @@ export async function verifyRuntime({
   for (const service of [
     "postgres",
     "indexer",
+    "metadata",
     "web-demo",
     ...(sponsorship ? ["paymaster"] : []),
   ]) {
@@ -286,7 +311,7 @@ export async function verifyRuntime({
     if (!row?.ID) continue;
     const inspect = run(
       "docker",
-      ["inspect", "--format", "{{json .HostConfig}}", row.ID],
+      ["inspect", "--format", "{{json .}}", row.ID],
       root,
     );
     if (inspect.code !== 0) {
@@ -298,7 +323,16 @@ export async function verifyRuntime({
       continue;
     }
     try {
-      checks.push(...verifyHostConfig(service, JSON.parse(inspect.stdout)));
+      const container = JSON.parse(inspect.stdout);
+      checks.push(...verifyHostConfig(service, container.HostConfig));
+      if (service !== "postgres")
+        checks.push(
+          verifyImageRevision(
+            service,
+            container.Config?.Labels,
+            sourceRevision,
+          ),
+        );
     } catch {
       checks.push({
         status: "FAIL",

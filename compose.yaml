@@ -113,7 +113,12 @@
       "deploy": {"resources": {"limits": {"cpus": "0.5", "memory": "256M"}}}
     },
     "indexer": {
-      "build": {"context": ".", "dockerfile": "deploy/compose/Dockerfile.offchain", "target": "indexer"},
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "indexer",
+        "args": {"CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"}
+      },
       "restart": "unless-stopped",
       "stop_grace_period": "15s",
       "depends_on": {"migrate-indexer": {"condition": "service_completed_successfully"}},
@@ -180,7 +185,11 @@
       "deploy": {"resources": {"limits": {"cpus": "0.5", "memory": "256M"}}}
     },
     "web-demo": {
-      "build": {"context": ".", "dockerfile": "deploy/compose/Dockerfile.demo"},
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.demo",
+        "args": {"CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"}
+      },
       "restart": "unless-stopped",
       "stop_grace_period": "10s",
       "depends_on": {
@@ -216,7 +225,12 @@
       "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
     },
     "metadata": {
-      "build": {"context": ".", "dockerfile": "deploy/compose/Dockerfile.offchain", "target": "metadata"},
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "metadata",
+        "args": {"CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"}
+      },
       "restart": "unless-stopped",
       "stop_grace_period": "15s",
       "depends_on": {"migrate-metadata": {"condition": "service_completed_successfully"}},
@@ -243,7 +257,12 @@
       "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
     },
     "paymaster": {
-      "build": {"context": ".", "dockerfile": "deploy/compose/Dockerfile.offchain", "target": "paymaster"},
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "paymaster",
+        "args": {"CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"}
+      },
       "restart": "unless-stopped",
       "stop_grace_period": "15s",
       "profiles": ["sponsorship"],

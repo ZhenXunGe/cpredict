@@ -30,7 +30,7 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "sha256": "06420e0500bb2b8e5dd8431dda3d4794cdb8882018ffb046e511255a6134fdf2"
+      "sha256": "f16dc649bb79013f4f41add6db8da5f9df5af401898546b18cd323f1c1a05958"
     },
     {
       "path": ".github/workflows/nightly.yml",
@@ -54,19 +54,19 @@
     },
     {
       "path": "README.md",
-      "sha256": "5336ef5c36f5fb5e76d6c67fc15a60cfec885385d826960e08546208189c3604"
+      "sha256": "df2ade1924f5777ae73fbc104ff1f8578a0c73fecc37fa8941055477c18910b7"
     },
     {
       "path": "compose.yaml",
-      "sha256": "0b7a7c3bea976b1b6708805e6495b204caa8d6c677baba81f20514d1aaa5d637"
+      "sha256": "1e8893c7d4af3b569a39cb96485d679665845371fdf4155ca831a738f45a8ef5"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
-      "sha256": "73849386de051a32d2021df73b6b10d1f28b46b0ab3e58bf0d410a1d367c56c4"
+      "sha256": "cf9f4a70bdc18d88f5369fb77eab90079ec99e1c0d0cff697258ec881aefe008"
     },
     {
       "path": "deploy/compose/Dockerfile.offchain",
-      "sha256": "f68d304f9e9752e7e8e8b5ee072e9567f0cf34dd2b657615bf987483f40f8fe2"
+      "sha256": "09d3e503989a138db826d11adca2256ebbbc59714b3d703fb7e4cdb4ce6d8337"
     },
     {
       "path": "deploy/compose/nginx/default.conf.template",
@@ -166,11 +166,11 @@
     },
     {
       "path": "docs/zh/13-compose-runtime-operations.md",
-      "sha256": "376219852ac636ced6af7652b76f9a5cb371bdfb3b91dc0fbb00d2edadbc6e29"
+      "sha256": "3b1b7a9d5bea52f4bcf67d0034813861962e8c1f91a92f5faaff18f95fa45e09"
     },
     {
       "path": "docs/zh/14-single-host-deployment-runbook.md",
-      "sha256": "1f4e4eff37a88d774ad178601e3611de462f2d105a141c2be5821bcbf91ac45b"
+      "sha256": "0d353856a3e10f878919e845ce7153cd6beff76b3896dfddfb8da1e0bf10e752"
     },
     {
       "path": "docs/zh/15-reverse-tunnel-deployment-runbook.md",
@@ -1422,7 +1422,7 @@
     },
     {
       "path": "scripts/stack/compose.test.mjs",
-      "sha256": "1512c1cf9b2c707e1770e05852880fe750a055262d2e6a6f38e239c7b494d418"
+      "sha256": "c126232ae05f5fd83018addc450eaedf543fd6744187c20dd19626fa30a41c2a"
     },
     {
       "path": "scripts/stack/config.mjs",
@@ -1434,7 +1434,7 @@
     },
     {
       "path": "scripts/stack/container-images.test.mjs",
-      "sha256": "c15ee20ace2623c1887bb3d2d2a00f79931f2f47afb4c6443c2f29ec05e9e3ee"
+      "sha256": "dcb5fd13973fc34140e6680a10ac1c742874074125f8f34b90881fa99f44f16a"
     },
     {
       "path": "scripts/stack/host-materials.test.mjs",
@@ -1509,8 +1509,16 @@
       "sha256": "9a9af6ad655c3b91c86af920c72a86e2a0b286942398ec720e7bfb6a36179d2a"
     },
     {
+      "path": "scripts/stack/source-revision.mjs",
+      "sha256": "9d4e215ce2919e4b79080b5f65330067f136b7983eacf21e844c62ea196547bf"
+    },
+    {
+      "path": "scripts/stack/source-revision.test.mjs",
+      "sha256": "9ce3285fb26b66d3b7c2a97715f2ac0cc27962c456dce4b86279b75fe15d8df6"
+    },
+    {
       "path": "scripts/stack/stack.mjs",
-      "sha256": "7c2791b9a4a54a1422bd778b96982d39a9e95757ae2895e43122250c38110b55"
+      "sha256": "79ce0a05496951600d9a6f5540bbb4647c08c3fc9e2e8cadd28006cae6af1754"
     },
     {
       "path": "scripts/stack/upgrade-checkpoint.mjs",
@@ -1526,11 +1534,11 @@
     },
     {
       "path": "scripts/stack/verify-runtime.mjs",
-      "sha256": "d83202fe4ce8e6f14a32df12ff7f75e7b6108c58854601022b3dc350bd38a711"
+      "sha256": "316ca591cb7ae20c2da976e370afc2db8e7baa826a21a9aaebaf75e1500052c3"
     },
     {
       "path": "scripts/stack/verify-runtime.test.mjs",
-      "sha256": "9ce4ede5f3ea9316e7dcaec871bfa1d12ed89a04d459eb455cc0d6b1fdce9274"
+      "sha256": "c2e47c221a7e5d2e1d289d20f16a4e48d264d1eccdc994398c34edfc8cc3f47b"
     },
     {
       "path": "scripts/test-all.sh",

@@ -192,8 +192,9 @@ npm run stack:status
 `CPREDICT_METADATA_PUBLIC_BASE_URL` 必须填写浏览器实际访问的 HTTPS 公网地址加 `/metadata`，例如
 `https://101.32.241.211/metadata`；它会永久写入新市场的链上 Metadata URI，不能用容器内地址或 HTTP。
 `stack:verify` 不只检查容器名：它读取实际 Docker 资源限制、只读根文件系统、capability、重启策略、
-loopback 端口绑定、migration exit code，并请求 Demo、Indexer、Metadata `/readyz`、安全响应头、运行配置和
-同源 RPC chainId。任一 FAIL 都不要继续开放公网。
+loopback 端口绑定、migration exit code，并逐个确认应用镜像的
+`org.opencontainers.image.revision` 与当前 checkout 的精确 Git SHA 相等；同时请求 Demo、Indexer、
+Metadata `/readyz`、安全响应头、运行配置和同源 RPC chainId。任一 FAIL 都不要继续开放公网。
 
 仅在确实配置了外部 Auth/KMS/预算 adapter 时才加 `--sponsorship`。默认同事体验环境不启用 Paymaster，
 也不向浏览器暴露它。

@@ -63,6 +63,24 @@ test("offchain runtime images include their compiled SDK dependency", () => {
   );
 });
 
+test("application images validate and publish the exact source revision", () => {
+  assert.equal(
+    offchain.match(/ARG CPREDICT_IMAGE_REVISION/g)?.length,
+    3,
+  );
+  assert.equal(
+    offchain.match(/LABEL org\.opencontainers\.image\.revision=/g)?.length,
+    3,
+  );
+  assert.match(demo, /ARG CPREDICT_IMAGE_REVISION/);
+  assert.match(demo, /LABEL org\.opencontainers\.image\.revision=/);
+  for (const dockerfile of [offchain, demo])
+    assert.match(
+      dockerfile,
+      /grep -Eq '\^\[0-9a-f\]\{40\}\$'/,
+    );
+});
+
 test("Docker context excludes secrets, local tools and generated runtime state", async () => {
   const ignore = await readFile(new URL(".dockerignore", root), "utf8");
   for (const entry of [
@@ -117,6 +135,14 @@ test("CI builds and scans every application image with the pinned scanner", asyn
   assert.match(workflow, /bootstrap-trivy\.sh/);
   assert.match(workflow, /npm run scan:container-images/);
   assert.match(workflow, /npm run scan:container-config/);
+  assert.equal(
+    workflow.match(/--build-arg "CPREDICT_IMAGE_REVISION=\$GITHUB_SHA"/g)?.length,
+    4,
+  );
+  assert.match(
+    workflow,
+    /docker image inspect --format[^\n]*org\.opencontainers\.image\.revision/,
+  );
   assert.match(bootstrap, /expected_version="0\.73\.0"/);
   assert.match(scanner, /--severity HIGH,CRITICAL/);
   assert.match(scanner, /--ignore-unfixed/);

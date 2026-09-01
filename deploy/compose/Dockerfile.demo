@@ -10,6 +10,9 @@ COPY scripts/generate-web-demo-validators.mjs ./scripts/generate-web-demo-valida
 RUN npm run demo:build
 
 FROM nginxinc/nginx-unprivileged:1.30.4-alpine@sha256:93722936b82ec8a1178d48448e619226680d2de3706a1640800e186cd5fa7fd3
+ARG CPREDICT_IMAGE_REVISION
+RUN printf '%s' "$CPREDICT_IMAGE_REVISION" | grep -Eq '^[0-9a-f]{40}$'
+LABEL org.opencontainers.image.revision="${CPREDICT_IMAGE_REVISION}"
 USER root
 RUN apk upgrade --no-cache
 COPY --from=build /app/dist/web-demo /usr/share/nginx/html

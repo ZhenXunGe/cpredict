@@ -88,6 +88,10 @@ npm run stack:logs
 npm run stack:down
 ```
 
+编排入口会从当前 checkout 解析精确的 40 位 Git commit，将其作为
+`org.opencontainers.image.revision` 写入全部应用镜像；`stack:verify` 会逐个读取运行容器标签并与
+当前 checkout 精确比对，缺失或不一致即 FAIL。该标签不沿用 Node/Nginx 基础镜像自己的 revision。
+
 基础栈依赖顺序为 PostgreSQL 17 ready → Indexer/Metadata/Paymaster schema migration → canonical
 Indexer/API/WS 与 Metadata ready → Nginx Demo ready。Metadata 服务保存钱包签名的规范市场规则，公开
 读取不可变、发布 challenge 一次性消费；它不抓取或代替判断外部 resolution source。PostgreSQL 不发布
