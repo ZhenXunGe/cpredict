@@ -91,6 +91,15 @@ test("rendered proxy requires TLS/auth, strips credentials and bounds public rou
   assert.match(config, /location = \/rpc[\s\S]*limit_except POST/);
   assert.match(config, /location = \/indexer\/metrics[\s\S]*deny all/);
   assert.match(config, /location \/indexer\/[\s\S]*limit_except GET HEAD/);
+  const metadataStart = config.indexOf("  location /metadata/ {");
+  const metadataEnd = config.indexOf("\n  location /deployment/", metadataStart);
+  assert.notEqual(metadataStart, -1);
+  assert.notEqual(metadataEnd, -1);
+  const metadataLocation = config.slice(metadataStart, metadataEnd);
+  assert.match(metadataLocation, /limit_except GET HEAD POST/);
+  assert.match(metadataLocation, /client_max_body_size 32k/);
+  assert.match(metadataLocation, /limit_req zone=cpredict_read_api/);
+  assert.match(metadataLocation, /proxy_pass http:\/\/127\.0\.0\.1:4177/);
   assert.match(config, /proxy_pass http:\/\/127\.0\.0\.1:4177/);
   assert.doesNotMatch(config, /unsafe-inline|unsafe-eval/);
   assert.match(config, /Strict-Transport-Security "max-age=86400"/);

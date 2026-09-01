@@ -195,6 +195,29 @@ export async function verifyHttpRuntime({ baseUrl, fetchFn = fetch }) {
     name: "Metadata readiness",
     detail: metadata === null ? "request failed" : `HTTP ${metadata.status}`,
   });
+  for (const [path, name] of [
+    ["/metadata/v1/challenges", "Metadata challenge write path"],
+    ["/metadata/v1/markets", "Metadata publication write path"],
+  ]) {
+    const response = await request(path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: "{}",
+    });
+    let invalidRequest = false;
+    try {
+      const body = await response?.json();
+      invalidRequest = body?.error === "invalid request";
+    } catch {
+      invalidRequest = false;
+    }
+    checks.push({
+      status:
+        response?.status === 400 && invalidRequest === true ? "PASS" : "FAIL",
+      name,
+      detail: response === null ? "request failed" : `HTTP ${response.status}`,
+    });
+  }
   const shell = await request("/");
   const missingHeaders =
     shell === null
@@ -218,7 +241,11 @@ export async function verifyHttpRuntime({ baseUrl, fetchFn = fetch }) {
       runtime?.ok === true &&
       body.chain?.id === 421614 &&
       body.chain?.rpcPath === "/rpc" &&
-      body.indexer?.basePath === "/indexer";
+      body.indexer?.basePath === "/indexer" &&
+      body.metadata?.enabled === true &&
+      body.metadata?.basePath === "/metadata" &&
+      body.evidence?.uploadEnabled === false &&
+      body.evidence?.endpointPath === "/evidence";
   } catch {
     runtimeOk = false;
   }

@@ -91,6 +91,9 @@ npm run stack:down
 编排入口会从当前 checkout 解析精确的 40 位 Git commit，将其作为
 `org.opencontainers.image.revision` 写入全部应用镜像；`stack:verify` 会逐个读取运行容器标签并与
 当前 checkout 精确比对，缺失或不一致即 FAIL。该标签不沿用 Node/Nginx 基础镜像自己的 revision。
+`stack:verify` 还会向 Metadata challenge/publication 路径发送空 JSON，并要求后端返回
+`400 {"error":"invalid request"}`；探针不会写入 challenge 或市场数据，若被代理层拒绝为 `403` 则
+验证失败。公网 Host Nginx 仍需按单机部署手册执行同样的带 Basic Auth 探针。
 
 基础栈依赖顺序为 PostgreSQL 17 ready → Indexer/Metadata/Paymaster schema migration → canonical
 Indexer/API/WS 与 Metadata ready → Nginx Demo ready。Metadata 服务保存钱包签名的规范市场规则，公开

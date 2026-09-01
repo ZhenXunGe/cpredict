@@ -145,11 +145,18 @@ test("runtime HTTP verification binds readiness, headers, config, RPC chain and 
         { status: 200 },
       );
     if (path === "/rpc") return new Response("forbidden", { status: 403 });
+    if (path.startsWith("/metadata/v1/") && options.method === "POST")
+      return new Response(JSON.stringify({ error: "invalid request" }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
     if (path === "/runtime-config.json")
       return new Response(
         JSON.stringify({
           chain: { id: 421614, rpcPath: "/rpc" },
           indexer: { basePath: "/indexer" },
+          metadata: { enabled: true, basePath: "/metadata" },
+          evidence: { uploadEnabled: false, endpointPath: "/evidence" },
         }),
         { status: 200 },
       );
@@ -163,5 +170,47 @@ test("runtime HTTP verification binds readiness, headers, config, RPC chain and 
   assert.equal(
     checks.some((check) => check.status === "FAIL"),
     false,
+  );
+});
+
+test("runtime HTTP verification rejects a public edge that blocks Metadata POST", async () => {
+  const fetchFn = async (url, options = {}) => {
+    const path = new URL(url).pathname;
+    if (path.startsWith("/metadata/v1/") && options.method === "POST")
+      return new Response("forbidden", { status: 403 });
+    if (path === "/runtime-config.json")
+      return new Response(
+        JSON.stringify({
+          chain: { id: 421614, rpcPath: "/rpc" },
+          indexer: { basePath: "/indexer" },
+          metadata: { enabled: true, basePath: "/metadata" },
+          evidence: { uploadEnabled: false, endpointPath: "/evidence" },
+        }),
+        { status: 200 },
+      );
+    if (path === "/rpc" && options.method === "POST")
+      return new Response(
+        JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0x66eee" }),
+        { status: 200 },
+      );
+    if (path === "/rpc") return new Response("forbidden", { status: 403 });
+    return new Response(JSON.stringify({ status: "ready" }), { status: 200 });
+  };
+  const checks = await verifyHttpRuntime({
+    baseUrl: "https://preview.example.invalid",
+    fetchFn,
+  });
+  assert.equal(
+    checks.find((check) => check.name === "Metadata readiness")?.status,
+    "PASS",
+  );
+  assert.deepEqual(
+    checks
+      .filter(
+        (check) =>
+          check.name.startsWith("Metadata ") && check.status === "FAIL",
+      )
+      .map((check) => check.name),
+    ["Metadata challenge write path", "Metadata publication write path"],
   );
 });

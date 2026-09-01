@@ -133,6 +133,10 @@ test("rendered package constrains SSH, pins the host, persists launchd and verif
     join(output, "cloud/cpredict-tunnel-cloud"),
     "utf8",
   );
+  const proxy = await readFile(
+    join(output, "cloud/proxy/cpredict.conf"),
+    "utf8",
+  );
   assert.match(cloud, /restrict,port-forwarding,permitlisten=/);
   assert.match(cloud, /effective sshd policy is missing/);
   assert.match(cloud, /'clientaliveinterval 30'/);
@@ -143,6 +147,10 @@ test("rendered package constrains SSH, pins the host, persists launchd and verif
   assert.match(cloud, /unbounded uninstall/);
   assert.match(cloud, /userdel --remove "\$tunnel_user"/);
   assert.doesNotMatch(cloud, /rm -rf|PasswordAuthentication yes/);
+  assert.match(
+    proxy,
+    /location \/metadata\/[\s\S]*limit_except GET HEAD POST/,
+  );
 
   const mac = await readFile(join(output, "macos/cpredict-tunnel"), "utf8");
   const worker = await readFile(

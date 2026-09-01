@@ -90,7 +90,7 @@
     },
     {
       "path": "deploy/host/nginx/cpredict.conf.template",
-      "sha256": "6d83275fbf101e188858ca4f338be23ce3db2564c1aff999bc36ffa31e51a085"
+      "sha256": "8ee2c8974d803c0f5c184f38506d3ecb8e89d71085cccb57baa041b62ce212a6"
     },
     {
       "path": "deploy/host/reverse-tunnel/README.md.template",
@@ -166,11 +166,11 @@
     },
     {
       "path": "docs/zh/13-compose-runtime-operations.md",
-      "sha256": "3b1b7a9d5bea52f4bcf67d0034813861962e8c1f91a92f5faaff18f95fa45e09"
+      "sha256": "6f0bbf27ab45d6195b384efd6be50476e49b7fb6ab9b1b613840deffef06c25b"
     },
     {
       "path": "docs/zh/14-single-host-deployment-runbook.md",
-      "sha256": "0d353856a3e10f878919e845ce7153cd6beff76b3896dfddfb8da1e0bf10e752"
+      "sha256": "883b19af3322eced2785991a42316623fdb1904ebb828f9ab5b229a17fd2519e"
     },
     {
       "path": "docs/zh/15-reverse-tunnel-deployment-runbook.md",
@@ -1482,7 +1482,7 @@
     },
     {
       "path": "scripts/stack/render-public-proxy.test.mjs",
-      "sha256": "589fb30d688e8982f4eee8698ebcfd232345e872448ce743b06da4f58991f998"
+      "sha256": "be0e7e993cf2e9157579627e44fce6c5a80050560748ae03c1f31c677003290d"
     },
     {
       "path": "scripts/stack/render-reverse-tunnel.mjs",
@@ -1490,7 +1490,7 @@
     },
     {
       "path": "scripts/stack/render-reverse-tunnel.test.mjs",
-      "sha256": "6bb2f56184a225b176c04f1b892d95590163327bf74e60de9470975b295714a8"
+      "sha256": "8e1df6ec70ea1ee8bcdb84c008576c279fd1591fee1d3852ffd4efe94b5911f1"
     },
     {
       "path": "scripts/stack/restore-drill.mjs",
@@ -1534,11 +1534,11 @@
     },
     {
       "path": "scripts/stack/verify-runtime.mjs",
-      "sha256": "316ca591cb7ae20c2da976e370afc2db8e7baa826a21a9aaebaf75e1500052c3"
+      "sha256": "64ac88926037efe596aefb8539f1d702e26a9b9c714516fc2bef7356de13e05e"
     },
     {
       "path": "scripts/stack/verify-runtime.test.mjs",
-      "sha256": "c2e47c221a7e5d2e1d289d20f16a4e48d264d1eccdc994398c34edfc8cc3f47b"
+      "sha256": "a94df925d0f53c838f103fceb84b83607df93d76d2010034f2e61605aee6427e"
     },
     {
       "path": "scripts/test-all.sh",

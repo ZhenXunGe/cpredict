@@ -257,9 +257,15 @@ curl -I https://<PUBLIC_HOST>/readyz
 curl -u colleague https://<PUBLIC_HOST>/readyz
 curl -u colleague https://<PUBLIC_HOST>/runtime-config.json
 curl -u colleague https://<PUBLIC_HOST>/rpc
+curl -u colleague --header 'content-type: application/json' --data '{}' \
+  https://<PUBLIC_HOST>/metadata/v1/challenges
+curl -u colleague --header 'content-type: application/json' --data '{}' \
+  https://<PUBLIC_HOST>/metadata/v1/markets
 ```
 
-预期依次为：未认证 `401`、认证后 readiness `200`、运行配置 `200`、GET RPC `403/405`。浏览器中还要
+预期依次为：未认证 `401`、认证后 readiness `200`、运行配置 `200`、GET RPC `403/405`、两个
+Metadata 无效请求均为 JSON `400 {"error":"invalid request"}`。这两个探针在请求校验阶段停止，不会
+创建 challenge 或发布市场；若返回 Nginx `403`，说明公网代理没有放行 Metadata POST。浏览器中还要
 完成连接钱包、读取市场、创建一笔最小测试网操作的实际体验；静态 curl 不能替代钱包验收。
 
 ## 8. 备份、定时任务与重启演练
