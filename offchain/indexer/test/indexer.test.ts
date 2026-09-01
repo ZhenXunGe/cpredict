@@ -31,7 +31,13 @@ const marketCreatedEvent = parseAbiItem(
   "event MarketCreated(address indexed market,address indexed creator,uint8 indexed deploymentMode,address implementation,bytes32 salt,bytes32 runtimeCodeHash,uint256 creatorNonce,uint256 creationFee,uint256 creatorBond)",
 );
 const marketInitializedEvent = parseAbiItem(
-  "event MarketInitialized(address indexed market,address indexed creator,uint8 indexed mode,uint8 outcomeCount,uint64 closeAt,uint128 marketPrimaryCap,uint128 creatorBond)",
+  "event MarketInitialized(address indexed market,address indexed creator,uint8 indexed mode,uint8 outcomeCount,uint64 closeAt,uint64 resolutionWindow,uint128 marketPrimaryCap,uint128 creatorBond)",
+);
+const marketMetadataUpdatedEvent = parseAbiItem(
+  "event MarketMetadataUpdated(bytes32 indexed rulesHash,string metadataURI,bytes32 indexed resolutionSourceHash,string resolutionSourceURI,uint64 closeAt,uint64 earlyBirdStart,address indexed creatorTreasury,uint256 featureFlags)",
+);
+const primaryPurchasedEvent = parseAbiItem(
+  "event PrimaryPurchased(address indexed buyer,uint256 indexed outcomeId,uint256 desiredUnits,uint256 filledUnits,uint256 payment,uint8 earlyBirdWeight,uint256 cumulativeUserPrimary,uint256 totalPrincipal)",
 );
 const transferSingleEvent = parseAbiItem(
   "event TransferSingle(address indexed operator,address indexed from,address indexed to,uint256 id,uint256 value)",
@@ -208,6 +214,79 @@ describe("ChainIndexer canonical ingestion", () => {
       units: 10n,
       amount: 15n,
     });
+  });
+
+  it("materializes metadata, primary totals, catalog filters, and wallet activity", async () => {
+    const rulesHash = hash(801n);
+    const sourceHash = hash(802n);
+    const client = new FakeClient(4n, [
+      marketCreatedLog(1n, MARKET_A),
+      marketInitializedLog(1n, MARKET_A),
+      marketMetadataUpdatedLog(2n, MARKET_A, rulesHash, sourceHash),
+      primaryPurchasedLog(3n, MARKET_A),
+    ]);
+    const store = new MemoryEventStore();
+    await createIndexer(client, store).runBatch();
+
+    expect(await store.market(CHAIN_ID, MARKET_A)).toMatchObject({
+      resolutionWindow: 86_400n,
+      rulesHash,
+      metadataUri: "https://metadata.example/markets/{id}.json",
+      resolutionSourceHash: sourceHash,
+      resolutionSourceUri: "https://source.example/result",
+      earlyBirdStart: 900n,
+      creatorTreasury: CREATOR,
+      featureFlags: 3n,
+      primaryFilledUnits: 7n,
+      primaryPayment: 7n,
+    });
+
+    expect(
+      (await store.listMarketCatalog(CHAIN_ID, { limit: 10, owner: ALICE }))
+        .items,
+    ).toHaveLength(1);
+    expect(
+      (await store.listMarketCatalog(CHAIN_ID, { limit: 10, status: "open" }))
+        .items,
+    ).toHaveLength(1);
+    expect(
+      (await store.listMarketCatalog(CHAIN_ID, {
+        limit: 10,
+        status: "resolved",
+      })).items,
+    ).toHaveLength(0);
+
+    expect(
+      (await store.listActivity(CHAIN_ID, ALICE, { limit: 10 })).items[0],
+    ).toMatchObject({
+      kind: "primary-purchased",
+      vault: MARKET_A,
+      actor: ALICE,
+      outcomeId: 1n,
+      units: 7n,
+      amount: 7n,
+    });
+  });
+
+  it("uses stable keyset cursors for the market catalog", async () => {
+    const client = new FakeClient(2n, [
+      marketCreatedLog(1n, MARKET_A),
+      marketInitializedLog(1n, MARKET_A),
+      marketCreatedLog(2n, MARKET_B),
+      marketInitializedLog(2n, MARKET_B),
+    ]);
+    const store = new MemoryEventStore();
+    await createIndexer(client, store).runBatch();
+
+    const first = await store.listMarketCatalog(CHAIN_ID, { limit: 1 });
+    expect(first.items.map((market) => market.market)).toEqual([MARKET_B]);
+    expect(first.nextCursor).toBeDefined();
+    const second = await store.listMarketCatalog(CHAIN_ID, {
+      limit: 1,
+      cursor: first.nextCursor,
+    });
+    expect(second.items.map((market) => market.market)).toEqual([MARKET_A]);
+    expect(second.nextCursor).toBeUndefined();
   });
 
   it("materializes deterministic evidence for resolve, creator void, and timeout void", async () => {
@@ -404,10 +483,73 @@ function marketInitializedLog(blockNumber: bigint, market: Address): Log {
       [
         { type: "uint8" },
         { type: "uint64" },
+        { type: "uint64" },
         { type: "uint128" },
         { type: "uint128" },
       ],
-      [2, 1_000n, 500_000_000n, 10_000_000n],
+      [2, 1_000n, 86_400n, 500_000_000n, 10_000_000n],
+    ),
+  );
+}
+
+function marketMetadataUpdatedLog(
+  blockNumber: bigint,
+  market: Address,
+  rulesHash: Hex,
+  sourceHash: Hex,
+): Log {
+  return fixtureLog(
+    market,
+    blockNumber,
+    7,
+    encodeEventTopics({
+      abi: [marketMetadataUpdatedEvent],
+      eventName: "MarketMetadataUpdated",
+      args: {
+        rulesHash,
+        resolutionSourceHash: sourceHash,
+        creatorTreasury: CREATOR,
+      },
+    }) as unknown as readonly Hex[],
+    encodeAbiParameters(
+      [
+        { type: "string" },
+        { type: "string" },
+        { type: "uint64" },
+        { type: "uint64" },
+        { type: "uint256" },
+      ],
+      [
+        "https://metadata.example/markets/{id}.json",
+        "https://source.example/result",
+        1_000n,
+        900n,
+        3n,
+      ],
+    ),
+  );
+}
+
+function primaryPurchasedLog(blockNumber: bigint, market: Address): Log {
+  return fixtureLog(
+    market,
+    blockNumber,
+    8,
+    encodeEventTopics({
+      abi: [primaryPurchasedEvent],
+      eventName: "PrimaryPurchased",
+      args: { buyer: ALICE, outcomeId: 1n },
+    }) as unknown as readonly Hex[],
+    encodeAbiParameters(
+      [
+        { type: "uint256" },
+        { type: "uint256" },
+        { type: "uint256" },
+        { type: "uint8" },
+        { type: "uint256" },
+        { type: "uint256" },
+      ],
+      [10n, 7n, 7n, 3, 7n, 7n],
     ),
   );
 }

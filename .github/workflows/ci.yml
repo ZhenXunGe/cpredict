@@ -119,6 +119,7 @@ jobs:
           docker compose -f compose.yaml config --no-interpolate --quiet
           docker build --file deploy/compose/Dockerfile.offchain --target indexer --tag cpredict-indexer:ci .
           docker build --file deploy/compose/Dockerfile.offchain --target paymaster --tag cpredict-paymaster:ci .
+          docker build --file deploy/compose/Dockerfile.offchain --target metadata --tag cpredict-metadata:ci .
           docker build --file deploy/compose/Dockerfile.demo --tag cpredict-web-demo:ci .
       - name: Scan container images for fixable high-severity vulnerabilities
         run: |

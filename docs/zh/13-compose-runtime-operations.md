@@ -52,7 +52,7 @@ npm run deploy:sync -- candidate \
 默认从部署 orchestrator 的受限 state 文件读取实际 Foundry receipt 路径；不要传仓库根目录下的旧
 `broadcast/...` 路径。只有脱离 orchestrator 导入外部部署时，才显式传入已复核的 `--broadcast` 或
 `--deployment-block`。候选模式原子生成 immutable runtime 目录、
-`current.env`、Demo DEBUG 地址包、SDK/Indexer/Paymaster/Compose 配置和逐文件 SHA-256；它永远不生成
+`current.env`、Demo DEBUG 地址包、SDK/Indexer/Metadata/Paymaster/Compose 配置和逐文件 SHA-256；它永远不生成
 `final.json`。Demo 自动加载 DEBUG 地址并实时检查 chainId、所有 code 和 Factory/Marketplace wiring，
 黄色 DEBUG 不等于最终验证。
 
@@ -88,10 +88,13 @@ npm run stack:logs
 npm run stack:down
 ```
 
-基础栈依赖顺序为 PostgreSQL 17 ready → Indexer/Paymaster schema migration → canonical Indexer/API/WS
-ready → Nginx Demo ready。PostgreSQL 不发布宿主机端口；外部仅以 `127.0.0.1` 发布 Demo 和 Indexer。
+基础栈依赖顺序为 PostgreSQL 17 ready → Indexer/Metadata/Paymaster schema migration → canonical
+Indexer/API/WS 与 Metadata ready → Nginx Demo ready。Metadata 服务保存钱包签名的规范市场规则，公开
+读取不可变、发布 challenge 一次性消费；它不抓取或代替判断外部 resolution source。PostgreSQL 不发布
+宿主机端口；外部仅以 `127.0.0.1` 发布 Demo、Indexer 和 Metadata。
 容器启用 `no-new-privileges`、capability drop、只读根文件系统（数据卷和限定 tmpfs 除外）、资源上限、
-健康检查与日志轮转。Nginx 同源代理 `/rpc`、`/indexer/`、WebSocket 和 `/deployment/`；远程环境必须在
+健康检查与日志轮转。Nginx 同源代理 `/rpc`、`/indexer/`、`/metadata/`、WebSocket 和
+`/deployment/`；远程环境必须在
 外层增加 TLS、认证、限流和网络策略。
 
 Paymaster 只能显式启用：
@@ -149,7 +152,7 @@ npm run stack:restore-drill -- --backup runtime/arbitrum-sepolia/backups/<id>
 npm run stack:drill -- --adapter /secure/adapters/local-ops.mjs
 ```
 
-备份以只读 `cpredict_backup` 角色生成 Indexer 和 Paymaster custom dump，并记录 PG 版本、migration SHA、
+备份以只读 `cpredict_backup` 角色生成 Indexer、Metadata 和 Paymaster custom dump，并记录 PG 版本、migration SHA、
 source/deployment identity、关键表行数、文件大小和 SHA-256。恢复入口不接收数据库 URL，只创建随机命名
 的一次性容器和 volume；先校验 dump，再 restore、重放全部 migration 验证幂等性、比较所有关键表行数，
 最终强制删除容器和 volume。

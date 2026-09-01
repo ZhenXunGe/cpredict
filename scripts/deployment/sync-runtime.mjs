@@ -180,6 +180,7 @@ export function buildRuntimePackage({ mode, deployment, deploymentBlock, inputSh
     },
     paymentToken,
     indexer: { enabled: true, basePath: "/indexer" },
+    metadata: { enabled: true, basePath: "/metadata" },
     evidence: { uploadEnabled: false, endpointPath: "/evidence" },
   };
   const deploymentAddresses = {

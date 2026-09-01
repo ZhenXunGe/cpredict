@@ -10,11 +10,13 @@ import { loadStackConfiguration } from "./config.mjs";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const INDEXER_TABLES = [
   "canonical_blocks", "chain_events", "chain_checkpoints", "registered_markets",
-  "markets", "listings", "fills", "positions", "claims",
+  "markets", "listings", "fills", "positions", "claims", "activities",
+  "activity_participants",
 ];
 const PAYMASTER_TABLES = [
   "sponsor_budget_global_usage", "sponsor_budget_user_usage", "sponsor_budget_leases",
 ];
+const METADATA_TABLES = ["metadata_challenges", "market_publications"];
 
 export async function createStackBackup({
   outputRoot = resolve(ROOT, "runtime/arbitrum-sepolia/backups"),
@@ -30,7 +32,11 @@ export async function createStackBackup({
   const base = composeBase(config);
   const env = { ...process.env, ...config.environment, PGPASSWORD: config.secret.CPREDICT_STACK_BACKUP_PASSWORD };
   const dumps = {};
-  for (const [name, database] of [["indexer", "cpredict_indexer"], ["paymaster", "cpredict_paymaster"]]) {
+  for (const [name, database] of [
+    ["indexer", "cpredict_indexer"],
+    ["paymaster", "cpredict_paymaster"],
+    ["metadata", "cpredict_metadata"],
+  ]) {
     const path = resolve(directory, `${name}.dump`);
     await stream("docker", [
       ...base, "exec", "-T", "-e", "PGPASSWORD", "postgres", "pg_dump",
@@ -42,6 +48,7 @@ export async function createStackBackup({
   const snapshots = {
     indexer: await databaseSnapshot(run, base, env, "cpredict_indexer", INDEXER_TABLES, "indexer"),
     paymaster: await databaseSnapshot(run, base, env, "cpredict_paymaster", PAYMASTER_TABLES, "paymaster"),
+    metadata: await databaseSnapshot(run, base, env, "cpredict_metadata", METADATA_TABLES, "metadata"),
   };
   const packageManifestPath = resolve(config.runtimeRoot, "package-manifest.json");
   const packageManifest = JSON.parse(await readFile(packageManifestPath, "utf8"));
@@ -64,12 +71,13 @@ export async function createStackBackup({
     "backup-manifest.json": await sha256File(manifestPath),
     "indexer.dump": dumps.indexer.sha256,
     "paymaster.dump": dumps.paymaster.sha256,
+    "metadata.dump": dumps.metadata.sha256,
   }), { mode: 0o600 });
   return { directory, manifest };
 }
 
 export function buildBackupManifest({ generatedAt, packageManifest, postgresVersion, dumps, migrations, snapshots }) {
-  for (const key of ["indexer", "paymaster"])
+  for (const key of ["indexer", "paymaster", "metadata"])
     if (!/^[0-9a-f]{64}$/.test(dumps[key]?.sha256 ?? "") || dumps[key].bytes <= 0)
       throw new Error(`${key} dump record is invalid`);
   return {
@@ -131,15 +139,25 @@ export function buildSnapshotSql(kind, tables) {
       ),
       'leaseStates', COALESCE((SELECT json_object_agg(state, count::text) FROM (SELECT state, count(*) FROM sponsor_budget_leases GROUP BY state ORDER BY state) grouped), '{}'::json)
     )::text;`;
+  if (kind === "metadata") return `
+    SELECT json_build_object(
+      'rows', json_build_object(${rows}),
+      'publicationTotals', json_build_object(
+        'published', (SELECT count(*)::text FROM market_publications),
+        'openChallenges', (SELECT count(*)::text FROM metadata_challenges WHERE consumed_at IS NULL),
+        'consumedChallenges', (SELECT count(*)::text FROM metadata_challenges WHERE consumed_at IS NOT NULL)
+      )
+    )::text;`;
   throw new Error(`unknown snapshot kind ${kind}`);
 }
 
 async function migrationInventory() {
   const files = [
-    ...["001_indexer.sql", "002_settlement_evidence.sql", "003_read_api_indexes.sql"].map(
+    ...["001_indexer.sql", "002_settlement_evidence.sql", "003_read_api_indexes.sql", "004_market_metadata.sql", "005_activity_catalog.sql"].map(
       (name) => `offchain/indexer/migrations/${name}`,
     ),
     "offchain/paymaster-service/migrations/001_sponsor_budget.sql",
+    "offchain/metadata-service/migrations/001_metadata.sql",
   ];
   return Promise.all(files.map(async (path) => ({ path, sha256: await sha256File(resolve(ROOT, path)) })));
 }

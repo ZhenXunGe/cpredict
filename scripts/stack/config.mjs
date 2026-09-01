@@ -10,7 +10,9 @@ const SECRET_KEYS = new Set([
   "CPREDICT_STACK_MIGRATOR_PASSWORD",
   "CPREDICT_STACK_INDEXER_PASSWORD",
   "CPREDICT_STACK_PAYMASTER_PASSWORD",
+  "CPREDICT_STACK_METADATA_PASSWORD",
   "CPREDICT_STACK_BACKUP_PASSWORD",
+  "CPREDICT_METADATA_PUBLIC_BASE_URL",
   "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
 ]);
 const REQUIRED_SECRET_KEYS = [...SECRET_KEYS].filter(
@@ -59,6 +61,7 @@ export async function loadStackConfiguration({
       throw new Error(`${key} must be 24-128 URL-safe characters`);
   }
   validateRpc(secret.ARBITRUM_SEPOLIA_RPC_URL);
+  validatePublicBaseUrl(secret.CPREDICT_METADATA_PUBLIC_BASE_URL);
   validateAddress(publicEnv.CPREDICT_INDEXER_FACTORY_ADDRESS, "factory");
   for (const [index, value] of publicEnv.CPREDICT_INDEXER_CORE_ADDRESSES.split(",").entries())
     validateAddress(value.trim(), `core address ${index}`);
@@ -111,6 +114,15 @@ function validateRpc(value) {
   const loopback = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(url.hostname);
   if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))
     throw new Error("ARBITRUM_SEPOLIA_RPC_URL must use HTTPS or loopback HTTP");
+}
+
+function validatePublicBaseUrl(value) {
+  const url = new URL(value);
+  const loopback = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(url.hostname);
+  if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))
+    throw new Error("CPREDICT_METADATA_PUBLIC_BASE_URL must use HTTPS or loopback HTTP");
+  if (url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== "")
+    throw new Error("CPREDICT_METADATA_PUBLIC_BASE_URL must not include credentials, query, or fragment");
 }
 
 function validateAddress(value, label) {

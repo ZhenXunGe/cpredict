@@ -1,6 +1,7 @@
 import type { Address, Hex } from "viem";
 import type { IndexerDatabaseTelemetry } from "./telemetry.js";
 import type {
+  ActivityView,
   CanonicalBlock,
   ChainCheckpoint,
   ClaimView,
@@ -9,6 +10,7 @@ import type {
   IndexedEvent,
   IndexerQueryStore,
   ListingView,
+  MarketCatalogOptions,
   MarketView,
   PositionView,
   QueryOptions,
@@ -91,6 +93,15 @@ export class InstrumentedEventQueryStore implements CloseableEventQueryStore {
     return this.measure("market", () => this.delegate.market(chainId, market));
   }
 
+  listMarketCatalog(
+    chainId: number,
+    options: MarketCatalogOptions,
+  ): Promise<QueryPage<MarketView>> {
+    return this.measure("list_market_catalog", () =>
+      this.delegate.listMarketCatalog(chainId, options),
+    );
+  }
+
   listListings(
     chainId: number,
     options: QueryOptions & {
@@ -132,6 +143,16 @@ export class InstrumentedEventQueryStore implements CloseableEventQueryStore {
   ): Promise<QueryPage<ClaimView>> {
     return this.measure("list_claims", () =>
       this.delegate.listClaims(chainId, owner, options),
+    );
+  }
+
+  listActivity(
+    chainId: number,
+    owner: Address,
+    options: QueryOptions,
+  ): Promise<QueryPage<ActivityView>> {
+    return this.measure("list_activity", () =>
+      this.delegate.listActivity(chainId, owner, options),
     );
   }
 

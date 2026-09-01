@@ -34,6 +34,7 @@ export function verifyComposeState(rows, { sponsorship = false } = {}) {
   const running = [
     "postgres",
     "indexer",
+    "metadata",
     "web-demo",
     ...(sponsorship ? ["paymaster"] : []),
   ];
@@ -52,7 +53,9 @@ export function verifyComposeState(rows, { sponsorship = false } = {}) {
     });
   }
   for (const service of [
+    "bootstrap-databases",
     "migrate-indexer",
+    "migrate-metadata",
     ...(sponsorship ? ["migrate-paymaster"] : []),
   ]) {
     const row = byService.get(service);
@@ -68,6 +71,7 @@ export function verifyComposeState(rows, { sponsorship = false } = {}) {
   }
   for (const service of [
     "indexer",
+    "metadata",
     "web-demo",
     ...(sponsorship ? ["paymaster"] : []),
   ]) {

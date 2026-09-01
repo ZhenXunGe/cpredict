@@ -6,6 +6,8 @@ import {
 } from "../../sdk/src/evidence.js";
 import { deriveMutations, type DerivedMutation } from "./derived.js";
 import type {
+  ActivityKind,
+  ActivityView,
   CanonicalBlock,
   ChainCheckpoint,
   ClaimView,
@@ -15,10 +17,16 @@ import type {
   IndexedEvent,
   IndexerQueryStore,
   ListingView,
+  MarketCatalogOptions,
   MarketView,
   PositionView,
   QueryOptions,
   QueryPage,
+} from "./store.js";
+import {
+  decodeOpaqueCursor,
+  encodeOpaqueCursor,
+  marketState,
 } from "./store.js";
 
 type Db = Sql | TransactionSql;
@@ -181,6 +189,60 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     return rows[0] === undefined ? undefined : mapMarket(rows[0]);
   }
 
+  async listMarketCatalog(
+    chainId: number,
+    options: MarketCatalogOptions,
+  ): Promise<QueryPage<MarketView>> {
+    validateLimit(options.limit);
+    const statusFilter =
+      options.status === undefined
+        ? this.sql``
+        : this.sql`AND m.state = ${marketState(options.status)}`;
+    const ownerFilter =
+      options.owner === undefined
+        ? this.sql``
+        : this.sql`AND (
+            m.creator = ${getAddress(options.owner)}
+            OR EXISTS (
+              SELECT 1
+              FROM activities a
+              JOIN activity_participants ap
+                ON ap.chain_id = a.chain_id
+               AND ap.transaction_hash = a.transaction_hash
+               AND ap.log_index = a.log_index
+              WHERE a.chain_id = m.chain_id
+                AND a.vault = m.market
+                AND ap.participant = ${getAddress(options.owner)}
+            )
+          )`;
+    const cursor =
+      options.cursor === undefined ? undefined : marketCursor(options.cursor);
+    const cursorFilter =
+      cursor === undefined
+        ? this.sql``
+        : this.sql`AND (
+            m.created_block < ${cursor.block.toString()}
+            OR (m.created_block = ${cursor.block.toString()} AND m.market < ${cursor.market})
+          )`;
+    const rows = await this.sql<Array<MarketRow>>`
+      SELECT m.* FROM markets m
+      WHERE m.chain_id = ${chainId} ${statusFilter} ${ownerFilter} ${cursorFilter}
+      ORDER BY m.created_block DESC, m.market DESC
+      LIMIT ${options.limit + 1}
+    `;
+    const items = rows.slice(0, options.limit).map(mapMarket);
+    const last = items.at(-1);
+    return rows.length > options.limit && last !== undefined
+      ? {
+          items,
+          nextCursor: encodeOpaqueCursor({
+            block: last.createdBlock.toString(),
+            market: last.market,
+          }),
+        }
+      : { items };
+  }
+
   async listListings(
     chainId: number,
     options: QueryOptions & {
@@ -263,6 +325,58 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     return page(rows.map(mapClaim), limit, offset);
   }
 
+  async listActivity(
+    chainId: number,
+    owner: Address,
+    options: QueryOptions,
+  ): Promise<QueryPage<ActivityView>> {
+    validateLimit(options.limit);
+    const cursor =
+      options.cursor === undefined
+        ? undefined
+        : activityCursor(options.cursor);
+    const cursorFilter =
+      cursor === undefined
+        ? this.sql``
+        : this.sql`AND (
+            a.block_number < ${cursor.block.toString()}
+            OR (
+              a.block_number = ${cursor.block.toString()}
+              AND a.transaction_hash < ${cursor.transactionHash}
+            )
+            OR (
+              a.block_number = ${cursor.block.toString()}
+              AND a.transaction_hash = ${cursor.transactionHash}
+              AND a.log_index < ${cursor.logIndex}
+            )
+          )`;
+    const rows = await this.sql<Array<ActivityRow>>`
+      SELECT a.*
+      FROM activities a
+      JOIN activity_participants ap
+        ON ap.chain_id = a.chain_id
+       AND ap.transaction_hash = a.transaction_hash
+       AND ap.log_index = a.log_index
+      WHERE a.chain_id = ${chainId}
+        AND ap.participant = ${getAddress(owner)}
+        ${cursorFilter}
+      ORDER BY a.block_number DESC, a.transaction_hash DESC, a.log_index DESC
+      LIMIT ${options.limit + 1}
+    `;
+    const items = rows.slice(0, options.limit).map(mapActivity);
+    const last = items.at(-1);
+    return rows.length > options.limit && last !== undefined
+      ? {
+          items,
+          nextCursor: encodeOpaqueCursor({
+            block: last.blockNumber.toString(),
+            transactionHash: last.transactionHash,
+            logIndex: last.logIndex,
+          }),
+        }
+      : { items };
+  }
+
   async ready(): Promise<void> {
     const rows = await this.sql<
       Array<{
@@ -271,7 +385,11 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
         chain_checkpoints: string | null;
         markets: string | null;
         markets_evidence_hash: boolean;
+        markets_rules_hash: boolean;
+        activities: string | null;
+        activity_participants: string | null;
         markets_chain_created_idx: string | null;
+        markets_chain_state_created_idx: string | null;
         listings_chain_active_updated_idx: string | null;
         fills_listing_block_idx: string | null;
         positions_owner_updated_idx: string | null;
@@ -288,7 +406,16 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
             AND table_name = 'markets'
             AND column_name = 'evidence_hash'
         ) AS markets_evidence_hash,
+        EXISTS (
+          SELECT 1 FROM information_schema.columns
+          WHERE table_schema = current_schema()
+            AND table_name = 'markets'
+            AND column_name = 'rules_hash'
+        ) AS markets_rules_hash,
+        to_regclass('activities')::text AS activities,
+        to_regclass('activity_participants')::text AS activity_participants,
         to_regclass('markets_chain_created_idx')::text AS markets_chain_created_idx,
+        to_regclass('markets_chain_state_created_idx')::text AS markets_chain_state_created_idx,
         to_regclass('listings_chain_active_updated_idx')::text AS listings_chain_active_updated_idx,
         to_regclass('fills_listing_block_idx')::text AS fills_listing_block_idx,
         to_regclass('positions_owner_updated_idx')::text AS positions_owner_updated_idx
@@ -301,7 +428,11 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       row.chain_checkpoints === null ||
       row.markets === null ||
       !row.markets_evidence_hash ||
+      !row.markets_rules_hash ||
+      row.activities === null ||
+      row.activity_participants === null ||
       row.markets_chain_created_idx === null ||
+      row.markets_chain_state_created_idx === null ||
       row.listings_chain_active_updated_idx === null ||
       row.fills_listing_block_idx === null ||
       row.positions_owner_updated_idx === null
@@ -392,29 +523,79 @@ async function applyMutation(
           ${event.blockNumber.toString()}, ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, market) DO NOTHING
       `;
+      await recordActivity(db, event, {
+        kind: "market-created",
+        vault: mutation.market,
+        actor: mutation.creator,
+        amount: mutation.creatorBond,
+      });
       return;
     case "market-initialized":
       await db`
         INSERT INTO markets (
-          chain_id, market, creator, deployment_mode, outcome_count, close_at,
+          chain_id, market, creator, deployment_mode, outcome_count, close_at, resolution_window,
           market_primary_cap, creator_bond, state, created_block, updated_block,
           confirmation_status
         ) VALUES (
           ${event.chainId}, ${mutation.market}, ${mutation.creator}, ${mutation.deploymentMode},
-          ${mutation.outcomeCount}, ${mutation.closeAt.toString()},
+          ${mutation.outcomeCount}, ${mutation.closeAt.toString()}, ${mutation.resolutionWindow.toString()},
           ${mutation.marketPrimaryCap.toString()}, ${mutation.creatorBond.toString()}, 0,
           ${event.blockNumber.toString()}, ${event.blockNumber.toString()},
           ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, market) DO UPDATE SET
           outcome_count = EXCLUDED.outcome_count,
           close_at = EXCLUDED.close_at,
+          resolution_window = EXCLUDED.resolution_window,
           market_primary_cap = EXCLUDED.market_primary_cap,
           creator_bond = EXCLUDED.creator_bond,
           updated_block = EXCLUDED.updated_block,
           confirmation_status = EXCLUDED.confirmation_status
       `;
       return;
-    case "market-terminal":
+    case "market-metadata":
+      await db`
+        UPDATE markets SET
+          rules_hash = ${mutation.rulesHash},
+          metadata_uri = ${mutation.metadataUri},
+          resolution_source_hash = ${mutation.resolutionSourceHash},
+          resolution_source_uri = ${mutation.resolutionSourceUri},
+          close_at = ${mutation.closeAt.toString()},
+          early_bird_start = ${mutation.earlyBirdStart.toString()},
+          creator_treasury = ${mutation.creatorTreasury},
+          feature_flags = ${mutation.featureFlags.toString()},
+          updated_block = ${event.blockNumber.toString()},
+          confirmation_status = ${event.confirmationStatus}
+        WHERE chain_id = ${event.chainId} AND market = ${mutation.market}
+      `;
+      return;
+    case "primary-purchased":
+      await db`
+        UPDATE markets SET
+          primary_filled_units = primary_filled_units + ${mutation.filledUnits.toString()},
+          primary_payment = ${mutation.totalPrincipal.toString()},
+          updated_block = ${event.blockNumber.toString()},
+          confirmation_status = ${event.confirmationStatus}
+        WHERE chain_id = ${event.chainId} AND market = ${mutation.market}
+      `;
+      await recordActivity(db, event, {
+        kind: "primary-purchased",
+        vault: mutation.market,
+        actor: mutation.buyer,
+        outcomeId: mutation.outcomeId,
+        units: mutation.filledUnits,
+        amount: mutation.payment,
+      });
+      return;
+    case "market-terminal": {
+      const participantRows = await db<Array<{ participant: Address }>>`
+        SELECT creator AS participant FROM markets
+        WHERE chain_id = ${event.chainId} AND market = ${mutation.market}
+        UNION
+        SELECT owner AS participant FROM positions
+        WHERE chain_id = ${event.chainId}
+          AND vault = ${mutation.market}
+          AND balance > 0
+      `;
       await db`
         UPDATE markets SET state = ${mutation.state},
           winning_outcome = ${nullableBigint(mutation.winningOutcome)},
@@ -422,7 +603,18 @@ async function applyMutation(
           updated_block = ${event.blockNumber.toString()}, confirmation_status = ${event.confirmationStatus}
         WHERE chain_id = ${event.chainId} AND market = ${mutation.market}
       `;
+      await recordActivity(
+        db,
+        event,
+        {
+          kind: terminalActivityKind(mutation.terminalKind),
+          vault: mutation.market,
+          actor: mutation.caller,
+        },
+        participantRows.map((row) => row.participant),
+      );
       return;
+    }
     case "listing-created":
       await db`
         INSERT INTO listings (
@@ -436,14 +628,25 @@ async function applyMutation(
           ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, listing_id) DO NOTHING
       `;
+      await recordActivity(db, event, {
+        kind: "listing-created",
+        vault: mutation.vault,
+        actor: mutation.seller,
+        outcomeId: mutation.outcomeId,
+        listingId: mutation.listingId,
+        units: mutation.amount,
+        amount: mutation.unitPrice,
+      });
       return;
     case "listing-filled": {
-      const listings = await db<Array<{ vault: Address }>>`
+      const listings = await db<
+        Array<{ vault: Address; outcome_id: string }>
+      >`
         UPDATE listings SET remaining_units = ${mutation.remainingUnits.toString()},
           active = ${mutation.remainingUnits !== 0n}, updated_block = ${event.blockNumber.toString()},
           confirmation_status = ${event.confirmationStatus}
         WHERE chain_id = ${event.chainId} AND listing_id = ${mutation.listingId}
-        RETURNING vault
+        RETURNING vault, outcome_id
       `;
       const listing = listings[0];
       if (listing === undefined)
@@ -460,15 +663,41 @@ async function applyMutation(
           ${mutation.gross.toString()}, ${event.blockNumber.toString()}, ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, transaction_hash, log_index) DO NOTHING
       `;
+      await recordActivity(db, event, {
+        kind: "listing-filled",
+        vault: listing.vault,
+        actor: mutation.buyer,
+        counterparty: mutation.seller,
+        outcomeId: BigInt(listing.outcome_id),
+        listingId: mutation.listingId,
+        units: mutation.filledUnits,
+        amount: mutation.gross,
+      });
       return;
     }
-    case "listing-closed":
-      await db`
+    case "listing-closed": {
+      const listings = await db<
+        Array<{ vault: Address; outcome_id: string }>
+      >`
         UPDATE listings SET remaining_units = 0, active = FALSE,
           updated_block = ${event.blockNumber.toString()}, confirmation_status = ${event.confirmationStatus}
         WHERE chain_id = ${event.chainId} AND listing_id = ${mutation.listingId}
+        RETURNING vault, outcome_id
       `;
+      const listing = listings[0];
+      if (listing === undefined)
+        throw new Error(`close references unknown listing ${mutation.listingId}`);
+      await recordActivity(db, event, {
+        kind: mutation.closeKind,
+        vault: listing.vault,
+        actor: mutation.caller,
+        counterparty:
+          mutation.caller === mutation.seller ? null : mutation.seller,
+        outcomeId: BigInt(listing.outcome_id),
+        listingId: mutation.listingId,
+      });
       return;
+    }
     case "position-delta":
       if (mutation.delta >= 0n) {
         await db`
@@ -510,10 +739,66 @@ async function applyMutation(
           ${mutation.amount.toString()}, ${event.blockNumber.toString()}, ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, transaction_hash, log_index) DO NOTHING
       `;
+      await recordActivity(db, event, {
+        kind: claimActivityKind(mutation.claimKind),
+        vault: mutation.vault,
+        actor: mutation.caller,
+        counterparty:
+          mutation.caller === mutation.owner ? null : mutation.owner,
+        units: mutation.units,
+        amount: mutation.amount,
+      });
+  }
+}
+
+async function recordActivity(
+  db: Db,
+  event: IndexedEvent,
+  input: {
+    kind: ActivityKind;
+    vault: Address;
+    actor: Address | null;
+    counterparty?: Address | null;
+    outcomeId?: bigint | null;
+    listingId?: Hex | null;
+    units?: bigint | null;
+    amount?: bigint | null;
+  },
+  extraParticipants: readonly Address[] = [],
+): Promise<void> {
+  const counterparty = input.counterparty ?? null;
+  await db`
+    INSERT INTO activities (
+      chain_id, transaction_hash, log_index, activity_kind, vault, actor,
+      counterparty, outcome_id, listing_id, units, amount, block_number,
+      confirmation_status
+    ) VALUES (
+      ${event.chainId}, ${event.transactionHash}, ${event.logIndex}, ${input.kind},
+      ${input.vault}, ${input.actor}, ${counterparty},
+      ${nullableBigint(input.outcomeId ?? null)}, ${input.listingId ?? null},
+      ${nullableBigint(input.units ?? null)}, ${nullableBigint(input.amount ?? null)},
+      ${event.blockNumber.toString()}, ${event.confirmationStatus}
+    ) ON CONFLICT (chain_id, transaction_hash, log_index) DO NOTHING
+  `;
+  const participants = new Set(
+    [input.actor, counterparty, ...extraParticipants]
+      .filter((participant): participant is Address => participant !== null)
+      .map(getAddress),
+  );
+  for (const participant of participants) {
+    await db`
+      INSERT INTO activity_participants (
+        chain_id, transaction_hash, log_index, participant
+      ) VALUES (
+        ${event.chainId}, ${event.transactionHash}, ${event.logIndex}, ${participant}
+      ) ON CONFLICT DO NOTHING
+    `;
   }
 }
 
 async function clearProjections(db: Db, chainId: number): Promise<void> {
+  await db`DELETE FROM activity_participants WHERE chain_id = ${chainId}`;
+  await db`DELETE FROM activities WHERE chain_id = ${chainId}`;
   await db`DELETE FROM claims WHERE chain_id = ${chainId}`;
   await db`DELETE FROM fills WHERE chain_id = ${chainId}`;
   await db`DELETE FROM positions WHERE chain_id = ${chainId}`;
@@ -549,7 +834,17 @@ interface MarketRow {
   deployment_mode: number;
   outcome_count: number | null;
   close_at: string | null;
+  resolution_window: string | null;
+  rules_hash: Hex | null;
+  metadata_uri: string | null;
+  resolution_source_hash: Hex | null;
+  resolution_source_uri: string | null;
+  early_bird_start: string | null;
+  creator_treasury: Address | null;
+  feature_flags: string | null;
   market_primary_cap: string | null;
+  primary_filled_units: string;
+  primary_payment: string;
   creator_bond: string;
   state: number;
   winning_outcome: string | null;
@@ -612,6 +907,22 @@ interface ClaimRow {
   confirmation_status: ConfirmationStatus;
 }
 
+interface ActivityRow {
+  chain_id: string;
+  transaction_hash: Hex;
+  log_index: number;
+  activity_kind: ActivityKind;
+  vault: Address;
+  actor: Address | null;
+  counterparty: Address | null;
+  outcome_id: string | null;
+  listing_id: Hex | null;
+  units: string | null;
+  amount: string | null;
+  block_number: string;
+  confirmation_status: ConfirmationStatus;
+}
+
 function mapBlock(chainId: number, row: CanonicalBlockRow): CanonicalBlock {
   return {
     chainId,
@@ -650,8 +961,22 @@ function mapMarket(row: MarketRow): MarketView {
     deploymentMode: row.deployment_mode,
     outcomeCount: row.outcome_count,
     closeAt: row.close_at === null ? null : BigInt(row.close_at),
+    resolutionWindow:
+      row.resolution_window === null ? null : BigInt(row.resolution_window),
+    rulesHash: row.rules_hash,
+    metadataUri: row.metadata_uri,
+    resolutionSourceHash: row.resolution_source_hash,
+    resolutionSourceUri: row.resolution_source_uri,
+    earlyBirdStart:
+      row.early_bird_start === null ? null : BigInt(row.early_bird_start),
+    creatorTreasury:
+      row.creator_treasury === null ? null : getAddress(row.creator_treasury),
+    featureFlags:
+      row.feature_flags === null ? null : BigInt(row.feature_flags),
     marketPrimaryCap:
       row.market_primary_cap === null ? null : BigInt(row.market_primary_cap),
+    primaryFilledUnits: BigInt(row.primary_filled_units),
+    primaryPayment: BigInt(row.primary_payment),
     creatorBond: BigInt(row.creator_bond),
     state: row.state,
     winningOutcome:
@@ -726,6 +1051,25 @@ function mapClaim(row: ClaimRow): ClaimView {
   };
 }
 
+function mapActivity(row: ActivityRow): ActivityView {
+  return {
+    chainId: Number(row.chain_id),
+    transactionHash: row.transaction_hash,
+    logIndex: row.log_index,
+    kind: row.activity_kind,
+    vault: getAddress(row.vault),
+    actor: row.actor === null ? null : getAddress(row.actor),
+    counterparty:
+      row.counterparty === null ? null : getAddress(row.counterparty),
+    outcomeId: row.outcome_id === null ? null : BigInt(row.outcome_id),
+    listingId: row.listing_id,
+    units: row.units === null ? null : BigInt(row.units),
+    amount: row.amount === null ? null : BigInt(row.amount),
+    blockNumber: BigInt(row.block_number),
+    confirmationStatus: row.confirmation_status,
+  };
+}
+
 function pageInput(options: QueryOptions): { limit: number; offset: number } {
   if (
     !Number.isInteger(options.limit) ||
@@ -745,6 +1089,96 @@ function pageInput(options: QueryOptions): { limit: number; offset: number } {
     throw new RangeError("invalid cursor");
   }
   return { limit: options.limit, offset };
+}
+
+function validateLimit(limit: number): void {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+    throw new RangeError("limit must be an integer within [1, 100]");
+}
+
+interface MarketCursor {
+  block: bigint;
+  market: Address;
+}
+
+function marketCursor(value: string): MarketCursor {
+  const decoded = decodeOpaqueCursor<{ block?: unknown; market?: unknown }>(
+    value,
+  );
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    typeof decoded.block !== "string" ||
+    !/^\d+$/.test(decoded.block) ||
+    typeof decoded.market !== "string"
+  ) {
+    throw new RangeError("invalid cursor");
+  }
+  try {
+    return { block: BigInt(decoded.block), market: getAddress(decoded.market) };
+  } catch {
+    throw new RangeError("invalid cursor");
+  }
+}
+
+interface ActivityCursor {
+  block: bigint;
+  transactionHash: Hex;
+  logIndex: number;
+}
+
+function activityCursor(value: string): ActivityCursor {
+  const decoded = decodeOpaqueCursor<{
+    block?: unknown;
+    transactionHash?: unknown;
+    logIndex?: unknown;
+  }>(value);
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    typeof decoded.block !== "string" ||
+    !/^\d+$/.test(decoded.block) ||
+    typeof decoded.transactionHash !== "string" ||
+    !/^0x[0-9a-fA-F]{64}$/.test(decoded.transactionHash) ||
+    typeof decoded.logIndex !== "number" ||
+    !Number.isSafeInteger(decoded.logIndex) ||
+    decoded.logIndex < 0
+  ) {
+    throw new RangeError("invalid cursor");
+  }
+  return {
+    block: BigInt(decoded.block),
+    transactionHash: decoded.transactionHash as Hex,
+    logIndex: decoded.logIndex,
+  };
+}
+
+function terminalActivityKind(
+  value: "resolved" | "voided-creator" | "voided-timeout",
+): ActivityKind {
+  switch (value) {
+    case "resolved":
+      return "market-resolved";
+    case "voided-creator":
+      return "market-voided-creator";
+    case "voided-timeout":
+      return "market-voided-timeout";
+  }
+}
+
+function claimActivityKind(value: string): ActivityKind {
+  switch (value) {
+    case "winner":
+      return "winner-claimed";
+    case "early-bird":
+      return "early-bird-claimed";
+    case "principal-refund":
+      return "principal-refunded";
+    case "timeout-bonus":
+      return "timeout-bonus-claimed";
+    default:
+      throw new RangeError(`unknown claim kind ${value}`);
+  }
 }
 
 function page<T>(

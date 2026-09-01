@@ -37,7 +37,17 @@ export interface MarketView {
   deploymentMode: number;
   outcomeCount: number | null;
   closeAt: bigint | null;
+  resolutionWindow: bigint | null;
+  rulesHash: Hex | null;
+  metadataUri: string | null;
+  resolutionSourceHash: Hex | null;
+  resolutionSourceUri: string | null;
+  earlyBirdStart: bigint | null;
+  creatorTreasury: Address | null;
+  featureFlags: bigint | null;
   marketPrimaryCap: bigint | null;
+  primaryFilledUnits: bigint;
+  primaryPayment: bigint;
   creatorBond: bigint;
   state: number;
   winningOutcome: bigint | null;
@@ -101,6 +111,46 @@ export interface ClaimView {
   confirmationStatus: ConfirmationStatus;
 }
 
+export type MarketStatus = "open" | "resolved" | "voided-creator" | "voided-timeout";
+
+export interface MarketCatalogOptions {
+  limit: number;
+  cursor?: string | undefined;
+  status?: MarketStatus | undefined;
+  owner?: Address | undefined;
+}
+
+export type ActivityKind =
+  | "market-created"
+  | "primary-purchased"
+  | "listing-created"
+  | "listing-filled"
+  | "listing-cancelled"
+  | "terminal-listing-returned"
+  | "market-resolved"
+  | "market-voided-creator"
+  | "market-voided-timeout"
+  | "winner-claimed"
+  | "early-bird-claimed"
+  | "principal-refunded"
+  | "timeout-bonus-claimed";
+
+export interface ActivityView {
+  chainId: number;
+  transactionHash: Hex;
+  logIndex: number;
+  kind: ActivityKind;
+  vault: Address;
+  actor: Address | null;
+  counterparty: Address | null;
+  outcomeId: bigint | null;
+  listingId: Hex | null;
+  units: bigint | null;
+  amount: bigint | null;
+  blockNumber: bigint;
+  confirmationStatus: ConfirmationStatus;
+}
+
 export interface QueryPage<T> {
   items: readonly T[];
   nextCursor?: string;
@@ -136,6 +186,10 @@ export interface IndexerQueryStore {
     options: QueryOptions,
   ): Promise<QueryPage<MarketView>>;
   market(chainId: number, market: Address): Promise<MarketView | undefined>;
+  listMarketCatalog(
+    chainId: number,
+    options: MarketCatalogOptions,
+  ): Promise<QueryPage<MarketView>>;
   listListings(
     chainId: number,
     options: QueryOptions & {
@@ -160,6 +214,55 @@ export interface IndexerQueryStore {
     owner: Address,
     options: QueryOptions & { vault?: Address | undefined },
   ): Promise<QueryPage<ClaimView>>;
+  listActivity(
+    chainId: number,
+    owner: Address,
+    options: QueryOptions,
+  ): Promise<QueryPage<ActivityView>>;
+}
+
+export function marketState(status: MarketStatus): number {
+  switch (status) {
+    case "open":
+      return 0;
+    case "resolved":
+      return 1;
+    case "voided-creator":
+      return 2;
+    case "voided-timeout":
+      return 3;
+  }
+}
+
+export function marketStatus(state: number): MarketStatus {
+  switch (state) {
+    case 0:
+      return "open";
+    case 1:
+      return "resolved";
+    case 2:
+      return "voided-creator";
+    case 3:
+      return "voided-timeout";
+    default:
+      throw new RangeError(`unknown market state ${state}`);
+  }
+}
+
+export function encodeOpaqueCursor(value: unknown): string {
+  return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+}
+
+export function decodeOpaqueCursor<T>(value: string): T {
+  if (!/^[A-Za-z0-9_-]{1,256}$/.test(value))
+    throw new RangeError("invalid cursor");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(Buffer.from(value, "base64url").toString("utf8"));
+  } catch {
+    throw new RangeError("invalid cursor");
+  }
+  return parsed as T;
 }
 
 export function normalizeLog(

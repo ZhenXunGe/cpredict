@@ -12,6 +12,7 @@ async function backupFixture(root, index, generatedAt, restorePass = false) {
   await mkdir(directory);
   await writeFile(join(directory, "indexer.dump"), `indexer-${index}`);
   await writeFile(join(directory, "paymaster.dump"), `paymaster-${index}`);
+  await writeFile(join(directory, "metadata.dump"), `metadata-${index}`);
   const record = async (name) => {
     const value = await readFile(join(directory, `${name}.dump`));
     return {
@@ -27,6 +28,7 @@ async function backupFixture(root, index, generatedAt, restorePass = false) {
     dumps: {
       indexer: await record("indexer"),
       paymaster: await record("paymaster"),
+      metadata: await record("metadata"),
     },
   };
   const manifestText = `${JSON.stringify(manifest, null, 2)}\n`;

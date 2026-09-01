@@ -5,10 +5,12 @@ import { afterEach, describe, expect, it } from "vitest";
 import WebSocket from "ws";
 import { createIndexerApi } from "../src/api.js";
 import type {
+  ActivityView,
   ClaimView,
   FillView,
   IndexerQueryStore,
   ListingView,
+  MarketCatalogOptions,
   MarketView,
   PositionView,
   QueryOptions,
@@ -147,6 +149,12 @@ class EmptyQueryStore implements IndexerQueryStore {
   ): Promise<MarketView | undefined> {
     return undefined;
   }
+  async listMarketCatalog(
+    _chainId: number,
+    _options: MarketCatalogOptions,
+  ): Promise<QueryPage<MarketView>> {
+    return { items: [] };
+  }
   async listListings(
     _chainId: number,
     _options: QueryOptions & {
@@ -177,6 +185,13 @@ class EmptyQueryStore implements IndexerQueryStore {
     _owner: Address,
     _options: QueryOptions & { vault?: Address | undefined },
   ): Promise<QueryPage<ClaimView>> {
+    return { items: [] };
+  }
+  async listActivity(
+    _chainId: number,
+    _owner: Address,
+    _options: QueryOptions,
+  ): Promise<QueryPage<ActivityView>> {
     return { items: [] };
   }
 }

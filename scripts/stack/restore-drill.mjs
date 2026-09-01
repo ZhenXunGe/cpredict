@@ -73,7 +73,7 @@ export async function runRestoreDrill({
       "start disposable PostgreSQL",
     );
     await waitForPostgres(run, container, env);
-    for (const database of ["cpredict_indexer", "cpredict_paymaster"])
+    for (const database of ["cpredict_indexer", "cpredict_paymaster", "cpredict_metadata"])
       await command(
         [
           "exec",
@@ -90,6 +90,7 @@ export async function runRestoreDrill({
     for (const [name, database] of [
       ["indexer", "cpredict_indexer"],
       ["paymaster", "cpredict_paymaster"],
+      ["metadata", "cpredict_metadata"],
     ]) {
       const result = await pipe(
         "docker",
@@ -135,6 +136,13 @@ export async function runRestoreDrill({
         env,
         "cpredict_paymaster",
         "paymaster",
+      ),
+      metadata: await snapshot(
+        run,
+        container,
+        env,
+        "cpredict_metadata",
+        "metadata",
       ),
     };
     compareSnapshots(manifest.snapshots, snapshots);
@@ -184,7 +192,7 @@ export async function validateBackupFiles(directory, manifest) {
     manifest.chainId !== 421614
   )
     throw new Error("backup manifest schema or chain is invalid");
-  for (const name of ["indexer", "paymaster"]) {
+  for (const name of ["indexer", "paymaster", "metadata"]) {
     const record = manifest.dumps?.[name];
     if (!record || basename(record.file) !== record.file)
       throw new Error(`${name} dump path is unsafe`);
@@ -199,7 +207,7 @@ export async function validateBackupFiles(directory, manifest) {
 }
 
 export function compareSnapshots(expected, actual) {
-  for (const database of ["indexer", "paymaster"]) {
+  for (const database of ["indexer", "paymaster", "metadata"]) {
     if (stableJson(expected[database]) !== stableJson(actual[database]))
       throw new Error(
         `${database} rows, projections, checkpoint or budget balances changed during restore`,
@@ -234,7 +242,9 @@ async function verifyMigrations(pipe, container, env, migrations) {
   for (const migration of migrations) {
     const database = migration.path.includes("paymaster-service")
       ? "cpredict_paymaster"
-      : "cpredict_indexer";
+      : migration.path.includes("metadata-service")
+        ? "cpredict_metadata"
+        : "cpredict_indexer";
     const path = resolve(ROOT, migration.path);
     if ((await sha256File(path)) !== migration.sha256)
       throw new Error(`${migration.path} source hash drifted`);
@@ -261,24 +271,7 @@ async function verifyMigrations(pipe, container, env, migrations) {
 }
 
 async function snapshot(run, container, env, database, kind) {
-  const tables =
-    kind === "indexer"
-      ? [
-          "canonical_blocks",
-          "chain_events",
-          "chain_checkpoints",
-          "registered_markets",
-          "markets",
-          "listings",
-          "fills",
-          "positions",
-          "claims",
-        ]
-      : [
-          "sponsor_budget_global_usage",
-          "sponsor_budget_user_usage",
-          "sponsor_budget_leases",
-        ];
+  const tables = snapshotTables(kind);
   const result = await run(
     "docker",
     [
@@ -302,6 +295,32 @@ async function snapshot(run, container, env, database, kind) {
   if (result.code !== 0)
     throw new Error(`${database} restored snapshot failed`);
   return JSON.parse(result.stdout.trim());
+}
+
+export function snapshotTables(kind) {
+  if (kind === "indexer") return [
+    "canonical_blocks",
+    "chain_events",
+    "chain_checkpoints",
+    "registered_markets",
+    "markets",
+    "listings",
+    "fills",
+    "positions",
+    "claims",
+    "activities",
+    "activity_participants",
+  ];
+  if (kind === "paymaster") return [
+    "sponsor_budget_global_usage",
+    "sponsor_budget_user_usage",
+    "sponsor_budget_leases",
+  ];
+  if (kind === "metadata") return [
+    "metadata_challenges",
+    "market_publications",
+  ];
+  throw new Error(`unknown snapshot kind ${kind}`);
 }
 
 async function spawnCapture(command, args, options) {

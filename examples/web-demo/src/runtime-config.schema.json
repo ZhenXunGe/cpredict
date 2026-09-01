@@ -3,7 +3,7 @@
   "$id": "https://cpredict.example/schemas/web-demo-runtime-v1.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "chain", "deployment", "paymentToken", "indexer", "evidence"],
+  "required": ["schemaVersion", "chain", "deployment", "paymentToken", "indexer", "metadata", "evidence"],
   "properties": {
     "schemaVersion": { "const": "cpredict.web-demo.runtime.v1" },
     "chain": {
@@ -58,6 +58,15 @@
       ]
     },
     "indexer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "basePath"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "basePath": { "$ref": "#/$defs/sameOriginPath" }
+      }
+    },
+    "metadata": {
       "type": "object",
       "additionalProperties": false,
       "required": ["enabled", "basePath"],

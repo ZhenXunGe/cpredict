@@ -183,5 +183,14 @@ TEST_DATABASE_URL="$test_database_url" "$repo_root/node_modules/.bin/vitest" run
 node "$repo_root/scripts/postgres-assert-vitest-report.mjs" \
   "$postgres_run_root/indexer-postgresql.json" \
   indexer-postgresql
+TEST_DATABASE_URL="$test_database_url" "$repo_root/node_modules/.bin/vitest" run \
+  offchain/metadata-service/test/postgres.integration.test.ts \
+  --maxWorkers=1 \
+  --reporter=verbose \
+  --reporter=json \
+  --outputFile.json="$postgres_run_root/metadata-postgresql.json"
+node "$repo_root/scripts/postgres-assert-vitest-report.mjs" \
+  "$postgres_run_root/metadata-postgresql.json" \
+  metadata-postgresql
 
-printf 'POSTGRES_GATE_TOTALS=9/9/0/0/0\n'
+printf 'POSTGRES_GATE_TOTALS=11/11/0/0/0\n'

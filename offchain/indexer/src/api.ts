@@ -2,12 +2,16 @@ import Fastify, { type FastifyInstance } from "fastify";
 import { Counter, Gauge, Histogram, Registry } from "prom-client";
 import { getAddress, isAddress, type Address, type Hex } from "viem";
 import { z } from "zod";
-import type { IndexerQueryStore, QueryPage } from "./store.js";
+import type {
+  IndexerQueryStore,
+  MarketStatus,
+  QueryPage,
+} from "./store.js";
 import {
   evidenceUriFromHash,
   normalizeEvidenceHash,
 } from "../../sdk/src/evidence.js";
-import type { MarketView } from "./store.js";
+import { marketStatus, type MarketView } from "./store.js";
 import type { IndexerWebSocketHub } from "./websocket.js";
 
 export interface IndexerApiOptions {
@@ -47,6 +51,13 @@ const bytes32Schema = z
 const booleanSchema = z
   .enum(["true", "false"])
   .transform((value) => value === "true");
+const opaqueCursorSchema = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]{1,256}$/)
+  .optional();
+const marketStatusSchema = z
+  .enum(["open", "resolved", "voided-creator", "voided-timeout"])
+  .transform((value) => value as MarketStatus);
 
 export function createIndexerApi(
   store: IndexerQueryStore,
@@ -140,7 +151,7 @@ export function createIndexerApi(
       })
       .parse(request.query);
     return reply.send(
-      jsonMarketPage(await store.listMarkets(query.chainId, query)),
+      jsonMarketPageV1(await store.listMarkets(query.chainId, query)),
     );
   });
   app.get("/v1/markets/:market", async (request, reply) => {
@@ -149,7 +160,42 @@ export function createIndexerApi(
     const market = await store.market(query.chainId, params.market);
     return market === undefined
       ? reply.code(404).send({ error: "market not found" })
-      : reply.send(jsonMarket(market));
+      : reply.send(jsonMarketV1(market));
+  });
+  app.get("/v2/markets", async (request, reply) => {
+    const query = z
+      .object({
+        chainId: chainIdSchema,
+        limit: limitSchema.default(20),
+        cursor: opaqueCursorSchema,
+        status: marketStatusSchema.optional(),
+        owner: addressSchema.optional(),
+      })
+      .parse(request.query);
+    return reply.send(
+      jsonMarketPageV2(await store.listMarketCatalog(query.chainId, query)),
+    );
+  });
+  app.get("/v2/markets/:market", async (request, reply) => {
+    const params = z.object({ market: addressSchema }).parse(request.params);
+    const query = z.object({ chainId: chainIdSchema }).parse(request.query);
+    const market = await store.market(query.chainId, params.market);
+    return market === undefined
+      ? reply.code(404).send({ error: "market not found" })
+      : reply.send(jsonMarketV2(market));
+  });
+  app.get("/v2/activity/:owner", async (request, reply) => {
+    const params = z.object({ owner: addressSchema }).parse(request.params);
+    const query = z
+      .object({
+        chainId: chainIdSchema,
+        limit: limitSchema.default(20),
+        cursor: opaqueCursorSchema,
+      })
+      .parse(request.query);
+    return reply.send(
+      jsonPage(await store.listActivity(query.chainId, params.owner, query)),
+    );
   });
   app.get("/v1/listings", async (request, reply) => {
     const query = z
@@ -230,17 +276,30 @@ function jsonPage<T>(value: QueryPage<T>): {
     : { ...result, nextCursor: value.nextCursor };
 }
 
-function jsonMarketPage(value: QueryPage<MarketView>): {
+function jsonMarketPageV1(value: QueryPage<MarketView>): {
   items: unknown[];
   nextCursor?: string;
 } {
-  const result = { items: value.items.map(jsonMarket) };
+  const result = { items: value.items.map(jsonMarketV1) };
   return value.nextCursor === undefined
     ? result
     : { ...result, nextCursor: value.nextCursor };
 }
 
-function jsonMarket(value: MarketView): unknown {
+function jsonMarketPageV2(value: QueryPage<MarketView>): {
+  items: unknown[];
+  nextCursor?: string;
+} {
+  const result = { items: value.items.map(jsonMarketV2) };
+  return value.nextCursor === undefined
+    ? result
+    : { ...result, nextCursor: value.nextCursor };
+}
+
+function normalizedEvidence(value: MarketView): {
+  evidenceHash: Hex | null;
+  evidenceUri: `ipfs://${string}` | null;
+} {
   try {
     const evidenceHash =
       value.evidenceHash === null
@@ -248,14 +307,41 @@ function jsonMarket(value: MarketView): unknown {
         : normalizeEvidenceHash(value.evidenceHash);
     const evidenceUri =
       evidenceHash === null ? null : evidenceUriFromHash(evidenceHash);
-    return json({
-      ...value,
+    return {
       evidenceHash: evidenceUri === null ? null : evidenceHash,
       evidenceUri,
-    });
+    };
   } catch {
     throw new Error("stored market evidence is invalid");
   }
+}
+
+function jsonMarketV1(value: MarketView): unknown {
+  const evidence = normalizedEvidence(value);
+  return json({
+    chainId: value.chainId,
+    market: value.market,
+    creator: value.creator,
+    deploymentMode: value.deploymentMode,
+    outcomeCount: value.outcomeCount,
+    closeAt: value.closeAt,
+    marketPrimaryCap: value.marketPrimaryCap,
+    creatorBond: value.creatorBond,
+    state: value.state,
+    winningOutcome: value.winningOutcome,
+    ...evidence,
+    createdBlock: value.createdBlock,
+    updatedBlock: value.updatedBlock,
+    confirmationStatus: value.confirmationStatus,
+  });
+}
+
+function jsonMarketV2(value: MarketView): unknown {
+  return json({
+    ...value,
+    status: marketStatus(value.state),
+    ...normalizedEvidence(value),
+  });
 }
 
 function json(value: unknown): unknown {

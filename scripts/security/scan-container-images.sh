@@ -12,7 +12,7 @@ postgres_image="postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5b
 }
 
 if [[ $# -eq 0 ]]; then
-  images=(cpredict-indexer:ci cpredict-paymaster:ci cpredict-web-demo:ci "$postgres_image")
+  images=(cpredict-indexer:ci cpredict-paymaster:ci cpredict-metadata:ci cpredict-web-demo:ci "$postgres_image")
 else
   images=("$@")
 fi

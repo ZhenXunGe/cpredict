@@ -31,7 +31,7 @@ const locked = (name) => {
 
 test("Compose and restore drill pin the reviewed PostgreSQL image digest", () => {
   const postgres = locked("postgres");
-  for (const name of ["postgres", "migrate-indexer", "migrate-paymaster"])
+  for (const name of ["postgres", "bootstrap-databases", "migrate-indexer", "migrate-paymaster", "migrate-metadata"])
     assert.equal(compose.services[name].image, postgres, name);
   assert.match(
     restore,
@@ -42,12 +42,12 @@ test("Compose and restore drill pin the reviewed PostgreSQL image digest", () =>
 test("Dockerfiles pin reviewed Node and Nginx image digests", () => {
   const node = locked("node");
   const nginx = locked("nginx");
-  assert.equal(offchain.match(new RegExp(`FROM ${node}`, "g"))?.length, 4);
+  assert.equal(offchain.match(new RegExp(`FROM ${node}`, "g"))?.length, 5);
   assert.equal(
     offchain.match(
       /rm -rf \/opt\/yarn-v1\.22\.22 \/usr\/local\/lib\/node_modules\/npm/g,
     )?.length,
-    2,
+    3,
   );
   assert.match(demo, new RegExp(`FROM ${node} AS build`));
   assert.match(demo, new RegExp(`FROM ${nginx}\\n`));
@@ -59,7 +59,7 @@ test("offchain runtime images include their compiled SDK dependency", () => {
     offchain.match(
       /COPY --from=build --chown=node:node \/app\/dist\/offchain\/sdk \.\/dist\/offchain\/sdk/g,
     )?.length,
-    2,
+    3,
   );
 });
 
@@ -124,6 +124,7 @@ test("CI builds and scans every application image with the pinned scanner", asyn
   for (const image of [
     "cpredict-indexer:ci",
     "cpredict-paymaster:ci",
+    "cpredict-metadata:ci",
     "cpredict-web-demo:ci",
   ])
     assert.match(

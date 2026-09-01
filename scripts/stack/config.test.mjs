@@ -17,9 +17,10 @@ async function fixture() {
     secretPath,
     [
       "ARBITRUM_SEPOLIA_RPC_URL=https://rpc.example.invalid",
-      ...["POSTGRES_ADMIN", "MIGRATOR", "INDEXER", "PAYMASTER", "BACKUP"].map(
+      ...["POSTGRES_ADMIN", "MIGRATOR", "INDEXER", "PAYMASTER", "METADATA", "BACKUP"].map(
         (name) => `CPREDICT_STACK_${name}_PASSWORD=${name.toLowerCase()}_${"x".repeat(32)}`,
       ),
+      "CPREDICT_METADATA_PUBLIC_BASE_URL=https://101.32.241.211/metadata",
     ].join("\n") + "\n",
   );
   await chmod(secretPath, 0o600);
@@ -107,7 +108,12 @@ test("committed Compose example declares every server secret without a value", a
     "CPREDICT_STACK_MIGRATOR_PASSWORD",
     "CPREDICT_STACK_INDEXER_PASSWORD",
     "CPREDICT_STACK_PAYMASTER_PASSWORD",
+    "CPREDICT_STACK_METADATA_PASSWORD",
     "CPREDICT_STACK_BACKUP_PASSWORD",
     "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
   ]) assert.match(text, new RegExp(`^${key}=$`, "m"), key);
+  assert.match(
+    text,
+    /^CPREDICT_METADATA_PUBLIC_BASE_URL=https:\/\/101\.32\.241\.211\/metadata$/m,
+  );
 });

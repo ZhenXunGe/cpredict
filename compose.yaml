@@ -12,6 +12,7 @@
         "CPREDICT_STACK_MIGRATOR_PASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
         "CPREDICT_STACK_INDEXER_PASSWORD": "${CPREDICT_STACK_INDEXER_PASSWORD:?set in .env.compose.local}",
         "CPREDICT_STACK_PAYMASTER_PASSWORD": "${CPREDICT_STACK_PAYMASTER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_METADATA_PASSWORD": "${CPREDICT_STACK_METADATA_PASSWORD:?set in .env.compose.local}",
         "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}"
       },
       "volumes": [
@@ -34,10 +35,37 @@
       "deploy": {"resources": {"limits": {"cpus": "2.0", "memory": "2G"}}},
       "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
     },
-    "migrate-indexer": {
+    "bootstrap-databases": {
       "image": "postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f",
       "restart": "no",
       "depends_on": {"postgres": {"condition": "service_healthy"}},
+      "environment": {
+        "PGHOST": "postgres",
+        "PGPASSWORD": "${CPREDICT_STACK_POSTGRES_ADMIN_PASSWORD:?set in .env.compose.local}",
+        "POSTGRES_USER": "cpredict_bootstrap",
+        "POSTGRES_DB": "postgres",
+        "CPREDICT_STACK_MIGRATOR_PASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_INDEXER_PASSWORD": "${CPREDICT_STACK_INDEXER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_PAYMASTER_PASSWORD": "${CPREDICT_STACK_PAYMASTER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_METADATA_PASSWORD": "${CPREDICT_STACK_METADATA_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}"
+      },
+      "volumes": [
+        "./deploy/compose/postgres/init/00-create-databases.sh:/usr/local/bin/bootstrap-cpredict-databases:ro"
+      ],
+      "entrypoint": ["bash", "/usr/local/bin/bootstrap-cpredict-databases"],
+      "user": "999:999",
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=16m"],
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "networks": ["data"],
+      "deploy": {"resources": {"limits": {"cpus": "0.5", "memory": "256M"}}}
+    },
+    "migrate-indexer": {
+      "image": "postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f",
+      "restart": "no",
+      "depends_on": {"bootstrap-databases": {"condition": "service_completed_successfully"}},
       "environment": {
         "PGHOST": "postgres",
         "PGDATABASE": "cpredict_indexer",
@@ -62,7 +90,7 @@
     "migrate-paymaster": {
       "image": "postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f",
       "restart": "no",
-      "depends_on": {"postgres": {"condition": "service_healthy"}},
+      "depends_on": {"bootstrap-databases": {"condition": "service_completed_successfully"}},
       "environment": {
         "PGHOST": "postgres",
         "PGDATABASE": "cpredict_paymaster",
@@ -126,11 +154,39 @@
       "deploy": {"resources": {"limits": {"cpus": "2.0", "memory": "1G"}}},
       "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
     },
+    "migrate-metadata": {
+      "image": "postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f",
+      "restart": "no",
+      "depends_on": {"bootstrap-databases": {"condition": "service_completed_successfully"}},
+      "environment": {
+        "PGHOST": "postgres",
+        "PGDATABASE": "cpredict_metadata",
+        "PGUSER": "cpredict_migrator",
+        "PGPASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_METADATA_PASSWORD": "${CPREDICT_STACK_METADATA_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}"
+      },
+      "volumes": [
+        "./offchain/metadata-service/migrations:/migrations:ro",
+        "./deploy/compose/postgres/run-migrations.sh:/usr/local/bin/run-cpredict-migrations:ro"
+      ],
+      "entrypoint": ["bash", "/usr/local/bin/run-cpredict-migrations", "metadata"],
+      "user": "999:999",
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=16m"],
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "networks": ["data"],
+      "deploy": {"resources": {"limits": {"cpus": "0.5", "memory": "256M"}}}
+    },
     "web-demo": {
       "build": {"context": ".", "dockerfile": "deploy/compose/Dockerfile.demo"},
       "restart": "unless-stopped",
       "stop_grace_period": "10s",
-      "depends_on": {"indexer": {"condition": "service_healthy"}},
+      "depends_on": {
+        "indexer": {"condition": "service_healthy"},
+        "metadata": {"condition": "service_healthy"}
+      },
       "environment": {
         "NGINX_ENVSUBST_FILTER": "^CPREDICT_",
         "CPREDICT_RPC_UPSTREAM": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}"
@@ -157,6 +213,33 @@
       "healthcheck": {"test": ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/readyz"], "interval": "10s", "timeout": "5s", "retries": 12, "start_period": "15s"},
       "networks": ["app"],
       "deploy": {"resources": {"limits": {"cpus": "1.0", "memory": "256M"}}},
+      "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
+    },
+    "metadata": {
+      "build": {"context": ".", "dockerfile": "deploy/compose/Dockerfile.offchain", "target": "metadata"},
+      "restart": "unless-stopped",
+      "stop_grace_period": "15s",
+      "depends_on": {"migrate-metadata": {"condition": "service_completed_successfully"}},
+      "environment": {
+        "CPREDICT_METADATA_HOST": "0.0.0.0",
+        "CPREDICT_METADATA_CONTAINER_MODE": "true",
+        "CPREDICT_METADATA_PORT": "8793",
+        "CPREDICT_METADATA_LOG_LEVEL": "info",
+        "CPREDICT_METADATA_CHAIN_ID": "421614",
+        "CPREDICT_METADATA_FACTORY_ADDRESS": "${CPREDICT_INDEXER_FACTORY_ADDRESS:?run deploy:sync first}",
+        "CPREDICT_METADATA_PUBLIC_BASE_URL": "${CPREDICT_METADATA_PUBLIC_BASE_URL:?set in .env.compose.local}",
+        "CPREDICT_METADATA_DATABASE_URL": "postgresql://cpredict_metadata:${CPREDICT_STACK_METADATA_PASSWORD}@postgres/cpredict_metadata?sslmode=disable",
+        "CPREDICT_METADATA_CHALLENGE_TTL_SECONDS": "300",
+        "CPREDICT_METADATA_DATABASE_POOL_SIZE": "5"
+      },
+      "ports": ["127.0.0.1:${CPREDICT_STACK_METADATA_PORT:-8793}:8793"],
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=16m"],
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "healthcheck": {"test": ["CMD", "node", "-e", "fetch('http://127.0.0.1:8793/readyz').then(r=>{if(!r.ok)process.exit(1)})"], "interval": "10s", "timeout": "5s", "retries": 12, "start_period": "15s"},
+      "networks": ["app", "data"],
+      "deploy": {"resources": {"limits": {"cpus": "1.0", "memory": "512M"}}},
       "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
     },
     "paymaster": {

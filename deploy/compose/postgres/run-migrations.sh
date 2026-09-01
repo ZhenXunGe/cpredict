@@ -6,14 +6,25 @@ case "$kind" in
   indexer)
     runtime_role=cpredict_indexer
     password_var=CPREDICT_STACK_INDEXER_PASSWORD
-    migrations=(/migrations/001_indexer.sql /migrations/002_settlement_evidence.sql /migrations/003_read_api_indexes.sql)
+    migrations=(
+      /migrations/001_indexer.sql
+      /migrations/002_settlement_evidence.sql
+      /migrations/003_read_api_indexes.sql
+      /migrations/004_market_metadata.sql
+      /migrations/005_activity_catalog.sql
+    )
     ;;
   paymaster)
     runtime_role=cpredict_paymaster
     password_var=CPREDICT_STACK_PAYMASTER_PASSWORD
     migrations=(/migrations/001_sponsor_budget.sql)
     ;;
-  *) printf '%s\n' 'usage: run-cpredict-migrations indexer|paymaster' >&2; exit 2 ;;
+  metadata)
+    runtime_role=cpredict_metadata
+    password_var=CPREDICT_STACK_METADATA_PASSWORD
+    migrations=(/migrations/001_metadata.sql)
+    ;;
+  *) printf '%s\n' 'usage: run-cpredict-migrations indexer|paymaster|metadata' >&2; exit 2 ;;
 esac
 
 runtime_password="${!password_var:-}"
@@ -34,6 +45,7 @@ SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA pub
 SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO %I', :'runtime_role') \gexec
 GRANT CONNECT ON DATABASE cpredict_indexer TO cpredict_backup;
 GRANT CONNECT ON DATABASE cpredict_paymaster TO cpredict_backup;
+GRANT CONNECT ON DATABASE cpredict_metadata TO cpredict_backup;
 GRANT USAGE ON SCHEMA public TO cpredict_backup;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO cpredict_backup;
 ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA public GRANT SELECT ON TABLES TO cpredict_backup;

@@ -37,6 +37,8 @@ suite("PostgresEventStore integration", () => {
       "001_indexer.sql",
       "002_settlement_evidence.sql",
       "003_read_api_indexes.sql",
+      "004_market_metadata.sql",
+      "005_activity_catalog.sql",
     ]) {
       const migration = await readFile(
         new URL(`../migrations/${name}`, import.meta.url),
@@ -193,6 +195,22 @@ suite("PostgresEventStore integration", () => {
         "utf8",
       );
       await migrationSql.unsafe(readApiIndexMigration);
+      await expect(legacyStore.ready()).rejects.toThrow(
+        "indexer database migration is not applied",
+      );
+      const marketMetadataMigration = await readFile(
+        new URL("../migrations/004_market_metadata.sql", import.meta.url),
+        "utf8",
+      );
+      await migrationSql.unsafe(marketMetadataMigration);
+      await expect(legacyStore.ready()).rejects.toThrow(
+        "indexer database migration is not applied",
+      );
+      const activityCatalogMigration = await readFile(
+        new URL("../migrations/005_activity_catalog.sql", import.meta.url),
+        "utf8",
+      );
+      await migrationSql.unsafe(activityCatalogMigration);
       await expect(legacyStore.ready()).resolves.toBeUndefined();
     } finally {
       await legacyStore.close();

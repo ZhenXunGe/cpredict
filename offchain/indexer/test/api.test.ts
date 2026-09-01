@@ -3,10 +3,12 @@ import { getAddress, type Address, type Hex } from "viem";
 import { evidenceUriFromHash } from "../../sdk/src/evidence.js";
 import { createIndexerApi } from "../src/api.js";
 import type {
+  ActivityView,
   ClaimView,
   FillView,
   IndexerQueryStore,
   ListingView,
+  MarketCatalogOptions,
   MarketView,
   PositionView,
   QueryOptions,
@@ -36,6 +38,44 @@ describe("read-only indexer API", () => {
           evidenceHash: EVIDENCE_HASH,
           evidenceUri: EVIDENCE_URI,
           confirmationStatus: "confirmed",
+        },
+      ],
+    });
+    expect(response.json().items[0]).not.toHaveProperty("rulesHash");
+    await app.close();
+  });
+
+  it("adds catalog metadata and wallet activity only on the versioned v2 API", async () => {
+    const app = createIndexerApi(new FixtureQueryStore());
+    const catalog = await app.inject({
+      method: "GET",
+      url: `/v2/markets?chainId=31337&limit=20&status=resolved&owner=${CREATOR}`,
+    });
+    expect(catalog.statusCode).toBe(200);
+    expect(catalog.json()).toMatchObject({
+      items: [
+        {
+          market: MARKET,
+          status: "resolved",
+          rulesHash: `0x${"11".repeat(32)}`,
+          resolutionWindow: "86400",
+          primaryFilledUnits: "25000000",
+        },
+      ],
+    });
+
+    const activity = await app.inject({
+      method: "GET",
+      url: `/v2/activity/${CREATOR}?chainId=31337&limit=20`,
+    });
+    expect(activity.statusCode).toBe(200);
+    expect(activity.json()).toMatchObject({
+      items: [
+        {
+          kind: "market-created",
+          vault: MARKET,
+          actor: CREATOR,
+          amount: "10000000",
         },
       ],
     });
@@ -106,6 +146,12 @@ class FixtureQueryStore implements IndexerQueryStore {
   async market(chainId: number): Promise<MarketView | undefined> {
     return market(chainId, this.zeroEvidence);
   }
+  async listMarketCatalog(
+    chainId: number,
+    _options: MarketCatalogOptions,
+  ): Promise<QueryPage<MarketView>> {
+    return { items: [market(chainId, this.zeroEvidence)] };
+  }
   async listListings(
     _chainId: number,
     _options: QueryOptions & {
@@ -138,6 +184,31 @@ class FixtureQueryStore implements IndexerQueryStore {
   ): Promise<QueryPage<ClaimView>> {
     return { items: [] };
   }
+  async listActivity(
+    chainId: number,
+    _owner: Address,
+    _options: QueryOptions,
+  ): Promise<QueryPage<ActivityView>> {
+    return {
+      items: [
+        {
+          chainId,
+          transactionHash: `0x${"33".repeat(32)}`,
+          logIndex: 0,
+          kind: "market-created",
+          vault: MARKET,
+          actor: CREATOR,
+          counterparty: null,
+          outcomeId: null,
+          listingId: null,
+          units: null,
+          amount: 10_000_000n,
+          blockNumber: 1n,
+          confirmationStatus: "confirmed",
+        },
+      ],
+    };
+  }
 }
 
 function market(chainId: number, zeroEvidence = false): MarketView {
@@ -148,7 +219,17 @@ function market(chainId: number, zeroEvidence = false): MarketView {
     deploymentMode: 0,
     outcomeCount: 2,
     closeAt: 1_000n,
+    resolutionWindow: 86_400n,
+    rulesHash: `0x${"11".repeat(32)}`,
+    metadataUri: "https://metadata.example/market/{id}.json",
+    resolutionSourceHash: `0x${"22".repeat(32)}`,
+    resolutionSourceUri: "https://example.com/result",
+    earlyBirdStart: 900n,
+    creatorTreasury: CREATOR,
+    featureFlags: 3n,
     marketPrimaryCap: 500_000_000n,
+    primaryFilledUnits: 25_000_000n,
+    primaryPayment: 25_000_000n,
     creatorBond: 10_000_000n,
     state: 1,
     winningOutcome: 0n,

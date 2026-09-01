@@ -9,6 +9,7 @@ HTTPS + Basic Auth 访问。推荐拓扑是：
 同事浏览器 → 公网 443 / 宿主机 Nginx → 127.0.0.1:4177 / Docker Compose
                                           ├─ Web Demo
                                           ├─ Indexer/API/WS
+                                          ├─ Metadata（钱包签名的不可变市场规则）
                                           └─ PostgreSQL（不发布宿主机端口）
 ```
 
@@ -188,8 +189,10 @@ npm run stack:verify
 npm run stack:status
 ```
 
+`CPREDICT_METADATA_PUBLIC_BASE_URL` 必须填写浏览器实际访问的 HTTPS 公网地址加 `/metadata`，例如
+`https://101.32.241.211/metadata`；它会永久写入新市场的链上 Metadata URI，不能用容器内地址或 HTTP。
 `stack:verify` 不只检查容器名：它读取实际 Docker 资源限制、只读根文件系统、capability、重启策略、
-loopback 端口绑定、migration exit code，并请求 Demo `/readyz`、Indexer `/readyz`、安全响应头、运行配置和
+loopback 端口绑定、migration exit code，并请求 Demo、Indexer、Metadata `/readyz`、安全响应头、运行配置和
 同源 RPC chainId。任一 FAIL 都不要继续开放公网。
 
 仅在确实配置了外部 Auth/KMS/预算 adapter 时才加 `--sponsorship`。默认同事体验环境不启用 Paymaster，
@@ -242,7 +245,8 @@ sudo certbot renew --dry-run
 ```
 
 外层 Nginx 强制 HTTPS、Basic Auth、CSP/安全头、连接数/请求速率/请求体/超时限制，只转发到
-`127.0.0.1:4177`，并清空 `Authorization`，不会把公网 Basic Auth 凭据传给 Demo、Indexer 或付费 RPC。
+`127.0.0.1:4177`，并清空 `Authorization`，不会把公网 Basic Auth 凭据传给 Demo、Indexer、Metadata
+或付费 RPC。
 `/indexer/metrics` 对公网直接拒绝。
 
 必须从**另一条网络**执行验收。`curl -u colleague` 会交互询问密码，避免密码进入 history：

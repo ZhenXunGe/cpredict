@@ -44,6 +44,9 @@ const configReadAbi = parseAbi([
   "function platformC2CFeeBps() view returns (uint16)",
   "function maxFullMarketCap() view returns (uint128)",
   "function maxCloneMarketCap() view returns (uint128)",
+  "function maxPerUserPrimaryCap() view returns (uint128)",
+  "function maxCreatorRakeBps() view returns (uint16)",
+  "function maxCreatorC2CFeeBps() view returns (uint16)",
 ]);
 
 const paymasterReadAbi = parseAbi([
@@ -95,6 +98,9 @@ export interface ProtocolSnapshot {
   platformC2CFeeBps: number;
   maxFullMarketCap: bigint;
   maxCloneMarketCap: bigint;
+  maxPerUserPrimaryCap: bigint;
+  maxCreatorRakeBps: number;
+  maxCreatorC2CFeeBps: number;
   paymasterDeposit: bigint;
   paymasterPolicyVersion: number;
   paymasterBudgets: readonly [bigint, bigint, bigint];
@@ -178,20 +184,23 @@ export async function readProtocol(
   config: Address,
   paymaster: Address,
 ): Promise<ProtocolSnapshot> {
-  const [creationFee, protocolShareBps, earlyBirdShareBps, platformC2CFeeBps, maxFullMarketCap, maxCloneMarketCap, paymasterDeposit, operation, userDay, globalDay, policyVersion] = await Promise.all([
+  const [creationFee, protocolShareBps, earlyBirdShareBps, platformC2CFeeBps, maxFullMarketCap, maxCloneMarketCap, maxPerUserPrimaryCap, maxCreatorRakeBps, maxCreatorC2CFeeBps, paymasterDeposit, operation, userDay, globalDay, policyVersion] = await Promise.all([
     client.readContract({ address: config, abi: configReadAbi, functionName: "creationFee" }),
     client.readContract({ address: config, abi: configReadAbi, functionName: "protocolShareBps" }),
     client.readContract({ address: config, abi: configReadAbi, functionName: "earlyBirdShareBps" }),
     client.readContract({ address: config, abi: configReadAbi, functionName: "platformC2CFeeBps" }),
     client.readContract({ address: config, abi: configReadAbi, functionName: "maxFullMarketCap" }),
     client.readContract({ address: config, abi: configReadAbi, functionName: "maxCloneMarketCap" }),
+    client.readContract({ address: config, abi: configReadAbi, functionName: "maxPerUserPrimaryCap" }),
+    client.readContract({ address: config, abi: configReadAbi, functionName: "maxCreatorRakeBps" }),
+    client.readContract({ address: config, abi: configReadAbi, functionName: "maxCreatorC2CFeeBps" }),
     client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "getDeposit" }),
     client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "maxCostPerOperation" }),
     client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "maxCostPerUserPerDay" }),
     client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "maxCostGlobalPerDay" }),
     client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "policyVersion" }),
   ]);
-  return { creationFee, protocolShareBps, earlyBirdShareBps, platformC2CFeeBps, maxFullMarketCap, maxCloneMarketCap, paymasterDeposit, paymasterPolicyVersion: policyVersion, paymasterBudgets: [operation, userDay, globalDay] };
+  return { creationFee, protocolShareBps, earlyBirdShareBps, platformC2CFeeBps, maxFullMarketCap, maxCloneMarketCap, maxPerUserPrimaryCap, maxCreatorRakeBps, maxCreatorC2CFeeBps, paymasterDeposit, paymasterPolicyVersion: policyVersion, paymasterBudgets: [operation, userDay, globalDay] };
 }
 
 export function formatPaymentToken(value: bigint, symbol: string): string {

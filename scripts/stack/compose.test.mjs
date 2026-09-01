@@ -6,10 +6,10 @@ const compose = JSON.parse(
   await readFile(new URL("../../compose.yaml", import.meta.url), "utf8"),
 );
 
-test("Compose exposes only Demo, Indexer and optional Paymaster on loopback", () => {
+test("Compose exposes only application services on loopback", () => {
   assert.equal(compose.services.postgres.ports, undefined);
   assert.deepEqual(compose.services.paymaster.profiles, ["sponsorship"]);
-  for (const name of ["web-demo", "indexer", "paymaster"])
+  for (const name of ["web-demo", "indexer", "metadata", "paymaster"])
     for (const port of compose.services[name].ports)
       assert.match(port, /^127\.0\.0\.1:/, `${name} must bind loopback`);
   assert.equal(
@@ -18,6 +18,10 @@ test("Compose exposes only Demo, Indexer and optional Paymaster on loopback", ()
   );
   assert.equal(
     compose.services.paymaster.environment.CPREDICT_PAYMASTER_CONTAINER_MODE,
+    "true",
+  );
+  assert.equal(
+    compose.services.metadata.environment.CPREDICT_METADATA_CONTAINER_MODE,
     "true",
   );
   assert.equal(
@@ -30,9 +34,12 @@ test("Compose exposes only Demo, Indexer and optional Paymaster on loopback", ()
 test("runtime services are least privilege, bounded and health ordered", async () => {
   for (const name of [
     "postgres",
+    "bootstrap-databases",
     "migrate-indexer",
     "migrate-paymaster",
+    "migrate-metadata",
     "indexer",
+    "metadata",
     "web-demo",
     "paymaster",
   ]) {
@@ -47,14 +54,22 @@ test("runtime services are least privilege, bounded and health ordered", async (
     assert.ok(service.deploy.resources.limits.memory, name);
     assert.ok(service.deploy.resources.limits.cpus, name);
   }
-  for (const name of ["postgres", "indexer", "web-demo", "paymaster"])
+  for (const name of ["postgres", "indexer", "metadata", "web-demo", "paymaster"])
     assert.match(
       compose.services[name].stop_grace_period,
       /^[1-9][0-9]*s$/,
       name,
     );
   assert.equal(
+    compose.services["migrate-indexer"].depends_on["bootstrap-databases"].condition,
+    "service_completed_successfully",
+  );
+  assert.equal(
     compose.services.indexer.depends_on["migrate-indexer"].condition,
+    "service_completed_successfully",
+  );
+  assert.equal(
+    compose.services.metadata.depends_on["migrate-metadata"].condition,
     "service_completed_successfully",
   );
   assert.equal(
@@ -115,6 +130,7 @@ test("runtime services are least privilege, bounded and health ordered", async (
     /location = \/rpc[\s\S]*proxy_set_header Authorization ""/,
   );
   assert.match(nginx, /location \/indexer\/[\s\S]*limit_except GET HEAD/);
+  assert.match(nginx, /location \/metadata\/[\s\S]*limit_except GET HEAD POST/);
 });
 
 test("Compose never carries browser-prefixed or embedded secret values", () => {

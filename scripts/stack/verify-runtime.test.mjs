@@ -22,8 +22,11 @@ function row(Service, overrides = {}) {
 test("runtime verifier accepts healthy services, completed migration and loopback publishing", () => {
   const rows = [
     row("postgres"),
+    row("bootstrap-databases", { State: "exited", Health: "", ExitCode: 0 }),
     row("migrate-indexer", { State: "exited", Health: "", ExitCode: 0 }),
+    row("migrate-metadata", { State: "exited", Health: "", ExitCode: 0 }),
     row("indexer", { Publishers: [{ URL: "127.0.0.1", PublishedPort: 8787 }] }),
+    row("metadata", { Publishers: [{ URL: "127.0.0.1", PublishedPort: 8793 }] }),
     row("web-demo", {
       Publishers: [{ URL: "127.0.0.1", PublishedPort: 4177 }],
     }),
@@ -36,16 +39,19 @@ test("runtime verifier accepts healthy services, completed migration and loopbac
   assert.equal(
     parseComposePs(rows.map((value) => JSON.stringify(value)).join("\n"))
       .length,
-    4,
+    7,
   );
-  assert.equal(parseComposePs(JSON.stringify(rows)).length, 4);
+  assert.equal(parseComposePs(JSON.stringify(rows)).length, 7);
 });
 
 test("runtime verifier fails on wildcard publishing, unhealthy services or skipped migration", () => {
   const checks = verifyComposeState([
     row("postgres", { Health: "unhealthy" }),
+    row("bootstrap-databases", { State: "exited", Health: "", ExitCode: 1 }),
     row("migrate-indexer", { State: "exited", Health: "", ExitCode: 1 }),
+    row("migrate-metadata", { State: "exited", Health: "", ExitCode: 1 }),
     row("indexer", { Publishers: [{ URL: "0.0.0.0", PublishedPort: 8787 }] }),
+    row("metadata", { Health: "unhealthy", Publishers: [{ URL: "0.0.0.0", PublishedPort: 8793 }] }),
     row("web-demo", {
       Publishers: [{ URL: "127.0.0.1", PublishedPort: 4177 }],
     }),
@@ -54,7 +60,15 @@ test("runtime verifier fails on wildcard publishing, unhealthy services or skipp
     checks
       .filter((check) => check.status === "FAIL")
       .map((check) => check.name),
-    ["postgres container", "migrate-indexer migration", "indexer host binding"],
+    [
+      "postgres container",
+      "metadata container",
+      "bootstrap-databases migration",
+      "migrate-indexer migration",
+      "migrate-metadata migration",
+      "indexer host binding",
+      "metadata host binding",
+    ],
   );
 });
 

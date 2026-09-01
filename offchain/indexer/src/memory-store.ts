@@ -2,6 +2,8 @@ import { getAddress, type Address, type Hex } from "viem";
 import { deriveMutations, type DerivedMutation } from "./derived.js";
 import { evidenceUriFromHash } from "../../sdk/src/evidence.js";
 import type {
+  ActivityKind,
+  ActivityView,
   CanonicalBlock,
   ChainCheckpoint,
   ClaimView,
@@ -10,10 +12,16 @@ import type {
   IndexedEvent,
   IndexerQueryStore,
   ListingView,
+  MarketCatalogOptions,
   MarketView,
   PositionView,
   QueryOptions,
   QueryPage,
+} from "./store.js";
+import {
+  decodeOpaqueCursor,
+  encodeOpaqueCursor,
+  marketState,
 } from "./store.js";
 
 /** Deterministic store used by unit tests and local embedders; mirrors PostgreSQL semantics. */
@@ -27,6 +35,8 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
   private readonly fills = new Map<string, FillView>();
   private readonly positions = new Map<string, PositionView>();
   private readonly claims = new Map<string, ClaimView>();
+  private readonly activities = new Map<string, ActivityView>();
+  private readonly activityParticipants = new Map<string, Set<Address>>();
 
   async checkpoint(chainId: number): Promise<ChainCheckpoint | undefined> {
     return this.checkpoints.get(chainId);
@@ -143,6 +153,55 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
     return this.markets.get(addressKey(chainId, market));
   }
 
+  async listMarketCatalog(
+    chainId: number,
+    options: MarketCatalogOptions,
+  ): Promise<QueryPage<MarketView>> {
+    validateLimit(options.limit);
+    const owner =
+      options.owner === undefined ? undefined : getAddress(options.owner);
+    const cursor =
+      options.cursor === undefined
+        ? undefined
+        : marketCursor(options.cursor);
+    const items = [...this.markets.values()]
+      .filter((market) => market.chainId === chainId)
+      .filter(
+        (market) =>
+          options.status === undefined ||
+          market.state === marketState(options.status),
+      )
+      .filter((market) => {
+        if (owner === undefined) return true;
+        if (market.creator === owner) return true;
+        return [...this.activities.entries()].some(
+          ([key, activity]) =>
+            activity.chainId === chainId &&
+            activity.vault === market.market &&
+            this.activityParticipants.get(key)?.has(owner) === true,
+        );
+      })
+      .filter(
+        (market) =>
+          cursor === undefined ||
+          market.createdBlock < cursor.block ||
+          (market.createdBlock === cursor.block &&
+            market.market.toLowerCase() < cursor.market.toLowerCase()),
+      )
+      .sort(compareMarketsDesc);
+    const pageItems = items.slice(0, options.limit);
+    const last = pageItems.at(-1);
+    return items.length > options.limit && last !== undefined
+      ? {
+          items: pageItems,
+          nextCursor: encodeOpaqueCursor({
+            block: last.createdBlock.toString(),
+            market: last.market,
+          }),
+        }
+      : { items: pageItems };
+  }
+
   async listListings(
     chainId: number,
     options: QueryOptions & {
@@ -239,6 +298,43 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
     );
   }
 
+  async listActivity(
+    chainId: number,
+    owner: Address,
+    options: QueryOptions,
+  ): Promise<QueryPage<ActivityView>> {
+    validateLimit(options.limit);
+    const normalizedOwner = getAddress(owner);
+    const cursor =
+      options.cursor === undefined
+        ? undefined
+        : activityCursor(options.cursor);
+    const items = [...this.activities.entries()]
+      .filter(
+        ([key, activity]) =>
+          activity.chainId === chainId &&
+          this.activityParticipants.get(key)?.has(normalizedOwner) === true,
+      )
+      .map(([, activity]) => activity)
+      .filter(
+        (activity) =>
+          cursor === undefined || compareActivityToCursor(activity, cursor) > 0,
+      )
+      .sort(compareActivitiesDesc);
+    const pageItems = items.slice(0, options.limit);
+    const last = pageItems.at(-1);
+    return items.length > options.limit && last !== undefined
+      ? {
+          items: pageItems,
+          nextCursor: encodeOpaqueCursor({
+            block: last.blockNumber.toString(),
+            transactionHash: last.transactionHash,
+            logIndex: last.logIndex,
+          }),
+        }
+      : { items: pageItems };
+  }
+
   eventCount(chainId: number): number {
     return [...this.events.values()].filter(
       (event) => event.chainId === chainId,
@@ -269,7 +365,17 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
             deploymentMode: mutation.deploymentMode,
             outcomeCount: null,
             closeAt: null,
+            resolutionWindow: null,
+            rulesHash: null,
+            metadataUri: null,
+            resolutionSourceHash: null,
+            resolutionSourceUri: null,
+            earlyBirdStart: null,
+            creatorTreasury: null,
+            featureFlags: null,
             marketPrimaryCap: null,
+            primaryFilledUnits: 0n,
+            primaryPayment: 0n,
             creatorBond: mutation.creatorBond,
             state: 0,
             winningOutcome: null,
@@ -280,6 +386,12 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
             confirmationStatus: event.confirmationStatus,
           });
         }
+        this.recordActivity(event, {
+          kind: "market-created",
+          vault: mutation.market,
+          actor: mutation.creator,
+          amount: mutation.creatorBond,
+        });
         return;
       }
       case "market-initialized": {
@@ -292,7 +404,17 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           deploymentMode: mutation.deploymentMode,
           outcomeCount: mutation.outcomeCount,
           closeAt: mutation.closeAt,
+          resolutionWindow: mutation.resolutionWindow,
+          rulesHash: current?.rulesHash ?? null,
+          metadataUri: current?.metadataUri ?? null,
+          resolutionSourceHash: current?.resolutionSourceHash ?? null,
+          resolutionSourceUri: current?.resolutionSourceUri ?? null,
+          earlyBirdStart: current?.earlyBirdStart ?? null,
+          creatorTreasury: current?.creatorTreasury ?? null,
+          featureFlags: current?.featureFlags ?? null,
           marketPrimaryCap: mutation.marketPrimaryCap,
+          primaryFilledUnits: current?.primaryFilledUnits ?? 0n,
+          primaryPayment: current?.primaryPayment ?? 0n,
           creatorBond: mutation.creatorBond,
           state: current?.state ?? 0,
           winningOutcome: current?.winningOutcome ?? null,
@@ -301,6 +423,53 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           createdBlock: current?.createdBlock ?? event.blockNumber,
           updatedBlock: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
+        });
+        return;
+      }
+      case "market-metadata": {
+        const key = addressKey(event.chainId, mutation.market);
+        const current = this.markets.get(key);
+        if (current === undefined)
+          throw new Error(
+            `metadata event references unknown market ${mutation.market}`,
+          );
+        this.markets.set(key, {
+          ...current,
+          rulesHash: mutation.rulesHash,
+          metadataUri: mutation.metadataUri,
+          resolutionSourceHash: mutation.resolutionSourceHash,
+          resolutionSourceUri: mutation.resolutionSourceUri,
+          closeAt: mutation.closeAt,
+          earlyBirdStart: mutation.earlyBirdStart,
+          creatorTreasury: mutation.creatorTreasury,
+          featureFlags: mutation.featureFlags,
+          updatedBlock: event.blockNumber,
+          confirmationStatus: event.confirmationStatus,
+        });
+        return;
+      }
+      case "primary-purchased": {
+        const key = addressKey(event.chainId, mutation.market);
+        const current = this.markets.get(key);
+        if (current === undefined)
+          throw new Error(
+            `purchase event references unknown market ${mutation.market}`,
+          );
+        this.markets.set(key, {
+          ...current,
+          primaryFilledUnits:
+            current.primaryFilledUnits + mutation.filledUnits,
+          primaryPayment: mutation.totalPrincipal,
+          updatedBlock: event.blockNumber,
+          confirmationStatus: event.confirmationStatus,
+        });
+        this.recordActivity(event, {
+          kind: "primary-purchased",
+          vault: mutation.market,
+          actor: mutation.buyer,
+          outcomeId: mutation.outcomeId,
+          units: mutation.filledUnits,
+          amount: mutation.payment,
         });
         return;
       }
@@ -323,6 +492,26 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           updatedBlock: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
         });
+        const participants = [
+          current.creator,
+          ...[...this.positions.values()]
+            .filter(
+              (position) =>
+                position.chainId === event.chainId &&
+                position.vault === mutation.market &&
+                position.balance > 0n,
+            )
+            .map((position) => position.owner),
+        ];
+        this.recordActivity(
+          event,
+          {
+            kind: terminalActivityKind(mutation.terminalKind),
+            vault: mutation.market,
+            actor: mutation.caller,
+          },
+          participants,
+        );
         return;
       }
       case "listing-created":
@@ -339,6 +528,15 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           createdBlock: event.blockNumber,
           updatedBlock: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
+        });
+        this.recordActivity(event, {
+          kind: "listing-created",
+          vault: mutation.vault,
+          actor: mutation.seller,
+          outcomeId: mutation.outcomeId,
+          listingId: mutation.listingId,
+          units: mutation.amount,
+          amount: mutation.unitPrice,
         });
         return;
       case "listing-filled": {
@@ -368,6 +566,16 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           blockNumber: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
         });
+        this.recordActivity(event, {
+          kind: "listing-filled",
+          vault: listing.vault,
+          actor: mutation.buyer,
+          counterparty: mutation.seller,
+          outcomeId: listing.outcomeId,
+          listingId: mutation.listingId,
+          units: mutation.filledUnits,
+          amount: mutation.gross,
+        });
         return;
       }
       case "listing-closed": {
@@ -383,6 +591,15 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           active: false,
           updatedBlock: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
+        });
+        this.recordActivity(event, {
+          kind: mutation.closeKind,
+          vault: listing.vault,
+          actor: mutation.caller,
+          counterparty:
+            mutation.caller === mutation.seller ? null : mutation.seller,
+          outcomeId: listing.outcomeId,
+          listingId: mutation.listingId,
         });
         return;
       }
@@ -422,7 +639,57 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           blockNumber: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
         });
+        this.recordActivity(event, {
+          kind: claimActivityKind(mutation.claimKind),
+          vault: mutation.vault,
+          actor: mutation.caller,
+          counterparty:
+            mutation.caller === mutation.owner ? null : mutation.owner,
+          units: mutation.units,
+          amount: mutation.amount,
+        });
     }
+  }
+
+  private recordActivity(
+    event: IndexedEvent,
+    input: {
+      kind: ActivityKind;
+      vault: Address;
+      actor: Address | null;
+      counterparty?: Address | null;
+      outcomeId?: bigint | null;
+      listingId?: Hex | null;
+      units?: bigint | null;
+      amount?: bigint | null;
+    },
+    extraParticipants: readonly Address[] = [],
+  ): void {
+    const key = eventKey(event);
+    const activity: ActivityView = {
+      chainId: event.chainId,
+      transactionHash: event.transactionHash,
+      logIndex: event.logIndex,
+      kind: input.kind,
+      vault: input.vault,
+      actor: input.actor,
+      counterparty: input.counterparty ?? null,
+      outcomeId: input.outcomeId ?? null,
+      listingId: input.listingId ?? null,
+      units: input.units ?? null,
+      amount: input.amount ?? null,
+      blockNumber: event.blockNumber,
+      confirmationStatus: event.confirmationStatus,
+    };
+    this.activities.set(key, activity);
+    this.activityParticipants.set(
+      key,
+      new Set(
+        [activity.actor, activity.counterparty, ...extraParticipants]
+          .filter((participant): participant is Address => participant !== null)
+          .map(getAddress),
+      ),
+    );
   }
 
   private clearProjections(chainId: number): void {
@@ -433,10 +700,13 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
       this.fills,
       this.positions,
       this.claims,
+      this.activities,
     ]) {
       for (const key of map.keys())
         if (key.startsWith(`${chainId}:`)) map.delete(key);
     }
+    for (const key of this.activityParticipants.keys())
+      if (key.startsWith(`${chainId}:`)) this.activityParticipants.delete(key);
   }
 }
 
@@ -464,6 +734,125 @@ function queryPage<T>(
   return offset + options.limit < items.length
     ? { items: pageItems, nextCursor: String(offset + options.limit) }
     : { items: pageItems };
+}
+
+function validateLimit(limit: number): void {
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+    throw new RangeError("limit must be an integer within [1, 100]");
+}
+
+interface MarketCursor {
+  block: bigint;
+  market: Address;
+}
+
+function marketCursor(value: string): MarketCursor {
+  const decoded = decodeOpaqueCursor<{ block?: unknown; market?: unknown }>(
+    value,
+  );
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    typeof decoded.block !== "string" ||
+    !/^\d+$/.test(decoded.block) ||
+    typeof decoded.market !== "string"
+  ) {
+    throw new RangeError("invalid cursor");
+  }
+  try {
+    return { block: BigInt(decoded.block), market: getAddress(decoded.market) };
+  } catch {
+    throw new RangeError("invalid cursor");
+  }
+}
+
+interface ActivityCursor {
+  block: bigint;
+  transactionHash: Hex;
+  logIndex: number;
+}
+
+function activityCursor(value: string): ActivityCursor {
+  const decoded = decodeOpaqueCursor<{
+    block?: unknown;
+    transactionHash?: unknown;
+    logIndex?: unknown;
+  }>(value);
+  if (
+    typeof decoded !== "object" ||
+    decoded === null ||
+    typeof decoded.block !== "string" ||
+    !/^\d+$/.test(decoded.block) ||
+    typeof decoded.transactionHash !== "string" ||
+    !/^0x[0-9a-fA-F]{64}$/.test(decoded.transactionHash) ||
+    typeof decoded.logIndex !== "number" ||
+    !Number.isSafeInteger(decoded.logIndex) ||
+    decoded.logIndex < 0
+  ) {
+    throw new RangeError("invalid cursor");
+  }
+  return {
+    block: BigInt(decoded.block),
+    transactionHash: decoded.transactionHash as Hex,
+    logIndex: decoded.logIndex,
+  };
+}
+
+function compareMarketsDesc(a: MarketView, b: MarketView): number {
+  if (a.createdBlock !== b.createdBlock)
+    return compareBigintDesc(a.createdBlock, b.createdBlock);
+  return b.market.toLowerCase().localeCompare(a.market.toLowerCase());
+}
+
+function compareActivitiesDesc(a: ActivityView, b: ActivityView): number {
+  if (a.blockNumber !== b.blockNumber)
+    return compareBigintDesc(a.blockNumber, b.blockNumber);
+  const tx = b.transactionHash
+    .toLowerCase()
+    .localeCompare(a.transactionHash.toLowerCase());
+  return tx === 0 ? b.logIndex - a.logIndex : tx;
+}
+
+function compareActivityToCursor(
+  activity: ActivityView,
+  cursor: ActivityCursor,
+): number {
+  if (activity.blockNumber !== cursor.block)
+    return activity.blockNumber < cursor.block ? 1 : -1;
+  const tx = activity.transactionHash
+    .toLowerCase()
+    .localeCompare(cursor.transactionHash.toLowerCase());
+  if (tx !== 0) return tx < 0 ? 1 : -1;
+  if (activity.logIndex === cursor.logIndex) return 0;
+  return activity.logIndex < cursor.logIndex ? 1 : -1;
+}
+
+function terminalActivityKind(
+  value: "resolved" | "voided-creator" | "voided-timeout",
+): ActivityKind {
+  switch (value) {
+    case "resolved":
+      return "market-resolved";
+    case "voided-creator":
+      return "market-voided-creator";
+    case "voided-timeout":
+      return "market-voided-timeout";
+  }
+}
+
+function claimActivityKind(value: string): ActivityKind {
+  switch (value) {
+    case "winner":
+      return "winner-claimed";
+    case "early-bird":
+      return "early-bird-claimed";
+    case "principal-refund":
+      return "principal-refunded";
+    case "timeout-bonus":
+      return "timeout-bonus-claimed";
+    default:
+      throw new RangeError(`unknown claim kind ${value}`);
+  }
 }
 
 function blockKey(chainId: number, blockNumber: bigint): string {

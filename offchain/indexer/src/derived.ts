@@ -3,11 +3,17 @@ import {
   getAddress,
   parseAbiItem,
   toEventSelector,
+  type AbiEvent,
   type Address,
   type Hex,
   type Log,
 } from "viem";
 import type { ConfirmationStatus, IndexedEvent } from "./store.js";
+import {
+  marketFactoryAbi,
+  marketplaceAbi,
+  marketVaultAbi,
+} from "../../sdk/src/abis.js";
 import {
   normalizeEvidenceHash,
   ZERO_EVIDENCE_HASH,
@@ -28,12 +34,36 @@ export type DerivedMutation =
       deploymentMode: number;
       outcomeCount: number;
       closeAt: bigint;
+      resolutionWindow: bigint;
       marketPrimaryCap: bigint;
       creatorBond: bigint;
     }
   | {
+      kind: "market-metadata";
+      market: Address;
+      rulesHash: Hex;
+      metadataUri: string;
+      resolutionSourceHash: Hex;
+      resolutionSourceUri: string;
+      closeAt: bigint;
+      earlyBirdStart: bigint;
+      creatorTreasury: Address;
+      featureFlags: bigint;
+    }
+  | {
+      kind: "primary-purchased";
+      market: Address;
+      buyer: Address;
+      outcomeId: bigint;
+      filledUnits: bigint;
+      payment: bigint;
+      totalPrincipal: bigint;
+    }
+  | {
       kind: "market-terminal";
       market: Address;
+      terminalKind: "resolved" | "voided-creator" | "voided-timeout";
+      caller: Address | null;
       state: number;
       winningOutcome: bigint | null;
       evidenceHash: Hex | null;
@@ -57,7 +87,13 @@ export type DerivedMutation =
       gross: bigint;
       remainingUnits: bigint;
     }
-  | { kind: "listing-closed"; listingId: Hex }
+  | {
+      kind: "listing-closed";
+      listingId: Hex;
+      closeKind: "listing-cancelled" | "terminal-listing-returned";
+      seller: Address;
+      caller: Address;
+    }
   | {
       kind: "position-delta";
       vault: Address;
@@ -75,48 +111,15 @@ export type DerivedMutation =
       amount: bigint;
     };
 
-const eventItems = [
-  parseAbiItem(
-    "event MarketCreated(address indexed market,address indexed creator,uint8 indexed deploymentMode,address implementation,bytes32 salt,bytes32 runtimeCodeHash,uint256 creatorNonce,uint256 creationFee,uint256 creatorBond)",
-  ),
-  parseAbiItem(
-    "event MarketInitialized(address indexed market,address indexed creator,uint8 indexed mode,uint8 outcomeCount,uint64 closeAt,uint128 marketPrimaryCap,uint128 creatorBond)",
-  ),
-  parseAbiItem(
-    "event MarketResolved(uint256 indexed winningOutcome,uint256 totalPrincipal,uint256 totalRake,uint256 protocolFee,uint256 creatorFee,uint256 earlyBirdPool,uint256 winnerPool,bytes32 indexed evidenceHash)",
-  ),
-  parseAbiItem(
-    "event MarketVoided(uint8 indexed terminalState,address indexed caller,uint256 refundPrincipal,bytes32 indexed evidenceHash)",
-  ),
-  parseAbiItem(
-    "event ListingCreated(bytes32 indexed listingId,address indexed vault,address indexed seller,uint256 outcomeId,uint256 amount,uint256 unitPrice,uint64 expiresAt,uint256 sellerNonce)",
-  ),
-  parseAbiItem(
-    "event ListingFilled(bytes32 indexed listingId,address indexed buyer,address indexed seller,uint256 desiredUnits,uint256 filledUnits,uint256 gross,uint256 sellerProceeds,uint256 platformFee,uint256 creatorFee,uint256 remainingUnits)",
-  ),
-  parseAbiItem(
-    "event ListingCancelled(bytes32 indexed listingId,address indexed seller,uint256 returnedUnits)",
-  ),
-  parseAbiItem(
-    "event TerminalListingReturned(bytes32 indexed listingId,address indexed caller,address indexed seller,uint256 returnedUnits)",
-  ),
+const eventItems: readonly AbiEvent[] = [
+  ...eventsFrom(marketFactoryAbi),
+  ...eventsFrom(marketVaultAbi),
+  ...eventsFrom(marketplaceAbi),
   parseAbiItem(
     "event TransferSingle(address indexed operator,address indexed from,address indexed to,uint256 id,uint256 value)",
   ),
   parseAbiItem(
     "event TransferBatch(address indexed operator,address indexed from,address indexed to,uint256[] ids,uint256[] values)",
-  ),
-  parseAbiItem(
-    "event WinnerClaimed(address indexed owner,address indexed caller,uint256 burnedUnits,uint256 payout)",
-  ),
-  parseAbiItem(
-    "event EarlyBirdClaimed(address indexed owner,address indexed caller,uint256 score,uint256 reward)",
-  ),
-  parseAbiItem(
-    "event PrincipalRefunded(address indexed owner,address indexed caller,uint256 burnedUnits,uint256 refund,bool timeoutEligibilityRecorded)",
-  ),
-  parseAbiItem(
-    "event TimeoutBonusClaimed(address indexed owner,address indexed caller,uint256 units,uint256 reward)",
   ),
 ] as const;
 
@@ -175,8 +178,36 @@ export function deriveMutations(
           deploymentMode: number(args.mode),
           outcomeCount: number(args.outcomeCount),
           closeAt: bigint(args.closeAt),
+          resolutionWindow: bigint(args.resolutionWindow),
           marketPrimaryCap: bigint(args.marketPrimaryCap),
           creatorBond: bigint(args.creatorBond),
+        },
+      ];
+    case "MarketMetadataUpdated":
+      return [
+        {
+          kind: "market-metadata",
+          market: event.address,
+          rulesHash: hex(args.rulesHash),
+          metadataUri: text(args.metadataURI),
+          resolutionSourceHash: hex(args.resolutionSourceHash),
+          resolutionSourceUri: text(args.resolutionSourceURI),
+          closeAt: bigint(args.closeAt),
+          earlyBirdStart: bigint(args.earlyBirdStart),
+          creatorTreasury: address(args.creatorTreasury),
+          featureFlags: bigint(args.featureFlags),
+        },
+      ];
+    case "PrimaryPurchased":
+      return [
+        {
+          kind: "primary-purchased",
+          market: event.address,
+          buyer: address(args.buyer),
+          outcomeId: bigint(args.outcomeId),
+          filledUnits: bigint(args.filledUnits),
+          payment: bigint(args.payment),
+          totalPrincipal: bigint(args.totalPrincipal),
         },
       ];
     case "MarketResolved":
@@ -184,6 +215,8 @@ export function deriveMutations(
         {
           kind: "market-terminal",
           market: event.address,
+          terminalKind: "resolved",
+          caller: null,
           state: 1,
           winningOutcome: bigint(args.winningOutcome),
           evidenceHash: optionalEvidenceHash(args.evidenceHash),
@@ -194,6 +227,8 @@ export function deriveMutations(
         {
           kind: "market-terminal",
           market: event.address,
+          terminalKind: terminalKind(args.terminalState),
+          caller: address(args.caller),
           state: number(args.terminalState),
           winningOutcome: null,
           evidenceHash: optionalEvidenceHash(args.evidenceHash),
@@ -225,8 +260,25 @@ export function deriveMutations(
         },
       ];
     case "ListingCancelled":
+      return [
+        {
+          kind: "listing-closed",
+          listingId: hex(args.listingId),
+          closeKind: "listing-cancelled",
+          seller: address(args.seller),
+          caller: address(args.seller),
+        },
+      ];
     case "TerminalListingReturned":
-      return [{ kind: "listing-closed", listingId: hex(args.listingId) }];
+      return [
+        {
+          kind: "listing-closed",
+          listingId: hex(args.listingId),
+          closeKind: "terminal-listing-returned",
+          seller: address(args.seller),
+          caller: address(args.caller),
+        },
+      ];
     case "TransferSingle":
       return positionMutations(
         event.address,
@@ -256,6 +308,10 @@ export function deriveMutations(
     default:
       return [];
   }
+}
+
+function eventsFrom(abi: readonly { readonly type: string }[]): AbiEvent[] {
+  return abi.filter((item) => item.type === "event") as AbiEvent[];
 }
 
 function positionMutations(
@@ -349,9 +405,24 @@ function hex(value: unknown): Hex {
   return value as Hex;
 }
 
+function text(value: unknown): string {
+  if (typeof value !== "string")
+    throw new TypeError("event string argument is missing");
+  return value;
+}
+
 function optionalEvidenceHash(value: unknown): Hex | null {
   const normalized = normalizeEvidenceHash(hex(value));
   return normalized === ZERO_EVIDENCE_HASH ? null : normalized;
+}
+
+function terminalKind(
+  value: unknown,
+): "voided-creator" | "voided-timeout" {
+  const state = number(value);
+  if (state === 2) return "voided-creator";
+  if (state === 3) return "voided-timeout";
+  throw new RangeError(`invalid terminal market state ${state}`);
 }
 
 function bigint(value: unknown): bigint {

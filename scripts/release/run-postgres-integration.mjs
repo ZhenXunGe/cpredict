@@ -11,6 +11,10 @@ export const POSTGRES_INTEGRATION_INVENTORY = Object.freeze([
     path: "offchain/paymaster-service/test/postgres-budget.integration.test.ts",
     tests: 2,
   }),
+  Object.freeze({
+    path: "offchain/metadata-service/test/postgres.integration.test.ts",
+    tests: 2,
+  }),
 ]);
 export const POSTGRES_INTEGRATION_FILES = Object.freeze(
   POSTGRES_INTEGRATION_INVENTORY.map((entry) => entry.path),
@@ -54,8 +58,8 @@ export function validatePostgresIntegrationResult(
     "PostgreSQL integration testResults must be an array",
   );
   assert(
-    report.testResults.length === 2,
-    "PostgreSQL integration must execute exactly 2 test files",
+    report.testResults.length === POSTGRES_INTEGRATION_FILES.length,
+    `PostgreSQL integration must execute exactly ${POSTGRES_INTEGRATION_FILES.length} test files`,
   );
 
   const expected = POSTGRES_INTEGRATION_FILES.map((path) =>

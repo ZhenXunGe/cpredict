@@ -28,6 +28,7 @@ const validRuntime = {
     faucetAmount: "0",
   },
   indexer: { enabled: false, basePath: "/indexer" },
+  metadata: { enabled: true, basePath: "/metadata" },
   evidence: { uploadEnabled: false, endpointPath: "/evidence" },
 };
 

@@ -4,6 +4,7 @@ export * from "./client.js";
 export * from "./errors.js";
 export * from "./evidence.js";
 export * from "./market-rules.js";
+export * from "./metadata.js";
 export * from "./permit2.js";
 export * from "./schemas.js";
 export * from "./transaction-policy.js";
