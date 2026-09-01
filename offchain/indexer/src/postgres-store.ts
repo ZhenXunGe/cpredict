@@ -470,17 +470,34 @@ async function applyMutation(
       `;
       return;
     case "position-delta":
-      await db`
-        INSERT INTO positions (
-          chain_id, vault, owner, outcome_id, balance, updated_block, confirmation_status
-        ) VALUES (
-          ${event.chainId}, ${mutation.vault}, ${mutation.owner}, ${mutation.outcomeId.toString()},
-          ${mutation.delta.toString()}, ${event.blockNumber.toString()}, ${event.confirmationStatus}
-        ) ON CONFLICT (chain_id, vault, owner, outcome_id) DO UPDATE SET
-          balance = positions.balance + EXCLUDED.balance,
-          updated_block = EXCLUDED.updated_block,
-          confirmation_status = EXCLUDED.confirmation_status
+      if (mutation.delta >= 0n) {
+        await db`
+          INSERT INTO positions (
+            chain_id, vault, owner, outcome_id, balance, updated_block, confirmation_status
+          ) VALUES (
+            ${event.chainId}, ${mutation.vault}, ${mutation.owner}, ${mutation.outcomeId.toString()},
+            ${mutation.delta.toString()}, ${event.blockNumber.toString()}, ${event.confirmationStatus}
+          ) ON CONFLICT (chain_id, vault, owner, outcome_id) DO UPDATE SET
+            balance = positions.balance + EXCLUDED.balance,
+            updated_block = EXCLUDED.updated_block,
+            confirmation_status = EXCLUDED.confirmation_status
+        `;
+        return;
+      }
+      const debited = await db<Array<{ balance: string }>>`
+        UPDATE positions SET
+          balance = balance + ${mutation.delta.toString()},
+          updated_block = ${event.blockNumber.toString()},
+          confirmation_status = ${event.confirmationStatus}
+        WHERE chain_id = ${event.chainId}
+          AND vault = ${mutation.vault}
+          AND owner = ${mutation.owner}
+          AND outcome_id = ${mutation.outcomeId.toString()}
+          AND balance >= ${(-mutation.delta).toString()}
+        RETURNING balance
       `;
+      if (debited.length !== 1)
+        throw new Error("position debit exceeds indexed balance");
       return;
     case "claim":
       await db`

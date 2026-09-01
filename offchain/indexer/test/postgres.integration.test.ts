@@ -7,6 +7,7 @@ import {
   getAddress,
   parseAbiItem,
   toHex,
+  type Address,
   type Hex,
 } from "viem";
 import { PostgresEventStore } from "../src/postgres-store.js";
@@ -125,6 +126,39 @@ suite("PostgresEventStore integration", () => {
     });
   });
 
+  it("atomically applies a transfer debit without violating the nonnegative balance constraint", async () => {
+    const transferChainId = chainId + 2;
+    const block1 = canonicalBlock(transferChainId, 1n, 21n, 0n);
+    const block2 = canonicalBlock(transferChainId, 2n, 22n, 21n);
+    await store.applyBatch(
+      [transferSingle(transferChainId, block1, 201n, ZERO, CREATOR, 1_000_000n)],
+      [block1],
+      {
+        chainId: transferChainId,
+        blockNumber: 1n,
+        blockHash: block1.blockHash,
+      },
+    );
+    await store.applyBatch(
+      [transferSingle(transferChainId, block2, 202n, CREATOR, RECIPIENT, 1_000_000n)],
+      [block2],
+      {
+        chainId: transferChainId,
+        blockNumber: 2n,
+        blockHash: block2.blockHash,
+      },
+    );
+
+    expect(
+      (await store.listPositions(transferChainId, CREATOR, { limit: 10 })).items,
+    ).toEqual([]);
+    expect(
+      (await store.listPositions(transferChainId, RECIPIENT, { limit: 10 })).items,
+    ).toEqual([
+      expect.objectContaining({ owner: RECIPIENT, outcomeId: 0n, balance: 1_000_000n }),
+    ]);
+  });
+
   it("fails readiness until every required migration is applied", async () => {
     if (databaseUrl === undefined)
       throw new Error("TEST_DATABASE_URL unexpectedly missing");
@@ -184,9 +218,13 @@ const event = parseAbiItem(
 const resolvedEvent = parseAbiItem(
   "event MarketResolved(uint256 indexed winningOutcome,uint256 totalPrincipal,uint256 totalRake,uint256 protocolFee,uint256 creatorFee,uint256 earlyBirdPool,uint256 winnerPool,bytes32 indexed evidenceHash)",
 );
+const transferSingleEvent = parseAbiItem(
+  "event TransferSingle(address indexed operator,address indexed from,address indexed to,uint256 id,uint256 value)",
+);
 const FACTORY = getAddress("0x000000000000000000000000000000000000F001");
 const MARKET = getAddress("0x0000000000000000000000000000000000001001");
 const CREATOR = getAddress("0x000000000000000000000000000000000000C001");
+const RECIPIENT = getAddress("0x000000000000000000000000000000000000A001");
 const ZERO = getAddress("0x0000000000000000000000000000000000000000");
 
 function marketCreated(chainId: number, block: CanonicalBlock): IndexedEvent {
@@ -239,6 +277,35 @@ function marketResolved(
     data: encodeAbiParameters(
       Array.from({ length: 6 }, () => ({ type: "uint256" as const })),
       [100n, 10n, 2n, 3n, 1n, 90n],
+    ),
+    confirmationStatus: "confirmed",
+  };
+}
+
+function transferSingle(
+  chainId: number,
+  block: CanonicalBlock,
+  transactionSeed: bigint,
+  from: Address,
+  to: Address,
+  value: bigint,
+): IndexedEvent {
+  return {
+    chainId,
+    blockNumber: block.blockNumber,
+    blockHash: block.blockHash,
+    transactionHash: hash(transactionSeed),
+    transactionIndex: 0,
+    logIndex: 0,
+    address: MARKET,
+    topics: encodeEventTopics({
+      abi: [transferSingleEvent],
+      eventName: "TransferSingle",
+      args: { operator: CREATOR, from, to },
+    }) as unknown as readonly Hex[],
+    data: encodeAbiParameters(
+      [{ type: "uint256" }, { type: "uint256" }],
+      [0n, value],
     ),
     confirmationStatus: "confirmed",
   };

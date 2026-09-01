@@ -606,7 +606,7 @@
     },
     {
       "path": "offchain/indexer/src/postgres-store.ts",
-      "sha256": "d8d7d13d9183a43401e461a2f9326046b9b0cefc489b12911cdf39af54df64f7"
+      "sha256": "be41829ff61f45c99e7a40e45493f4bec9dad51b04b2fea0fc2bbeb120c7b559"
     },
     {
       "path": "offchain/indexer/src/runtime.ts",
@@ -646,7 +646,7 @@
     },
     {
       "path": "offchain/indexer/test/postgres.integration.test.ts",
-      "sha256": "4e2cd73aa436b8067df98d583589aa137bf5df6486b0345d93c123c4866bb7af"
+      "sha256": "43daf46e028428027575963771be05735a432944e698a2a9256ce28da87c1552"
     },
     {
       "path": "offchain/indexer/test/scheduler.test.ts",
