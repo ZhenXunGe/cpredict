@@ -2,8 +2,8 @@
 -------------------------------------------------------------------------------------------------
 # Configuration
 -------------------------------------------------------------------------------------------------
-Root - /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-aderyn.mjuhBh/repo
-Source - /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-aderyn.mjuhBh/repo/src
+Root - /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-aderyn.14b1TN/repo
+Source - /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-aderyn.14b1TN/repo/src
 Remappings - [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "@account-abstraction/=lib/account-abstraction/contracts/",
@@ -39,6 +39,6 @@ Running 88 detectors
 Detectors run, printing report.
 Report printed to reports/security/aderyn.json
 
-✔  Done! Fast, clean, effective.
-⭐ Support the project with a star:
+✔ Aderyn did its job. Solidity's a bit safer now.
+💫 Like the tool? A star on GitHub goes a long way:
 https://github.com/Cyfrin/aderyn

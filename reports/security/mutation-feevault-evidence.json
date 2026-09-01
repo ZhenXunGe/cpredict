@@ -1,24 +1,24 @@
 {
   "schemaVersion": 1,
   "gate": "mutation-feevault",
-  "result": "FAIL",
+  "result": "PASS",
   "tool": {
     "name": "slither-mutate",
     "version": "0.11.6",
     "artifactSha256": "1a60e3eb9e7e7b5697a19cc3a59fddd0e22a5e4540aee5c95908f1e1d5c412ec",
-    "rawExitCode": 143,
+    "rawExitCode": 0,
     "acceptedExitCodes": [
       0
     ]
   },
   "validatorExitCode": 0,
   "platform": "darwin-arm64",
-  "sourceSnapshotSha256": "1ddb1956d6a5a9294b12b6e7fb8021757c52ba43380e44f4a3f22a977fb3fcf3",
+  "sourceSnapshotSha256": "880364a698fd98509ea70fdb2ca1b3b698094e17fc7a73f05908e21a9e42fb34",
   "inputs": [
     {
       "path": "foundry.toml",
-      "bytes": 1164,
-      "sha256": "006e3f5e2e36ca80b04bb25568f4c2b6d07806ac81de29b4451d1eb2d202b539"
+      "bytes": 1176,
+      "sha256": "556972e7d054b72b85d1cdefaa245e1400c7d85527f4dd828b630f940c996ff2"
     },
     {
       "path": "manifests/security-tools.lock",
@@ -37,33 +37,38 @@
     },
     {
       "path": "scripts/security/parse-mutation-summary.mjs",
-      "bytes": 4383,
-      "sha256": "5c0714155e3bd316c508d3efea065ea44eee9c58009469087306a0057e779ac9"
+      "bytes": 7531,
+      "sha256": "4843442a5b7036ef20597e92ca3c391df96de34210fb8a9a7e4d263f9c631b5f"
     },
     {
       "path": "scripts/security/parse-mutation-summary.test.mjs",
-      "bytes": 2582,
-      "sha256": "396c3eac75345949aae09f6ac4d357a4517a831ec28c5f2f76e16f22a1cdc849"
+      "bytes": 6445,
+      "sha256": "c7a3428de82ca525f84124e9ed023a796eef198b0e71e715362601a1e336aa22"
     },
     {
-      "path": "scripts/security/refinalize-mutation-feevault-evidence.sh",
-      "bytes": 4532,
-      "sha256": "5cd91278de4d4ab37e8f39a45e326632bcdac2202adad9d6953c3d3d067cb186"
+      "path": "scripts/security/run-mutation-common.sh",
+      "bytes": 5391,
+      "sha256": "ddd9547a55d4db0c00d043edd2f13972a9c9b3a82c39643cad92e497ba5f7ca0"
     },
     {
       "path": "scripts/security/run-mutation-feevault.sh",
-      "bytes": 8739,
-      "sha256": "7f60dd53f2931ea872d1f78b63dd4c670179bb670abb50061e67f50434f09ca7"
+      "bytes": 9751,
+      "sha256": "ddfd5806f6c2682622906f6ce5f783fae18d1be2fefdd36817a30b958d7ce185"
+    },
+    {
+      "path": "scripts/security/run-mutation-lifecycle.test.sh",
+      "bytes": 2258,
+      "sha256": "db57a6c19ec3d34c40509b743602ab367be340b25fbe02d6ae73474b4b1d04a5"
     },
     {
       "path": "scripts/security/verify-gate-evidence.mjs",
-      "bytes": 4400,
-      "sha256": "62533fa6fc77ae42c74081a835264339e61c4a390b189fb123bac466defc10e9"
+      "bytes": 4581,
+      "sha256": "6b7670b11b5791a38823497c1f17e6e5368f55a03bcea37e7a7bb9c719cac10f"
     },
     {
       "path": "scripts/security/verify-python-record.mjs",
-      "bytes": 2098,
-      "sha256": "bbf7122c87a17f819012cebd1cacb28b268dda794680880878849bb85b46eb6b"
+      "bytes": 2162,
+      "sha256": "6aa789c76fc14fc2e6be5c53686d187e3c71e6880488e6997fe022fe08882751"
     },
     {
       "path": "scripts/security/verify-slither-install.sh",
@@ -72,8 +77,8 @@
     },
     {
       "path": "scripts/security/write-gate-evidence.mjs",
-      "bytes": 6272,
-      "sha256": "73aeb00b53374c52fd2150d0a875e87408eeff2c29128328dddd75aa44fcf7c0"
+      "bytes": 6585,
+      "sha256": "351512a44d982ac6b07e86d15d854a09dc5035c96d7e6c2c8bb930e2a88200b3"
     },
     {
       "path": "src/core/FeeVaultV1.sol",
@@ -81,9 +86,19 @@
       "sha256": "3809c803815804fd44351df94a99529a045c566edf1da23b0636da474045c289"
     },
     {
+      "path": "test/unit/BondEscrowMutationResistance.t.sol",
+      "bytes": 7883,
+      "sha256": "4c3e933e874db1ee4874fc52ac9b59e7bdc2f88c80b1469fe502f745068e9f7e"
+    },
+    {
       "path": "test/unit/CoverageCompleteness.t.sol",
       "bytes": 1425,
       "sha256": "faa8126a88665cc946e71024fa6e71596f93f39f59b3d514ea2203184cf713d0"
+    },
+    {
+      "path": "test/unit/CpredictSandboxToken.t.sol",
+      "bytes": 1456,
+      "sha256": "07400bdffe9118a388394c3f4ef3eea2c27d3fe4ba2c73af8d62868a98143a2b"
     },
     {
       "path": "test/unit/FactoryValidation.t.sol",
@@ -122,8 +137,8 @@
     },
     {
       "path": "test/unit/ProtocolControls.t.sol",
-      "bytes": 19530,
-      "sha256": "0212da914b02a026ef0318efa01394f9c241fb69e9419b987e7968246eb34669"
+      "bytes": 19790,
+      "sha256": "fee828ff319eb6af2760d6e605d54cf40ccdb49659024183400e7202c1a620be"
     },
     {
       "path": "test/unit/ProtocolFlows.t.sol",
@@ -143,34 +158,14 @@
   ],
   "evidence": [
     {
-      "path": "reports/security/mutation-feevault-pre-refinalization-evidence.json",
-      "bytes": 4529,
-      "sha256": "c0fde4c914d11b0a31b4bf3751f699e93fd528bf6878a89767c330b974d83604"
-    },
-    {
-      "path": "reports/security/mutation-feevault-pre-refinalization-evidence.json.sha256",
-      "bytes": 117,
-      "sha256": "984a2ea18028b0036b1eb70b5f51e63d780803b2d1cf6deda2e6b8e35c9c1c7e"
-    },
-    {
-      "path": "reports/security/mutation-feevault-pre-refinalization-summary.txt",
-      "bytes": 58,
-      "sha256": "9dd0fda63d8bc5747319103ddce94d5da9fbf567cb8c1df7464064d9c4259df5"
-    },
-    {
-      "path": "reports/security/mutation-feevault-refinalization.md",
-      "bytes": 1576,
-      "sha256": "eae3d68952725b8f4db040343ddca6ef74d50fa2215a63c0ae27a6ad435f0965"
-    },
-    {
       "path": "reports/security/mutation-feevault-summary.txt",
-      "bytes": 246,
-      "sha256": "13b9a15c285e49b60cc6884493aa038182ed25a4f24898322932458fb316c884"
+      "bytes": 127,
+      "sha256": "f8347628f357d8ffc7bd40d49252b3a6efc661f83ee6d45616c39b2495ca4ac6"
     },
     {
       "path": "reports/security/mutation-feevault.log",
-      "bytes": 75969,
-      "sha256": "2d0bc7743cb2742ef96fcb421b3a18eec5a92f3e47aeed677140f4e8b01e329f"
+      "bytes": 75995,
+      "sha256": "93aa3728bf619349d99ed46536135d09011ba4d5cc8b35cabf29f0c6bda269e0"
     }
   ]
 }

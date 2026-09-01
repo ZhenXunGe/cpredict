@@ -13,12 +13,12 @@
   },
   "validatorExitCode": 0,
   "platform": "darwin-arm64",
-  "sourceSnapshotSha256": "163831c47a9a7bbd6974c9a26a6df860b67e5d5c1969c879ae61141ee24cf71c",
+  "sourceSnapshotSha256": "fbd59f09504605e5c3a57939e1f3a47eca174192256e50c9b7acded0bd40542f",
   "inputs": [
     {
       "path": "foundry.toml",
-      "bytes": 1164,
-      "sha256": "006e3f5e2e36ca80b04bb25568f4c2b6d07806ac81de29b4451d1eb2d202b539"
+      "bytes": 1176,
+      "sha256": "556972e7d054b72b85d1cdefaa245e1400c7d85527f4dd828b630f940c996ff2"
     },
     {
       "path": "manifests/halmos-wheels.lock",
@@ -47,23 +47,23 @@
     },
     {
       "path": "scripts/security/validate-gate-evidence.mjs",
-      "bytes": 31461,
-      "sha256": "f91b55ebe0eda11cff339300cfc169f586e559baa6c914aa4a634cb229dff413"
+      "bytes": 33279,
+      "sha256": "d6e26672346814e16299cbbb50a63ea99d5de4e384fbd272a1f843ee62cb3a8c"
     },
     {
       "path": "scripts/security/verify-gate-evidence.mjs",
-      "bytes": 4400,
-      "sha256": "62533fa6fc77ae42c74081a835264339e61c4a390b189fb123bac466defc10e9"
+      "bytes": 4581,
+      "sha256": "6b7670b11b5791a38823497c1f17e6e5368f55a03bcea37e7a7bb9c719cac10f"
     },
     {
       "path": "scripts/security/verify-python-record.mjs",
-      "bytes": 2098,
-      "sha256": "bbf7122c87a17f819012cebd1cacb28b268dda794680880878849bb85b46eb6b"
+      "bytes": 2162,
+      "sha256": "6aa789c76fc14fc2e6be5c53686d187e3c71e6880488e6997fe022fe08882751"
     },
     {
       "path": "scripts/security/write-gate-evidence.mjs",
-      "bytes": 6272,
-      "sha256": "73aeb00b53374c52fd2150d0a875e87408eeff2c29128328dddd75aa44fcf7c0"
+      "bytes": 6585,
+      "sha256": "351512a44d982ac6b07e86d15d854a09dc5035c96d7e6c2c8bb930e2a88200b3"
     },
     {
       "path": "src/core/BondEscrowV1.sol",
@@ -181,6 +181,11 @@
       "sha256": "e0bcad2a5c93764b1bd0c4053079ec7c0a07ee8ae79b8894ae73d9e882ddb8a6"
     },
     {
+      "path": "src/testnet/CpredictSandboxToken.sol",
+      "bytes": 1138,
+      "sha256": "3d1034f7ff8ae90f03f7fa19d49de4a9df7a40db9045f7b2879e0efb0d47210f"
+    },
+    {
       "path": "test/security/ProtocolMath.smt.sol",
       "bytes": 2671,
       "sha256": "60a6382c1ec980413c5552bfa01df9ca590b6327d7b3c03a0a3ad0d245f64040"
@@ -190,12 +195,12 @@
     {
       "path": "reports/security/halmos-protocol-math.json",
       "bytes": 1705,
-      "sha256": "a952971138573fd0ffcf04648e3b4509318720d48f6f8c46c9b31399ba5813c0"
+      "sha256": "7660485133e336667355cf824ef00c3a11976f4953b2ea0fd3beb4deccf7de83"
     },
     {
       "path": "reports/security/halmos-protocol-math.log",
       "bytes": 7713,
-      "sha256": "cc33211488d213f92285f8d523027725e92e64db4470be61cdb240d8b13b9673"
+      "sha256": "7ce32c16bc99fad1403d1627ff73e5d49b1be70001105df1b36adccd827d1519"
     },
     {
       "path": "reports/security/halmos-validator.log",

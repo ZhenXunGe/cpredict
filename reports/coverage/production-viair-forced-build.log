@@ -1,9 +1,9 @@
 Compiling 14 files with Solc 0.8.17
-Solc 0.8.17 finished in 6.27s
+Solc 0.8.17 finished in 3.05s
 Compiler run successful!
-2026-08-24T11:20:01.145636Z  WARN evm::traces: failed to flush signature cache err=failed to create file "/Users/undef1ned/.foundry/cache/signatures": Operation not permitted (os error 1)
-Compiling 118 files with Solc 0.8.36
-Solc 0.8.36 finished in 53.67s
+2026-09-01T10:10:47.302724Z  WARN evm::traces: failed to flush signature cache err=failed to create file "/Users/undef1ned/.foundry/cache/signatures": Operation not permitted (os error 1)
+Compiling 121 files with Solc 0.8.36
+Solc 0.8.36 finished in 41.21s
 Compiler run successful with warnings:
 Warning (6335): "error" will be promoted to keyword in the future and will not be allowed as an identifier anymore.
     --> lib/forge-std/src/Vm.sol:1296:9:
@@ -354,29 +354,7 @@ Warning (6335): "error" will be promoted to keyword in the future and will not b
      |                                         ^^^^^^^^^^^^^^^^^^^^^
 
 Warning (4591): There are more than 256 warnings. Ignoring the rest.
-2026-08-24T11:21:27.122880Z  WARN evm::traces: failed to flush signature cache err=failed to create file "/Users/undef1ned/.foundry/cache/signatures": Operation not permitted (os error 1)
-warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ src/core/MarketFactoryV1.sol:344:13
-    │
-344 │             params.closeAt < block.timestamp + 5 minutes
-    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    │
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/Permit2Flows.t.sol:123:65
-    │
-123 │         market = MarketVaultCoreV1(factory.createMarket(params, bytes32("permit2")));
-    │                                                                 ━━━━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
+2026-09-01T10:11:47.960779Z  WARN evm::traces: failed to flush signature cache err=failed to create file "/Users/undef1ned/.foundry/cache/signatures": Operation not permitted (os error 1)
 warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
    ╭▸ src/core/EmergencyControllerV1.sol:43:16
    │
@@ -386,112 +364,26 @@ warning[block-timestamp]: usage of `block.timestamp` in a comparison may be mani
    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
 
 warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-   ╭▸ src/core/EmergencyControllerV1.sol:63:13
-   │
-63 │         if (block.timestamp < pauseExpiresAt) revert EmergencyPauseStillActive(pauseExpiresAt);
-   │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   │
-   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
-
-warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ src/core/MarketFactoryV1.sol:345:20
+    ╭▸ src/marketplace/FixedPriceMarketplaceV1.sol:155:13
     │
-345 │                 || params.closeAt > block.timestamp + 90 days
-    │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    │
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
-
-warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ src/core/MarketFactoryV1.sol:346:20
-    │
-346 │                 || params.earlyBirdStart < block.timestamp
-    │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+155 │         if (expiresAt <= block.timestamp) revert InvalidListingExpiry();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     │
     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
 
 warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:317:37
-    │
-317 │         localVault.accrue(ALICE, 1, bytes32("kind"), bytes32("ref"));
-    │                                     ━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:317:54
-    │
-317 │         localVault.accrue(ALICE, 1, bytes32("kind"), bytes32("ref"));
-    │                                                      ━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:319:42
-    │
-319 │         localVault.accrue(address(0), 1, bytes32("kind"), bytes32("ref"));
-    │                                          ━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:319:59
-    │
-319 │         localVault.accrue(address(0), 1, bytes32("kind"), bytes32("ref"));
-    │                                                           ━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:320:37
-    │
-320 │         localVault.accrue(ALICE, 0, bytes32("kind"), bytes32("ref"));
-    │                                     ━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:320:54
-    │
-320 │         localVault.accrue(ALICE, 0, bytes32("kind"), bytes32("ref"));
-    │                                                      ━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+   ╭▸ test/unit/FeeVaultMutationResistance.t.sol:37:33
+   │
+37 │                 callbackError = bytes4(result);
+   │                                 ━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'bytes4' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
 
 warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
     ╭▸ src/market/MarketVaultCoreV1.sol:382:13
@@ -501,103 +393,11 @@ warning[block-timestamp]: usage of `block.timestamp` in a comparison may be mani
     │
     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
 
-warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-   ╭▸ test/invariant/MarketAccounting.invariant.t.sol:41:36
-   │
-41 │         if (market.isTerminal() || block.timestamp >= market.closeAt()) return;
-   │                                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   │
-   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
-
 warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/invariant/MarketAccounting.invariant.t.sol:159:65
+    ╭▸ test/unit/FactoryValidation.t.sol:401:68
     │
-159 │         market = MarketVaultCoreV1(factory.createMarket(params, bytes32("invariant")));
-    │                                                                 ━━━━━━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:322:38
-    │
-322 │         localVault.accrue(ALICE, 10, bytes32("kind"), bytes32("ref"));
-    │                                      ━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:322:55
-    │
-322 │         localVault.accrue(ALICE, 10, bytes32("kind"), bytes32("ref"));
-    │                                                       ━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:325:38
-    │
-325 │         localVault.accrue(ALICE, 10, bytes32("kind"), bytes32("a"));
-    │                                      ━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:325:55
-    │
-325 │         localVault.accrue(ALICE, 10, bytes32("kind"), bytes32("a"));
-    │                                                       ━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:327:36
-    │
-327 │         localVault.accrue(BOB, 20, bytes32("kind"), bytes32("b"));
-    │                                    ━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/ProtocolControls.t.sol:327:53
-    │
-327 │         localVault.accrue(BOB, 20, bytes32("kind"), bytes32("b"));
-    │                                                     ━━━━━━━━━━━━
+401 │             abi.encodeWithSelector(DependencyCodeMissing.selector, bytes32("marketplace"), ALICE)
+    │                                                                    ━━━━━━━━━━━━━━━━━━━━━━
     │
     ├ note: consider disabling this lint if you're certain the cast is safe
     │       
@@ -621,35 +421,95 @@ warning[unsafe-typecast]: typecasts that can truncate values should be checked
     │       
     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
 
-warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ src/market/MarketVaultCoreV1.sol:489:62
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:318:37
     │
-489 │         if (marketState != ProtocolTypes.MarketState.OPEN || block.timestamp >= closeAt) {
-    │                                                              ━━━━━━━━━━━━━━━━━━━━━━━━━━
+318 │         localVault.accrue(ALICE, 1, bytes32("kind"), bytes32("ref"));
+    │                                     ━━━━━━━━━━━━━━━
     │
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
-
-warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ src/market/MarketVaultCoreV1.sol:495:13
-    │
-495 │         if (block.timestamp > deadline) revert DeadlineExpired(deadline, block.timestamp);
-    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━
-    │
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
-
-warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ src/marketplace/FixedPriceMarketplaceV1.sol:155:13
-    │
-155 │         if (expiresAt <= block.timestamp) revert InvalidListingExpiry();
-    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    │
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
 
 warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/FactoryValidation.t.sol:401:68
+    ╭▸ test/unit/ProtocolControls.t.sol:318:54
     │
-401 │             abi.encodeWithSelector(DependencyCodeMissing.selector, bytes32("marketplace"), ALICE)
-    │                                                                    ━━━━━━━━━━━━━━━━━━━━━━
+318 │         localVault.accrue(ALICE, 1, bytes32("kind"), bytes32("ref"));
+    │                                                      ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:320:42
+    │
+320 │         localVault.accrue(address(0), 1, bytes32("kind"), bytes32("ref"));
+    │                                          ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:320:59
+    │
+320 │         localVault.accrue(address(0), 1, bytes32("kind"), bytes32("ref"));
+    │                                                           ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:321:37
+    │
+321 │         localVault.accrue(ALICE, 0, bytes32("kind"), bytes32("ref"));
+    │                                     ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:321:54
+    │
+321 │         localVault.accrue(ALICE, 0, bytes32("kind"), bytes32("ref"));
+    │                                                      ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:323:38
+    │
+323 │         localVault.accrue(ALICE, 10, bytes32("kind"), bytes32("ref"));
+    │                                      ━━━━━━━━━━━━━━━
     │
     ├ note: consider disabling this lint if you're certain the cast is safe
     │       
@@ -660,26 +520,84 @@ warning[unsafe-typecast]: typecasts that can truncate values should be checked
     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
 
 warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ src/market/MarketVaultCoreV1.sol:568:13
-    │
-568 │         if (block.timestamp < closeAt) revert MarketNotClosed();
-    │             ━━━━━━━━━━━━━━━━━━━━━━━━━
-    │
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
-
-warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ src/market/MarketVaultCoreV1.sol:569:13
-    │
-569 │         if (block.timestamp >= resolutionDeadline()) revert ResolutionWindowExpired();
-    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    │
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+   ╭▸ src/core/EmergencyControllerV1.sol:63:13
+   │
+63 │         if (block.timestamp < pauseExpiresAt) revert EmergencyPauseStillActive(pauseExpiresAt);
+   │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
 
 warning[unsafe-typecast]: typecasts that can truncate values should be checked
     ╭▸ test/unit/FactoryValidation.t.sol:430:17
     │
 430 │                 bytes32("marketplace.emergency"),
     │                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/core/MarketFactoryV1.sol:344:13
+    │
+344 │             params.closeAt < block.timestamp + 5 minutes
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/core/MarketFactoryV1.sol:345:20
+    │
+345 │                 || params.closeAt > block.timestamp + 90 days
+    │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/core/MarketFactoryV1.sol:346:20
+    │
+346 │                 || params.earlyBirdStart < block.timestamp
+    │                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+   ╭▸ test/unit/BondEscrowMutationResistance.t.sol:39:33
+   │
+39 │                 callbackError = bytes4(result);
+   │                                 ━━━━━━━━━━━━━━
+   │
+   ├ note: consider disabling this lint if you're certain the cast is safe
+   │       
+   │       // casting to 'bytes4' is safe because [explain why]
+   │       // forge-lint: disable-next-line(unsafe-typecast)
+   │       
+   │       
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/FactoryValidation.t.sol:463:48
+    │
+463 │                 InvalidConfiguration.selector, bytes32("feeVault.factoryAccruer")
+    │                                                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/FactoryValidation.t.sol:472:48
+    │
+472 │                 InvalidConfiguration.selector, bytes32("feeVault.marketplaceAccruer")
+    │                                                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     │
     ├ note: consider disabling this lint if you're certain the cast is safe
     │       
@@ -706,6 +624,36 @@ warning[block-timestamp]: usage of `block.timestamp` in a comparison may be mani
     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
 
 warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ test/security/EchidnaMarketAccounting.sol:171:51
+    │
+171 │         if (block.timestamp < market.closeAt() || block.timestamp >= market.resolutionDeadline()) {
+    │                                                   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ test/security/EchidnaMarketAccounting.sol:185:36
+    │
+185 │         if (market.isTerminal() || block.timestamp < market.resolutionDeadline()) return;
+    │                                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/security/EchidnaMarketAccounting.sol:135:65
+    │
+135 │         market = MarketVaultCoreV1(factory.createMarket(params, bytes32("security-campaign")));
+    │                                                                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
     ╭▸ src/marketplace/FixedPriceMarketplaceV1.sol:307:13
     │
 307 │         if (block.timestamp > deadline) revert DeadlineExpired(deadline, block.timestamp);
@@ -721,19 +669,155 @@ warning[block-timestamp]: usage of `block.timestamp` in a comparison may be mani
     │
     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
 
-warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ test/security/EchidnaMarketAccounting.sol:171:51
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/MarketplaceEdges.t.sol:154:13
     │
-171 │         if (block.timestamp < market.closeAt() || block.timestamp >= market.resolutionDeadline()) {
-    │                                                   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+154 │             bytes32("missing"), 1e6, 1e6, 1e6, uint64(block.timestamp + 1 hours)
+    │             ━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/Permit2Flows.t.sol:123:65
+    │
+123 │         market = MarketVaultCoreV1(factory.createMarket(params, bytes32("permit2")));
+    │                                                                 ━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+   ╭▸ test/invariant/MarketAccounting.invariant.t.sol:41:36
+   │
+41 │         if (market.isTerminal() || block.timestamp >= market.closeAt()) return;
+   │                                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   │
+   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:323:55
+    │
+323 │         localVault.accrue(ALICE, 10, bytes32("kind"), bytes32("ref"));
+    │                                                       ━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:326:38
+    │
+326 │         localVault.accrue(ALICE, 10, bytes32("kind"), bytes32("a"));
+    │                                      ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:326:55
+    │
+326 │         localVault.accrue(ALICE, 10, bytes32("kind"), bytes32("a"));
+    │                                                       ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:328:36
+    │
+328 │         localVault.accrue(BOB, 20, bytes32("kind"), bytes32("b"));
+    │                                    ━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/unit/ProtocolControls.t.sol:328:53
+    │
+328 │         localVault.accrue(BOB, 20, bytes32("kind"), bytes32("b"));
+    │                                                     ━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:489:62
+    │
+489 │         if (marketState != ProtocolTypes.MarketState.OPEN || block.timestamp >= closeAt) {
+    │                                                              ━━━━━━━━━━━━━━━━━━━━━━━━━━
     │
     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
 
 warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
-    ╭▸ test/security/EchidnaMarketAccounting.sol:185:36
+    ╭▸ src/market/MarketVaultCoreV1.sol:495:13
     │
-185 │         if (market.isTerminal() || block.timestamp < market.resolutionDeadline()) return;
-    │                                    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+495 │         if (block.timestamp > deadline) revert DeadlineExpired(deadline, block.timestamp);
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[unsafe-typecast]: typecasts that can truncate values should be checked
+    ╭▸ test/invariant/MarketAccounting.invariant.t.sol:159:65
+    │
+159 │         market = MarketVaultCoreV1(factory.createMarket(params, bytes32("invariant")));
+    │                                                                 ━━━━━━━━━━━━━━━━━━━━
+    │
+    ├ note: consider disabling this lint if you're certain the cast is safe
+    │       
+    │       // casting to 'bytes32' is safe because [explain why]
+    │       // forge-lint: disable-next-line(unsafe-typecast)
+    │       
+    │       
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:568:13
+    │
+568 │         if (block.timestamp < closeAt) revert MarketNotClosed();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━
+    │
+    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
+
+warning[block-timestamp]: usage of `block.timestamp` in a comparison may be manipulated by validators
+    ╭▸ src/market/MarketVaultCoreV1.sol:569:13
+    │
+569 │         if (block.timestamp >= resolutionDeadline()) revert ResolutionWindowExpired();
+    │             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     │
     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
 
@@ -753,77 +837,7 @@ warning[block-timestamp]: usage of `block.timestamp` in a comparison may be mani
     │
     ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#block-timestamp
 
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/FactoryValidation.t.sol:463:48
-    │
-463 │                 InvalidConfiguration.selector, bytes32("feeVault.factoryAccruer")
-    │                                                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/security/EchidnaMarketAccounting.sol:135:65
-    │
-135 │         market = MarketVaultCoreV1(factory.createMarket(params, bytes32("security-campaign")));
-    │                                                                 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-   ╭▸ test/unit/FeeVaultMutationResistance.t.sol:37:33
-   │
-37 │                 callbackError = bytes4(result);
-   │                                 ━━━━━━━━━━━━━━
-   │
-   ├ note: consider disabling this lint if you're certain the cast is safe
-   │       
-   │       // casting to 'bytes4' is safe because [explain why]
-   │       // forge-lint: disable-next-line(unsafe-typecast)
-   │       
-   │       
-   ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/MarketplaceEdges.t.sol:154:13
-    │
-154 │             bytes32("missing"), 1e6, 1e6, 1e6, uint64(block.timestamp + 1 hours)
-    │             ━━━━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
-warning[unsafe-typecast]: typecasts that can truncate values should be checked
-    ╭▸ test/unit/FactoryValidation.t.sol:472:48
-    │
-472 │                 InvalidConfiguration.selector, bytes32("feeVault.marketplaceAccruer")
-    │                                                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    │
-    ├ note: consider disabling this lint if you're certain the cast is safe
-    │       
-    │       // casting to 'bytes32' is safe because [explain why]
-    │       // forge-lint: disable-next-line(unsafe-typecast)
-    │       
-    │       
-    ╰ help: https://book.getfoundry.sh/reference/forge/forge-lint#unsafe-typecast
-
 Compiling 14 files with Solc 0.8.17
-Solc 0.8.17 finished in 4.12s
+Solc 0.8.17 finished in 3.00s
 Compiler run successful!
-2026-08-24T11:21:31.405604Z  WARN evm::traces: failed to flush signature cache err=failed to create file "/Users/undef1ned/.foundry/cache/signatures": Operation not permitted (os error 1)
+2026-09-01T10:11:51.093616Z  WARN evm::traces: failed to flush signature cache err=failed to create file "/Users/undef1ned/.foundry/cache/signatures": Operation not permitted (os error 1)

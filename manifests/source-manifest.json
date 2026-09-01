@@ -186,7 +186,7 @@
     },
     {
       "path": "examples/react/src/BuyPanel.tsx",
-      "sha256": "2951f68b61abedf964a0431493e529777515d0149799afa0c03d0c114468061d"
+      "sha256": "dd2b9eb1ecc335adda388a7f46548f500af1c33cfc4e769798670bc4bcd2a84b"
     },
     {
       "path": "examples/react/src/ClaimsPanel.tsx",
@@ -202,15 +202,19 @@
     },
     {
       "path": "examples/react/src/MarketplacePanel.tsx",
-      "sha256": "92427c0360c8eb07ea14573041e8296cf2cdd93c45c97795f88261fd2621a4d4"
+      "sha256": "88505001633ba56b89527baaa20b08b4d9deaee6e1c1de1953c3c85ac5cff212"
     },
     {
       "path": "examples/react/src/PrimaryPaymentPanel.tsx",
-      "sha256": "ce2e80b6fafa84de99c95c2ee1436ca571b077c7ece1d6c3c351263b041a8241"
+      "sha256": "1aa206010498cb3c1c6e220f88787bf4040f037383ac0e598544db3c0f948702"
     },
     {
       "path": "examples/react/src/settlementEvidence.ts",
       "sha256": "00b65d162b52bae7779d23c3c03ed2e3f93514037562c3f435a67cd2042f3312"
+    },
+    {
+      "path": "examples/react/src/transactionTiming.ts",
+      "sha256": "a9230c0c7c974bb6170eb3d73bb919a75f4d468de2045608f33f6ba0d0e2cb07"
     },
     {
       "path": "examples/react/src/useTransactionAction.ts",
@@ -238,15 +242,19 @@
     },
     {
       "path": "examples/web-demo/src/App.tsx",
-      "sha256": "bee6312b2122452ee000f8a577bdc6de191086d241d2c017ddd52477830deb68"
+      "sha256": "897b8eb117f3d43476fc62bc0bc2b63ef3a192bca699edddafa9de16e41a0772"
     },
     {
       "path": "examples/web-demo/src/CreateMarketForm.tsx",
-      "sha256": "4f32154929189f45ff390eafe42c8a538895050940e6d7132f7c4814598f73c5"
+      "sha256": "0b3431c771be536a8a4e2c9ce47cce86882b9669876b711b22e03ca0b3a9bf98"
     },
     {
       "path": "examples/web-demo/src/config.ts",
       "sha256": "1c9538516da9be106c7b5b634d19dbaf00f77c5ba05f79535efd6977cc9c94c4"
+    },
+    {
+      "path": "examples/web-demo/src/create-market-times.ts",
+      "sha256": "c2a72e484f21a81f790e2b50f5174e2396b56deacc03d4ff864e6bcce3845243"
     },
     {
       "path": "examples/web-demo/src/generated-validators.d.ts",
@@ -262,7 +270,7 @@
     },
     {
       "path": "examples/web-demo/src/protocol.ts",
-      "sha256": "043eab401e44887c4de80cbd1c0c4df4d7f25d5176a8cebbdfb065f1c034fb4d"
+      "sha256": "3b8822d0b49853b7c15ce34f79add1d8b7971f64014f9761f468ad6219844568"
     },
     {
       "path": "examples/web-demo/src/runtime-config.schema.json",
@@ -270,7 +278,7 @@
     },
     {
       "path": "examples/web-demo/src/sandbox-token.ts",
-      "sha256": "8f7d9bfc10e5ca5bfe5aa90415505ee16b99a377b97b570517aaf444d12b8725"
+      "sha256": "67912de133e18b6c81eb8f076202f010d97fe42b5da0970a096adbf898724fed"
     },
     {
       "path": "examples/web-demo/src/styles.css",
@@ -286,27 +294,39 @@
     },
     {
       "path": "examples/web-demo/src/wallet.ts",
-      "sha256": "b5fd0a987253c2041f6eaede12fe3bfa559c91f54f1c50df538ab74d37f43e23"
+      "sha256": "520a2962318912fa2c0a9e0cc7f84e5f690f5c80a80bb83697e97779b1f621cb"
     },
     {
       "path": "examples/web-demo/test/config.test.ts",
       "sha256": "a59f612b8e706d6343b94ce9141eb5d9f3b2f24b922eebf11744bed9dc1ccfed"
     },
     {
+      "path": "examples/web-demo/test/create-market-times.test.ts",
+      "sha256": "94a7a5800d3076f737d7289964021dc1eaa524c68f04d68ef2b70fe2c06973dc"
+    },
+    {
       "path": "examples/web-demo/test/render.test.tsx",
-      "sha256": "0a4e44727db7c6a9ac5574139cfeb75d069efb3b676a8eb5eb5847575144eafc"
+      "sha256": "9c474955eb9ac57390dbc84d6f553ebeea5724e97e3f179957caf547f42a7360"
     },
     {
       "path": "examples/web-demo/test/sandbox-token.test.ts",
-      "sha256": "3ed3b4a3f0db3d7f15a79f81b28e9a1e97abf63e9521ea8a24d9b64dd586badb"
+      "sha256": "aa40741135d885f4fd0c53b94b5823c6e78b63e18e44e7c628ce0b7388f86524"
     },
     {
       "path": "examples/web-demo/test/security.test.ts",
       "sha256": "084dfa4bdc64aa6f93357c0284260b545342e87273d3f110ddac565a8bfb7288"
     },
     {
+      "path": "examples/web-demo/test/transaction-timing.test.ts",
+      "sha256": "c62a8d2470af3e39e5ce950248fe904aa10ee98ab4a22de026270d4a2c746fd6"
+    },
+    {
       "path": "examples/web-demo/test/trust.test.ts",
       "sha256": "6bf30f5a3ba7ec21ac8849dd132fc1678591cfd04fdd1199d91356c15bb452ea"
+    },
+    {
+      "path": "examples/web-demo/test/wallet.test.ts",
+      "sha256": "98774d2e3723eca735114d785aac0dcf50b2e7624f8cdd191ec9a5a938c72d50"
     },
     {
       "path": "examples/web-demo/vite.config.ts",
@@ -718,11 +738,11 @@
     },
     {
       "path": "offchain/sdk/src/client.ts",
-      "sha256": "6f4af735b16c8e13783e5febd76810ae551da40d7e3e30870b221c4f05ea30e9"
+      "sha256": "7f6f5b26793ed57e0fc98dc70eecc37b1ab7e052e9c2adb281895d457d83011f"
     },
     {
       "path": "offchain/sdk/src/errors.ts",
-      "sha256": "e5ead73de6ca3edadbd0a33c6c46524c0c34ca5ab2031f5c7fdd9aa482e8fe12"
+      "sha256": "5010a92cb29f4aaed51b90d00ecf572e3b01852d285733a1a978f5011e1cf118"
     },
     {
       "path": "offchain/sdk/src/evidence.ts",
@@ -730,7 +750,7 @@
     },
     {
       "path": "offchain/sdk/src/index.ts",
-      "sha256": "e66a782ffe03bab9ad26566ef8ef4db2c81a44395011b3cb70e5a9a487eacaa6"
+      "sha256": "f6221659356e61b0119de2b3cd0e94d6cd5fb7931df6e6939d83eef13276d196"
     },
     {
       "path": "offchain/sdk/src/market-rules.ts",
@@ -743,6 +763,10 @@
     {
       "path": "offchain/sdk/src/schemas.ts",
       "sha256": "03a7d37ef36072212c7b93a668cf4191a515dcfbcff979f1ac44cbe4e47443eb"
+    },
+    {
+      "path": "offchain/sdk/src/transaction-policy.ts",
+      "sha256": "116e3014b0c3b73bbf36e9aa0de9520eb86aa60e4db7c117ffb4868b79cccbb2"
     },
     {
       "path": "offchain/sdk/src/units.ts",
@@ -758,11 +782,11 @@
     },
     {
       "path": "offchain/sdk/test/client.test.ts",
-      "sha256": "0696e3fb3a3c9d0fb91073544962e2dd1838e5717397994ca055788b76d9e945"
+      "sha256": "2fe5a97d7112cb2cde2e7569a25dccae788259d6b9657ec9c4d124e0e242c69c"
     },
     {
       "path": "offchain/sdk/test/errors.test.ts",
-      "sha256": "c49ab941226ba549818325cac1e071e098c4a01e35da52972441bd74538aa02d"
+      "sha256": "3a865b0a1e4e04eefdd51e4dd51ea3cdb2ee6a50732b9529aa592c0e7fb7be76"
     },
     {
       "path": "offchain/sdk/test/evidence.test.ts",
@@ -775,6 +799,10 @@
     {
       "path": "offchain/sdk/test/permit2.test.ts",
       "sha256": "c8d66664087ea7500ecb894add9b545a1c7cad036906e0787a9e7de8804c100b"
+    },
+    {
+      "path": "offchain/sdk/test/transaction-policy.test.ts",
+      "sha256": "7ac023933019ca0724ffed2cef82f4b493a68f59af408c4c481e5e970d92de2c"
     },
     {
       "path": "offchain/sdk/test/units.test.ts",
@@ -850,7 +878,7 @@
     },
     {
       "path": "script/DeployArbitrumSepolia.s.sol",
-      "sha256": "1a8053ae5d8d9b8e346e17eb1054b53cf7d1d06d2d3d1a5ab4d80afe394b80d0"
+      "sha256": "13bb138967e6c50da5f89feba09ded6a4cdab20f16d50ea9e75c5fcb954e06b9"
     },
     {
       "path": "script/FinalizeBootstrap.s.sol",
@@ -1541,6 +1569,10 @@
       "sha256": "60a6382c1ec980413c5552bfa01df9ca590b6327d7b3c03a0a3ad0d245f64040"
     },
     {
+      "path": "test/unit/BondEscrowMutationResistance.t.sol",
+      "sha256": "4c3e933e874db1ee4874fc52ac9b59e7bdc2f88c80b1469fe502f745068e9f7e"
+    },
+    {
       "path": "test/unit/CoverageCompleteness.t.sol",
       "sha256": "faa8126a88665cc946e71024fa6e71596f93f39f59b3d514ea2203184cf713d0"
     },
@@ -1578,7 +1610,7 @@
     },
     {
       "path": "test/unit/ProtocolControls.t.sol",
-      "sha256": "0212da914b02a026ef0318efa01394f9c241fb69e9419b987e7968246eb34669"
+      "sha256": "fee828ff319eb6af2760d6e605d54cf40ccdb49659024183400e7202c1a620be"
     },
     {
       "path": "test/unit/ProtocolFlows.t.sol",

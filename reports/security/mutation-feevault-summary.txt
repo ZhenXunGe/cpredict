@@ -2,5 +2,4 @@ compiled mutants: 135
 caught mutants: 133
 mutation score: 98.52%
 bounded mutation gate: PASS (>=90%)
-tool lifecycle gate: FAIL (post-report timeout; exit 143)
-evidence finalization: parser-only replay of retained canonical log; mutator not rerun
+tool lifecycle gate: PASS

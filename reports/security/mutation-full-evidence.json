@@ -6,19 +6,19 @@
     "name": "slither-mutate",
     "version": "0.11.6",
     "artifactSha256": "1a60e3eb9e7e7b5697a19cc3a59fddd0e22a5e4540aee5c95908f1e1d5c412ec",
-    "rawExitCode": 255,
+    "rawExitCode": 143,
     "acceptedExitCodes": [
       0
     ]
   },
   "validatorExitCode": 1,
   "platform": "darwin-arm64",
-  "sourceSnapshotSha256": "9cb9008744984309fa4bc3d73eb950da3328f67af3cd9e69c3e39e0cf399164c",
+  "sourceSnapshotSha256": "653092d95cb3438305a374a44124e7f75eba21590b200202cc7d0d8705fb67b2",
   "inputs": [
     {
       "path": "foundry.toml",
-      "bytes": 1164,
-      "sha256": "006e3f5e2e36ca80b04bb25568f4c2b6d07806ac81de29b4451d1eb2d202b539"
+      "bytes": 1176,
+      "sha256": "556972e7d054b72b85d1cdefaa245e1400c7d85527f4dd828b630f940c996ff2"
     },
     {
       "path": "manifests/security-tools.lock",
@@ -37,28 +37,38 @@
     },
     {
       "path": "scripts/security/parse-mutation-summary.mjs",
-      "bytes": 4383,
-      "sha256": "5c0714155e3bd316c508d3efea065ea44eee9c58009469087306a0057e779ac9"
+      "bytes": 7531,
+      "sha256": "4843442a5b7036ef20597e92ca3c391df96de34210fb8a9a7e4d263f9c631b5f"
     },
     {
       "path": "scripts/security/parse-mutation-summary.test.mjs",
-      "bytes": 3385,
-      "sha256": "f240700d03a4c06878f984e76645236016b73e808f00930c772d348bd015c8c4"
+      "bytes": 6445,
+      "sha256": "c7a3428de82ca525f84124e9ed023a796eef198b0e71e715362601a1e336aa22"
+    },
+    {
+      "path": "scripts/security/run-mutation-common.sh",
+      "bytes": 5391,
+      "sha256": "ddd9547a55d4db0c00d043edd2f13972a9c9b3a82c39643cad92e497ba5f7ca0"
     },
     {
       "path": "scripts/security/run-mutation-full.sh",
-      "bytes": 9881,
-      "sha256": "e78095b2e79d57c0e3fafd00d57b8bee530ee0e758be76b2a82ef12f00ecfdd7"
+      "bytes": 12361,
+      "sha256": "5f9ab439d94da4d3ef07f3609336a770e96e9c451e7d6a9e6f1f79641a832ad8"
+    },
+    {
+      "path": "scripts/security/run-mutation-lifecycle.test.sh",
+      "bytes": 2258,
+      "sha256": "db57a6c19ec3d34c40509b743602ab367be340b25fbe02d6ae73474b4b1d04a5"
     },
     {
       "path": "scripts/security/verify-gate-evidence.mjs",
-      "bytes": 4400,
-      "sha256": "62533fa6fc77ae42c74081a835264339e61c4a390b189fb123bac466defc10e9"
+      "bytes": 4581,
+      "sha256": "6b7670b11b5791a38823497c1f17e6e5368f55a03bcea37e7a7bb9c719cac10f"
     },
     {
       "path": "scripts/security/verify-python-record.mjs",
-      "bytes": 2098,
-      "sha256": "bbf7122c87a17f819012cebd1cacb28b268dda794680880878849bb85b46eb6b"
+      "bytes": 2162,
+      "sha256": "6aa789c76fc14fc2e6be5c53686d187e3c71e6880488e6997fe022fe08882751"
     },
     {
       "path": "scripts/security/verify-slither-install.sh",
@@ -67,8 +77,8 @@
     },
     {
       "path": "scripts/security/write-gate-evidence.mjs",
-      "bytes": 6272,
-      "sha256": "73aeb00b53374c52fd2150d0a875e87408eeff2c29128328dddd75aa44fcf7c0"
+      "bytes": 6585,
+      "sha256": "351512a44d982ac6b07e86d15d854a09dc5035c96d7e6c2c8bb930e2a88200b3"
     },
     {
       "path": "scripts/test-all.sh",
@@ -191,6 +201,11 @@
       "sha256": "e0bcad2a5c93764b1bd0c4053079ec7c0a07ee8ae79b8894ae73d9e882ddb8a6"
     },
     {
+      "path": "src/testnet/CpredictSandboxToken.sol",
+      "bytes": 1138,
+      "sha256": "3d1034f7ff8ae90f03f7fa19d49de4a9df7a40db9045f7b2879e0efb0d47210f"
+    },
+    {
       "path": "test/gas/ProtocolGasGates.t.sol",
       "bytes": 10029,
       "sha256": "481a84f3851b24612969dd1f6aa1db01f5f2eed915fc43cf41248ad5c0a5fb71"
@@ -212,8 +227,8 @@
     },
     {
       "path": "test/security/EchidnaMarketAccounting.sol",
-      "bytes": 11850,
-      "sha256": "1aec72aa46304ae0d839f4f719f4bc26ad97e729e8f1ccc0c8f6e0b74ff92241"
+      "bytes": 12035,
+      "sha256": "78a6b21f09a9da77dadb95451abd54cd1aa6a1661a59e9aa6a95062f7b8a25c3"
     },
     {
       "path": "test/security/ProtocolMath.smt.sol",
@@ -221,9 +236,19 @@
       "sha256": "60a6382c1ec980413c5552bfa01df9ca590b6327d7b3c03a0a3ad0d245f64040"
     },
     {
+      "path": "test/unit/BondEscrowMutationResistance.t.sol",
+      "bytes": 4175,
+      "sha256": "67c1633d33ed8ca6b68272d61f037e82de184f1ef7cd94adcade996c417cf86d"
+    },
+    {
       "path": "test/unit/CoverageCompleteness.t.sol",
       "bytes": 1425,
       "sha256": "faa8126a88665cc946e71024fa6e71596f93f39f59b3d514ea2203184cf713d0"
+    },
+    {
+      "path": "test/unit/CpredictSandboxToken.t.sol",
+      "bytes": 1456,
+      "sha256": "07400bdffe9118a388394c3f4ef3eea2c27d3fe4ba2c73af8d62868a98143a2b"
     },
     {
       "path": "test/unit/FactoryValidation.t.sol",
@@ -262,8 +287,8 @@
     },
     {
       "path": "test/unit/ProtocolControls.t.sol",
-      "bytes": 19530,
-      "sha256": "0212da914b02a026ef0318efa01394f9c241fb69e9419b987e7968246eb34669"
+      "bytes": 19790,
+      "sha256": "fee828ff319eb6af2760d6e605d54cf40ccdb49659024183400e7202c1a620be"
     },
     {
       "path": "test/unit/ProtocolFlows.t.sol",
@@ -289,13 +314,13 @@
   "evidence": [
     {
       "path": "reports/security/mutation-full-summary.txt",
-      "bytes": 64,
-      "sha256": "a407b7474cfd44f4564c93b3851227152a5502ca5ce060df3ede9182dce1765a"
+      "bytes": 84,
+      "sha256": "498e691916980c346d16f4d10c3b72e5b97de09ec44fa471da3d2698c0bb0a3c"
     },
     {
       "path": "reports/security/mutation-full.log",
-      "bytes": 27538,
-      "sha256": "4a9e84711afd31d9a883e7cec6d4840c87a373294b37a8a8a1446520ac031af0"
+      "bytes": 135159,
+      "sha256": "e0b61286855d0c6c5f5cfc7f6014a13d12e45322c3692d5b5ee8d786097e5280"
     }
   ]
 }

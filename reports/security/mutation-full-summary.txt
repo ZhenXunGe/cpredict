@@ -1,1 +1,1 @@
-mutation gate: FAIL (runner exited before validated completion)
+mutation gate: FAIL (runner interrupted by INT after 2/12 contracts; tool exit 143)

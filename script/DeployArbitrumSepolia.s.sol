@@ -44,65 +44,25 @@ contract DeployArbitrumSepolia is Script {
         SponsorshipPaymasterV1 paymaster;
     }
 
+    struct DeploymentInputs {
+        address deployer;
+        address governanceSafe;
+        address emergencySafe;
+        address treasury;
+        address sponsorSigner;
+        bool sandboxTokenEnabled;
+    }
+
     function run() external returns (Deployment memory deployed) {
         require(block.chainid == ARBITRUM_SEPOLIA_CHAIN_ID, "wrong chain");
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-        address deployer = vm.addr(deployerKey);
-        address governanceSafe = vm.envAddress("GOVERNANCE_SAFE");
-        address emergencySafe = vm.envAddress("EMERGENCY_SAFE");
-        address treasury = vm.envAddress("PROTOCOL_TREASURY");
-        address sponsorSigner = vm.envAddress("SPONSOR_SIGNER");
-        bool sandboxTokenEnabled = vm.envOr("CPREDICT_SANDBOX_TOKEN_ENABLED", false);
-        address paymentToken = ARBITRUM_SEPOLIA_USDC;
-        address permit2 = CANONICAL_PERMIT2;
-        address entryPoint = ENTRY_POINT_V08;
-        require(permit2.code.length != 0, "Permit2 code missing");
-        require(entryPoint.code.length != 0, "EntryPoint code missing");
-        if (!sandboxTokenEnabled) {
-            require(paymentToken.code.length != 0, "USDC code missing");
-            require(IERC20Metadata(paymentToken).decimals() == 6, "USDC decimals mismatch");
-        }
-
-        address[] memory proposers = new address[](2);
-        proposers[0] = governanceSafe;
-        proposers[1] = deployer;
-        address[] memory executors = new address[](1);
-        executors[0] = address(0);
+        DeploymentInputs memory inputs = _loadDeploymentInputs(deployerKey);
+        _validateExternalDependencies(inputs.sandboxTokenEnabled);
 
         vm.startBroadcast(deployerKey);
-        if (sandboxTokenEnabled) {
-            deployed.sandboxToken = new CpredictSandboxToken();
-            paymentToken = address(deployed.sandboxToken);
-        }
-        deployed.timelock = new TimelockController(TIMELOCK_DELAY, proposers, executors, deployer);
-        address governance = address(deployed.timelock);
-        deployed.config = new ProtocolConfigV1(governance, paymentToken, treasury);
-        deployed.emergency = new EmergencyControllerV1(governance, emergencySafe);
-        deployed.guard = new LaunchExposureGuardV1(governance, INITIAL_EXPOSURE_CAP);
-        deployed.feeVault = new FeeVaultV1(governance, paymentToken);
-        deployed.bondEscrow = new BondEscrowV1(governance, paymentToken);
-        deployed.cloneImplementation = new CloneMarketVaultV1();
-        deployed.fullDeployer = new FullMarketDeployerV1(governance);
-        deployed.factory = _deployFactory(deployed, governance, permit2);
-        deployed.marketplace = new FixedPriceMarketplaceV1(
-            address(deployed.factory),
-            address(deployed.emergency),
-            address(deployed.feeVault),
-            paymentToken,
-            permit2
-        );
-        deployed.paymaster = new SponsorshipPaymasterV1(
-            governance,
-            address(deployed.emergency),
-            IEntryPoint(entryPoint),
-            sponsorSigner,
-            vm.envOr("PAYMASTER_MAX_COST_PER_OP", uint256(0.002 ether)),
-            vm.envOr("PAYMASTER_MAX_COST_PER_USER_DAY", uint256(0.02 ether)),
-            vm.envOr("PAYMASTER_MAX_COST_GLOBAL_DAY", uint256(0.5 ether))
-        );
+        deployed = _deployContracts(inputs);
 
-        bytes32 actualFactoryFingerprint =
-            deployed.factory.dependencyFingerprintFor(address(deployed.marketplace));
+        bytes32 actualFactoryFingerprint = _factoryFingerprint(deployed);
         console2.log("CPREDICT_FACTORY_DEPENDENCY_FINGERPRINT");
         console2.logBytes32(actualFactoryFingerprint);
 
@@ -123,20 +83,81 @@ contract DeployArbitrumSepolia is Script {
 
         // A dry-run must never leave an address file that could be mistaken for broadcast evidence.
         if (vm.isContext(VmSafe.ForgeContext.ScriptBroadcast)) {
-            _writePendingManifest(
-                deployed,
-                governanceSafe,
-                emergencySafe,
-                deployer,
-                paymentToken,
-                sandboxTokenEnabled,
-                permit2,
-                entryPoint
-            );
+            _writePendingManifest(deployed, inputs);
         }
         console2.log("Timelock", address(deployed.timelock));
         console2.log("Factory", address(deployed.factory));
         console2.log("Bootstrap execute after", block.timestamp + TIMELOCK_DELAY);
+    }
+
+    function _loadDeploymentInputs(uint256 deployerKey)
+        internal
+        view
+        returns (DeploymentInputs memory inputs)
+    {
+        inputs.deployer = vm.addr(deployerKey);
+        inputs.governanceSafe = vm.envAddress("GOVERNANCE_SAFE");
+        inputs.emergencySafe = vm.envAddress("EMERGENCY_SAFE");
+        inputs.treasury = vm.envAddress("PROTOCOL_TREASURY");
+        inputs.sponsorSigner = vm.envAddress("SPONSOR_SIGNER");
+        inputs.sandboxTokenEnabled = vm.envOr("CPREDICT_SANDBOX_TOKEN_ENABLED", false);
+    }
+
+    function _validateExternalDependencies(bool sandboxTokenEnabled) internal view {
+        require(CANONICAL_PERMIT2.code.length != 0, "Permit2 code missing");
+        require(ENTRY_POINT_V08.code.length != 0, "EntryPoint code missing");
+        if (!sandboxTokenEnabled) {
+            require(ARBITRUM_SEPOLIA_USDC.code.length != 0, "USDC code missing");
+            require(IERC20Metadata(ARBITRUM_SEPOLIA_USDC).decimals() == 6, "USDC decimals mismatch");
+        }
+    }
+
+    function _deployContracts(DeploymentInputs memory inputs)
+        internal
+        returns (Deployment memory deployed)
+    {
+        address[] memory proposers = new address[](2);
+        proposers[0] = inputs.governanceSafe;
+        proposers[1] = inputs.deployer;
+        address[] memory executors = new address[](1);
+        executors[0] = address(0);
+
+        address paymentToken = ARBITRUM_SEPOLIA_USDC;
+        if (inputs.sandboxTokenEnabled) {
+            deployed.sandboxToken = new CpredictSandboxToken();
+            paymentToken = address(deployed.sandboxToken);
+        }
+        deployed.timelock =
+            new TimelockController(TIMELOCK_DELAY, proposers, executors, inputs.deployer);
+        address governance = address(deployed.timelock);
+        deployed.config = new ProtocolConfigV1(governance, paymentToken, inputs.treasury);
+        deployed.emergency = new EmergencyControllerV1(governance, inputs.emergencySafe);
+        deployed.guard = new LaunchExposureGuardV1(governance, INITIAL_EXPOSURE_CAP);
+        deployed.feeVault = new FeeVaultV1(governance, paymentToken);
+        deployed.bondEscrow = new BondEscrowV1(governance, paymentToken);
+        deployed.cloneImplementation = new CloneMarketVaultV1();
+        deployed.fullDeployer = new FullMarketDeployerV1(governance);
+        deployed.factory = _deployFactory(deployed, governance, CANONICAL_PERMIT2);
+        deployed.marketplace = new FixedPriceMarketplaceV1(
+            address(deployed.factory),
+            address(deployed.emergency),
+            address(deployed.feeVault),
+            paymentToken,
+            CANONICAL_PERMIT2
+        );
+        deployed.paymaster = new SponsorshipPaymasterV1(
+            governance,
+            address(deployed.emergency),
+            IEntryPoint(ENTRY_POINT_V08),
+            inputs.sponsorSigner,
+            vm.envOr("PAYMASTER_MAX_COST_PER_OP", uint256(0.002 ether)),
+            vm.envOr("PAYMASTER_MAX_COST_PER_USER_DAY", uint256(0.02 ether)),
+            vm.envOr("PAYMASTER_MAX_COST_GLOBAL_DAY", uint256(0.5 ether))
+        );
+    }
+
+    function _factoryFingerprint(Deployment memory deployed) internal view returns (bytes32) {
+        return deployed.factory.dependencyFingerprintFor(address(deployed.marketplace));
     }
 
     function _scheduleBootstrap(Deployment memory deployed, bytes32 actualFactoryFingerprint)
@@ -196,25 +217,22 @@ contract DeployArbitrumSepolia is Script {
         payloads[5] = abi.encodeCall(MarketFactoryV1.activate, (expectedFactoryFingerprint));
     }
 
-    function _writePendingManifest(
-        Deployment memory deployed,
-        address governanceSafe,
-        address emergencySafe,
-        address deployer,
-        address paymentToken,
-        bool sandboxTokenEnabled,
-        address permit2,
-        address entryPoint
-    ) internal {
+    function _writePendingManifest(Deployment memory deployed, DeploymentInputs memory inputs)
+        internal
+    {
+        address paymentToken =
+            inputs.sandboxTokenEnabled ? address(deployed.sandboxToken) : ARBITRUM_SEPOLIA_USDC;
         string memory root = "cpredict-v1-arbitrum-sepolia";
         vm.serializeUint(root, "chainId", block.chainid);
         vm.serializeString(root, "status", "BOOTSTRAP_SCHEDULED_NOT_FINAL");
         vm.serializeString(
-            root, "paymentTokenKind", sandboxTokenEnabled ? "sandbox-test-token" : "canonical-usdc"
+            root,
+            "paymentTokenKind",
+            inputs.sandboxTokenEnabled ? "sandbox-test-token" : "canonical-usdc"
         );
-        vm.serializeAddress(root, "temporaryAdmin", deployer);
-        vm.serializeAddress(root, "governanceSafe", governanceSafe);
-        vm.serializeAddress(root, "emergencySafe", emergencySafe);
+        vm.serializeAddress(root, "temporaryAdmin", inputs.deployer);
+        vm.serializeAddress(root, "governanceSafe", inputs.governanceSafe);
+        vm.serializeAddress(root, "emergencySafe", inputs.emergencySafe);
         vm.serializeAddress(root, "protocolTreasury", deployed.config.protocolTreasury());
         vm.serializeAddress(root, "sponsorSigner", deployed.paymaster.sponsorSigner());
         vm.serializeUint(root, "paymasterPolicyVersion", deployed.paymaster.policyVersion());
@@ -248,8 +266,8 @@ contract DeployArbitrumSepolia is Script {
         );
         vm.serializeAddress(root, "paymaster", address(deployed.paymaster));
         vm.serializeAddress(root, "usdc", paymentToken);
-        vm.serializeAddress(root, "permit2", permit2);
-        string memory json = vm.serializeAddress(root, "entryPoint", entryPoint);
+        vm.serializeAddress(root, "permit2", CANONICAL_PERMIT2);
+        string memory json = vm.serializeAddress(root, "entryPoint", ENTRY_POINT_V08);
         vm.writeJson(json, "deployments/arbitrum-sepolia/pending.json");
     }
 }

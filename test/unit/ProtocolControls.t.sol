@@ -293,6 +293,7 @@ contract ExposureGuardControlsTest is Test {
 
 contract VaultControlComponentsTest is ProtocolTestBase {
     event EmptyTimeoutBondCredited(address indexed market, address indexed creator, uint256 amount);
+    event BondFundedToTimeoutMarket(address indexed market, uint256 amount);
 
     function testFeeVaultAuthorizationAccrualAndBothClaimPaths() public {
         FeeVaultV1 localVault = new FeeVaultV1(address(this), address(usdc));
@@ -385,6 +386,7 @@ contract VaultControlComponentsTest is ProtocolTestBase {
         vm.prank(CREATOR);
         localEscrow.claim();
         assertEq(usdc.balanceOf(CREATOR) - creatorBefore, 10);
+        assertEq(localEscrow.totalCredits(), 0);
         vm.expectRevert(NothingToClaim.selector);
         localEscrow.claimFor(CREATOR);
     }
@@ -397,7 +399,11 @@ contract VaultControlComponentsTest is ProtocolTestBase {
         localEscrow.lockBond(address(market), CREATOR, 12);
         market.setTotalPrincipal(1);
         market.setState(ProtocolTypes.MarketState.VOIDED_TIMEOUT);
+
+        vm.expectEmit(true, false, false, true, address(localEscrow));
+        emit BondFundedToTimeoutMarket(address(market), 12);
         localEscrow.settleBond(address(market));
+
         assertEq(market.funded(), 12);
         assertEq(usdc.balanceOf(address(market)), 12);
         assertEq(localEscrow.totalLocked(), 0);

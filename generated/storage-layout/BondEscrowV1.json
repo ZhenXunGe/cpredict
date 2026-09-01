@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 51320,
+      "astId": 13222,
       "contract": "src/core/BondEscrowV1.sol:BondEscrowV1",
       "label": "factory",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_address"
     },
     {
-      "astId": 51322,
+      "astId": 13224,
       "contract": "src/core/BondEscrowV1.sol:BondEscrowV1",
       "label": "totalLocked",
       "offset": 0,
@@ -17,7 +17,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 51324,
+      "astId": 13226,
       "contract": "src/core/BondEscrowV1.sol:BondEscrowV1",
       "label": "totalCredits",
       "offset": 0,
@@ -25,15 +25,15 @@
       "type": "t_uint256"
     },
     {
-      "astId": 51329,
+      "astId": 13231,
       "contract": "src/core/BondEscrowV1.sol:BondEscrowV1",
       "label": "bondOf",
       "offset": 0,
       "slot": "3",
-      "type": "t_mapping(t_address,t_struct(Bond)51313_storage)"
+      "type": "t_mapping(t_address,t_struct(Bond)13215_storage)"
     },
     {
-      "astId": 51333,
+      "astId": 13235,
       "contract": "src/core/BondEscrowV1.sol:BondEscrowV1",
       "label": "creditOf",
       "offset": 0,
@@ -52,12 +52,12 @@
       "label": "bool",
       "numberOfBytes": "1"
     },
-    "t_mapping(t_address,t_struct(Bond)51313_storage)": {
+    "t_mapping(t_address,t_struct(Bond)13215_storage)": {
       "encoding": "mapping",
       "key": "t_address",
       "label": "mapping(address => struct BondEscrowV1.Bond)",
       "numberOfBytes": "32",
-      "value": "t_struct(Bond)51313_storage"
+      "value": "t_struct(Bond)13215_storage"
     },
     "t_mapping(t_address,t_uint256)": {
       "encoding": "mapping",
@@ -66,13 +66,13 @@
       "numberOfBytes": "32",
       "value": "t_uint256"
     },
-    "t_struct(Bond)51313_storage": {
+    "t_struct(Bond)13215_storage": {
       "encoding": "inplace",
       "label": "struct BondEscrowV1.Bond",
       "numberOfBytes": "64",
       "members": [
         {
-          "astId": 51308,
+          "astId": 13210,
           "contract": "src/core/BondEscrowV1.sol:BondEscrowV1",
           "label": "creator",
           "offset": 0,
@@ -80,7 +80,7 @@
           "type": "t_address"
         },
         {
-          "astId": 51310,
+          "astId": 13212,
           "contract": "src/core/BondEscrowV1.sol:BondEscrowV1",
           "label": "amount",
           "offset": 0,
@@ -88,7 +88,7 @@
           "type": "t_uint128"
         },
         {
-          "astId": 51312,
+          "astId": 13214,
           "contract": "src/core/BondEscrowV1.sol:BondEscrowV1",
           "label": "settled",
           "offset": 16,

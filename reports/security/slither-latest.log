@@ -127,7 +127,7 @@ Detector: cyclomatic-complexity
 MarketFactoryV1._validate(ProtocolTypes.CreateMarketParams) (src/core/MarketFactoryV1.sol#327-381) has a high cyclomatic complexity (13).
 FixedPriceMarketplaceV1._prepareFill(bytes32,uint256,uint256,uint256,uint64) (src/marketplace/FixedPriceMarketplaceV1.sol#297-347) has a high cyclomatic complexity (13).
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
-. analyzed (66 contracts with 102 detectors), 25 result(s) found
-'forge clean' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.bGdVOf/repo)
+. analyzed (68 contracts with 102 detectors), 25 result(s) found
+'forge clean' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.MXOgtr/repo)
 'forge config --json' running
-'forge build --build-info --deny never --skip ./test/** ./script/** --force' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.bGdVOf/repo)
+'forge build --build-info --deny never --skip ./test/** ./script/** --force' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.MXOgtr/repo)

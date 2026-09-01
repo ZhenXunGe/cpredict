@@ -13,12 +13,12 @@
   },
   "validatorExitCode": 0,
   "platform": "darwin-arm64",
-  "sourceSnapshotSha256": "fe976ba5f7e4242dc9a3117d4f137085f3fa732a600aebd23ba6dc7135bf730e",
+  "sourceSnapshotSha256": "af1bc350a1c351dc4a6af366b057bd76192c9d10cb891a2189c3e5ed83f44912",
   "inputs": [
     {
       "path": "foundry.toml",
-      "bytes": 1164,
-      "sha256": "006e3f5e2e36ca80b04bb25568f4c2b6d07806ac81de29b4451d1eb2d202b539"
+      "bytes": 1176,
+      "sha256": "556972e7d054b72b85d1cdefaa245e1400c7d85527f4dd828b630f940c996ff2"
     },
     {
       "path": "remappings.txt",
@@ -32,18 +32,18 @@
     },
     {
       "path": "scripts/security/validate-gate-evidence.mjs",
-      "bytes": 31461,
-      "sha256": "f91b55ebe0eda11cff339300cfc169f586e559baa6c914aa4a634cb229dff413"
+      "bytes": 33279,
+      "sha256": "d6e26672346814e16299cbbb50a63ea99d5de4e384fbd272a1f843ee62cb3a8c"
     },
     {
       "path": "scripts/security/verify-gate-evidence.mjs",
-      "bytes": 4400,
-      "sha256": "62533fa6fc77ae42c74081a835264339e61c4a390b189fb123bac466defc10e9"
+      "bytes": 4581,
+      "sha256": "6b7670b11b5791a38823497c1f17e6e5368f55a03bcea37e7a7bb9c719cac10f"
     },
     {
       "path": "scripts/security/write-gate-evidence.mjs",
-      "bytes": 6272,
-      "sha256": "73aeb00b53374c52fd2150d0a875e87408eeff2c29128328dddd75aa44fcf7c0"
+      "bytes": 6585,
+      "sha256": "351512a44d982ac6b07e86d15d854a09dc5035c96d7e6c2c8bb930e2a88200b3"
     },
     {
       "path": "src/core/BondEscrowV1.sol",
@@ -159,13 +159,18 @@
       "path": "src/paymaster/SponsorshipPaymasterV1.sol",
       "bytes": 17346,
       "sha256": "e0bcad2a5c93764b1bd0c4053079ec7c0a07ee8ae79b8894ae73d9e882ddb8a6"
+    },
+    {
+      "path": "src/testnet/CpredictSandboxToken.sol",
+      "bytes": 1138,
+      "sha256": "3d1034f7ff8ae90f03f7fa19d49de4a9df7a40db9045f7b2879e0efb0d47210f"
     }
   ],
   "evidence": [
     {
       "path": "reports/security/aderyn-latest.log",
-      "bytes": 2008,
-      "sha256": "8a04c70bc01cd5c82732d4b5f9834e6d89f602fd0086037335c4a20f6f407697"
+      "bytes": 2042,
+      "sha256": "4d95976455b3647cbf215679385f2dbb61ae097d60a79f631055db5f3d4ae8fe"
     },
     {
       "path": "reports/security/aderyn-validator.log",
