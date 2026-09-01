@@ -110,7 +110,7 @@
     },
     {
       "path": "deploy/host/reverse-tunnel/macos-worker.sh.template",
-      "sha256": "274edcc9501817db1e2fc11812d70b10c862beb42627fbdb1bfdc369183609a3"
+      "sha256": "7f078271c1b1eb498e5700ea6cbb2f80bb6ae8f18186338bd42b62b68246928b"
     },
     {
       "path": "deploy/host/reverse-tunnel/sshd.conf.template",
@@ -1490,7 +1490,7 @@
     },
     {
       "path": "scripts/stack/render-reverse-tunnel.test.mjs",
-      "sha256": "03920862e954bd2be121f6c35f3ecb0d28412235fd6a2f14c61ef86e6774e0ec"
+      "sha256": "67e9a73bffbe7f2f574029994d0bbed41bbaecb2775b248f04b1ba63b815431e"
     },
     {
       "path": "scripts/stack/restore-drill.mjs",

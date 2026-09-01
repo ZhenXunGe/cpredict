@@ -9,6 +9,9 @@ key_path="$script_dir/id_ed25519"
 known_hosts_path="$script_dir/known_hosts"
 log_dir="$script_dir/logs"
 log_path="$log_dir/tunnel.log"
+tunnel_user="@@TUNNEL_USER@@"
+ssh_host="@@SSH_HOST@@"
+tunnel_target="${tunnel_user}@${ssh_host}"
 
 mkdir -p -m 0700 "$log_dir"
 if [[ -f "$log_path" ]] && [[ $(stat -f %z "$log_path") -gt 1048576 ]]; then
@@ -51,4 +54,4 @@ exec "$autossh_bin" -M 0 -NT -F /dev/null \
   -i "$key_path" \
   -p @@SSH_PORT@@ \
   -R 127.0.0.1:@@REMOTE_PORT@@:127.0.0.1:@@LOCAL_PORT@@ \
-  @@TUNNEL_USER@@@@SSH_HOST@@
+  "$tunnel_target"

@@ -167,6 +167,10 @@ test("rendered package constrains SSH, pins the host, persists launchd and verif
   assert.match(worker, /ServerAliveInterval=30/);
   assert.match(worker, /StrictHostKeyChecking=yes/);
   assert.match(worker, /-R 127\.0\.0\.1:4177:127\.0\.0\.1:4177/);
+  assert.match(worker, /tunnel_user="cpredict-tunnel"/);
+  assert.match(worker, /ssh_host="1\.1\.1\.1"/);
+  assert.match(worker, /tunnel_target="\$\{tunnel_user\}@\$\{ssh_host\}"/);
+  assert.match(worker, /\n  "\$tunnel_target"\n/);
   assert.match(plist, /<key>KeepAlive<\/key>[\s\S]*<true\/>/);
   assert.match(plist, /<key>RunAtLoad<\/key>[\s\S]*<true\/>/);
 
