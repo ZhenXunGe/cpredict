@@ -15,6 +15,12 @@ interface AbiFunction {
   outputs: readonly { type: string }[];
 }
 
+interface AbiError {
+  type: "error";
+  name: string;
+  inputs: readonly { type: string }[];
+}
+
 interface AbiEvent {
   type: "event";
   name: string;
@@ -34,6 +40,13 @@ describe("SDK ABI subsets", () => {
       "../../../generated/abi/FullMarketVaultV1.json",
     );
     expect(expectMissingEvents(marketVaultAbi, generated)).toEqual([]);
+  });
+
+  it("matches settlement error signatures in the generated Full vault ABI", () => {
+    const generated = loadErrorAbi(
+      "../../../generated/abi/FullMarketVaultV1.json",
+    );
+    expect(expectMissingErrors(marketVaultAbi, generated)).toEqual([]);
   });
 
   it("matches the generated Marketplace ABI", () => {
@@ -135,4 +148,34 @@ function eventSignature(item: AbiEvent): string {
     .map((input) => `${input.type}${input.indexed ? " indexed" : ""}`)
     .join(",");
   return `${item.name}(${inputs})`;
+}
+
+function loadErrorAbi(relativePath: string): AbiError[] {
+  const parsed = JSON.parse(
+    readFileSync(new URL(relativePath, import.meta.url), "utf8"),
+  ) as Array<{
+    type: string;
+    name?: string;
+    inputs?: readonly { type: string }[];
+  }>;
+  return parsed.filter((item): item is AbiError => item.type === "error");
+}
+
+function expectMissingErrors(
+  subset: readonly unknown[],
+  generated: readonly AbiError[],
+): string[] {
+  return subset
+    .filter(
+      (item): item is AbiError => (item as { type?: string }).type === "error",
+    )
+    .map(errorSignature)
+    .filter(
+      (candidate) =>
+        !generated.some((item) => errorSignature(item) === candidate),
+    );
+}
+
+function errorSignature(item: AbiError): string {
+  return `${item.name}(${item.inputs.map((input) => input.type).join(",")})`;
 }

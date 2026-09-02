@@ -307,6 +307,44 @@ export const marketVaultAbi = [
       { name: "reward", type: "uint256", indexed: false },
     ],
   },
+  { type: "error", name: "AlreadySettled", inputs: [] },
+  {
+    type: "error",
+    name: "Insolvent",
+    inputs: [
+      { name: "balance", type: "uint256" },
+      { name: "liabilities", type: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "InvalidOutcome",
+    inputs: [
+      { name: "outcomeId", type: "uint256" },
+      { name: "outcomeCount", type: "uint256" },
+    ],
+  },
+  { type: "error", name: "MarketNotClosed", inputs: [] },
+  { type: "error", name: "MarketNotOpen", inputs: [] },
+  { type: "error", name: "MarketTerminal", inputs: [] },
+  { type: "error", name: "NothingToClaim", inputs: [] },
+  {
+    type: "error",
+    name: "PauseActive",
+    inputs: [{ name: "flag", type: "uint256" }],
+  },
+  { type: "error", name: "ResolutionWindowExpired", inputs: [] },
+  { type: "error", name: "TimeoutNotReached", inputs: [] },
+  {
+    type: "error",
+    name: "Unauthorized",
+    inputs: [{ name: "caller", type: "address" }],
+  },
+  {
+    type: "error",
+    name: "WinningOutcomeHasNoSupply",
+    inputs: [{ name: "outcomeId", type: "uint256" }],
+  },
 ] as const;
 
 export const marketplaceAbi = [
