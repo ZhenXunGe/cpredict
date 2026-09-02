@@ -98,11 +98,11 @@ describe("React protocol call examples", () => {
       "Authorize exact payment and create immutable market",
     );
     expect(createHtml).toContain("Approve exact creation fee and bond");
-    expect(lifecycleHtml).toContain("unilateral and irreversible");
-    expect(lifecycleHtml).toContain("Evidence source URI");
-    expect(lifecycleHtml).toContain("exact canonical UTF-8 bytes");
-    expect(lifecycleHtml).toContain("does not upload evidence");
-    expect(lifecycleHtml).toContain("Permissionless timeout void");
+    expect(lifecycleHtml).toContain("单方面且不可逆");
+    expect(lifecycleHtml).toContain("证据来源 URI");
+    expect(lifecycleHtml).toContain("规范 UTF-8");
+    expect(lifecycleHtml).toContain("不会上传证据");
+    expect(lifecycleHtml).toContain("超时作废");
   });
 
   it("uploads exact canonical evidence bytes before returning the onchain hash", async () => {
@@ -160,15 +160,15 @@ describe("React protocol call examples", () => {
     const claimsHtml = renderToStaticMarkup(
       <ClaimsPanel client={client} vault={address} owner={address} />,
     );
-    expect(marketHtml).toContain("Approve share escrow separately");
-    expect(marketHtml).toContain("Authorize share escrow and create listing");
+    expect(marketHtml).toContain("单独授权份额托管");
+    expect(marketHtml).toContain("授权份额托管并创建挂单");
     expect(marketHtml).toContain(listingId);
-    expect(marketHtml).toContain("Fixed price");
+    expect(marketHtml).toContain("固定价");
     expect(marketHtml).toContain("0.9 USDC");
-    expect(marketHtml).toContain("Total: 1.8 USDC");
-    expect(marketHtml).toContain("Approve exact USDC for fill");
-    expect(marketHtml).toContain("Authorize exact USDC and fill");
-    expect(marketHtml).toContain("Cancel selected listing");
+    expect(marketHtml).toContain("合计：1.8 USDC");
+    expect(marketHtml).toContain("精确授权 USDC 用于成交");
+    expect(marketHtml).toContain("精确授权 USDC 并成交");
+    expect(marketHtml).toContain("取消所选挂单");
     expect(claimsHtml).toContain("Claim winnings");
     expect(claimsHtml).toContain("Refund principal");
     expect(claimsHtml).toContain("Claim timeout bond bonus");
@@ -187,18 +187,18 @@ describe("React protocol call examples", () => {
       observedAt: 1_800_000_000n,
     };
     expect(quoteFillFromChain(listing, address, 1_000_000n)).toBe(900_000n);
-    expect(() => quoteFillFromChain(
-      { ...listing, active: false },
-      address,
-      1_000_000n,
-    )).toThrow("no longer active");
-    expect(() => quoteFillFromChain(
-      { ...listing, observedAt: listing.expiresAt },
-      address,
-      1_000_000n,
-    )).toThrow("expired");
+    expect(() =>
+      quoteFillFromChain({ ...listing, active: false }, address, 1_000_000n),
+    ).toThrow("已失效");
+    expect(() =>
+      quoteFillFromChain(
+        { ...listing, observedAt: listing.expiresAt },
+        address,
+        1_000_000n,
+      ),
+    ).toThrow("已过期");
     expect(() => quoteFillFromChain(listing, address, 3_000_000n)).toThrow(
-      "exceed",
+      "超过",
     );
   });
 

@@ -15,10 +15,7 @@ import {
   authorizationRequired,
   authorizeThenExecute,
 } from "./authorizationFlow.js";
-import {
-  transactionDeadline,
-  unixTimeSeconds,
-} from "./transactionTiming.js";
+import { transactionDeadline, unixTimeSeconds } from "./transactionTiming.js";
 
 const LISTING_LIFETIME_SECONDS = 24n * 60n * 60n;
 
@@ -36,19 +33,16 @@ export function quoteFillFromChain(
   expectedVault: Address,
   desiredUnits: bigint,
 ): bigint {
-  if (!listing.active)
-    throw new Error("Selected listing is no longer active. Refresh active listings.");
+  if (!listing.active) throw new Error("所选挂单已失效，请刷新活跃挂单。");
   if (listing.vault.toLowerCase() !== expectedVault.toLowerCase())
-    throw new Error("Selected listing belongs to a different market.");
+    throw new Error("所选挂单不属于当前市场。");
   if (listing.observedAt >= listing.expiresAt)
-    throw new Error("Selected listing has expired. Refresh active listings.");
-  if (desiredUnits <= 0n)
-    throw new RangeError("Fill amount must be greater than zero.");
+    throw new Error("所选挂单已过期，请刷新活跃挂单。");
+  if (desiredUnits <= 0n) throw new RangeError("买入数量必须大于 0。");
   if (desiredUnits > listing.remainingUnits)
-    throw new Error("Requested shares exceed the listing's current remaining amount.");
+    throw new Error("买入份数超过挂单剩余数量。");
   const gross = (desiredUnits * listing.unitPrice) / SHARE_SCALE;
-  if (gross <= 0n)
-    throw new RangeError("Fill total must be greater than zero.");
+  if (gross <= 0n) throw new RangeError("成交总额必须大于 0。");
   return gross;
 }
 
@@ -172,7 +166,7 @@ export function MarketplacePanel(props: {
 
   async function freshFillQuote() {
     if (selectedListing === null)
-      throw new Error("Select an active listing before filling.");
+      throw new Error("请先选择一笔活跃挂单再买入。");
     const desiredUnits = parseShareUnits(fillAmount);
     const listing = await props.client.readListing(
       props.marketplace,
@@ -215,8 +209,7 @@ export function MarketplacePanel(props: {
         });
       },
     );
-    const remainingUnits =
-      quote.listing.remainingUnits - quote.desiredUnits;
+    const remainingUnits = quote.listing.remainingUnits - quote.desiredUnits;
     const next =
       remainingUnits === 0n
         ? null
@@ -233,15 +226,14 @@ export function MarketplacePanel(props: {
 
   async function cancel() {
     if (selectedListing === null)
-      throw new Error("Select an active listing before cancelling.");
+      throw new Error("请先选择一笔活跃挂单再取消。");
     const listing = await props.client.readListing(
       props.marketplace,
       selectedListing.listingId,
     );
-    if (!listing.active)
-      throw new Error("Selected listing is no longer active. Refresh active listings.");
+    if (!listing.active) throw new Error("所选挂单已失效，请刷新活跃挂单。");
     if (listing.vault.toLowerCase() !== props.vault.toLowerCase())
-      throw new Error("Selected listing belongs to a different market.");
+      throw new Error("所选挂单不属于当前市场。");
     const result = await props.client.cancelListing(
       props.marketplace,
       listing.listingId,
@@ -266,92 +258,94 @@ export function MarketplacePanel(props: {
 
   return (
     <section aria-labelledby="marketplace-title">
-      <h2 id="marketplace-title">C2C position transfer</h2>
-      <p role="note">
-        C2C price does not change the parimutuel pool or final payout.
-      </p>
+      <h2 id="marketplace-title">C2C 持仓转让</h2>
+      <p role="note">C2C 成交不改变奖池或最终赔付。</p>
 
       <div className="marketplace-section">
-        <h3>Create sell listing</h3>
+        <h3>创建卖单</h3>
         <button
           disabled={state.pending}
           type="button"
           onClick={() => void run(approveShareEscrow)}
         >
-          Approve share escrow separately
+          单独授权份额托管
         </button>
         <form onSubmit={create} aria-busy={state.pending}>
           <label>
-            Outcome{" "}
+            结果{" "}
             <input
               value={sellOutcomeId}
               onChange={(event) => setSellOutcomeId(event.currentTarget.value)}
             />
           </label>
           <label>
-            Shares{" "}
+            份数{" "}
             <input
               value={sellAmount}
               onChange={(event) => setSellAmount(event.currentTarget.value)}
             />
           </label>
           <label>
-            {paymentTokenSymbol} per share{" "}
+            每份 {paymentTokenSymbol}{" "}
             <input
               value={sellUnitPrice}
               onChange={(event) => setSellUnitPrice(event.currentTarget.value)}
             />
           </label>
           <button disabled={state.pending} type="submit">
-            {shareEscrowApproved
-              ? "Create listing"
-              : "Authorize share escrow and create listing"}
+            {shareEscrowApproved ? "创建挂单" : "授权份额托管并创建挂单"}
           </button>
         </form>
       </div>
 
-      <div className="marketplace-section" aria-labelledby="selected-listing-title">
-        <h3 id="selected-listing-title">Selected listing</h3>
+      <div
+        className="marketplace-section"
+        aria-labelledby="selected-listing-title"
+      >
+        <h3 id="selected-listing-title">已选挂单</h3>
         {selectedListing === null ? (
-          <p>Select an active listing above to fill or cancel it.</p>
+          <p>请先在上方选择一笔活跃挂单，再买入或取消。</p>
         ) : (
           <>
             <dl className="marketplace-listing-summary">
               <div>
-                <dt>Listing ID</dt>
+                <dt>挂单 ID</dt>
                 <dd className="mono" data-testid="selected-listing-id">
                   {selectedListing.listingId}
                 </dd>
               </div>
               <div>
-                <dt>Outcome</dt>
+                <dt>结果</dt>
                 <dd>{(selectedListing.outcomeId + 1n).toString()}</dd>
               </div>
               <div>
-                <dt>Fixed price</dt>
-                <dd>{formatUsdc(selectedListing.unitPrice)} {paymentTokenSymbol}</dd>
+                <dt>固定价</dt>
+                <dd>
+                  {formatUsdc(selectedListing.unitPrice)} {paymentTokenSymbol}
+                </dd>
               </div>
               <div>
-                <dt>Remaining</dt>
-                <dd>{formatShareUnits(selectedListing.remainingUnits)} shares</dd>
+                <dt>剩余</dt>
+                <dd>{formatShareUnits(selectedListing.remainingUnits)} 份</dd>
               </div>
             </dl>
             <label>
-              Shares to buy{" "}
+              买入份数{" "}
               <input
                 value={fillAmount}
                 onChange={(event) => setFillAmount(event.currentTarget.value)}
               />
             </label>
             <p>
-              Total: {draftGross === null ? "—" : formatUsdc(draftGross)} {paymentTokenSymbol}
+              合计：{draftGross === null ? "—" : formatUsdc(draftGross)}{" "}
+              {paymentTokenSymbol}
             </p>
             <button
               disabled={state.pending}
               type="button"
               onClick={() => void run(approveFillPayment)}
             >
-              Approve exact {paymentTokenSymbol} for fill
+              精确授权 {paymentTokenSymbol} 用于成交
             </button>
             <button
               disabled={state.pending}
@@ -359,15 +353,15 @@ export function MarketplacePanel(props: {
               onClick={() => void run(fill)}
             >
               {fillAuthorizationRequired
-                ? `Authorize exact ${paymentTokenSymbol} and fill`
-                : "Fill exact amount"}
+                ? `精确授权 ${paymentTokenSymbol} 并成交`
+                : "按数量成交"}
             </button>
             <button
               disabled={state.pending}
               type="button"
               onClick={() => void run(cancel)}
             >
-              Cancel selected listing
+              取消所选挂单
             </button>
           </>
         )}

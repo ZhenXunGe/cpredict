@@ -23,20 +23,20 @@ export function useTransactionAction() {
   const run = useCallback(async (action: () => Promise<TransactionResult>) => {
     if (active.current) return;
     active.current = true;
-    setState({ pending: true, message: "Checking authorization and simulating…" });
+    setState({
+      pending: true,
+      message: "正在检查授权并模拟…",
+    });
     try {
       const result = await action();
       setState({
         pending: false,
-        message: `Included in block ${result.blockNumber.toString()}: ${result.hash}`,
+        message: `已纳入区块 ${result.blockNumber.toString()}：${result.hash}`,
         result,
       });
     } catch (error: unknown) {
       const details = classifyProtocolError(error);
-      const suffix = details.retryableAfterRefresh
-        ? " Refresh chain state before retrying."
-        : "";
-      setState({ pending: false, message: `${details.message}${suffix}` });
+      setState({ pending: false, message: details.message });
     } finally {
       active.current = false;
     }
