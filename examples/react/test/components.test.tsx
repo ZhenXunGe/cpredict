@@ -10,7 +10,11 @@ import {
 } from "../../../offchain/sdk/src/index.js";
 import { ClaimsPanel } from "../src/ClaimsPanel.js";
 import { CreateMarketPanel } from "../src/CreateMarketPanel.js";
-import { MarketLifecyclePanel } from "../src/MarketLifecyclePanel.js";
+import {
+  creatorSettlementPhase,
+  MarketLifecyclePanel,
+  outcomeOptionLabel,
+} from "../src/MarketLifecyclePanel.js";
 import {
   MarketplacePanel,
   quoteFillFromChain,
@@ -103,6 +107,93 @@ describe("React protocol call examples", () => {
     expect(lifecycleHtml).toContain("规范 UTF-8");
     expect(lifecycleHtml).toContain("不会上传证据");
     expect(lifecycleHtml).toContain("超时作废");
+    expect(lifecycleHtml).toContain("结果 1");
+    expect(lifecycleHtml).toContain("结果 2");
+    expect(lifecycleHtml).toContain("不要填写数字编号");
+    expect(lifecycleHtml).toContain("<select");
+    expect(lifecycleHtml).not.toMatch(/获胜结果\s*<input/);
+  });
+
+  it("labels winning outcomes by name instead of a raw 0-index", () => {
+    const html = renderToStaticMarkup(
+      <MarketLifecyclePanel
+        client={client}
+        vault={address}
+        outcomeCount={2}
+        creatorMode
+        outcomeLabels={["是", "否"]}
+        closeAt={1_900_000_000n}
+        resolutionDeadline={1_900_000_900n}
+        observedAt={1_900_000_100n}
+        marketState={0}
+      />,
+    );
+    expect(html).toContain(">是<");
+    expect(html).toContain(">否<");
+    expect(html).toContain("剩余 13 分钟");
+    expect(html).toContain("指定获胜结果");
+    expect(html).not.toContain('value="0" inputMode="numeric"');
+  });
+
+  it("blocks creator resolve after the settlement window and points to timeout void", () => {
+    const html = renderToStaticMarkup(
+      <MarketLifecyclePanel
+        client={client}
+        vault={address}
+        outcomeCount={2}
+        creatorMode
+        outcomeLabels={["王者赢", "对手赢"]}
+        closeAt={1_900_000_000n}
+        resolutionDeadline={1_900_000_900n}
+        observedAt={1_900_000_900n}
+        marketState={0}
+      />,
+    );
+    expect(html).toContain("创建者结算窗口已过");
+    expect(html).toContain("本金退还给所有人");
+    expect(html).toContain(">王者赢<");
+    expect(html).toMatch(
+      /type="submit"[^>]*disabled|disabled[^>]*type="submit"/,
+    );
+    expect(html).toMatch(/超时作废<\/button>/);
+  });
+
+  it("maps settlement phases from closeAt and resolutionDeadline", () => {
+    expect(
+      creatorSettlementPhase({
+        marketState: 0,
+        observedAt: 99n,
+        closeAt: 100n,
+        resolutionDeadline: 200n,
+      }),
+    ).toBe("before-close");
+    expect(
+      creatorSettlementPhase({
+        marketState: 0,
+        observedAt: 100n,
+        closeAt: 100n,
+        resolutionDeadline: 200n,
+      }),
+    ).toBe("creator-window");
+    expect(
+      creatorSettlementPhase({
+        marketState: 0,
+        observedAt: 200n,
+        closeAt: 100n,
+        resolutionDeadline: 200n,
+      }),
+    ).toBe("window-expired");
+    expect(
+      creatorSettlementPhase({
+        marketState: 3,
+        observedAt: 150n,
+        closeAt: 100n,
+        resolutionDeadline: 200n,
+      }),
+    ).toBe("terminal");
+    expect(creatorSettlementPhase({})).toBeNull();
+    expect(outcomeOptionLabel(0, ["是", "否"])).toBe("是");
+    expect(outcomeOptionLabel(1, undefined)).toBe("结果 2");
   });
 
   it("uploads exact canonical evidence bytes before returning the onchain hash", async () => {
