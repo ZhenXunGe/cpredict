@@ -44,7 +44,7 @@ describe("protocol revert copy", () => {
       errorName: "ResolutionWindowExpired",
       selector: "0x89da025b",
       message:
-        "结算窗口已过，无法再 Creator Resolve 或 Creator void。请改用超时作废。",
+        "创建者结算窗口已过。现在不能指定获胜结果或由创建者作废，请改用「超时作废」（全员退还本金）。",
     });
     expect(result.message).not.toMatch(/0x89da025b/i);
     expect(result.message).not.toMatch(/signature/i);

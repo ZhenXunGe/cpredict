@@ -39,7 +39,7 @@ const PROTOCOL_ERROR_BY_SELECTOR = {
   "0xcc25fc42": {
     name: "InvalidOutcome",
     kind: "configuration",
-    message: "结果编号越界，请核对 Winning outcome 后重试。",
+    message: "所选获胜结果不在该市场的结果范围内，请重新选择后重试。",
   },
   "0xa8a9eb69": {
     name: "MarketNotClosed",
@@ -70,13 +70,13 @@ const PROTOCOL_ERROR_BY_SELECTOR = {
     name: "ResolutionWindowExpired",
     kind: "expected-race",
     message:
-      "结算窗口已过，无法再 Creator Resolve 或 Creator void。请改用超时作废。",
+      "创建者结算窗口已过。现在不能指定获胜结果或由创建者作废，请改用「超时作废」（全员退还本金）。",
   },
   "0x9b0056ac": {
     name: "TimeoutNotReached",
     kind: "expected-race",
     message:
-      "结算窗口尚未结束，不能执行超时作废。请等待 resolutionDeadline 之后再试。",
+      "创建者结算窗口尚未结束，还不能超时作废。请等待结算截止时间之后再试。",
   },
   "0x8e4a23d6": {
     name: "Unauthorized",
@@ -86,7 +86,7 @@ const PROTOCOL_ERROR_BY_SELECTOR = {
   "0xe8327997": {
     name: "WinningOutcomeHasNoSupply",
     kind: "configuration",
-    message: "所选获胜结果没有份额，不能结算到该结果。请改选有持仓的 outcome。",
+    message: "所选获胜结果没有持仓份额，不能结算到该结果。请改选有持仓的结果。",
   },
 } as const satisfies Record<string, ProtocolErrorCopy>;
 
