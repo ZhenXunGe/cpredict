@@ -1,0 +1,136 @@
+- generic [ref=f1e3]:
+    - complementary "主导航" [ref=f1e4]:
+        - generic [ref=f1e5]:
+            - generic [ref=f1e6]: CP
+            - generic [ref=f1e7]:
+                - strong [ref=f1e8]: Cpredict
+                - text: 合约验证控制台
+        - navigation [ref=f1e9]:
+            - button "概览" [ref=f1e10] [cursor=pointer]:
+                - generic [ref=f1e11]: ⌂
+            - button "部署验证" [ref=f1e13] [cursor=pointer]:
+                - generic [ref=f1e14]: ◇
+            - button "市场" [ref=f1e16] [cursor=pointer]:
+                - generic [ref=f1e17]: ▤
+            - button "创建市场" [ref=f1e19] [cursor=pointer]:
+                - generic [ref=f1e20]: +
+            - button "我的持仓" [ref=f1e22] [cursor=pointer]:
+                - generic [ref=f1e23]: ◎
+            - button "C2C 市场" [ref=f1e25] [cursor=pointer]:
+                - generic [ref=f1e26]: ⇄
+            - button "结算与作废" [ref=f1e28] [cursor=pointer]:
+                - generic [ref=f1e29]: ✓
+            - button "回执与事件" [ref=f1e31] [cursor=pointer]:
+                - generic [ref=f1e32]: ▧
+        - generic [ref=f1e34]:
+            - generic [ref=f1e36]: Arbitrum Sepolia
+            - generic [ref=f1e37]: chainId 421614
+    - generic [ref=f1e38]:
+        - generic [ref=f1e39]:
+            - generic [ref=f1e40]:
+                - paragraph [ref=f1e41]: CPREDICT / CONTRACT CONSOLE
+                - heading "概览" [level=1] [ref=f1e42]
+            - generic [ref=f1e43]:
+                - generic [ref=f1e44]: LOCKED
+                - combobox "选择钱包" [ref=f1e45]:
+                    - option "未发现钱包" [selected]
+                - button "连接钱包" [disabled] [ref=f1e46]
+        - generic [ref=f1e47]:
+            - strong [ref=f1e48]: 写操作已锁定
+            - generic [ref=f1e49]: 等待部署验证
+        - main [ref=f1e50]:
+            - generic [ref=f1e51]:
+                - generic [ref=f1e52]:
+                    - generic [ref=f1e53]:
+                        - paragraph [ref=f1e54]: TRUST-FIRST WORKFLOW
+                        - heading "先验证部署，再执行交易" [level=2] [ref=f1e55]
+                        - paragraph [ref=f1e56]: 所有经济写操作都经过输入校验、链上模拟、单次提交和回执确认。
+                    - button "开始部署验证" [ref=f1e57] [cursor=pointer]
+                - generic [ref=f1e58]:
+                    - generic [ref=f1e59]:
+                        - generic [ref=f1e60]: 部署状态
+                        - strong [ref=f1e63]: BLOCKED_NOT_DEPLOYED
+                        - generic [ref=f1e64]: 需加载部署地址包
+                    - generic [ref=f1e65]:
+                        - generic [ref=f1e66]: 钱包网络
+                        - strong [ref=f1e69]: 未连接
+                        - generic [ref=f1e70]: EIP-6963 / injected
+                    - generic [ref=f1e71]:
+                        - generic [ref=f1e72]: 支付币
+                        - strong [ref=f1e75]: 待加载
+                        - generic [ref=f1e76]: Canonical Arbitrum Sepolia USDC
+                    - generic [ref=f1e77]:
+                        - generic [ref=f1e78]: 当前市场
+                        - strong [ref=f1e81]: 未选择
+                        - generic [ref=f1e82]: 从市场页加载 Vault
+                    - generic [ref=f1e83]:
+                        - generic [ref=f1e84]: Paymaster
+                        - strong [ref=f1e87]: 只读待加载
+                        - generic [ref=f1e88]: 本 Demo 不发送 UserOperation
+                - generic [ref=f1e89]:
+                    - generic [ref=f1e90]:
+                        - heading "协议操作路径" [level=3] [ref=f1e92]
+                        - button "打开市场交互 →" [ref=f1e93] [cursor=pointer]
+                    - generic [ref=f1e94]:
+                        - generic [ref=f1e95]:
+                            - generic [ref=f1e96]: "1"
+                            - paragraph [ref=f1e97]: 加载正式部署清单并校验 schema
+                            - strong [ref=f1e98]: READY
+                        - generic [ref=f1e99]:
+                            - generic [ref=f1e100]: "2"
+                            - paragraph [ref=f1e101]: 核对 chainId、runtime codehash 与关键 wiring
+                            - strong [ref=f1e102]: READY
+                        - generic [ref=f1e103]:
+                            - generic [ref=f1e104]: "3"
+                            - paragraph [ref=f1e105]: 连接三个一次性测试钱包并切换角色
+                            - strong [ref=f1e106]: READY
+                        - generic [ref=f1e107]:
+                            - generic [ref=f1e108]: "4"
+                            - paragraph [ref=f1e109]: simulate → sign/send → receipt → event
+                            - strong [ref=f1e110]: READY
+            - complementary [ref=f1e111]:
+                - generic [ref=f1e113]:
+                    - paragraph [ref=f1e114]: LIVE CONTEXT
+                    - heading "地址检查器" [level=3] [ref=f1e115]
+                - generic [ref=f1e117]:
+                    - generic [ref=f1e118]:
+                        - generic [ref=f1e119]: Chain
+                        - strong [ref=f1e120]: — / —
+                        - button "复制 Chain" [ref=f1e121] [cursor=pointer]: ▣
+                    - generic [ref=f1e122]:
+                        - generic [ref=f1e123]: Wallet
+                        - strong [ref=f1e124]: —
+                        - button "复制 Wallet" [ref=f1e125] [cursor=pointer]: ▣
+                    - generic [ref=f1e126]:
+                        - generic [ref=f1e127]: Factory
+                        - strong [ref=f1e128]: —
+                        - button "复制 Factory" [ref=f1e129] [cursor=pointer]: ▣
+                    - generic [ref=f1e130]:
+                        - generic [ref=f1e131]: Marketplace
+                        - strong [ref=f1e132]: —
+                        - button "复制 Marketplace" [ref=f1e133] [cursor=pointer]: ▣
+                    - generic [ref=f1e134]:
+                        - generic [ref=f1e135]: Payment token
+                        - strong [ref=f1e136]: —
+                        - button "复制 Payment token" [ref=f1e137] [cursor=pointer]: ▣
+                    - generic [ref=f1e138]:
+                        - generic [ref=f1e139]: Permit2
+                        - strong [ref=f1e140]: —
+                        - button "复制 Permit2" [ref=f1e141] [cursor=pointer]: ▣
+                    - generic [ref=f1e142]:
+                        - generic [ref=f1e143]: Market
+                        - strong [ref=f1e144]: —
+                        - button "复制 Market" [ref=f1e145] [cursor=pointer]: ▣
+                - generic [ref=f1e146]:
+                    - strong [ref=f1e147]: Write gate
+                    - paragraph [ref=f1e148]: LOCKED
+        - generic [ref=f1e149]:
+            - generic [ref=f1e150]:
+                - generic [ref=f1e151]:
+                    - paragraph [ref=f1e152]: SESSION ACTIVITY
+                    - heading "事件与回执" [level=3] [ref=f1e153]
+                - generic [ref=f1e154]: 1 条
+            - generic [ref=f1e156]:
+                - time [ref=f1e157]: 21:29:01
+                - strong [ref=f1e160]: Console initialized
+                - code [ref=f1e161]: 等待 runtime config 与部署清单
