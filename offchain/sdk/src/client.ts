@@ -6,6 +6,8 @@ import {
   type ContractFunctionArgs,
   type ContractFunctionName,
   encodeFunctionData,
+  type Hex,
+  type Log,
   parseEventLogs,
   type PublicClient,
   type Transport,
@@ -26,6 +28,8 @@ import {
   createMarketInputSchema,
   fillListingInputSchema,
   fillListingWithPermit2InputSchema,
+  addressSchema,
+  bytes32Schema,
   type BuyInput,
   type BuyWithPermit2Input,
   type CreateListingInput,
@@ -47,6 +51,22 @@ export interface TransactionResult {
 
 export interface CreateMarketResult extends TransactionResult {
   market: Address;
+}
+
+export interface CreateListingResult extends TransactionResult {
+  listingId: Hex;
+}
+
+export interface ListingSnapshot {
+  listingId: Hex;
+  vault: Address;
+  seller: Address;
+  remainingUnits: bigint;
+  unitPrice: bigint;
+  expiresAt: bigint;
+  outcomeId: bigint;
+  active: boolean;
+  observedAt: bigint;
 }
 
 type MutableFunction<TAbi extends Abi> = ContractFunctionName<
@@ -96,7 +116,7 @@ export class CpredictClient {
 
   async createMarket(input: CreateMarketInput): Promise<CreateMarketResult> {
     const value = createMarketInputSchema.parse(input);
-    const result = await this.execute(
+    const execution = await this.executeWithReceipt(
       value.params.deploymentMode === 0
         ? "market-create-full"
         : "market-create-clone",
@@ -105,13 +125,10 @@ export class CpredictClient {
       "createMarket",
       [value.params, value.userSalt],
     );
-    const receipt = await this.publicClient.getTransactionReceipt({
-      hash: result.hash,
-    });
     const events = parseEventLogs({
       abi: marketFactoryAbi,
       eventName: "MarketCreated",
-      logs: receipt.logs,
+      logs: execution.logs,
       strict: true,
     });
     const created = events[0];
@@ -119,7 +136,7 @@ export class CpredictClient {
       throw new Error(
         "successful createMarket receipt has no MarketCreated event",
       );
-    return { ...result, market: created.args.market };
+    return { ...execution.result, market: created.args.market };
   }
 
   async buy(input: BuyInput): Promise<TransactionResult> {
@@ -215,9 +232,37 @@ export class CpredictClient {
     );
   }
 
-  async createListing(input: CreateListingInput): Promise<TransactionResult> {
+  async readListing(
+    marketplace: Address,
+    listingId: Hex,
+  ): Promise<ListingSnapshot> {
+    const address = addressSchema.parse(marketplace);
+    const id = bytes32Schema.parse(listingId);
+    const [listing, block] = await Promise.all([
+      this.publicClient.readContract({
+        address,
+        abi: marketplaceAbi,
+        functionName: "listings",
+        args: [id],
+      }),
+      this.publicClient.getBlock({ blockTag: "latest" }),
+    ]);
+    return {
+      listingId: id,
+      vault: listing[0],
+      seller: listing[1],
+      remainingUnits: listing[2],
+      unitPrice: listing[3],
+      expiresAt: listing[4],
+      outcomeId: BigInt(listing[5]),
+      active: listing[6],
+      observedAt: block.timestamp,
+    };
+  }
+
+  async createListing(input: CreateListingInput): Promise<CreateListingResult> {
     const value = createListingInputSchema.parse(input);
-    return this.execute(
+    const execution = await this.executeWithReceipt(
       "listing-create",
       value.marketplace,
       marketplaceAbi,
@@ -230,6 +275,18 @@ export class CpredictClient {
         value.expiresAt,
       ],
     );
+    const events = parseEventLogs({
+      abi: marketplaceAbi,
+      eventName: "ListingCreated",
+      logs: execution.logs,
+      strict: true,
+    });
+    const created = events[0];
+    if (created === undefined)
+      throw new Error(
+        "successful createListing receipt has no ListingCreated event",
+      );
+    return { ...execution.result, listingId: created.args.listingId };
   }
 
   async fillListing(input: FillListingInput): Promise<TransactionResult> {
@@ -368,6 +425,26 @@ export class CpredictClient {
     functionName: TFunctionName,
     args: ContractFunctionArgs<TAbi, "nonpayable", TFunctionName>,
   ): Promise<TransactionResult> {
+    const execution = await this.executeWithReceipt(
+      operation,
+      address,
+      abi,
+      functionName,
+      args,
+    );
+    return execution.result;
+  }
+
+  private async executeWithReceipt<
+    const TAbi extends Abi,
+    const TFunctionName extends MutableFunction<TAbi>,
+  >(
+    operation: GasPolicyOperation,
+    address: Address,
+    abi: TAbi,
+    functionName: TFunctionName,
+    args: ContractFunctionArgs<TAbi, "nonpayable", TFunctionName>,
+  ): Promise<{ result: TransactionResult; logs: Log[] }> {
     await this.publicClient.simulateContract({
       account: this.account,
       address,
@@ -394,6 +471,9 @@ export class CpredictClient {
     });
     if (receipt.status !== "success")
       throw new Error(`transaction reverted: ${hash}`);
-    return { hash, blockNumber: receipt.blockNumber, gasUsed: receipt.gasUsed };
+    return {
+      result: { hash, blockNumber: receipt.blockNumber, gasUsed: receipt.gasUsed },
+      logs: receipt.logs,
+    };
   }
 }

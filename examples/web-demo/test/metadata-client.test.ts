@@ -26,6 +26,11 @@ describe("wallet metadata publication client", () => {
     const signature = `0x${"33".repeat(65)}` as Hex;
     const expiresAt = Math.floor(Date.now() / 1_000) + 300;
     const signTypedData = vi.fn(async () => signature);
+    vi.stubGlobal("location", {
+      origin: "http://127.0.0.1:4177",
+      protocol: "http:",
+      hostname: "127.0.0.1",
+    });
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(json({
         challengeId,
@@ -89,6 +94,42 @@ describe("wallet metadata publication client", () => {
       rules,
     })).rejects.toThrow("challenge response is invalid");
     expect(signTypedData).not.toHaveBeenCalled();
+  });
+
+  it("keeps remote metadata URIs same-origin outside loopback development", async () => {
+    const encoded = encodeMarketRules(rules);
+    const signature = `0x${"33".repeat(65)}` as Hex;
+    vi.stubGlobal("location", {
+      origin: "https://app.example",
+      protocol: "https:",
+      hostname: "app.example",
+    });
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(json({
+        challengeId: `0x${"11".repeat(32)}`,
+        nonce: `0x${"22".repeat(32)}`,
+        expiresAt: Math.floor(Date.now() / 1_000) + 300,
+      }))
+      .mockResolvedValueOnce(json({
+        rulesHash: encoded.rulesHash,
+        metadataUri: `https://metadata.example/metadata/v1/markets/${encoded.rulesHash}/outcomes/{id}.json`,
+        resolutionSourceHash: keccak256(toBytes(rules.resolutionSource)),
+        resolutionSourceUri: rules.resolutionSource,
+      }, 201)));
+    const wallet = {
+      address: creator,
+      chainId: 421_614,
+      account: { address: creator, type: "json-rpc" },
+      walletClient: { signTypedData: vi.fn(async () => signature) },
+    } as unknown as ConnectedWallet;
+
+    await expect(publishMarketMetadata({
+      basePath: "/metadata",
+      chainId: 421_614,
+      factory,
+      wallet,
+      rules,
+    })).rejects.toThrow("Metadata URI is invalid");
   });
 });
 

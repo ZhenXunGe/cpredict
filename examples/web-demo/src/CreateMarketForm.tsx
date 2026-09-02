@@ -66,6 +66,7 @@ type FieldErrors = Partial<Record<FieldName, string>>;
 const MIN_CONFIGURED_UNITS = 10_000n;
 const MAX_CONFIGURED_UNITS = 5_000_000n;
 const MAX_CREATOR_BOND = 1_000_000_000n;
+const DEFAULT_RESOLUTION_SOURCE = "http://example.com/result";
 
 export function CreateMarketForm(props: CreateMarketFormProps) {
   const [question, setQuestion] = useState(
@@ -73,7 +74,7 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
   );
   const [outcomeLabels, setOutcomeLabels] = useState("Yes\nNo");
   const [resolutionSource, setResolutionSource] = useState(
-    "https://example.com/result",
+    DEFAULT_RESOLUTION_SOURCE,
   );
   const [resolutionCriteria, setResolutionCriteria] = useState(
     "Resolve to the outcome explicitly reported by the cited public source after market close.",
@@ -530,7 +531,7 @@ function validateText(errors: FieldErrors, field: FieldName, value: string, labe
   else if (length > maximum) errors[field] = `${label}不能超过 ${maximum} 个字符`;
 }
 
-function validatedUri(value: string, label: string): string {
+export function validatedUri(value: string, label: string): string {
   const normalized = value.trim().normalize("NFC");
   if (new TextEncoder().encode(normalized).byteLength > 512)
     throw new RangeError(`${label} 超过 512 UTF-8 bytes`);
@@ -540,8 +541,13 @@ function validatedUri(value: string, label: string): string {
   } catch {
     throw new TypeError(`${label} 必须是绝对 URI`);
   }
-  if (url.protocol !== "https:" && url.protocol !== "ipfs:")
-    throw new TypeError(`${label} 只允许 https: 或 ipfs:`);
+  if (
+    url.protocol !== "http:" &&
+    url.protocol !== "https:" &&
+    url.protocol !== "ipfs:"
+  ) {
+    throw new TypeError(`${label} 只允许 http:、https: 或 ipfs:`);
+  }
   if (url.username !== "" || url.password !== "")
     throw new TypeError(`${label} 不允许 credentials`);
   return url.href;

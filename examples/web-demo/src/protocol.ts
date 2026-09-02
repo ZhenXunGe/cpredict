@@ -89,7 +89,10 @@ export interface AccountSnapshot {
   marketplaceAllowance: bigint;
   permit2Allowance: bigint;
   marketplaceApproved: boolean;
-  positions: bigint[];
+  positions: Array<{
+    outcomeId: number;
+    balance: bigint;
+  }>;
   cumulativePrimaryBought: bigint;
   earlyBirdScore: bigint;
 }
@@ -106,7 +109,11 @@ export interface ProtocolSnapshot {
   maxCreatorC2CFeeBps: number;
   paymasterDeposit: bigint;
   paymasterPolicyVersion: number;
-  paymasterBudgets: readonly [bigint, bigint, bigint];
+  paymasterBudgets: {
+    operation: bigint;
+    userDay: bigint;
+    globalDay: bigint;
+  };
 }
 
 export async function readMarket(client: PublicClient, address: Address): Promise<MarketSnapshot> {
@@ -167,7 +174,9 @@ export async function readAccount(
   ]);
   const positions = await Promise.all(
     Array.from({ length: market.outcomeCount }, (_, outcomeId) =>
-      client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "balanceOf", args: [account, BigInt(outcomeId)] }),
+      client
+        .readContract({ address: market.address, abi: vaultReadAbi, functionName: "balanceOf", args: [account, BigInt(outcomeId)] })
+        .then((balance) => ({ outcomeId, balance })),
     ),
   );
   return { usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, permit2Allowance, marketplaceApproved, positions, cumulativePrimaryBought, earlyBirdScore };
@@ -183,6 +192,20 @@ export async function readPaymentTokenBalance(
     abi: erc20ReadAbi,
     functionName: "balanceOf",
     args: [account],
+  });
+}
+
+export async function readPaymentTokenAllowance(
+  client: PublicClient,
+  account: Address,
+  paymentToken: Address,
+  spender: Address,
+): Promise<bigint> {
+  return client.readContract({
+    address: paymentToken,
+    abi: erc20ReadAbi,
+    functionName: "allowance",
+    args: [account, spender],
   });
 }
 
@@ -207,7 +230,20 @@ export async function readProtocol(
     client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "maxCostGlobalPerDay" }),
     client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "policyVersion" }),
   ]);
-  return { creationFee, protocolShareBps, earlyBirdShareBps, platformC2CFeeBps, maxFullMarketCap, maxCloneMarketCap, maxPerUserPrimaryCap, maxCreatorRakeBps, maxCreatorC2CFeeBps, paymasterDeposit, paymasterPolicyVersion: policyVersion, paymasterBudgets: [operation, userDay, globalDay] };
+  return {
+    creationFee,
+    protocolShareBps,
+    earlyBirdShareBps,
+    platformC2CFeeBps,
+    maxFullMarketCap,
+    maxCloneMarketCap,
+    maxPerUserPrimaryCap,
+    maxCreatorRakeBps,
+    maxCreatorC2CFeeBps,
+    paymasterDeposit,
+    paymasterPolicyVersion: policyVersion,
+    paymasterBudgets: { operation, userDay, globalDay },
+  };
 }
 
 export function formatPaymentToken(value: bigint, symbol: string): string {

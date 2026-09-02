@@ -312,6 +312,21 @@ export const marketVaultAbi = [
 export const marketplaceAbi = [
   {
     type: "function",
+    name: "listings",
+    stateMutability: "view",
+    inputs: [{ name: "listingId", type: "bytes32" }],
+    outputs: [
+      { name: "vault", type: "address" },
+      { name: "seller", type: "address" },
+      { name: "remainingUnits", type: "uint128" },
+      { name: "unitPrice", type: "uint128" },
+      { name: "expiresAt", type: "uint64" },
+      { name: "outcomeId", type: "uint8" },
+      { name: "active", type: "bool" },
+    ],
+  },
+  {
+    type: "function",
     name: "createListing",
     stateMutability: "nonpayable",
     inputs: [

@@ -92,7 +92,7 @@ function account(positions: bigint[]): AccountSnapshot {
     marketplaceAllowance: 0n,
     permit2Allowance: 0n,
     marketplaceApproved: false,
-    positions,
+    positions: positions.map((balance, outcomeId) => ({ outcomeId, balance })),
     cumulativePrimaryBought: 0n,
     earlyBirdScore: 0n,
   };

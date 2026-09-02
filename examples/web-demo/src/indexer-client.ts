@@ -17,6 +17,7 @@ export interface MarketCatalogItem {
   deploymentMode: number;
   outcomeCount: number | null;
   closeAt: bigint | null;
+  resolutionWindow: bigint | null;
   rulesHash: Hex | null;
   marketPrimaryCap: bigint | null;
   primaryFilledUnits: bigint;
@@ -92,14 +93,18 @@ export interface QueryPage<T> {
 export async function fetchMarketCatalog(input: {
   basePath: string;
   chainId: number;
+  limit?: number;
   owner?: Address;
   status?: CatalogStatus;
   cursor?: string;
   signal?: AbortSignal;
 }): Promise<QueryPage<MarketCatalogItem>> {
+  const limit = input.limit ?? 20;
+  if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100)
+    throw new TypeError("market catalog limit is invalid");
   const url = endpoint(input.basePath, "/v2/markets");
   url.searchParams.set("chainId", String(input.chainId));
-  url.searchParams.set("limit", "20");
+  url.searchParams.set("limit", String(limit));
   if (input.owner !== undefined) url.searchParams.set("owner", input.owner);
   if (input.status !== undefined) url.searchParams.set("status", input.status);
   if (input.cursor !== undefined) url.searchParams.set("cursor", input.cursor);
@@ -226,6 +231,7 @@ function parseMarket(value: unknown): MarketCatalogItem {
     deploymentMode: integer(item.deploymentMode, "deploymentMode", 0, 1),
     outcomeCount,
     closeAt: nullableBigint(item.closeAt, "closeAt"),
+    resolutionWindow: nullableBigint(item.resolutionWindow, "resolutionWindow"),
     rulesHash: nullableBytes32(item.rulesHash, "rulesHash"),
     marketPrimaryCap: nullableBigint(item.marketPrimaryCap, "marketPrimaryCap"),
     primaryFilledUnits: bigint(item.primaryFilledUnits, "primaryFilledUnits"),

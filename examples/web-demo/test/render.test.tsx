@@ -1,8 +1,9 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import App, { ActivityDrawer, ActivityLine, BuyCard, DeploymentDrawer, DeploymentVerificationToast, deploymentCardCopy, deploymentIndicatorState, deploymentToastForReport, environmentStatusCardStates, Inspector, MarketPage, PrimaryAllowanceRow, RuntimeDrawer, SandboxTokenPanel } from "../src/App.js";
-import { CreateMarketForm } from "../src/CreateMarketForm.js";
-import { MarketCatalogCards, type CatalogEntry } from "../src/MarketCatalog.js";
+import { maxUint256 } from "viem";
+import App, { ActivityDrawer, ActivityLine, BuyCard, DeploymentDrawer, DeploymentVerificationToast, deploymentCardCopy, deploymentIndicatorState, deploymentToastForReport, environmentStatusCardStates, Inspector, MarketPage, Permit2AuthorizationSwitch, PrimaryAllowanceRow, RuntimeDrawer, SandboxTokenPanel } from "../src/App.js";
+import { CreateMarketForm, validatedUri } from "../src/CreateMarketForm.js";
+import { MarketCatalogCards, SettlementMarketCards, settlementCatalogEntries, type CatalogEntry } from "../src/MarketCatalog.js";
 import type { MarketSnapshot } from "../src/protocol.js";
 import type { TrustReport } from "../src/trust.js";
 import type { LoadedRuntime } from "../src/config.js";
@@ -244,7 +245,7 @@ describe("web demo application shell", () => {
     expect(html).toContain("15 分钟 / 900 秒");
   });
 
-  it("prefills market duration and a valid public resolution source", () => {
+  it("prefills market duration and the accepted HTTP example source", () => {
     const html = renderToStaticMarkup(
       <CreateMarketForm
         client={{} as CpredictClient}
@@ -271,8 +272,18 @@ describe("web demo application shell", () => {
     expect(html).toContain('value="15"');
     expect(html).toContain('min="11"');
     expect(html).toMatch(
-      /id="market-source"[^>]*value="https:\/\/example\.com\/result"/,
+      /id="market-source"[^>]*value="http:\/\/example\.com\/result"/,
     );
+    expect(validatedUri("http://example.com/result", "公开判定来源")).toBe(
+      "http://example.com/result",
+    );
+    expect(validatedUri(
+      "http://public.example/result",
+      "公开判定来源",
+    )).toBe("http://public.example/result");
+    expect(() =>
+      validatedUri("ftp://public.example/result", "公开判定来源"),
+    ).toThrow(/只允许 http:、https: 或 ipfs:/);
   });
 
   it("renders the exact Permit2 token allowance required before signing", () => {
@@ -289,6 +300,33 @@ describe("web demo application shell", () => {
     expect(html).toContain("Permit2 allowance");
     expect(html).toContain("0 ctUSD");
     expect(html).toContain("精确授权 ctUSD → Permit2");
+  });
+
+  it("renders reusable Permit2 authorization as an accessible header switch", () => {
+    const off = renderToStaticMarkup(
+      <Permit2AuthorizationSwitch
+        allowance={0n}
+        marketEnabled
+        busy={false}
+        disabled={false}
+        onToggle={() => {}}
+      />,
+    );
+    const on = renderToStaticMarkup(
+      <Permit2AuthorizationSwitch
+        allowance={maxUint256}
+        marketEnabled={false}
+        busy={false}
+        disabled={false}
+        onToggle={() => {}}
+      />,
+    );
+    expect(off).toContain('role="switch"');
+    expect(off).toContain('aria-checked="false"');
+    expect(off).toContain("当前状态：关闭");
+    expect(on).toContain('aria-checked="true"');
+    expect(on).toContain("已授权 · 当前市场不可用");
+    expect(on).toContain("撤销 Permit2 可复用授权");
   });
 
   it("keeps exact authorization separate and also merges it into primary buy", () => {
@@ -324,6 +362,7 @@ describe("web demo application shell", () => {
         wallet={null}
         trust={null}
         paymentTokenSymbol="ctUSD"
+        permit2Mode={false}
         writeReady
         primaryBuyOpen
         busy={false}
@@ -332,6 +371,52 @@ describe("web demo application shell", () => {
     );
     expect(html).toContain("精确授权并模拟购买");
     expect(html).toContain(">精确授权</button>");
+  });
+
+  it("uses the header-controlled reusable Permit2 path without another approval", () => {
+    const market: MarketSnapshot = {
+      address: "0x0000000000000000000000000000000000001001",
+      observedAt: 1_900_000_000n,
+      creator: "0x000000000000000000000000000000000000c001",
+      creatorTreasury: "0x000000000000000000000000000000000000c002",
+      rulesHash: `0x${"11".repeat(32)}`,
+      outcomeCount: 2,
+      createdAt: 1_899_999_000n,
+      closeAt: 1_900_001_000n,
+      earlyBirdStart: 1_899_999_500n,
+      featureFlags: 2n,
+      perUserPrimaryCap: 10_000_000n,
+      marketPrimaryCap: 20_000_000n,
+      minimumPrimaryUnits: 1_000_000n,
+      minimumC2CUnits: 1_000_000n,
+      creatorBond: 10_000_000n,
+      marketState: 0,
+      winningOutcome: 0,
+      totalPrincipal: 2_000_000n,
+      resolutionDeadline: 1_900_001_900n,
+      permit2Enabled: true,
+      earlyBirdEnabled: false,
+    };
+    const html = renderToStaticMarkup(
+      <BuyCard
+        market={market}
+        outcomeLabels={["Yes", "No"]}
+        account={null}
+        client={null}
+        wallet={null}
+        trust={null}
+        paymentTokenSymbol="ctUSD"
+        permit2Mode
+        writeReady
+        primaryBuyOpen
+        busy={false}
+        execute={async () => null}
+      />,
+    );
+    expect(html).toContain("签名并购买");
+    expect(html).toContain("页头已开启可复用 Permit2 授权");
+    expect(html).not.toContain("Vault allowance");
+    expect(html).not.toContain('class="tabs"');
   });
 
   it("renders an expired unsettled market as closed and disables primary writes", () => {
@@ -377,6 +462,7 @@ describe("web demo application shell", () => {
         wallet={null}
         trust={null}
         paymentTokenSymbol="ctUSD"
+        permit2Reusable={false}
         writeReady
         execute={async () => null}
       />,
@@ -418,6 +504,7 @@ describe("web demo application shell", () => {
         deploymentMode: 0,
         outcomeCount: 2,
         closeAt: 1_900_000_000n,
+        resolutionWindow: 900n,
         rulesHash: `0x${"11".repeat(32)}`,
         marketPrimaryCap: 20_000_000n,
         primaryFilledUnits: 5_000_000n,
@@ -442,5 +529,47 @@ describe("web demo application shell", () => {
     expect(html).toContain("No");
     expect(html).toContain("25.0%");
     expect(html).toContain("查看并交易");
+  });
+
+  it("lists only closed unresolved markets and explains who can finalize them", () => {
+    const creator = "0x000000000000000000000000000000000000c001";
+    const entry: CatalogEntry = {
+      market: {
+        market: "0x0000000000000000000000000000000000001001",
+        creator,
+        deploymentMode: 0,
+        outcomeCount: 2,
+        closeAt: 1_900_000_000n,
+        resolutionWindow: 900n,
+        rulesHash: `0x${"11".repeat(32)}`,
+        marketPrimaryCap: 20_000_000n,
+        primaryFilledUnits: 5_000_000n,
+        creatorBond: 10_000_000n,
+        status: "open",
+        createdBlock: 100n,
+        confirmationStatus: "confirmed",
+      },
+      rules: {
+        version: "cpredict-rules-v1",
+        question: "Will the verified result be Yes?",
+        outcomes: ["Yes", "No"],
+        closesAt: 1_900_000_000,
+        resolutionSource: "https://example.com/result",
+        resolutionCriteria: "Use the final result published by the cited source.",
+        cancellationPolicy: "Void if no unambiguous result is published in time.",
+      },
+    };
+    expect(settlementCatalogEntries([entry], 1_899_999_999n, creator)).toEqual([]);
+
+    const creatorQueue = settlementCatalogEntries([entry], 1_900_000_001n, creator);
+    const creatorHtml = renderToStaticMarkup(<SettlementMarketCards entries={creatorQueue} selectedMarket={null} onOpen={() => {}} />);
+    expect(creatorHtml).toContain("可结算或作废");
+    expect(creatorHtml).toContain("进入结算");
+    expect(creatorHtml).toContain("Will the verified result be Yes?");
+
+    const timeoutQueue = settlementCatalogEntries([entry], 1_900_000_900n, null);
+    const timeoutHtml = renderToStaticMarkup(<SettlementMarketCards entries={timeoutQueue} selectedMarket={null} onOpen={() => {}} />);
+    expect(timeoutHtml).toContain("可超时作废");
+    expect(timeoutHtml).toContain("任意钱包");
   });
 });

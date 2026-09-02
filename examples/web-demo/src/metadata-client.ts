@@ -153,6 +153,10 @@ function validateMetadataUri(value: string, basePath: string, rulesHash: Hex): v
     throw new TypeError("Metadata URI is invalid");
   }
   const parsed = new URL(value.replace("{id}", "0"));
+  const pageLocation = globalThis.location;
+  const isLoopbackDevelopmentProxy =
+    pageLocation?.protocol === "http:" &&
+    ["127.0.0.1", "localhost", "[::1]"].includes(pageLocation.hostname);
   if (
     parsed.protocol !== "https:" ||
     parsed.username !== "" ||
@@ -160,7 +164,9 @@ function validateMetadataUri(value: string, basePath: string, rulesHash: Hex): v
     parsed.search !== "" ||
     parsed.hash !== "" ||
     parsed.pathname !== `${basePath}/v1/markets/${rulesHash}/outcomes/0.json` ||
-    (globalThis.location?.origin !== undefined && parsed.origin !== globalThis.location.origin)
+    (pageLocation?.origin !== undefined &&
+      parsed.origin !== pageLocation.origin &&
+      !isLoopbackDevelopmentProxy)
   ) {
     throw new TypeError("Metadata URI is invalid");
   }

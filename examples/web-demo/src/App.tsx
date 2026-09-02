@@ -10,6 +10,7 @@ import {
 import {
   getAddress,
   isAddress,
+  maxUint256,
   parseUnits,
   type Address,
   type PublicClient,
@@ -37,6 +38,7 @@ import {
   marketDisplayState,
   readAccount,
   readMarket,
+  readPaymentTokenAllowance,
   readPaymentTokenBalance,
   readProtocol,
   type AccountSnapshot,
@@ -62,14 +64,17 @@ import {
 import { mintSandboxToken } from "./sandbox-token.js";
 import { CreateMarketForm, type ExecuteTransaction } from "./CreateMarketForm.js";
 import { completeMarketCreation } from "./market-creation-flow.js";
-import { MarketCatalog } from "./MarketCatalog.js";
-import { fetchMarketRules } from "./indexer-client.js";
+import { MarketCatalog, SettlementMarketCatalog } from "./MarketCatalog.js";
+import { fetchMarketRules, type IndexedListing } from "./indexer-client.js";
 import {
   ListingsPanel,
   WalletActivityPanel,
   WalletPositionsPanel,
 } from "./WalletIndexerPanels.js";
-import { MarketplacePanel } from "../../react/src/MarketplacePanel.js";
+import {
+  MarketplacePanel,
+  type MarketplaceListingSelection,
+} from "../../react/src/MarketplacePanel.js";
 import { MarketLifecyclePanel } from "../../react/src/MarketLifecyclePanel.js";
 import { transactionDeadline } from "../../react/src/transactionTiming.js";
 import { authorizationRequired } from "../../react/src/authorizationFlow.js";
@@ -141,10 +146,14 @@ export default function App() {
   const [debug, setDebug] = useState<DebugAddressInput>(INITIAL_DEBUG);
   const [marketAddress, setMarketAddress] = useState("");
   const [market, setMarket] = useState<MarketSnapshot | null>(null);
+  const [selectedMarketplaceListing, setSelectedMarketplaceListing] =
+    useState<MarketplaceListingSelection | null>(null);
+  const [marketplaceRefreshVersion, setMarketplaceRefreshVersion] = useState(0);
   const [selectedMarketRules, setSelectedMarketRules] = useState<MarketRules | null>(null);
   const [accountSnapshot, setAccountSnapshot] = useState<AccountSnapshot | null>(null);
   const [protocolSnapshot, setProtocolSnapshot] = useState<ProtocolSnapshot | null>(null);
   const [paymentTokenBalance, setPaymentTokenBalance] = useState<bigint | null>(null);
+  const [permit2Allowance, setPermit2Allowance] = useState<bigint | null>(null);
   const [operationBusy, setOperationBusy] = useState(false);
   const [accountRefreshVersion, setAccountRefreshVersion] = useState(0);
   const [positionSyncTarget, setPositionSyncTarget] = useState<{
@@ -158,23 +167,12 @@ export default function App() {
     detail: "部署验证将在 runtime config 加载后自动开始…",
   });
   const deploymentVerificationRef = useRef<Promise<void> | null>(null);
-  const deploymentToastTimeoutRef = useRef<number | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([
     { id: 1, at: new Date(), level: "info", label: "Console initialized", detail: "等待 runtime config 与部署清单" },
   ]);
 
   const showDeploymentToast = useCallback((nextToast: DeploymentToast | null) => {
-    if (deploymentToastTimeoutRef.current !== null) {
-      window.clearTimeout(deploymentToastTimeoutRef.current);
-      deploymentToastTimeoutRef.current = null;
-    }
     setDeploymentToast(nextToast);
-    if (nextToast?.state === "success") {
-      deploymentToastTimeoutRef.current = window.setTimeout(() => {
-        setDeploymentToast((current) => current?.state === "success" ? null : current);
-        deploymentToastTimeoutRef.current = null;
-      }, 3_000);
-    }
   }, []);
 
   const runDeploymentVerification = useCallback((client: PublicClient, loaded: LoadedRuntime) => {
@@ -380,8 +378,30 @@ export default function App() {
     await loadMarketAddress(address);
   }
 
-  async function handleMarketplaceSelect(address: Address) {
+  async function handleMarketplaceListingSelect(listing: IndexedListing) {
+    setSelectedMarketplaceListing(listing);
+    setMarketAddress(listing.vault);
+    await loadMarketAddress(listing.vault);
+  }
+
+  function handleMarketplaceListingChange(
+    listing: MarketplaceListingSelection | null,
+    result: TransactionResult,
+  ) {
+    setSelectedMarketplaceListing(listing);
+    setMarketplaceRefreshVersion((version) => version + 1);
+    setAccountRefreshVersion((version) => version + 1);
+    if (wallet !== null)
+      setPositionSyncTarget({
+        wallet: wallet.address,
+        blockNumber: result.blockNumber,
+      });
+  }
+
+  async function handleSettlementSelect(address: Address, rules: MarketRules | null) {
     setMarketAddress(address);
+    setSelectedMarketRules(rules);
+    setRoute("settlement", address);
     await loadMarketAddress(address);
   }
 
@@ -441,6 +461,33 @@ export default function App() {
     return () => { active = false; };
   }, [accountRefreshVersion, publicClient, wallet?.address, market, trust?.addresses]);
 
+  useEffect(() => {
+    if (
+      publicClient === null ||
+      wallet === null ||
+      trust?.addresses === null ||
+      trust?.addresses === undefined
+    ) {
+      setPermit2Allowance(null);
+      return;
+    }
+    let active = true;
+    void readPaymentTokenAllowance(
+      publicClient,
+      wallet.address,
+      trust.addresses.usdc,
+      trust.addresses.permit2,
+    ).then((allowance) => {
+      if (active) setPermit2Allowance(allowance);
+    }).catch((cause: unknown) => {
+      if (active) {
+        setPermit2Allowance(null);
+        push(setActivity, "warning", "Permit2 allowance unavailable", messageOf(cause));
+      }
+    });
+    return () => { active = false; };
+  }, [accountRefreshVersion, publicClient, wallet?.address, trust?.addresses]);
+
   async function executeOperation<T extends TransactionResult>(label: string, operation: () => Promise<T>): Promise<T | null> {
     if (operationBusy || !writeReady) return null;
     setOperationBusy(true);
@@ -475,6 +522,28 @@ export default function App() {
     } finally {
       setOperationBusy(false);
     }
+  }
+
+  const permit2Reusable = permit2Allowance === maxUint256;
+
+  async function handlePermit2AuthorizationToggle() {
+    if (
+      client === null ||
+      wallet === null ||
+      trust?.addresses === null ||
+      trust?.addresses === undefined ||
+      permit2Allowance === null
+    ) return;
+    const nextAllowance = permit2Reusable ? 0n : maxUint256;
+    const result = await executeOperation(
+      permit2Reusable ? "Revoke reusable Permit2 authorization" : "Enable reusable Permit2 authorization",
+      () => client.approvePaymentToken(
+        trust.addresses!.usdc,
+        trust.addresses!.permit2,
+        nextAllowance,
+      ),
+    );
+    if (result !== null) setPermit2Allowance(nextAllowance);
   }
 
   async function handleMarketCreated(result: CreateMarketResult) {
@@ -554,6 +623,13 @@ export default function App() {
             <h1>{currentTitle}</h1>
           </div>
           <div className="top-actions">
+            <Permit2AuthorizationSwitch
+              allowance={permit2Allowance}
+              marketEnabled={market?.permit2Enabled ?? null}
+              busy={operationBusy}
+              disabled={!writeReady || client === null || wallet === null || permit2Allowance === null}
+              onToggle={() => void handlePermit2AuthorizationToggle()}
+            />
             <button
               type="button"
               className={deploymentDrawerOpen ? "header-utility active" : "header-utility"}
@@ -608,11 +684,11 @@ export default function App() {
         <main className="page-grid">
           <section className="main-column">
             {route === "overview" ? <Overview runtime={runtime} trust={trust} wallet={wallet} market={market} protocol={protocolSnapshot} paymentToken={paymentToken} paymentTokenBalance={paymentTokenBalance} writeReady={writeReady} busy={operationBusy} onMint={handleSandboxMint} /> : null}
-            {route === "markets" ? <MarketPage marketAddress={marketAddress} setMarketAddress={setMarketAddress} market={market} marketRules={selectedMarketRules} account={accountSnapshot} protocol={protocolSnapshot} onLoad={handleMarketLoad} onSelect={handleMarketSelect} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} busy={operationBusy} client={client} wallet={wallet} trust={trust} paymentTokenSymbol={paymentTokenSymbol} writeReady={writeReady} execute={executeOperation} /> : null}
+            {route === "markets" ? <MarketPage marketAddress={marketAddress} setMarketAddress={setMarketAddress} market={market} marketRules={selectedMarketRules} account={accountSnapshot} protocol={protocolSnapshot} onLoad={handleMarketLoad} onSelect={handleMarketSelect} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} busy={operationBusy} client={client} wallet={wallet} trust={trust} paymentTokenSymbol={paymentTokenSymbol} permit2Reusable={permit2Reusable} writeReady={writeReady} execute={executeOperation} /> : null}
             {route === "create" ? <CreatePage writeReady={writeReady} trust={trust} client={client} wallet={wallet} account={accountSnapshot} protocol={protocolSnapshot} paymentTokenSymbol={paymentTokenSymbol} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} busy={operationBusy} execute={executeOperation} onMarketCreated={handleMarketCreated} /> : null}
             {route === "positions" ? <PositionsPage market={market} account={accountSnapshot} wallet={wallet} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} targetBlock={positionTargetBlock} onOpenMarket={(address) => void handleMarketSelect(address, null)} /> : null}
-            {route === "marketplace" ? <MarketplacePage writeReady={writeReady} market={market} account={accountSnapshot} trust={trust} client={client} paymentTokenSymbol={paymentTokenSymbol} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} onSelectMarket={(address) => void handleMarketplaceSelect(address)} /> : null}
-            {route === "settlement" ? <SettlementPage writeReady={writeReady} market={market} wallet={wallet} client={client} execute={executeOperation} evidenceUploader={runtime === null ? undefined : makeEvidenceUploader(runtime)} /> : null}
+            {route === "marketplace" ? <MarketplacePage writeReady={writeReady} market={market} account={accountSnapshot} trust={trust} client={client} paymentTokenSymbol={paymentTokenSymbol} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} selectedListing={selectedMarketplaceListing} refreshVersion={marketplaceRefreshVersion} onSelectListing={(listing) => void handleMarketplaceListingSelect(listing)} onListingChange={handleMarketplaceListingChange} /> : null}
+            {route === "settlement" ? <SettlementPage writeReady={writeReady} market={market} wallet={wallet} client={client} publicClient={publicClient} execute={executeOperation} evidenceUploader={runtime === null ? undefined : makeEvidenceUploader(runtime)} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} onSelectMarket={handleSettlementSelect} /> : null}
             {route === "receipts" ? <ReceiptsPage activity={activity} explorerOrigin={runtime?.config.chain.explorerOrigin ?? "https://sepolia.arbiscan.io"} paymentTokenSymbol={paymentTokenSymbol} wallet={wallet} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} onOpenMarket={(address) => void handleMarketSelect(address, null)} /> : null}
           </section>
         </main>
@@ -807,6 +883,7 @@ export function MarketPage(props: {
   wallet: ConnectedWallet | null;
   trust: TrustReport | null;
   paymentTokenSymbol: string;
+  permit2Reusable: boolean;
   writeReady: boolean;
   execute: ExecuteTransaction;
 }) {
@@ -845,6 +922,7 @@ export function MarketPage(props: {
             wallet={props.wallet}
             trust={props.trust}
             paymentTokenSymbol={props.paymentTokenSymbol}
+            permit2Mode={props.permit2Reusable && props.market.permit2Enabled}
             writeReady={props.writeReady}
             primaryBuyOpen={displayState?.primaryBuyOpen === true}
             busy={props.busy}
@@ -868,7 +946,7 @@ export function MarketPage(props: {
   );
 }
 
-export function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymentTokenSymbol, writeReady, primaryBuyOpen, busy, execute }: {
+export function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymentTokenSymbol, permit2Mode, writeReady, primaryBuyOpen, busy, execute }: {
   market: MarketSnapshot;
   outcomeLabels: readonly string[] | null;
   account: AccountSnapshot | null;
@@ -876,12 +954,12 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
   wallet: ConnectedWallet | null;
   trust: TrustReport | null;
   paymentTokenSymbol: string;
+  permit2Mode: boolean;
   writeReady: boolean;
   primaryBuyOpen: boolean;
   busy: boolean;
   execute: ExecuteTransaction;
 }) {
-  const [mode, setMode] = useState<"allowance" | "permit2">("allowance");
   const [outcome, setOutcome] = useState("0");
   const [shares, setShares] = useState("1");
   const [slippage, setSlippage] = useState("0");
@@ -889,18 +967,11 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
   const [vaultAllowance, setVaultAllowance] = useState(
     account?.vaultAllowance ?? null,
   );
-  const [permit2Allowance, setPermit2Allowance] = useState(
-    account?.permit2Allowance ?? null,
-  );
   const primaryWriteReady = writeReady && primaryBuyOpen;
 
   useEffect(
     () => setVaultAllowance(account?.vaultAllowance ?? null),
     [account?.vaultAllowance, market.address, wallet?.address],
-  );
-  useEffect(
-    () => setPermit2Allowance(account?.permit2Allowance ?? null),
-    [account?.permit2Allowance, wallet?.address],
   );
 
   function paymentAmounts() {
@@ -911,25 +982,6 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
       units,
       maximumPayment: (units * (10_000n + slippageBps) + 9_999n) / 10_000n,
     };
-  }
-
-  async function approvePermit2() {
-    setFormError("");
-    try {
-      if (client === null || trust?.addresses === null || trust?.addresses === undefined) {
-        throw new Error("协议写入上下文尚未就绪");
-      }
-      const { maximumPayment } = paymentAmounts();
-      const result = await execute(
-        `Approve Permit2 ${paymentTokenSymbol}`,
-        () => client.approvePaymentToken(trust.addresses!.usdc, trust.addresses!.permit2, maximumPayment),
-      );
-      if (result !== null) setPermit2Allowance(maximumPayment);
-      return result;
-    } catch (error: unknown) {
-      setFormError(messageOf(error));
-      return null;
-    }
   }
 
   async function approveVault() {
@@ -962,7 +1014,7 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
       const { units, maximumPayment } = paymentAmounts();
       const outcomeId = BigInt(outcome);
       if (outcomeId < 0n || outcomeId >= BigInt(market.outcomeCount)) throw new RangeError("outcome 越界");
-      if (mode === "allowance") {
+      if (!permit2Mode) {
         const needsAuthorization = authorizationRequired(
           vaultAllowance,
           maximumPayment,
@@ -982,14 +1034,6 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
         }
         return;
       }
-      const needsAuthorization = authorizationRequired(
-        permit2Allowance,
-        maximumPayment,
-      );
-      if (needsAuthorization) {
-        const approval = await approvePermit2();
-        if (approval === null) return;
-      }
       const deadline = transactionDeadline();
       const nonce = randomUint256();
       const permit = { permitted: { token: trust.addresses.usdc, amount: maximumPayment }, nonce, deadline };
@@ -1005,14 +1049,7 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
         chainId: BigInt(ARBITRUM_SEPOLIA_CHAIN_ID),
       });
       const signature = await wallet.walletClient.signTypedData({ account: wallet.account, ...typed });
-      const result = await execute("Permit2 primary buy", () => client.buyWithPermit2({ vault: market.address, owner: wallet.address, outcomeId, desiredUnits: units, minimumUnits: units, maximumPayment, deadline, permit, signature }));
-      if (result !== null) {
-        setPermit2Allowance(
-          needsAuthorization
-            ? 0n
-            : (permit2Allowance ?? maximumPayment) - maximumPayment,
-        );
-      }
+      await execute("Permit2 primary buy", () => client.buyWithPermit2({ vault: market.address, owner: wallet.address, outcomeId, desiredUnits: units, minimumUnits: units, maximumPayment, deadline, permit, signature }));
     } catch (error: unknown) {
       setFormError(messageOf(error));
     }
@@ -1022,7 +1059,7 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
   try {
     const { maximumPayment } = paymentAmounts();
     buyAuthorizationRequired = authorizationRequired(
-      mode === "allowance" ? vaultAllowance : permit2Allowance,
+      permit2Mode ? maxUint256 : vaultAllowance,
       maximumPayment,
     );
   } catch {
@@ -1030,17 +1067,16 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
   }
 
   return (
-    <Panel title="一级购买" subtitle={`1 整份 = 1,000,000 units；输入与支付均按 ${paymentTokenSymbol} 6 decimals 精确解析`}>
+    <Panel title="一级购买" subtitle={`1 整份 = 1,000,000 units；交易模式由页头 Permit2 开关控制`}>
       {!primaryBuyOpen ? <p className="callout danger">该市场已截止，一级购买已关闭；请前往“结算与作废”。</p> : null}
-      <div className="tabs"><button className={mode === "allowance" ? "active" : ""} onClick={() => setMode("allowance")}>Allowance</button><button className={mode === "permit2" ? "active" : ""} onClick={() => setMode("permit2")}>Permit2</button></div>
       <form className="buy-form" onSubmit={(event) => void submit(event)}>
         <label><span>购买结果</span><select value={outcome} onChange={(event) => setOutcome(event.currentTarget.value)}>{Array.from({ length: market.outcomeCount }, (_, index) => <option value={index} key={index}>{outcomeLabels?.[index] ?? `结果 ${index + 1}`}</option>)}</select></label>
         <label><span>Shares</span><input inputMode="decimal" value={shares} onChange={(event) => setShares(event.currentTarget.value)} /></label>
         <label><span>Max slippage (bps)</span><input inputMode="numeric" value={slippage} onChange={(event) => setSlippage(event.currentTarget.value)} /></label>
-        <button className="button primary wide" disabled={!primaryWriteReady || busy}>{busy ? "处理中…" : !primaryBuyOpen ? "已截止，待结算" : writeReady ? mode === "permit2" ? buyAuthorizationRequired ? "精确授权并签名购买" : "签名并购买" : buyAuthorizationRequired ? "精确授权并模拟购买" : "模拟并购买" : "写操作已锁定"}</button>
+        <button className="button primary wide" disabled={!primaryWriteReady || busy}>{busy ? "处理中…" : !primaryBuyOpen ? "已截止，待结算" : writeReady ? permit2Mode ? "签名并购买" : buyAuthorizationRequired ? "精确授权并模拟购买" : "模拟并购买" : "写操作已锁定"}</button>
       </form>
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}
-      {mode === "allowance" ? (
+      {!permit2Mode ? (
         <PrimaryAllowanceRow
           label="Vault allowance"
           allowance={vaultAllowance}
@@ -1050,19 +1086,43 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
           onApprove={() => void approveVault()}
         />
       ) : (
-        <>
-          <PrimaryAllowanceRow
-            label="Permit2 allowance"
-            allowance={permit2Allowance}
-            paymentTokenSymbol={paymentTokenSymbol}
-            actionLabel={`精确授权 ${paymentTokenSymbol} → Permit2`}
-            disabled={!primaryWriteReady || busy}
-            onApprove={() => void approvePermit2()}
-          />
-          <p className="callout">Permit2 签名绑定 chainId、Vault、selector、outcome、金额、nonce 与 deadline；页面不保存签名。</p>
-        </>
+        <p className="callout">页头已开启可复用 Permit2 授权；每次购买仍会签署绑定 chainId、Vault、outcome、金额、nonce 与 deadline 的一次性 witness，页面不保存签名。</p>
       )}
     </Panel>
+  );
+}
+
+export function Permit2AuthorizationSwitch(props: {
+  allowance: bigint | null;
+  marketEnabled: boolean | null;
+  busy: boolean;
+  disabled: boolean;
+  onToggle: () => void;
+}) {
+  const reusable = props.allowance === maxUint256;
+  const limited = props.allowance !== null && props.allowance > 0n && !reusable;
+  const stateLabel = props.busy
+    ? "处理中"
+    : reusable
+      ? props.marketEnabled === false ? "已授权 · 当前市场不可用" : "可复用"
+      : limited ? "有限额" : "关闭";
+  const action = reusable
+    ? "撤销 Permit2 可复用授权"
+    : "开启 Permit2 可复用授权（将支付币 allowance 设置为最大值）";
+  return (
+    <button
+      type="button"
+      className="permit2-switch"
+      role="switch"
+      aria-checked={reusable}
+      aria-label={`${action}，当前状态：${stateLabel}`}
+      title={limited ? "检测到有限额授权；开启后将改为可复用额度" : action}
+      disabled={props.disabled || props.busy}
+      onClick={props.onToggle}
+    >
+      <span className="switch-track" aria-hidden="true"><span /></span>
+      <span className="switch-copy"><strong>Permit2</strong><small>{stateLabel}</small></span>
+    </button>
   );
 }
 
@@ -1091,23 +1151,26 @@ function CreatePage({ writeReady, trust, client, wallet, account, protocol, paym
 export function PositionsPage({ market, account, wallet, indexerEnabled, indexerBasePath, chainId, targetBlock, onOpenMarket }: { market: MarketSnapshot | null; account: AccountSnapshot | null; wallet: ConnectedWallet | null; indexerEnabled: boolean; indexerBasePath: string; chainId: number; targetBlock: bigint | null; onOpenMarket: (market: Address) => void }) {
   const livePositions = market === null || account === null
     ? []
-    : account.positions.map((balance, outcomeId) => ({
+    : account.positions.map(({ balance, outcomeId }) => ({
         vault: market.address,
         outcomeId: BigInt(outcomeId),
         balance,
       }));
-  return <><Panel title="全部持仓" subtitle={wallet === null ? "连接钱包后汇总所有市场" : short(wallet.address)}><WalletPositionsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} wallet={wallet?.address ?? null} livePositions={livePositions} targetBlock={targetBlock} onOpenMarket={onOpenMarket} /></Panel><Panel title="当前市场持仓" subtitle={market === null ? "尚未选择市场" : short(market.address)}>{market === null || account === null ? <Empty title="暂无当前市场快照" detail="从上方持仓或市场列表打开一个市场。" /> : <div className="position-grid">{account.positions.map((value, index) => <div key={index}><small>结果 {index + 1}</small><strong>{formatShareUnits(value)}</strong></div>)}</div>}</Panel></>;
+  return <><Panel title="全部持仓" subtitle={wallet === null ? "连接钱包后汇总所有市场" : short(wallet.address)}><WalletPositionsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} wallet={wallet?.address ?? null} livePositions={livePositions} targetBlock={targetBlock} onOpenMarket={onOpenMarket} /></Panel><Panel title="当前市场持仓" subtitle={market === null ? "尚未选择市场" : short(market.address)}>{market === null || account === null ? <Empty title="暂无当前市场快照" detail="从上方持仓或市场列表打开一个市场。" /> : <div className="position-grid">{account.positions.map(({ balance, outcomeId }) => <div key={outcomeId}><small>结果 {outcomeId + 1}</small><strong>{formatShareUnits(balance)}</strong></div>)}</div>}</Panel></>;
 }
 
-function MarketplacePage({ writeReady, market, account, trust, client, paymentTokenSymbol, indexerEnabled, indexerBasePath, chainId, onSelectMarket }: { writeReady: boolean; market: MarketSnapshot | null; account: AccountSnapshot | null; trust: TrustReport | null; client: CpredictClient | null; paymentTokenSymbol: string; indexerEnabled: boolean; indexerBasePath: string; chainId: number; onSelectMarket: (market: Address) => void }) {
+export function MarketplacePage({ writeReady, market, account, trust, client, paymentTokenSymbol, indexerEnabled, indexerBasePath, chainId, selectedListing, refreshVersion, onSelectListing, onListingChange }: { writeReady: boolean; market: MarketSnapshot | null; account: AccountSnapshot | null; trust: TrustReport | null; client: CpredictClient | null; paymentTokenSymbol: string; indexerEnabled: boolean; indexerBasePath: string; chainId: number; selectedListing: MarketplaceListingSelection | null; refreshVersion: number; onSelectListing: (listing: IndexedListing) => void; onListingChange: (listing: MarketplaceListingSelection | null, result: TransactionResult) => void }) {
   const addresses = trust?.addresses;
-  return <><Panel title="活跃 C2C 挂单" subtitle="先选择挂单所属市场，再在下方成交或管理挂单"><ListingsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} paymentTokenSymbol={paymentTokenSymbol} onOpenMarket={onSelectMarket} /></Panel><Panel title="固定价 C2C" subtitle={market === null ? "尚未选择市场" : `当前 Vault ${short(market.address)}`}>{market !== null && addresses !== null && addresses !== undefined && client !== null && writeReady ? <div className="embedded-example"><MarketplacePanel client={client} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} vault={market.address} marketplace={addresses.contracts.marketplace} paymentTokenAllowance={account?.marketplaceAllowance ?? null} shareEscrowApproved={account?.marketplaceApproved ?? null} /></div> : <Empty title={market === null ? "先选择市场" : "C2C 写操作已锁定"} detail="部署、钱包、网络与 Vault 上下文通过后开放 allowance listing/fill/cancel；Permit2 fill 由 SDK 提供。" />}</Panel><Panel title="安全参数"><dl className="definition-grid"><div><dt>Marketplace</dt><dd className="mono">{addresses ? short(addresses.contracts.marketplace) : "—"}</dd></div><div><dt>Fill protection</dt><dd>minUnits / maxGross / deadline</dd></div></dl></Panel></>;
+  const selectedListingForMarket = market !== null && selectedListing !== null && selectedListing.vault.toLowerCase() === market.address.toLowerCase() ? selectedListing : null;
+  return <><Panel title="活跃 C2C 挂单" subtitle="选择挂单后自动加载市场、价格和剩余数量"><ListingsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} paymentTokenSymbol={paymentTokenSymbol} selectedListingId={selectedListing?.listingId ?? null} refreshVersion={refreshVersion} onSelectListing={onSelectListing} /></Panel><Panel title="固定价 C2C" subtitle={market === null ? "尚未选择市场" : `当前 Vault ${short(market.address)}`}>{market !== null && addresses !== null && addresses !== undefined && client !== null && writeReady ? <div className="embedded-example"><MarketplacePanel client={client} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} vault={market.address} marketplace={addresses.contracts.marketplace} paymentTokenAllowance={account?.marketplaceAllowance ?? null} shareEscrowApproved={account?.marketplaceApproved ?? null} selectedListing={selectedListingForMarket} onListingChange={onListingChange} /></div> : <Empty title={market === null ? "先选择市场" : "C2C 写操作已锁定"} detail="部署、钱包、网络与 Vault 上下文通过后开放 allowance listing/fill/cancel；Permit2 fill 由 SDK 提供。" />}</Panel><Panel title="安全参数"><dl className="definition-grid"><div><dt>Marketplace</dt><dd className="mono">{addresses ? short(addresses.contracts.marketplace) : "—"}</dd></div><div><dt>Fill protection</dt><dd>onchain listing / exact units / maxGross / deadline</dd></div></dl></Panel></>;
 }
 
-function SettlementPage({ writeReady, market, wallet, client, execute, evidenceUploader }: { writeReady: boolean; market: MarketSnapshot | null; wallet: ConnectedWallet | null; client: CpredictClient | null; execute: ExecuteTransaction; evidenceUploader: CanonicalEvidenceUploader | undefined }) {
-  if (market === null || wallet === null || client === null) return <Empty title="结算上下文不足" detail="连接钱包并加载 Market Vault 后显示按角色允许的固定操作。" />;
+function SettlementPage({ writeReady, market, wallet, client, publicClient, execute, evidenceUploader, indexerEnabled, indexerBasePath, metadataBasePath, chainId, onSelectMarket }: { writeReady: boolean; market: MarketSnapshot | null; wallet: ConnectedWallet | null; client: CpredictClient | null; publicClient: PublicClient | null; execute: ExecuteTransaction; evidenceUploader: CanonicalEvidenceUploader | undefined; indexerEnabled: boolean; indexerBasePath: string; metadataBasePath: string | null; chainId: number; onSelectMarket: (market: Address, rules: MarketRules | null) => Promise<void> }) {
+  const queue = <Panel title="待结算市场" subtitle="Indexer 按截止时间发现候选市场；进入后再次读取 Vault 链上状态"><SettlementMarketCatalog enabled={indexerEnabled} indexerBasePath={indexerBasePath} metadataBasePath={metadataBasePath} chainId={chainId} wallet={wallet?.address ?? null} selectedMarket={market?.address ?? null} publicClient={publicClient} onOpen={(address, rules) => void onSelectMarket(address, rules)} /></Panel>;
+  if (market === null) return <>{queue}<Empty title="请选择待结算市场" detail="从上方队列选择市场后显示当前钱包可执行的结算或作废操作。" /></>;
+  if (wallet === null || client === null) return <>{queue}<Empty title="连接钱包以继续" detail="市场目录可以只读浏览；连接钱包后才会按角色开放结算操作。" /></>;
   const creator = market.creator.toLowerCase() === wallet.address.toLowerCase();
-  return <><Panel title="结算证据与终局" subtitle="canonical UTF-8 → SHA-256 → deterministic CID → uploader exact URI"><div className="embedded-example">{writeReady ? <MarketLifecyclePanel client={client} vault={market.address} outcomeCount={market.outcomeCount} creatorMode={creator} uploadCanonicalEvidence={evidenceUploader} /> : <Empty title="写操作已锁定" detail="可读市场，但不满足正式部署/钱包/网络门禁。" />}</div></Panel><Panel title="领取、退款与 permissionless 维护" subtitle="claimFor 始终支付固定 owner，调用人不能重定向"><div className="operation-grid"><button disabled={!writeReady} onClick={() => void execute("Timeout void", () => client.voidAfterDeadline(market.address))}>Permissionless timeout void</button><button disabled={!writeReady} onClick={() => void execute("Claim winnings", () => client.claimWinner(market.address, wallet.address))}>Claim winnings</button><button disabled={!writeReady} onClick={() => void execute("Refund principal", () => client.refund(market.address, wallet.address))}>Refund principal</button><button disabled={!writeReady} onClick={() => void execute("Claim early bird", () => client.claimEarlyBird(market.address, wallet.address))}>Claim early bird</button><button disabled={!writeReady} onClick={() => void execute("Claim timeout bonus", () => client.claimTimeoutBonus(market.address, wallet.address))}>Claim timeout bonus</button></div><p className="callout danger">Demo 不暴露管理员调用，也不会替 Creator 自动选择结果。Creator 终局必须人工复核锁定规则。</p></Panel></>;
+  return <>{queue}<Panel title="结算证据与终局" subtitle={`当前 Vault ${short(market.address)} · canonical UTF-8 → SHA-256 → deterministic CID`}><div className="embedded-example">{writeReady ? <MarketLifecyclePanel client={client} vault={market.address} outcomeCount={market.outcomeCount} creatorMode={creator} uploadCanonicalEvidence={evidenceUploader} /> : <Empty title="写操作已锁定" detail="可读市场，但不满足正式部署/钱包/网络门禁。" />}</div></Panel><Panel title="领取、退款与 permissionless 维护" subtitle="claimFor 始终支付固定 owner，调用人不能重定向"><div className="operation-grid"><button disabled={!writeReady} onClick={() => void execute("Timeout void", () => client.voidAfterDeadline(market.address))}>Permissionless timeout void</button><button disabled={!writeReady} onClick={() => void execute("Claim winnings", () => client.claimWinner(market.address, wallet.address))}>Claim winnings</button><button disabled={!writeReady} onClick={() => void execute("Refund principal", () => client.refund(market.address, wallet.address))}>Refund principal</button><button disabled={!writeReady} onClick={() => void execute("Claim early bird", () => client.claimEarlyBird(market.address, wallet.address))}>Claim early bird</button><button disabled={!writeReady} onClick={() => void execute("Claim timeout bonus", () => client.claimTimeoutBonus(market.address, wallet.address))}>Claim timeout bonus</button></div><p className="callout danger">Demo 不暴露管理员调用，也不会替 Creator 自动选择结果。Creator 终局必须人工复核锁定规则。</p></Panel></>;
 }
 
 function ReceiptsPage({ activity, explorerOrigin, paymentTokenSymbol, wallet, indexerEnabled, indexerBasePath, chainId, onOpenMarket }: { activity: ActivityItem[]; explorerOrigin: string; paymentTokenSymbol: string; wallet: ConnectedWallet | null; indexerEnabled: boolean; indexerBasePath: string; chainId: number; onOpenMarket: (market: Address) => void }) {
@@ -1243,7 +1306,7 @@ function parseRoute(hash: string | undefined): Route {
 
 function parseMarketRoute(hash: string | undefined): Address | null {
   const [route, candidate] = (hash ?? "").replace(/^#\/?/, "").split("/");
-  return route === "markets" && candidate !== undefined && isAddress(candidate)
+  return (route === "markets" || route === "settlement") && candidate !== undefined && isAddress(candidate)
     ? getAddress(candidate)
     : null;
 }

@@ -5,12 +5,16 @@ import {
   settlementEvidenceHash,
   ZERO_EVIDENCE_HASH,
   type CpredictClient,
+  type ListingSnapshot,
   type TransactionResult,
 } from "../../../offchain/sdk/src/index.js";
 import { ClaimsPanel } from "../src/ClaimsPanel.js";
 import { CreateMarketPanel } from "../src/CreateMarketPanel.js";
 import { MarketLifecyclePanel } from "../src/MarketLifecyclePanel.js";
-import { MarketplacePanel } from "../src/MarketplacePanel.js";
+import {
+  MarketplacePanel,
+  quoteFillFromChain,
+} from "../src/MarketplacePanel.js";
 import { PrimaryPaymentPanel } from "../src/PrimaryPaymentPanel.js";
 import {
   evidenceHashForSettlement,
@@ -37,6 +41,7 @@ const client = new Proxy(
   | "creatorVoid"
   | "voidAfterDeadline"
   | "setMarketplaceApproval"
+  | "readListing"
   | "createListing"
   | "fillListing"
   | "cancelListing"
@@ -135,12 +140,21 @@ describe("React protocol call examples", () => {
   });
 
   it("renders separate marketplace approval and all four claim paths", () => {
+    const listingId = `0x${"ab".repeat(32)}` as const;
     const marketHtml = renderToStaticMarkup(
       <MarketplacePanel
         client={client}
         paymentToken={address}
         vault={address}
         marketplace={address}
+        selectedListing={{
+          listingId,
+          vault: address,
+          outcomeId: 0n,
+          remainingUnits: 2_000_000n,
+          unitPrice: 900_000n,
+          expiresAt: 1_900_000_000n,
+        }}
       />,
     );
     const claimsHtml = renderToStaticMarkup(
@@ -148,12 +162,44 @@ describe("React protocol call examples", () => {
     );
     expect(marketHtml).toContain("Approve share escrow separately");
     expect(marketHtml).toContain("Authorize share escrow and create listing");
+    expect(marketHtml).toContain(listingId);
+    expect(marketHtml).toContain("Fixed price");
+    expect(marketHtml).toContain("0.9 USDC");
+    expect(marketHtml).toContain("Total: 1.8 USDC");
     expect(marketHtml).toContain("Approve exact USDC for fill");
     expect(marketHtml).toContain("Authorize exact USDC and fill");
-    expect(marketHtml).toContain("Cancel listing");
+    expect(marketHtml).toContain("Cancel selected listing");
     expect(claimsHtml).toContain("Claim winnings");
     expect(claimsHtml).toContain("Refund principal");
     expect(claimsHtml).toContain("Claim timeout bond bonus");
+  });
+
+  it("quotes only an active, unexpired onchain listing with enough remaining shares", () => {
+    const listing: ListingSnapshot = {
+      listingId: `0x${"ab".repeat(32)}`,
+      vault: address,
+      seller: address,
+      remainingUnits: 2_000_000n,
+      unitPrice: 900_000n,
+      expiresAt: 1_900_000_000n,
+      outcomeId: 0n,
+      active: true,
+      observedAt: 1_800_000_000n,
+    };
+    expect(quoteFillFromChain(listing, address, 1_000_000n)).toBe(900_000n);
+    expect(() => quoteFillFromChain(
+      { ...listing, active: false },
+      address,
+      1_000_000n,
+    )).toThrow("no longer active");
+    expect(() => quoteFillFromChain(
+      { ...listing, observedAt: listing.expiresAt },
+      address,
+      1_000_000n,
+    )).toThrow("expired");
+    expect(() => quoteFillFromChain(listing, address, 3_000_000n)).toThrow(
+      "exceed",
+    );
   });
 
   it("renders both bounded primary-payment authorization paths", () => {

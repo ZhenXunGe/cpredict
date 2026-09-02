@@ -22,6 +22,7 @@ describe("same-origin indexer client", () => {
         deploymentMode: 0,
         outcomeCount: 2,
         closeAt: "1893456000",
+        resolutionWindow: "900",
         rulesHash: `0x${"11".repeat(32)}`,
         marketPrimaryCap: "20000000",
         primaryFilledUnits: "3000000",
@@ -38,14 +39,17 @@ describe("same-origin indexer client", () => {
       chainId: 421614,
       owner: CREATOR,
       status: "open",
+      limit: 100,
     });
     expect(page.items[0]).toMatchObject({
       market: MARKET,
       marketPrimaryCap: 20_000_000n,
       primaryFilledUnits: 3_000_000n,
+      resolutionWindow: 900n,
     });
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("owner=0x");
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("status=open");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("limit=100");
   });
 
   it("rejects malformed activity instead of rendering untrusted data", async () => {

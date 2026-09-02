@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Address } from "viem";
+import type { Address, Hex } from "viem";
 import {
   fetchIndexerSyncStatus,
   fetchListings,
@@ -118,11 +118,13 @@ export function ListingsPanel(props: {
   indexerBasePath: string;
   chainId: number;
   paymentTokenSymbol: string;
-  onOpenMarket: (market: Address) => void;
+  selectedListingId: Hex | null;
+  refreshVersion: number;
+  onSelectListing: (listing: IndexedListing) => void;
 }) {
   const state = useIndexerList(
     props.enabled,
-    [props.indexerBasePath, props.chainId],
+    [props.indexerBasePath, props.chainId, props.refreshVersion],
     (signal) => fetchListings({
       basePath: props.indexerBasePath,
       chainId: props.chainId,
@@ -134,7 +136,7 @@ export function ListingsPanel(props: {
   if (state.error !== "") return <Notice title="C2C 挂单读取失败" detail={state.error} error />;
   if (state.loading) return <Notice title="正在读取活跃挂单…" detail="请稍候。" />;
   if (state.items.length === 0) return <Notice title="暂无活跃挂单" detail="创建挂单后会直接显示在这里。" />;
-  return <div className="listing-catalog">{state.items.map((item) => <ListingCard key={item.listingId} item={item} paymentTokenSymbol={props.paymentTokenSymbol} onOpenMarket={props.onOpenMarket} />)}</div>;
+  return <div className="listing-catalog">{state.items.map((item) => <ListingCard key={item.listingId} item={item} paymentTokenSymbol={props.paymentTokenSymbol} selected={item.listingId === props.selectedListingId} onSelect={props.onSelectListing} />)}</div>;
 }
 
 function ActivityRow(props: {
@@ -288,13 +290,14 @@ function syncDetail(status: IndexerSyncStatus | null, targetBlock: bigint | null
   return `Indexer ${indexed}，目标区块 ${requiredBlock.toString()}；同步完成前不会显示空状态。`;
 }
 
-function ListingCard(props: { item: IndexedListing; paymentTokenSymbol: string; onOpenMarket: (market: Address) => void }) {
-  return <article>
+export function ListingCard(props: { item: IndexedListing; paymentTokenSymbol: string; selected: boolean; onSelect: (listing: IndexedListing) => void }) {
+  return <article className={props.selected ? "selected" : undefined}>
     <div><span className="status-pill">出售结果 {(props.item.outcomeId + 1n).toString()}</span><small>{props.item.confirmationStatus === "confirmed" ? "已确认" : "待确认"}</small></div>
     <strong>{formatShares(props.item.remainingUnits)} 份 × {formatPayment(props.item.unitPrice, props.paymentTokenSymbol)}</strong>
     <span className="mono">Vault {short(props.item.vault)}</span>
+    <small className="mono">Listing {short(props.item.listingId)}</small>
     <small>到期 {new Date(Number(props.item.expiresAt) * 1_000).toLocaleString("zh-CN", { hour12: false })}</small>
-    <button type="button" className="button" onClick={() => props.onOpenMarket(props.item.vault)}>选择此市场</button>
+    <button type="button" className="button" aria-pressed={props.selected} onClick={() => props.onSelect(props.item)}>{props.selected ? "已选择" : "选择此挂单"}</button>
   </article>;
 }
 

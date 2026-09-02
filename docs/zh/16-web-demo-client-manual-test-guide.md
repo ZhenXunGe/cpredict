@@ -21,10 +21,11 @@
 
 当前 Web Demo 是“合约验证与交互控制台”，不是完整消费者预测市场产品。甲方开始测试前，应了解：
 
-- 没有市场发现或市场列表，需要交付方提供已知 Market Vault；
+- “市场”页通过只读 Indexer 提供市场目录，“结算与作废”页会列出已到 `closeAt`、尚未终局的市场；
+- Indexer 未启用、未同步或目标市场尚未出现时，仍需交付方提供已知 Market Vault 作为回退；
 - 创建市场页面只支持 `1–90 天`期限，不能从 UI 创建 15 分钟开放期市场；
 - 15 分钟快速验收市场必须由交付方提前创建并提供 Vault；
-- C2C 页面不会自动提取 Listing ID，交付方需提前提供或现场协助取得；
+- C2C 创建成功后会从链上回执自动提取 Listing ID；选择活跃挂单会自动加载对应 Vault、价格和剩余数量；
 - C2C 页面仅开放 allowance fill，Permit2 fill 只存在于 SDK；
 - settlement evidence uploader 当前关闭，体验时不填写 evidence URI/summary；
 - Paymaster 仅只读展示，所有钱包交易仍需要测试 ETH 支付 gas；
@@ -47,7 +48,7 @@
 - 为三个钱包准备足够的 Arbitrum Sepolia 测试 ETH；
 - 提供至少一个 OPEN 市场、一个可结算市场、一个作废/退款市场和一个 timeout 市场；
 - 提供每个市场的 Vault 地址、题目、结果含义、正确结算结果和可操作时间；
-- 为 C2C 场景准备卖方持仓和 Listing ID 获取方式；
+- 为 C2C 场景准备卖方持仓和至少一个可供买方选择的活跃挂单；
 - 明确本轮哪些步骤必须执行、哪些是可选项、哪些是当前已知限制。
 
 当前仓库默认 runtime 仍会显示 `LOCKED / BLOCKED_NOT_DEPLOYED`。如果交付方没有先发布准备好的
@@ -70,7 +71,7 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 | Resolve 市场 Vault / 正确 outcome |  |
 | Creator void 市场 Vault |  |
 | Timeout 市场 Vault / 可执行时间 |  |
-| 预置 Listing ID 或取得方式 |  |
+| 预置活跃挂单或创建方式 |  |
 | 问题反馈联系人 |  |
 
 建议为 A/B/C 使用三个独立浏览器 Profile。不要把三个钱包的助记词或私钥写入本表、截图、聊天或测试
@@ -216,16 +217,17 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 3. 点击 `Step 1: approve share escrow`。
 4. 输入交付方指定的 Outcome、Shares 和每份 ctUSD 价格。
 5. 点击 `Step 2: create listing`。
-6. 立即保存 receipt，并由交付方提供对应 Listing ID。
+6. 确认页面从 receipt 自动显示并选中新创建的 Listing ID，同时保存 receipt。
 
 买方步骤：
 
 1. 切换到另一个测试钱包并重新连接。
-2. 加载相同 Vault，进入“C2C 市场”。
-3. 填入交付方提供的 Listing ID。
-4. 点击 `Approve exact ctUSD for fill`。
-5. 点击 `Fill exact amount`。
-6. 双方重新加载市场和持仓。
+2. 进入“C2C 市场”，在活跃挂单中点击 `选择此挂单`。
+3. 确认页面自动加载相同 Vault、Listing ID、Outcome、固定价格和剩余数量。
+4. 只填写要购买的 Shares，确认页面自动计算总额。
+5. 点击 `Approve exact ctUSD for fill`。
+6. 点击 `Fill exact amount`。
+7. 双方重新加载市场和持仓。
 
 预期体验：
 
@@ -234,9 +236,9 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 - C2C 不改变 Market Pool 和最终 payout 规则；
 - 每个写操作只有一次钱包确认和一条最终结果；
 - 无效/已取消 Listing 不应成交；
-- 当前 UI 不能自动带出 Listing ID，应记录为已知体验缺口。
+- 成交授权和提交前都应重新读取链上挂单；失效、过期或剩余数量不足时不得继续签名。
 
-如需测试 cancel，使用仍有剩余数量的卖单，由原卖方填入 Listing ID 后点击 `Cancel listing`。
+如需测试 cancel，使用仍有剩余数量的卖单，由原卖方选择该挂单后点击 `Cancel selected listing`。
 
 ### 场景 9：Creator 结算
 
@@ -333,9 +335,9 @@ receipt。不要再次点击同一按钮。
 
 以下能力当前保持 `未提供 / 不适用 / 已知限制`，不能让甲方通过技术操作补齐：
 
-- 自动市场发现、搜索和题目列表；
+- 市场全文搜索和高级筛选；
 - 通过 UI 创建 15 分钟开放期市场；
-- 自动提取和分享 Listing ID；
+- 一键分享 Listing ID；
 - C2C Permit2 fill；
 - settlement evidence 上传；
 - Paymaster/UserOperation 免 gas 体验；
