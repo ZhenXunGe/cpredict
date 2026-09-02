@@ -41,6 +41,14 @@ describe("web demo runtime trust configuration", () => {
     expect(() => parseRuntimeConfig({ ...validRuntime, permit2Relay: { enabled: true, basePath: "https://attacker.invalid" } })).toThrow(/invalid runtime config/);
   });
 
+  it("defaults an older runtime without relay configuration to disabled", () => {
+    const { permit2Relay: _permit2Relay, ...legacyRuntime } = validRuntime;
+    expect(parseRuntimeConfig(legacyRuntime).permit2Relay).toEqual({
+      enabled: false,
+      basePath: "/relay",
+    });
+  });
+
   it("rejects unknown fields and unfinalized manifests", () => {
     expect(() => parseRuntimeConfig({ ...validRuntime, secret: "must-not-exist" })).toThrow(/additional properties/i);
     expect(() => parseFinalManifest({ status: "PENDING", chainId: 421614 })).toThrow(/部署清单校验失败/);

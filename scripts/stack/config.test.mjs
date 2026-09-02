@@ -49,6 +49,17 @@ async function fixture() {
   return { root, runtime, secretPath, publicPath };
 }
 
+async function withoutRelayPublicKeys(path) {
+  const text = await readFile(path, "utf8");
+  await writeFile(
+    path,
+    text
+      .split("\n")
+      .filter((line) => !line.startsWith("CPREDICT_RELAY_"))
+      .join("\n"),
+  );
+}
+
 test("stack config keeps secret and public deployment inputs separate", async () => {
   const value = await fixture();
   const parsed = await loadStackConfiguration({
@@ -57,6 +68,27 @@ test("stack config keeps secret and public deployment inputs separate", async ()
     runtimeBoundary: join(value.root, "runtime/arbitrum-sepolia"),
   });
   assert.equal(parsed.runtimeRoot, await realpath(value.runtime));
+});
+
+test("default stack accepts a legacy runtime without relay public keys", async () => {
+  const value = await fixture();
+  await withoutRelayPublicKeys(value.publicPath);
+  await expectNoRejection(
+    loadStackConfiguration({
+      secretPath: value.secretPath,
+      publicPath: value.publicPath,
+      runtimeBoundary: join(value.root, "runtime/arbitrum-sepolia"),
+    }),
+  );
+  await assert.rejects(
+    loadStackConfiguration({
+      secretPath: value.secretPath,
+      publicPath: value.publicPath,
+      runtimeBoundary: join(value.root, "runtime/arbitrum-sepolia"),
+      relay: true,
+    }),
+    /CPREDICT_RELAY_FACTORY_ADDRESS is required/,
+  );
 });
 
 test("relay profile requires an accessible adapter and an explicitly enabled runtime", async () => {

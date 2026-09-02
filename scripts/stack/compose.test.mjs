@@ -37,6 +37,17 @@ test("Compose exposes only application services on loopback", () => {
     compose.services["permit2-relay"].environment.CPREDICT_RELAY_ADAPTER_MODULE,
     "file:///run/cpredict/permit2-relay-adapter.mjs",
   );
+  for (const key of [
+    "CPREDICT_RELAY_FACTORY_ADDRESS",
+    "CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS",
+    "CPREDICT_RELAY_PERMIT2_ADDRESS",
+  ]) {
+    assert.equal(
+      compose.services["permit2-relay"].environment[key],
+      `\${${key}:-}`,
+      key,
+    );
+  }
   assert.equal(compose.services.postgres.networks.includes("app"), false);
 });
 

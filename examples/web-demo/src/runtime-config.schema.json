@@ -3,7 +3,7 @@
   "$id": "https://cpredict.example/schemas/web-demo-runtime-v1.json",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "chain", "deployment", "paymentToken", "indexer", "metadata", "permit2Relay", "evidence"],
+  "required": ["schemaVersion", "chain", "deployment", "paymentToken", "indexer", "metadata", "evidence"],
   "properties": {
     "schemaVersion": { "const": "cpredict.web-demo.runtime.v1" },
     "chain": {

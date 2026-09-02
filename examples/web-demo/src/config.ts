@@ -74,6 +74,10 @@ export interface RuntimeConfig {
   evidence: { uploadEnabled: boolean; endpointPath: string };
 }
 
+type RuntimeConfigInput = Omit<RuntimeConfig, "permit2Relay"> & {
+  permit2Relay?: RuntimeConfig["permit2Relay"];
+};
+
 export interface CodeRecord {
   address: Address;
   runtimeCodehash: Hex;
@@ -120,7 +124,7 @@ export type DebugAddressInput = Record<ContractKey, string> & {
   entryPoint: string;
 };
 
-const runtimeValidator = validateRuntime as StandaloneValidateFunction<RuntimeConfig>;
+const runtimeValidator = validateRuntime as StandaloneValidateFunction<RuntimeConfigInput>;
 const manifestValidator = validateManifest as StandaloneValidateFunction<FinalManifest>;
 
 export async function loadRuntime(): Promise<LoadedRuntime> {
@@ -230,13 +234,17 @@ export function parseRuntimeConfig(value: unknown): RuntimeConfig {
   if (!runtimeValidator(value)) {
     throw new Error(`invalid runtime config: ${formatErrors(runtimeValidator.errors)}`);
   }
+  const normalized: RuntimeConfig = {
+    ...value,
+    permit2Relay: value.permit2Relay ?? { enabled: false, basePath: "/relay" },
+  };
   if (
-    value.deployment.allowDebugAddresses === false &&
-    value.paymentToken.kind !== "canonical-usdc"
+    normalized.deployment.allowDebugAddresses === false &&
+    normalized.paymentToken.kind !== "canonical-usdc"
   ) {
     throw new Error("invalid runtime config: finalized runtime must use canonical USDC");
   }
-  return value;
+  return normalized;
 }
 
 export function parseFinalManifest(value: unknown): FinalManifest {

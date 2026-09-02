@@ -36,6 +36,8 @@ const REQUIRED_PUBLIC_KEYS = [
   "CPREDICT_PAYMASTER_MAX_COST_PER_REQUEST",
   "CPREDICT_PAYMASTER_MAX_COST_PER_USER_DAY",
   "CPREDICT_PAYMASTER_MAX_COST_GLOBAL_DAY",
+];
+const RELAY_PUBLIC_KEYS = [
   "CPREDICT_RELAY_FACTORY_ADDRESS",
   "CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS",
   "CPREDICT_RELAY_PERMIT2_ADDRESS",
@@ -66,6 +68,7 @@ export async function loadStackConfiguration({
   }
   for (const key of REQUIRED_SECRET_KEYS) requireValue(secret, key);
   for (const key of REQUIRED_PUBLIC_KEYS) requireValue(publicEnv, key);
+  if (relay) for (const key of RELAY_PUBLIC_KEYS) requireValue(publicEnv, key);
   for (const key of REQUIRED_SECRET_KEYS.filter((key) => key.endsWith("PASSWORD"))) {
     if (!SAFE_PASSWORD.test(secret[key]))
       throw new Error(`${key} must be 24-128 URL-safe characters`);
@@ -80,11 +83,10 @@ export async function loadStackConfiguration({
     "CPREDICT_PAYMASTER_ADDRESS",
     "CPREDICT_PAYMASTER_EXPECTED_SIGNER",
   ]) validateAddress(publicEnv[key], key);
-  for (const key of [
-    "CPREDICT_RELAY_FACTORY_ADDRESS",
-    "CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS",
-    "CPREDICT_RELAY_PERMIT2_ADDRESS",
-  ]) validateAddress(publicEnv[key], key);
+  for (const key of RELAY_PUBLIC_KEYS) {
+    const value = publicEnv[key];
+    if (value !== undefined && value.length > 0) validateAddress(value, key);
+  }
   validateUnsigned(publicEnv.CPREDICT_INDEXER_DEPLOYMENT_BLOCK, "deployment block");
   validateUnsigned(publicEnv.CPREDICT_PAYMASTER_POLICY_VERSION, "policy version");
   for (const key of [

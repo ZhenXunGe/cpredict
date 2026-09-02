@@ -58,7 +58,7 @@
     },
     {
       "path": "compose.yaml",
-      "sha256": "cd3e9b2913199ed1c06464768b59626f72bfabf393eee4d9832c57433f654246"
+      "sha256": "97f119ba5b506e3b6bd4d9bae41f68848f635e8d09d61b8f3eac8de4597aeb36"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
@@ -266,7 +266,7 @@
     },
     {
       "path": "examples/web-demo/src/config.ts",
-      "sha256": "734191f2872a02545bd11b5bccefd5750987dfe8da6e77e34c8dcc4e7c1af75c"
+      "sha256": "473dce78d7f0123066a7f3679737fa89e090a543a3c628432fc0ac6ca5c3c91b"
     },
     {
       "path": "examples/web-demo/src/create-market-times.ts",
@@ -278,7 +278,7 @@
     },
     {
       "path": "examples/web-demo/src/generated-validators.js",
-      "sha256": "1535524b1ce89c9911d4551e8e0a2d7902ebcc1cf537d8af12b632788fd0a214"
+      "sha256": "57761dcb7765669d94c7da3e1d684a872224b5eb19cfaf90ae4ec260bb0f05e2"
     },
     {
       "path": "examples/web-demo/src/indexer-client.ts",
@@ -302,7 +302,7 @@
     },
     {
       "path": "examples/web-demo/src/runtime-config.schema.json",
-      "sha256": "dd7f4ab0c2b12e3e55e433a5ab181d8236f7ff8f179a1ba30f0bbe6a97a0ce41"
+      "sha256": "f6e50f30a3463263f6a3e0127e3044b3607b740a77039cb656087fde417ece58"
     },
     {
       "path": "examples/web-demo/src/sandbox-token.ts",
@@ -326,7 +326,7 @@
     },
     {
       "path": "examples/web-demo/test/config.test.ts",
-      "sha256": "ddd97f32ae78b7e4ec037ce4ec97332e67e6dc531855ee0c3f79a3c8c764742c"
+      "sha256": "b11b936cbed4fbacdd1a68f1899a6ba6edb8a29a7525ae7714f85bd999b3dd09"
     },
     {
       "path": "examples/web-demo/test/create-market-times.test.ts",
@@ -1506,15 +1506,15 @@
     },
     {
       "path": "scripts/stack/compose.test.mjs",
-      "sha256": "75e6cbfe0bb27f34ee646de111cce2063c5d87080b1e1baf43e685017a6c48e1"
+      "sha256": "80bb2bf3ba7ada4e8f9a72d59c34eed75eb726333c037280de97ef5d044784ea"
     },
     {
       "path": "scripts/stack/config.mjs",
-      "sha256": "fb97fb27976081cf31ec9645a5796a5c72267bef71e0238ea6c7efdc1dc680be"
+      "sha256": "85f2b24c17d5be966c4e27cda9e5ead59dbda4296a722b6fabc159487605fec0"
     },
     {
       "path": "scripts/stack/config.test.mjs",
-      "sha256": "642652c37c45fb7cdc523bfad6473a2857978ff2c8db7df98e98f4a4c44422a2"
+      "sha256": "4cb80678226c35234fffd064befe730636d28f7bfd1412a5a6ad75ec54489a3d"
     },
     {
       "path": "scripts/stack/container-images.test.mjs",
