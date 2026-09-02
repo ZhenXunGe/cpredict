@@ -216,6 +216,48 @@ describe("ChainIndexer canonical ingestion", () => {
     });
   });
 
+  it("keeps the same outcome ID distinct across market asset keys", async () => {
+    const client = new FakeClient(4n, [
+      marketCreatedLog(1n, MARKET_A),
+      marketInitializedLog(1n, MARKET_A),
+      marketCreatedLog(2n, MARKET_B),
+      marketInitializedLog(2n, MARKET_B),
+      transferLog(3n, MARKET_A, ZERO, ALICE, 0n, 11n),
+      transferLog(4n, MARKET_B, ZERO, ALICE, 0n, 17n),
+    ]);
+    const store = new MemoryEventStore();
+    await createIndexer(client, store).runBatch();
+
+    const positions = (
+      await store.listPositions(CHAIN_ID, ALICE, { limit: 10 })
+    ).items;
+    expect(positions).toHaveLength(2);
+    expect(positions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          chainId: CHAIN_ID,
+          vault: MARKET_A,
+          outcomeId: 0n,
+          balance: 11n,
+        }),
+        expect.objectContaining({
+          chainId: CHAIN_ID,
+          vault: MARKET_B,
+          outcomeId: 0n,
+          balance: 17n,
+        }),
+      ]),
+    );
+    expect(
+      new Set(
+        positions.map(
+          ({ chainId, vault, outcomeId }) =>
+            `${chainId}:${vault.toLowerCase()}:${outcomeId.toString()}`,
+        ),
+      ).size,
+    ).toBe(2);
+  });
+
   it("materializes metadata, primary totals, catalog filters, and wallet activity", async () => {
     const rulesHash = hash(801n);
     const sourceHash = hash(802n);

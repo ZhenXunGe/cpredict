@@ -96,11 +96,11 @@ reports remain evidence for their own source snapshots but must not override tha
 See `reports/internal-security-review.md` for impact, proof and residual boundaries. These fixes were
 made before any commit, deployment or real-fund use and are not a substitute for external audit.
 
-## Deliberate design deviations
+## Deliberate design decisions and accepted deviations
 
 - The Full runtime is initialized atomically by the Factory after a Factory-only deployer creates
   blank bytecode in the same transaction, rather than by a parameterized constructor. This keeps the
   Factory under EIP-170 while preserving non-interleavable initialization.
-- Emergency flags may pause listing fills in addition to creation of new listings. Cancellation and
-  terminal return remain always available.
-- Each market uses a separate ERC-1155 address instead of a global market×outcome token ID.
+- The product decision frozen on 2026-09-02 keeps listing-fill pause for contract-security incidents
+  because fills create new buyer exposure. Cancellation, terminal return, direct transfer, claim and
+  refund remain available, and the control must not be used for market intervention.

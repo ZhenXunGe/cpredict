@@ -329,6 +329,26 @@ contract ProtocolFlowsTest is Test {
         assertEq(full.remainingWinnerPool(), clone.remainingWinnerPool());
     }
 
+    function testSameOutcomeIdAcrossMarketsUsesDistinctAssetKeys() public {
+        MarketVaultCoreV1 firstMarket = _create(ProtocolTypes.DeploymentMode.FULL, 100e6, 0);
+        MarketVaultCoreV1 secondMarket = _create(ProtocolTypes.DeploymentMode.FULL, 101e6, 0);
+        _approveMarket(ALICE, firstMarket);
+        _approveMarket(ALICE, secondMarket);
+
+        vm.prank(ALICE);
+        firstMarket.buy(0, 11e6, 11e6, 11e6, uint64(block.timestamp + 1 hours));
+        vm.prank(ALICE);
+        secondMarket.buy(0, 17e6, 17e6, 17e6, uint64(block.timestamp + 1 hours));
+
+        assertTrue(address(firstMarket) != address(secondMarket));
+        assertEq(firstMarket.balanceOf(ALICE, 0), 11e6);
+        assertEq(secondMarket.balanceOf(ALICE, 0), 17e6);
+        assertEq(firstMarket.totalSupply(0), 11e6);
+        assertEq(secondMarket.totalSupply(0), 17e6);
+        assertEq(firstMarket.totalPrincipal(), 11e6);
+        assertEq(secondMarket.totalPrincipal(), 17e6);
+    }
+
     function testPrimaryPartialFillUsesCumulativePerUserCap() public {
         MarketVaultCoreV1 market = _create(ProtocolTypes.DeploymentMode.FULL, 150e6, 0);
         _approveMarket(ALICE, market);

@@ -212,8 +212,8 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 
 卖方步骤：
 
-1. 使用有持仓的钱包加载 C2C Market Vault。
-2. 进入“C2C 市场”。
+1. 使用有持仓的钱包进入“C2C 市场”。
+2. 在页面顶部的“选择 C2C 市场”目录中选择要挂单的 Market Vault，确认页面没有跳转到普通市场页。
 3. 点击 `Step 1: approve share escrow`。
 4. 输入交付方指定的 Outcome、Shares 和每份 ctUSD 价格。
 5. 点击 `Step 2: create listing`。
@@ -231,6 +231,7 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 
 预期体验：
 
+- C2C 页面可独立浏览和选择市场；选中后当前 Vault 与固定价表单同步更新；
 - 卖方持仓减少、买方持仓增加；
 - ctUSD 从买方转给卖方；
 - C2C 不改变 Market Pool 和最终 payout 规则；

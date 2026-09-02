@@ -162,7 +162,7 @@
     },
     {
       "path": "docs/zh/00-delivery-status.md",
-      "sha256": "8127be2db20ffb7b7595a19401e75ccc447929fe3418db283619ba97f17d53f9"
+      "sha256": "03a6a45b8b249a6ed518415cf8fe1055ee748f0b39e440adc18a7002b88e6f6e"
     },
     {
       "path": "docs/zh/13-compose-runtime-operations.md",
@@ -250,7 +250,7 @@
     },
     {
       "path": "examples/web-demo/src/App.tsx",
-      "sha256": "d9779391703ea61d2f489a7ebf543e4e686c00fd212e749ad2de6c91441bb731"
+      "sha256": "9b6217cfcf3fef4954dea60d5829030c096824a0a08f71e35d8ef0d39a72ccd3"
     },
     {
       "path": "examples/web-demo/src/CreateMarketForm.tsx",
@@ -258,7 +258,7 @@
     },
     {
       "path": "examples/web-demo/src/MarketCatalog.tsx",
-      "sha256": "58ad4650efb264bab4e7315089bcc37c2916b74c4d657aa0fb0df4c1df64bfe2"
+      "sha256": "728283ca6210c6927d212c21916b2e1929dee5b35a1c89f818f7338a24cc8916"
     },
     {
       "path": "examples/web-demo/src/WalletIndexerPanels.tsx",
@@ -310,7 +310,7 @@
     },
     {
       "path": "examples/web-demo/src/styles.css",
-      "sha256": "ee8828068b5a4ce6ce75c603a6eab5a18bec419f98bf71e7d4df15c22b130e4a"
+      "sha256": "a13a60567fa8006afaf685b1d91f9c16e02632ae30e4bd114e957110e8d9c25c"
     },
     {
       "path": "examples/web-demo/src/trust.ts",
@@ -346,7 +346,7 @@
     },
     {
       "path": "examples/web-demo/test/marketplace-flow.test.tsx",
-      "sha256": "6c62c8cb7b8f6459c7a38f9be0a06fe33d40c1b8aea2949e7cb7ff698c95cc1e"
+      "sha256": "674dd31d15798412a8ad4f64e1f0020e40252480239a4a5459444789d779e685"
     },
     {
       "path": "examples/web-demo/test/metadata-client.test.ts",
@@ -706,7 +706,7 @@
     },
     {
       "path": "offchain/indexer/test/indexer.test.ts",
-      "sha256": "b9566c9122a1849cf6f801a454ac313933d987913129d1b2d216c9bffff2a90c"
+      "sha256": "130665173ca5642ee2f19da659dd6203751aced03df49bc93f674e9b55761a06"
     },
     {
       "path": "offchain/indexer/test/instrumented-store.test.ts",
@@ -1806,7 +1806,7 @@
     },
     {
       "path": "test/unit/ProtocolFlows.t.sol",
-      "sha256": "7dd2a9617eba2832d5c723d808abb185f9d8c76baec35c8d209d4aff671b489a"
+      "sha256": "7bb39e24145fe80054d34264edacdd416c3c7cd6f59964f9973ca81b641a65a6"
     },
     {
       "path": "test/unit/SponsorshipPaymaster.t.sol",

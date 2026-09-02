@@ -147,6 +147,7 @@ export default function App() {
   const [debug, setDebug] = useState<DebugAddressInput>(INITIAL_DEBUG);
   const [marketAddress, setMarketAddress] = useState("");
   const [market, setMarket] = useState<MarketSnapshot | null>(null);
+  const [marketLoadError, setMarketLoadError] = useState<string | null>(null);
   const [selectedMarketplaceListing, setSelectedMarketplaceListing] =
     useState<MarketplaceListingSelection | null>(null);
   const [marketplaceRefreshVersion, setMarketplaceRefreshVersion] = useState(0);
@@ -334,10 +335,13 @@ export default function App() {
 
   async function loadMarketAddress(candidate: string) {
     if (publicClient === null || !isAddress(candidate)) {
-      push(setActivity, "error", "Market load failed", "请输入有效 Vault 地址");
+      const detail = publicClient === null ? "链上读取客户端尚未就绪" : "请输入有效 Vault 地址";
+      setMarketLoadError(detail);
+      push(setActivity, "error", "Market load failed", detail);
       return;
     }
     setOperationBusy(true);
+    setMarketLoadError(null);
     try {
       const nextMarket = await readMarket(publicClient, getAddress(candidate));
       setMarket(nextMarket);
@@ -360,7 +364,9 @@ export default function App() {
       }
       push(setActivity, "success", "Market loaded", `${short(nextMarket.address)} · ${marketDisplayState(nextMarket).label}`);
     } catch (error: unknown) {
-      push(setActivity, "error", "Market load failed", classifyProtocolError(error).message);
+      const detail = classifyProtocolError(error).message;
+      setMarketLoadError(detail);
+      push(setActivity, "error", "Market load failed", detail);
     } finally {
       setOperationBusy(false);
     }
@@ -382,7 +388,27 @@ export default function App() {
   async function handleMarketplaceListingSelect(listing: IndexedListing) {
     setSelectedMarketplaceListing(listing);
     setMarketAddress(listing.vault);
+    if (market?.address.toLowerCase() !== listing.vault.toLowerCase()) {
+      setMarket(null);
+      setAccountSnapshot(null);
+    }
+    setRoute("marketplace", listing.vault);
     await loadMarketAddress(listing.vault);
+  }
+
+  async function handleMarketplaceMarketSelect(address: Address, rules: MarketRules | null) {
+    setSelectedMarketplaceListing((current) =>
+      current?.vault.toLowerCase() === address.toLowerCase() ? current : null,
+    );
+    setMarketAddress(address);
+    setSelectedMarketRules(rules);
+    if (market?.address.toLowerCase() !== address.toLowerCase()) {
+      setMarket(null);
+      setAccountSnapshot(null);
+    }
+    setRoute("marketplace", address);
+    await loadMarketAddress(address);
+    if (rules !== null) setSelectedMarketRules(rules);
   }
 
   function handleMarketplaceListingChange(
@@ -688,7 +714,7 @@ export default function App() {
             {route === "markets" ? <MarketPage marketAddress={marketAddress} setMarketAddress={setMarketAddress} market={market} marketRules={selectedMarketRules} account={accountSnapshot} protocol={protocolSnapshot} onLoad={handleMarketLoad} onSelect={handleMarketSelect} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} permit2RelayBasePath={runtime?.config.permit2Relay.enabled === true ? runtime.config.permit2Relay.basePath : null} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} busy={operationBusy} client={client} publicClient={publicClient} wallet={wallet} trust={trust} paymentTokenSymbol={paymentTokenSymbol} permit2Reusable={permit2Reusable} writeReady={writeReady} execute={executeOperation} /> : null}
             {route === "create" ? <CreatePage writeReady={writeReady} trust={trust} client={client} wallet={wallet} account={accountSnapshot} protocol={protocolSnapshot} paymentTokenSymbol={paymentTokenSymbol} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} busy={operationBusy} execute={executeOperation} onMarketCreated={handleMarketCreated} /> : null}
             {route === "positions" ? <PositionsPage market={market} account={accountSnapshot} wallet={wallet} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} targetBlock={positionTargetBlock} onOpenMarket={(address) => void handleMarketSelect(address, null)} /> : null}
-            {route === "marketplace" ? <MarketplacePage writeReady={writeReady} market={market} account={accountSnapshot} trust={trust} client={client} paymentTokenSymbol={paymentTokenSymbol} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} selectedListing={selectedMarketplaceListing} refreshVersion={marketplaceRefreshVersion} onSelectListing={(listing) => void handleMarketplaceListingSelect(listing)} onListingChange={handleMarketplaceListingChange} /> : null}
+            {route === "marketplace" ? <MarketplacePage writeReady={writeReady} market={market} selectedMarketAddress={isAddress(marketAddress) ? getAddress(marketAddress) : market?.address ?? null} marketBusy={operationBusy} marketLoadError={marketLoadError} account={accountSnapshot} trust={trust} client={client} wallet={wallet?.address ?? null} paymentTokenSymbol={paymentTokenSymbol} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} selectedListing={selectedMarketplaceListing} refreshVersion={marketplaceRefreshVersion} onSelectMarket={(address, rules) => void handleMarketplaceMarketSelect(address, rules)} onSelectListing={(listing) => void handleMarketplaceListingSelect(listing)} onListingChange={handleMarketplaceListingChange} /> : null}
             {route === "settlement" ? <SettlementPage writeReady={writeReady} market={market} wallet={wallet} client={client} publicClient={publicClient} execute={executeOperation} evidenceUploader={runtime === null ? undefined : makeEvidenceUploader(runtime)} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} onSelectMarket={handleSettlementSelect} /> : null}
             {route === "receipts" ? <ReceiptsPage activity={activity} explorerOrigin={runtime?.config.chain.explorerOrigin ?? "https://sepolia.arbiscan.io"} paymentTokenSymbol={paymentTokenSymbol} wallet={wallet} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} onOpenMarket={(address) => void handleMarketSelect(address, null)} /> : null}
           </section>
@@ -1202,10 +1228,16 @@ export function PositionsPage({ market, account, wallet, indexerEnabled, indexer
   return <><Panel title="全部持仓" subtitle={wallet === null ? "连接钱包后汇总所有市场" : short(wallet.address)}><WalletPositionsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} wallet={wallet?.address ?? null} livePositions={livePositions} targetBlock={targetBlock} onOpenMarket={onOpenMarket} /></Panel><Panel title="当前市场持仓" subtitle={market === null ? "尚未选择市场" : short(market.address)}>{market === null || account === null ? <Empty title="暂无当前市场快照" detail="从上方持仓或市场列表打开一个市场。" /> : <div className="position-grid">{account.positions.map(({ balance, outcomeId }) => <div key={outcomeId}><small>结果 {outcomeId + 1}</small><strong>{formatShareUnits(balance)}</strong></div>)}</div>}</Panel></>;
 }
 
-export function MarketplacePage({ writeReady, market, account, trust, client, paymentTokenSymbol, indexerEnabled, indexerBasePath, chainId, selectedListing, refreshVersion, onSelectListing, onListingChange }: { writeReady: boolean; market: MarketSnapshot | null; account: AccountSnapshot | null; trust: TrustReport | null; client: CpredictClient | null; paymentTokenSymbol: string; indexerEnabled: boolean; indexerBasePath: string; chainId: number; selectedListing: MarketplaceListingSelection | null; refreshVersion: number; onSelectListing: (listing: IndexedListing) => void; onListingChange: (listing: MarketplaceListingSelection | null, result: TransactionResult) => void }) {
+export function MarketplacePage({ writeReady, market, selectedMarketAddress, marketBusy, marketLoadError, account, trust, client, wallet, paymentTokenSymbol, indexerEnabled, indexerBasePath, metadataBasePath, chainId, selectedListing, refreshVersion, onSelectMarket, onSelectListing, onListingChange }: { writeReady: boolean; market: MarketSnapshot | null; selectedMarketAddress: Address | null; marketBusy: boolean; marketLoadError: string | null; account: AccountSnapshot | null; trust: TrustReport | null; client: CpredictClient | null; wallet: Address | null; paymentTokenSymbol: string; indexerEnabled: boolean; indexerBasePath: string; metadataBasePath: string | null; chainId: number; selectedListing: MarketplaceListingSelection | null; refreshVersion: number; onSelectMarket: (market: Address, rules: MarketRules | null) => void; onSelectListing: (listing: IndexedListing) => void; onListingChange: (listing: MarketplaceListingSelection | null, result: TransactionResult) => void }) {
   const addresses = trust?.addresses;
   const selectedListingForMarket = market !== null && selectedListing !== null && selectedListing.vault.toLowerCase() === market.address.toLowerCase() ? selectedListing : null;
-  return <><Panel title="活跃 C2C 挂单" subtitle="选择挂单后自动加载市场、价格和剩余数量"><ListingsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} paymentTokenSymbol={paymentTokenSymbol} selectedListingId={selectedListing?.listingId ?? null} refreshVersion={refreshVersion} onSelectListing={onSelectListing} /></Panel><Panel title="固定价 C2C" subtitle={market === null ? "尚未选择市场" : `当前 Vault ${short(market.address)}`}>{market !== null && addresses !== null && addresses !== undefined && client !== null && writeReady ? <div className="embedded-example"><MarketplacePanel client={client} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} vault={market.address} marketplace={addresses.contracts.marketplace} paymentTokenAllowance={account?.marketplaceAllowance ?? null} shareEscrowApproved={account?.marketplaceApproved ?? null} selectedListing={selectedListingForMarket} onListingChange={onListingChange} /></div> : <Empty title={market === null ? "先选择市场" : "C2C 写操作已锁定"} detail="部署、钱包、网络与 Vault 上下文通过后开放 allowance listing/fill/cancel；Permit2 fill 由 SDK 提供。" />}</Panel><Panel title="安全参数"><dl className="definition-grid"><div><dt>Marketplace</dt><dd className="mono">{addresses ? short(addresses.contracts.marketplace) : "—"}</dd></div><div><dt>Fill protection</dt><dd>onchain listing / exact units / maxGross / deadline</dd></div></dl></Panel></>;
+  const loadingSelectedMarket = marketBusy && selectedMarketAddress !== null && market === null;
+  const selectionSubtitle = loadingSelectedMarket
+    ? `正在读取 Vault ${short(selectedMarketAddress)}`
+    : selectedMarketAddress === null
+      ? "从市场目录选择 Vault；选择后仍停留在 C2C 页面"
+      : `已选择 Vault ${short(selectedMarketAddress)}`;
+  return <><Panel title="选择 C2C 市场" subtitle={selectionSubtitle}><MarketCatalog enabled={indexerEnabled} indexerBasePath={indexerBasePath} metadataBasePath={metadataBasePath} chainId={chainId} wallet={wallet} paymentTokenSymbol={paymentTokenSymbol} selectedMarket={selectedMarketAddress} variant="select" selectLabel="C2C Market Vault" selectionBusy={loadingSelectedMarket} disabledDetail="当前 runtime 未开放 Indexer，暂时无法从 C2C 页面选择市场。" onOpen={onSelectMarket} />{marketLoadError === null ? null : <p className="form-error" role="alert">市场读取失败：{marketLoadError}</p>}</Panel><Panel title="活跃 C2C 挂单" subtitle="选择挂单后自动加载市场、价格和剩余数量"><ListingsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} paymentTokenSymbol={paymentTokenSymbol} selectedListingId={selectedListing?.listingId ?? null} refreshVersion={refreshVersion} onSelectListing={onSelectListing} /></Panel><Panel title="固定价 C2C" subtitle={market === null ? selectedMarketAddress === null ? "尚未选择市场" : `待加载 Vault ${short(selectedMarketAddress)}` : `当前 Vault ${short(market.address)}`}>{market !== null && addresses !== null && addresses !== undefined && client !== null && writeReady ? <div className="embedded-example"><MarketplacePanel client={client} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} vault={market.address} marketplace={addresses.contracts.marketplace} paymentTokenAllowance={account?.marketplaceAllowance ?? null} shareEscrowApproved={account?.marketplaceApproved ?? null} selectedListing={selectedListingForMarket} onListingChange={onListingChange} /></div> : market === null ? <Empty title={selectedMarketAddress === null ? "先从上方选择市场" : marketBusy ? "正在读取市场" : marketLoadError !== null ? "市场读取失败" : "市场尚未加载"} detail={marketLoadError ?? (selectedMarketAddress === null ? "选择后会加载对应 Vault 的固定价 C2C 表单。" : `正在读取 Vault ${selectedMarketAddress}`)} /> : <Empty title="C2C 写操作已锁定" detail="部署、钱包、网络与 Vault 上下文通过后开放 allowance listing/fill/cancel；Permit2 fill 由 SDK 提供。" />}</Panel><Panel title="安全参数"><dl className="definition-grid"><div><dt>Marketplace</dt><dd className="mono">{addresses ? short(addresses.contracts.marketplace) : "—"}</dd></div><div><dt>Fill protection</dt><dd>onchain listing / exact units / maxGross / deadline</dd></div></dl></Panel></>;
 }
 
 function SettlementPage({ writeReady, market, wallet, client, publicClient, execute, evidenceUploader, indexerEnabled, indexerBasePath, metadataBasePath, chainId, onSelectMarket }: { writeReady: boolean; market: MarketSnapshot | null; wallet: ConnectedWallet | null; client: CpredictClient | null; publicClient: PublicClient | null; execute: ExecuteTransaction; evidenceUploader: CanonicalEvidenceUploader | undefined; indexerEnabled: boolean; indexerBasePath: string; metadataBasePath: string | null; chainId: number; onSelectMarket: (market: Address, rules: MarketRules | null) => Promise<void> }) {
@@ -1349,7 +1381,7 @@ function parseRoute(hash: string | undefined): Route {
 
 function parseMarketRoute(hash: string | undefined): Address | null {
   const [route, candidate] = (hash ?? "").replace(/^#\/?/, "").split("/");
-  return (route === "markets" || route === "settlement") && candidate !== undefined && isAddress(candidate)
+  return (route === "markets" || route === "marketplace" || route === "settlement") && candidate !== undefined && isAddress(candidate)
     ? getAddress(candidate)
     : null;
 }

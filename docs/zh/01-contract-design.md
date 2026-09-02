@@ -25,7 +25,10 @@ flowchart TD
 ```
 
 每个市场是独立 Vault 和独立 ERC-1155 地址，outcome token ID 是 `0..outcomeCount-1`。
-这有意偏离产品文档的全局 `盘×桶` tokenId 字面表达，换取本金、权限、receiver 和故障域隔离。
+原文 `盘 × 桶` 表达的是复合资产身份：单链合约上下文使用 `(vault, outcomeId)`，其中
+`vault` 即 market、`outcomeId` 即该 Vault 内的 ERC-1155 tokenId；跨链或链下上下文使用
+`(chainId, vault, outcomeId)`。因此每 Vault ERC-1155 满足原文语义，同时保留本金、权限、
+receiver 和故障域隔离；不得把裸 `outcomeId` 当作跨市场唯一标识。
 
 Full 与 Clone 使用相同 core/storage/ABI。Full 由只允许 Factory 调用的 deployer 通过 CREATE2
 创建，Factory 在同一交易立即初始化；Clone 是固定 implementation 的 EIP-1167 实例并原子初始化。
@@ -106,7 +109,8 @@ timeout void 只改变市场状态，本金退款立刻可用且不调用 BondEs
 注册与 timeout 状态，把 bond 注入 Vault。bonus 可稍后独立领取。Escrow 故障不会卡本金。
 如果市场从未产生任何一级本金，timeout 时不存在可分配 eligibility；`settleBond` 将 bond 记为
 creator 的 pull credit，并同时发出 `EmptyTimeoutBondCredited` 与 `BondCredited`，避免把资金注入
-一个永远无人可 claim 的 bonus pool。
+一个永远无人可 claim 的 bonus pool。这是冻结的零本金例外；任何存在参与者的 timeout 市场仍将
+完整 bond 按 refund units 分配，且永不进入协议收入。
 
 ## 9. C2C
 
@@ -115,6 +119,8 @@ ERC-1155，拒绝直接转入和 batch。listing ID = chain/marketplace/vault/se
 份额托管，买家执行时取 `min(desired, remaining)`，受 minUnits/maxGross/deadline/expiry/dust
 保护。seller proceeds 原子直付；平台/creator fee 原子进固定 FeeVault 后记 pull credit。
 Marketplace 不保留 USDC 余额。终局关闭 fill，cancel 和 permissionless terminal return 永不暂停。
+合约安全事件可通过 `PAUSE_LISTING_FILL` 暂停成交，因为 fill 会给买方新增风险敞口；该权限不得用于
+市场干预，且不影响 cancel、terminal return、claim、refund 或用户直接 ERC-1155 转账。
 
 ```text
 gross = floor(units*unitPrice/1e6)

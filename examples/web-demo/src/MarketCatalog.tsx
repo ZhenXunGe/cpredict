@@ -30,6 +30,10 @@ export function MarketCatalog(props: {
   wallet: Address | null;
   paymentTokenSymbol: string;
   selectedMarket: Address | null;
+  variant?: "cards" | "select";
+  selectLabel?: string;
+  selectionBusy?: boolean;
+  disabledDetail?: string;
   onOpen: (market: Address, rules: MarketRules | null) => void;
 }) {
   const [mineOnly, setMineOnly] = useState(false);
@@ -111,7 +115,7 @@ export function MarketCatalog(props: {
   }
 
   if (!props.enabled) {
-    return <CatalogEmpty title="市场目录尚未启用" detail="Indexer 未在当前 runtime 中开放；仍可在下方粘贴 Vault 地址读取链上状态。" />;
+    return <CatalogEmpty title="市场目录尚未启用" detail={props.disabledDetail ?? "Indexer 未在当前 runtime 中开放；仍可在下方粘贴 Vault 地址读取链上状态。"} />;
   }
 
   return (
@@ -135,6 +139,14 @@ export function MarketCatalog(props: {
         <CatalogEmpty
           title={loading ? "正在读取市场…" : "暂无匹配市场"}
           detail={mineOnly && props.wallet === null ? "连接钱包后查看自己创建的市场。" : "新市场被 Indexer 确认后会自动出现在这里。"}
+        />
+      ) : props.variant === "select" ? (
+        <MarketCatalogSelect
+          entries={entries}
+          selectedMarket={props.selectedMarket}
+          {...(props.selectLabel === undefined ? {} : { label: props.selectLabel })}
+          disabled={props.selectionBusy === true}
+          onOpen={props.onOpen}
         />
       ) : (
         <MarketCatalogCards
@@ -179,6 +191,39 @@ export function MarketCatalogCards(props: {
       </article>
     );
   })}</div>;
+}
+
+export function MarketCatalogSelect(props: {
+  entries: readonly CatalogEntry[];
+  selectedMarket: Address | null;
+  label?: string;
+  disabled?: boolean;
+  onOpen: (market: Address, rules: MarketRules | null) => void;
+}) {
+  const selectedIsKnown = props.selectedMarket !== null && props.entries.some(
+    ({ market }) => market.market.toLowerCase() === props.selectedMarket?.toLowerCase(),
+  );
+  return (
+    <label className="catalog-select">
+      <span>{props.label ?? "Market Vault"}</span>
+      <select
+        aria-label={props.label ?? "选择市场"}
+        aria-busy={props.disabled === true}
+        disabled={props.disabled === true}
+        value={props.selectedMarket ?? ""}
+        onChange={(event) => {
+          const selected = props.entries.find(
+            ({ market }) => market.market.toLowerCase() === event.currentTarget.value.toLowerCase(),
+          );
+          if (selected !== undefined) props.onOpen(selected.market.market, selected.rules);
+        }}
+      >
+        <option value="">请选择市场</option>
+        {!selectedIsKnown && props.selectedMarket !== null ? <option value={props.selectedMarket}>当前 Vault · {short(props.selectedMarket)}</option> : null}
+        {props.entries.map(({ market, rules }) => <option key={market.market} value={market.market}>{rules?.question ?? short(market.market)} · {catalogStatusLabel(market.status)} · {short(market.market)}</option>)}
+      </select>
+    </label>
+  );
 }
 
 export function SettlementMarketCatalog(props: {
@@ -428,13 +473,17 @@ async function loadEntries(input: {
 }
 
 function Status(props: { status: CatalogStatus; confirmation: "provisional" | "confirmed" }): ReactNode {
+  return <span className={`status-pill ${props.status === "open" ? "" : "terminal"}`}>{catalogStatusLabel(props.status)}{props.confirmation === "provisional" ? " · 待确认" : ""}</span>;
+}
+
+function catalogStatusLabel(status: CatalogStatus): string {
   const labels: Record<CatalogStatus, string> = {
     open: "进行中",
     resolved: "已结算",
     "voided-creator": "创建者作废",
     "voided-timeout": "超时作废",
   };
-  return <span className={`status-pill ${props.status === "open" ? "" : "terminal"}`}>{labels[props.status]}{props.confirmation === "provisional" ? " · 待确认" : ""}</span>;
+  return labels[status];
 }
 
 function CatalogEmpty(props: { title: string; detail: string }) {

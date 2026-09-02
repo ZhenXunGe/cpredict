@@ -208,6 +208,8 @@ select:focus, input:focus, textarea:focus { border-color: var(--blue); box-shado
 .catalog-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .catalog-toolbar .tabs { margin: 0; }
 .catalog-toolbar > .text-button { margin-left: auto; }
+.catalog-select { display: grid; gap: 6px; color: var(--muted); font-size: 10px; }
+.catalog-select select { width: 100%; }
 .catalog-summary { margin: 0; color: var(--muted); font-size: 10px; }
 .mine-filter { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; }
 .mine-filter input { min-height: auto; width: 15px; height: 15px; }

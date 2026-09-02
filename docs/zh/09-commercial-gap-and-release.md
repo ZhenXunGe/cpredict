@@ -32,13 +32,14 @@
 
 1. Full-only 首发还是 Full+Clone 同 tag；推荐主网首发 Full-only，Clone 在独立外审后开启。
 2. creator 单次杀猪风险的最大 Full cap、用户 cap、曝光分级和强制风险文案。
-3. C2C fill 是否纳入 emergency pause；当前实现为可暂停，需甲方接受偏离。
+3. **已冻结（2026-09-02）**：C2C fill 纳入 emergency pause，但仅限合约安全事件；cancel、
+   terminal return、direct transfer、claim、refund 不可暂停。
 4. 早鸟比例、creator rake、协议分成、创建费、C2C fee 的试运营默认值。
 5. 主网链、USDC proxy/admin 风险、sequencer downtime 处理和 finality 深度。
 6. Paymaster 免费预算、外部 USDC provider、ETH fallback、地区限制和反滥用隐私政策。
 7. metadata/rules/source 的存储、内容安全、永久性和修改审计策略。
-8. 零参与者 timeout 时 bond 返 creator credit 的边界政策；若业务坚持罚没，必须指定可验证的替代
-   beneficiary，而不能把资金注入无分母池。
+8. **已冻结（2026-09-02）**：零本金 timeout 时 bond 返 creator credit；存在参与者时完整 bond
+   按 refund units 分配，禁止把资金注入无分母池或计入协议收入。
 9. 批准商业经济 policy：分别冻结 bond 覆盖倍数、微池资金范围（gross rake/protocol fee/扣早鸟后
    creator net）、承诺资金比例与成本覆盖率、Full/Clone cap 利用率与
    损失上限、早鸟 Sybil 阈值、C2C 流动性损失、LaunchGuard 退休观察窗和极端 gas 退出下限；批准
