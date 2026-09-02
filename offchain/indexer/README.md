@@ -64,6 +64,10 @@ polls, drains the active transaction, closes HTTP and then closes PostgreSQL.
 
 - `GET /healthz`: process liveness only.
 - `GET /readyz`: 200 only while PostgreSQL schema, RPC chain and scheduler are ready.
+- `GET /v1/sync-status?chainId=<id>`: dependency-gated `indexedBlock` and configured-confirmation
+  `safeBlock`, serialized as decimal strings. Consumers must not treat an empty projection as
+  authoritative until `indexedBlock` has reached both `safeBlock` and any locally confirmed receipt
+  block they are waiting for.
 - `GET /metrics`: Prometheus batch/event/head/timing metrics.
 - `/v1/*`: read-only market, listing, fill, position and claim endpoints.
 - `GET /v1/stream?chainId=<id>&market=<optional address>` upgraded to WebSocket: read-only

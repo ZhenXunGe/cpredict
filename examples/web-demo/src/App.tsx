@@ -1,6 +1,8 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -70,10 +72,17 @@ import {
 import { MarketplacePanel } from "../../react/src/MarketplacePanel.js";
 import { MarketLifecyclePanel } from "../../react/src/MarketLifecyclePanel.js";
 import { transactionDeadline } from "../../react/src/transactionTiming.js";
+import { authorizationRequired } from "../../react/src/authorizationFlow.js";
 import type { CanonicalEvidenceUploader } from "../../react/src/settlementEvidence.js";
 
-type Route = "overview" | "deployment" | "markets" | "create" | "positions" | "marketplace" | "settlement" | "receipts";
+type Route = "overview" | "markets" | "create" | "positions" | "marketplace" | "settlement" | "receipts";
 type ActivityLevel = "info" | "success" | "warning" | "error";
+
+export interface DeploymentToast {
+  state: "checking" | "success" | "error";
+  title: string;
+  detail: string;
+}
 
 export interface ActivityItem {
   id: number;
@@ -87,14 +96,19 @@ export interface ActivityItem {
 
 const NAV_ITEMS: readonly { route: Route; icon: string; label: string }[] = [
   { route: "overview", icon: "⌂", label: "概览" },
-  { route: "deployment", icon: "◇", label: "部署验证" },
-  { route: "markets", icon: "▤", label: "市场" },
   { route: "create", icon: "+", label: "创建市场" },
+  { route: "markets", icon: "▤", label: "市场" },
   { route: "positions", icon: "◎", label: "我的持仓" },
   { route: "marketplace", icon: "⇄", label: "C2C 市场" },
   { route: "settlement", icon: "✓", label: "结算与作废" },
   { route: "receipts", icon: "▧", label: "回执与事件" },
 ];
+
+const DEPLOYMENT_CHECKING_TOAST: DeploymentToast = {
+  state: "checking",
+  title: "正在验证部署",
+  detail: "正在核对 chainId、runtime codehash 与关键 wiring…",
+};
 
 const INITIAL_DEBUG: DebugAddressInput = {
   timelock: "",
@@ -132,9 +146,53 @@ export default function App() {
   const [protocolSnapshot, setProtocolSnapshot] = useState<ProtocolSnapshot | null>(null);
   const [paymentTokenBalance, setPaymentTokenBalance] = useState<bigint | null>(null);
   const [operationBusy, setOperationBusy] = useState(false);
+  const [accountRefreshVersion, setAccountRefreshVersion] = useState(0);
+  const [positionSyncTarget, setPositionSyncTarget] = useState<{
+    wallet: Address;
+    blockNumber: bigint;
+  } | null>(null);
+  const [openDrawer, setOpenDrawer] = useState<"deployment" | "runtime" | "activity" | null>(null);
+  const [deploymentToast, setDeploymentToast] = useState<DeploymentToast | null>({
+    state: "checking",
+    title: "正在加载部署配置",
+    detail: "部署验证将在 runtime config 加载后自动开始…",
+  });
+  const deploymentVerificationRef = useRef<Promise<void> | null>(null);
+  const deploymentToastTimeoutRef = useRef<number | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([
     { id: 1, at: new Date(), level: "info", label: "Console initialized", detail: "等待 runtime config 与部署清单" },
   ]);
+
+  const showDeploymentToast = useCallback((nextToast: DeploymentToast | null) => {
+    if (deploymentToastTimeoutRef.current !== null) {
+      window.clearTimeout(deploymentToastTimeoutRef.current);
+      deploymentToastTimeoutRef.current = null;
+    }
+    setDeploymentToast(nextToast);
+    if (nextToast?.state === "success") {
+      deploymentToastTimeoutRef.current = window.setTimeout(() => {
+        setDeploymentToast((current) => current?.state === "success" ? null : current);
+        deploymentToastTimeoutRef.current = null;
+      }, 3_000);
+    }
+  }, []);
+
+  const runDeploymentVerification = useCallback((client: PublicClient, loaded: LoadedRuntime) => {
+    if (deploymentVerificationRef.current !== null) return;
+    const verification = refreshTrust(
+      client,
+      loaded,
+      setTrust,
+      setTrustBusy,
+      setActivity,
+      showDeploymentToast,
+    );
+    deploymentVerificationRef.current = verification;
+    void verification.finally(() => {
+      if (deploymentVerificationRef.current === verification)
+        deploymentVerificationRef.current = null;
+    });
+  }, [showDeploymentToast]);
 
   useEffect(() => {
     let active = true;
@@ -149,10 +207,12 @@ export default function App() {
       })
       .catch((error: unknown) => {
         if (!active) return;
-        setRuntimeError(messageOf(error));
+        const detail = messageOf(error);
+        setRuntimeError(detail);
+        showDeploymentToast({ state: "error", title: "部署验证无法开始", detail });
       });
     return () => { active = false; };
-  }, []);
+  }, [showDeploymentToast]);
 
   useEffect(() => discoverWallets(setWallets), []);
 
@@ -165,6 +225,7 @@ export default function App() {
           setWallet(null);
           setAccountSnapshot(null);
           setPaymentTokenBalance(null);
+          setPositionSyncTarget(null);
           push(setActivity, "warning", "Wallet account changed", "为防止角色混淆，已锁定并要求重新连接");
         }
       },
@@ -177,8 +238,13 @@ export default function App() {
 
   useEffect(() => {
     if (publicClient === null || runtime === null) return;
-    void refreshTrust(publicClient, runtime, setTrust, setTrustBusy, setActivity);
-  }, [publicClient, runtime]);
+    runDeploymentVerification(publicClient, runtime);
+  }, [publicClient, runDeploymentVerification, runtime]);
+
+  useEffect(() => {
+    if (openDrawer !== "deployment" || publicClient === null || runtime === null) return;
+    runDeploymentVerification(publicClient, runtime);
+  }, [openDrawer, publicClient, runDeploymentVerification, runtime]);
 
   useEffect(() => {
     if (publicClient === null || trust?.addresses === null || trust?.addresses === undefined) return;
@@ -252,12 +318,16 @@ export default function App() {
     event.preventDefault();
     if (publicClient === null || runtime?.config.deployment.allowDebugAddresses !== true) return;
     setTrustBusy(true);
+    showDeploymentToast(DEPLOYMENT_CHECKING_TOAST);
     try {
       const report = await verifyDebugAddresses(publicClient, debug, runtime.config.paymentToken);
       setTrust(report);
+      showDeploymentToast(deploymentToastForReport(report));
       push(setActivity, report.level === "debug" ? "warning" : "error", "Debug address verification", report.level === "debug" ? "调试地址通过最低 code/wiring 检查；仍非正式清单" : "调试地址验证失败");
     } catch (error: unknown) {
-      push(setActivity, "error", "Debug verification failed", messageOf(error));
+      const detail = messageOf(error);
+      showDeploymentToast({ state: "error", title: "部署验证失败", detail });
+      push(setActivity, "error", "Debug verification failed", detail);
     } finally {
       setTrustBusy(false);
     }
@@ -369,7 +439,7 @@ export default function App() {
       }
     });
     return () => { active = false; };
-  }, [publicClient, wallet?.address, market, trust?.addresses]);
+  }, [accountRefreshVersion, publicClient, wallet?.address, market, trust?.addresses]);
 
   async function executeOperation<T extends TransactionResult>(label: string, operation: () => Promise<T>): Promise<T | null> {
     if (operationBusy || !writeReady) return null;
@@ -383,6 +453,9 @@ export default function App() {
     try {
       const result = await operation();
       push(setActivity, "success", label, `block ${result.blockNumber} · gas ${result.gasUsed}`, result.hash);
+      setAccountRefreshVersion((version) => version + 1);
+      if (wallet !== null)
+        setPositionSyncTarget({ wallet: wallet.address, blockNumber: result.blockNumber });
       if (publicClient !== null && wallet !== null && trust?.addresses !== null && trust?.addresses !== undefined) {
         setPaymentTokenBalance(
           await readPaymentTokenBalance(publicClient, wallet.address, trust.addresses.usdc),
@@ -442,6 +515,17 @@ export default function App() {
   const currentTitle = NAV_ITEMS.find((item) => item.route === route)?.label ?? "概览";
   const paymentToken = trust?.paymentToken ?? runtime?.config.paymentToken ?? null;
   const paymentTokenSymbol = paymentToken?.symbol ?? "USDC";
+  const deploymentState = trustBusy ? "checking" : trust?.level ?? "blocked";
+  const deploymentIndicator = deploymentIndicatorState(deploymentState);
+  const deploymentDrawerOpen = openDrawer === "deployment";
+  const runtimeDrawerOpen = openDrawer === "runtime";
+  const activityDrawerOpen = openDrawer === "activity";
+  const positionTargetBlock =
+    wallet !== null &&
+    positionSyncTarget !== null &&
+    positionSyncTarget.wallet.toLowerCase() === wallet.address.toLowerCase()
+      ? positionSyncTarget.blockNumber
+      : null;
 
   return (
     <div className="app-shell">
@@ -470,7 +554,39 @@ export default function App() {
             <h1>{currentTitle}</h1>
           </div>
           <div className="top-actions">
-            <StatusBadge state={trust?.level ?? "blocked"} />
+            <button
+              type="button"
+              className={deploymentDrawerOpen ? "header-utility active" : "header-utility"}
+              onClick={() => setOpenDrawer(deploymentDrawerOpen ? null : "deployment")}
+              aria-controls="deployment-drawer"
+              aria-expanded={deploymentDrawerOpen}
+              aria-label={`${deploymentDrawerOpen ? "关闭" : "打开"}部署验证抽屉，${deploymentStatusLabel(deploymentState)}`}
+            >
+              <span className="status-dot" data-status={deploymentIndicator} />
+              <span className="utility-label">部署验证</span>
+            </button>
+            <button
+              type="button"
+              className={runtimeDrawerOpen ? "header-utility active" : "header-utility"}
+              onClick={() => setOpenDrawer(runtimeDrawerOpen ? null : "runtime")}
+              aria-controls="runtime-drawer"
+              aria-expanded={runtimeDrawerOpen}
+              aria-label={runtimeDrawerOpen ? "关闭运行状态抽屉" : "打开运行状态抽屉"}
+            >
+              <span className="status-dot" data-status={deploymentIndicator} />
+              <span className="utility-label">运行状态</span>
+            </button>
+            <button
+              type="button"
+              className={activityDrawerOpen ? "header-utility active" : "header-utility"}
+              onClick={() => setOpenDrawer(activityDrawerOpen ? null : "activity")}
+              aria-controls="activity-drawer"
+              aria-expanded={activityDrawerOpen}
+              aria-label={activityDrawerOpen ? "关闭事件与回执抽屉" : "打开事件与回执抽屉"}
+            >
+              <span className="utility-count" aria-hidden="true">{activity.length}</span>
+              <span className="utility-label">事件与回执</span>
+            </button>
             {wallet !== null && wallet.chainId !== ARBITRUM_SEPOLIA_CHAIN_ID ? (
               <button className="button warning" onClick={() => void handleNetworkSwitch()} disabled={walletBusy}>切换网络</button>
             ) : null}
@@ -491,18 +607,43 @@ export default function App() {
 
         <main className="page-grid">
           <section className="main-column">
-            {route === "overview" ? <Overview runtime={runtime} trust={trust} wallet={wallet} market={market} protocol={protocolSnapshot} paymentToken={paymentToken} paymentTokenBalance={paymentTokenBalance} writeReady={writeReady} busy={operationBusy} onMint={handleSandboxMint} onNavigate={setRoute} /> : null}
-            {route === "deployment" ? <DeploymentPage runtime={runtime} trust={trust} debug={debug} setDebug={setDebug} onVerify={handleDebugVerify} busy={trustBusy} /> : null}
+            {route === "overview" ? <Overview runtime={runtime} trust={trust} wallet={wallet} market={market} protocol={protocolSnapshot} paymentToken={paymentToken} paymentTokenBalance={paymentTokenBalance} writeReady={writeReady} busy={operationBusy} onMint={handleSandboxMint} /> : null}
             {route === "markets" ? <MarketPage marketAddress={marketAddress} setMarketAddress={setMarketAddress} market={market} marketRules={selectedMarketRules} account={accountSnapshot} protocol={protocolSnapshot} onLoad={handleMarketLoad} onSelect={handleMarketSelect} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} busy={operationBusy} client={client} wallet={wallet} trust={trust} paymentTokenSymbol={paymentTokenSymbol} writeReady={writeReady} execute={executeOperation} /> : null}
-            {route === "create" ? <CreatePage writeReady={writeReady} trust={trust} client={client} wallet={wallet} protocol={protocolSnapshot} paymentTokenSymbol={paymentTokenSymbol} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} busy={operationBusy} execute={executeOperation} onMarketCreated={handleMarketCreated} /> : null}
-            {route === "positions" ? <PositionsPage market={market} account={accountSnapshot} wallet={wallet} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} onOpenMarket={(address) => void handleMarketSelect(address, null)} /> : null}
-            {route === "marketplace" ? <MarketplacePage writeReady={writeReady} market={market} trust={trust} client={client} paymentTokenSymbol={paymentTokenSymbol} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} onSelectMarket={(address) => void handleMarketplaceSelect(address)} /> : null}
+            {route === "create" ? <CreatePage writeReady={writeReady} trust={trust} client={client} wallet={wallet} account={accountSnapshot} protocol={protocolSnapshot} paymentTokenSymbol={paymentTokenSymbol} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} busy={operationBusy} execute={executeOperation} onMarketCreated={handleMarketCreated} /> : null}
+            {route === "positions" ? <PositionsPage market={market} account={accountSnapshot} wallet={wallet} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} targetBlock={positionTargetBlock} onOpenMarket={(address) => void handleMarketSelect(address, null)} /> : null}
+            {route === "marketplace" ? <MarketplacePage writeReady={writeReady} market={market} account={accountSnapshot} trust={trust} client={client} paymentTokenSymbol={paymentTokenSymbol} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} onSelectMarket={(address) => void handleMarketplaceSelect(address)} /> : null}
             {route === "settlement" ? <SettlementPage writeReady={writeReady} market={market} wallet={wallet} client={client} execute={executeOperation} evidenceUploader={runtime === null ? undefined : makeEvidenceUploader(runtime)} /> : null}
             {route === "receipts" ? <ReceiptsPage activity={activity} explorerOrigin={runtime?.config.chain.explorerOrigin ?? "https://sepolia.arbiscan.io"} paymentTokenSymbol={paymentTokenSymbol} wallet={wallet} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} onOpenMarket={(address) => void handleMarketSelect(address, null)} /> : null}
           </section>
-          <Inspector trust={trust} runtime={runtime} market={market} wallet={wallet} />
         </main>
-        <ActivityLog items={activity.slice(0, 5)} explorerOrigin={runtime?.config.chain.explorerOrigin ?? "https://sepolia.arbiscan.io"} />
+        <DeploymentDrawer
+          open={deploymentDrawerOpen}
+          onClose={() => setOpenDrawer(null)}
+          runtime={runtime}
+          trust={trust}
+          debug={debug}
+          setDebug={setDebug}
+          onVerify={handleDebugVerify}
+          busy={trustBusy}
+        />
+        <RuntimeDrawer
+          open={runtimeDrawerOpen}
+          onClose={() => setOpenDrawer(null)}
+          trust={trust}
+          runtime={runtime}
+          market={market}
+          wallet={wallet}
+        />
+        <ActivityDrawer
+          open={activityDrawerOpen}
+          onClose={() => setOpenDrawer(null)}
+          activity={activity}
+          explorerOrigin={runtime?.config.chain.explorerOrigin ?? "https://sepolia.arbiscan.io"}
+        />
+        <DeploymentVerificationToast
+          toast={deploymentToast}
+          onClose={() => showDeploymentToast(null)}
+        />
       </section>
 
       <nav className="bottom-nav" aria-label="移动端导航">
@@ -516,7 +657,33 @@ export default function App() {
   );
 }
 
-function Overview({ runtime, trust, wallet, market, protocol, paymentToken, paymentTokenBalance, writeReady, busy, onMint, onNavigate }: {
+export function deploymentCardCopy(
+  runtime: Pick<LoadedRuntime, "manifest" | "debugAddresses"> | null,
+): { value: string; hint: string } {
+  if (runtime?.manifest !== null && runtime?.manifest !== undefined) {
+    return { value: runtime.manifest.status, hint: runtime.manifest.source.tag };
+  }
+  if (runtime?.debugAddresses !== null && runtime?.debugAddresses !== undefined) {
+    return {
+      value: "已部署（DEBUG）",
+      hint: "调试地址包已加载 · 尚未 FINALIZED_VERIFIED",
+    };
+  }
+  return { value: "BLOCKED_NOT_DEPLOYED", hint: "需加载部署地址包" };
+}
+
+export function environmentStatusCardStates(
+  trust: Pick<TrustReport, "level"> | null,
+  paymentToken: Pick<PaymentTokenConfig, "kind"> | null,
+): { deployment: "success" | "warning"; paymentToken: "success" | "warning" } {
+  const isDebugEnvironment = trust?.level === "debug";
+  return {
+    deployment: trust?.level === "verified" || isDebugEnvironment ? "success" : "warning",
+    paymentToken: paymentToken?.kind === "sandbox-test-token" && !isDebugEnvironment ? "warning" : "success",
+  };
+}
+
+function Overview({ runtime, trust, wallet, market, protocol, paymentToken, paymentTokenBalance, writeReady, busy, onMint }: {
   runtime: LoadedRuntime | null;
   trust: TrustReport | null;
   wallet: ConnectedWallet | null;
@@ -527,23 +694,20 @@ function Overview({ runtime, trust, wallet, market, protocol, paymentToken, paym
   writeReady: boolean;
   busy: boolean;
   onMint: () => Promise<void>;
-  onNavigate: (route: Route) => void;
 }) {
   const paymentTokenSymbol = paymentToken?.symbol ?? "USDC";
   const displayState = market === null ? null : marketDisplayState(market);
+  const deploymentCard = deploymentCardCopy(runtime);
+  const environmentStates = environmentStatusCardStates(trust, paymentToken);
   const cards = [
-    { label: "部署状态", value: runtime?.manifest?.status ?? (runtime?.debugAddresses ? "DEBUG_NOT_FINALIZED" : "BLOCKED_NOT_DEPLOYED"), hint: runtime?.manifest ? runtime.manifest.source.tag : "需加载部署地址包", state: trust?.level === "verified" ? "success" : "warning" },
+    { label: "部署状态", ...deploymentCard, state: environmentStates.deployment },
     { label: "钱包网络", value: wallet === null ? "未连接" : wallet.chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "Arbitrum Sepolia" : `Wrong chain ${wallet.chainId}`, hint: wallet === null ? "EIP-6963 / injected" : short(wallet.address), state: wallet?.chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "success" : "warning" },
-    { label: "支付币", value: paymentToken === null ? "待加载" : paymentTokenSymbol, hint: paymentToken?.kind === "sandbox-test-token" ? "TEST / 任意增发 / 无真实价值" : "Canonical Arbitrum Sepolia USDC", state: paymentToken?.kind === "sandbox-test-token" ? "warning" : "success" },
+    { label: "支付币", value: paymentToken === null ? "待加载" : paymentTokenSymbol, hint: paymentToken?.kind === "sandbox-test-token" ? "TEST / 任意增发 / 无真实价值" : "Canonical Arbitrum Sepolia USDC", state: environmentStates.paymentToken },
     { label: "当前市场", value: displayState?.label ?? "未选择", hint: market === null ? "从市场页加载 Vault" : formatPaymentToken(market.totalPrincipal, paymentTokenSymbol), state: market === null ? "muted" : displayState?.primaryBuyOpen ? "success" : "warning" },
     { label: "Paymaster", value: protocol === null ? "只读待加载" : formatEtherCompact(protocol.paymasterDeposit), hint: protocol === null ? "本 Demo 不发送 UserOperation" : `policy v${protocol.paymasterPolicyVersion}`, state: protocol === null ? "muted" : "success" },
   ];
   return (
     <>
-      <section className="hero-row">
-        <div><p className="eyebrow">TRUST-FIRST WORKFLOW</p><h2>先验证部署，再执行交易</h2><p>所有经济写操作都经过输入校验、链上模拟、单次提交和回执确认。</p></div>
-        <button className="button primary" onClick={() => onNavigate("deployment")}>开始部署验证</button>
-      </section>
       <div className="status-grid">
         {cards.map((card) => <StatusCard key={card.label} {...card} />)}
       </div>
@@ -556,13 +720,6 @@ function Overview({ runtime, trust, wallet, market, protocol, paymentToken, paym
           onMint={onMint}
         />
       ) : null}
-      <Panel title="协议操作路径" action={<button className="text-button" onClick={() => onNavigate("markets")}>打开市场交互 →</button>}>
-        <div className="workflow-list">
-          {["加载正式部署清单并校验 schema", "核对 chainId、runtime codehash 与关键 wiring", "连接三个一次性测试钱包并切换角色", "simulate → sign/send → receipt → event"].map((item, index) => (
-            <div className="workflow-item" key={item}><span>{index + 1}</span><p>{item}</p><strong>{index < 2 && trust?.level === "verified" ? "PASS" : "READY"}</strong></div>
-          ))}
-        </div>
-      </Panel>
     </>
   );
 }
@@ -600,14 +757,19 @@ function DeploymentPage({ runtime, trust, debug, setDebug, onVerify, busy }: {
   onVerify: (event: FormEvent<HTMLFormElement>) => void;
   busy: boolean;
 }) {
+  const currentEnvironment = deploymentCardCopy(runtime).value;
+  const debugPackageLoaded = runtime?.debugAddresses !== null && runtime?.debugAddresses !== undefined;
+  const formalRelease = runtime?.manifest?.status ?? (debugPackageLoaded ? "尚未 FINALIZED_VERIFIED" : "BLOCKED_NOT_DEPLOYED");
+  const debugNotApplicable = debugPackageLoaded ? "不适用于 DEBUG 地址包" : "—";
   return (
     <>
-      <Panel title="正式部署清单" subtitle="JSON Schema 2020-12 + 链上 runtime codehash + wiring">
+      <Panel title="部署与正式发布" subtitle="当前运行地址包 + FINALIZED_VERIFIED 发布清单">
         <dl className="definition-grid">
-          <div><dt>状态</dt><dd>{runtime?.manifest?.status ?? "BLOCKED_NOT_DEPLOYED"}</dd></div>
+          <div><dt>当前环境</dt><dd>{currentEnvironment}</dd></div>
+          <div><dt>正式发布</dt><dd>{formalRelease}</dd></div>
           <div><dt>网络</dt><dd>{runtime?.config.chain.name ?? "—"}</dd></div>
-          <div><dt>Commit</dt><dd className="mono">{runtime?.manifest?.source.commit ?? "—"}</dd></div>
-          <div><dt>Reference block</dt><dd>{runtime?.manifest?.referenceBlock.number ?? "—"}</dd></div>
+          <div><dt>Commit</dt><dd className="mono">{runtime?.manifest?.source.commit ?? debugNotApplicable}</dd></div>
+          <div><dt>Reference block</dt><dd>{runtime?.manifest?.referenceBlock.number ?? debugNotApplicable}</dd></div>
         </dl>
         <div className="check-list">
           {(trust?.checks ?? []).map((check) => <CheckRow key={check.id} check={check} />)}
@@ -706,7 +868,7 @@ export function MarketPage(props: {
   );
 }
 
-function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymentTokenSymbol, writeReady, primaryBuyOpen, busy, execute }: {
+export function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymentTokenSymbol, writeReady, primaryBuyOpen, busy, execute }: {
   market: MarketSnapshot;
   outcomeLabels: readonly string[] | null;
   account: AccountSnapshot | null;
@@ -724,7 +886,22 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
   const [shares, setShares] = useState("1");
   const [slippage, setSlippage] = useState("0");
   const [formError, setFormError] = useState("");
+  const [vaultAllowance, setVaultAllowance] = useState(
+    account?.vaultAllowance ?? null,
+  );
+  const [permit2Allowance, setPermit2Allowance] = useState(
+    account?.permit2Allowance ?? null,
+  );
   const primaryWriteReady = writeReady && primaryBuyOpen;
+
+  useEffect(
+    () => setVaultAllowance(account?.vaultAllowance ?? null),
+    [account?.vaultAllowance, market.address, wallet?.address],
+  );
+  useEffect(
+    () => setPermit2Allowance(account?.permit2Allowance ?? null),
+    [account?.permit2Allowance, wallet?.address],
+  );
 
   function paymentAmounts() {
     const units = parsePositive(shares, 6, "份额");
@@ -743,12 +920,34 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
         throw new Error("协议写入上下文尚未就绪");
       }
       const { maximumPayment } = paymentAmounts();
-      await execute(
+      const result = await execute(
         `Approve Permit2 ${paymentTokenSymbol}`,
         () => client.approvePaymentToken(trust.addresses!.usdc, trust.addresses!.permit2, maximumPayment),
       );
+      if (result !== null) setPermit2Allowance(maximumPayment);
+      return result;
     } catch (error: unknown) {
       setFormError(messageOf(error));
+      return null;
+    }
+  }
+
+  async function approveVault() {
+    setFormError("");
+    try {
+      if (client === null || trust?.addresses === null || trust?.addresses === undefined) {
+        throw new Error("协议写入上下文尚未就绪");
+      }
+      const { maximumPayment } = paymentAmounts();
+      const result = await execute(
+        `Approve vault ${paymentTokenSymbol}`,
+        () => client.approvePaymentToken(trust.addresses!.usdc, market.address, maximumPayment),
+      );
+      if (result !== null) setVaultAllowance(maximumPayment);
+      return result;
+    } catch (error: unknown) {
+      setFormError(messageOf(error));
+      return null;
     }
   }
 
@@ -763,11 +962,35 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
       const { units, maximumPayment } = paymentAmounts();
       const outcomeId = BigInt(outcome);
       if (outcomeId < 0n || outcomeId >= BigInt(market.outcomeCount)) throw new RangeError("outcome 越界");
-      const deadline = transactionDeadline();
       if (mode === "allowance") {
-        await execute("Primary buy", () => client.buy({ vault: market.address, outcomeId, desiredUnits: units, minimumUnits: units, maximumPayment, deadline }));
+        const needsAuthorization = authorizationRequired(
+          vaultAllowance,
+          maximumPayment,
+        );
+        if (needsAuthorization) {
+          const approval = await approveVault();
+          if (approval === null) return;
+        }
+        const deadline = transactionDeadline();
+        const result = await execute("Primary buy", () => client.buy({ vault: market.address, outcomeId, desiredUnits: units, minimumUnits: units, maximumPayment, deadline }));
+        if (result !== null) {
+          setVaultAllowance(
+            needsAuthorization
+              ? 0n
+              : (vaultAllowance ?? maximumPayment) - maximumPayment,
+          );
+        }
         return;
       }
+      const needsAuthorization = authorizationRequired(
+        permit2Allowance,
+        maximumPayment,
+      );
+      if (needsAuthorization) {
+        const approval = await approvePermit2();
+        if (approval === null) return;
+      }
+      const deadline = transactionDeadline();
       const nonce = randomUint256();
       const permit = { permitted: { token: trust.addresses.usdc, amount: maximumPayment }, nonce, deadline };
       const typed = buildBuyPermit2TypedData(trust.addresses.permit2, permit, {
@@ -782,10 +1005,28 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
         chainId: BigInt(ARBITRUM_SEPOLIA_CHAIN_ID),
       });
       const signature = await wallet.walletClient.signTypedData({ account: wallet.account, ...typed });
-      await execute("Permit2 primary buy", () => client.buyWithPermit2({ vault: market.address, owner: wallet.address, outcomeId, desiredUnits: units, minimumUnits: units, maximumPayment, deadline, permit, signature }));
+      const result = await execute("Permit2 primary buy", () => client.buyWithPermit2({ vault: market.address, owner: wallet.address, outcomeId, desiredUnits: units, minimumUnits: units, maximumPayment, deadline, permit, signature }));
+      if (result !== null) {
+        setPermit2Allowance(
+          needsAuthorization
+            ? 0n
+            : (permit2Allowance ?? maximumPayment) - maximumPayment,
+        );
+      }
     } catch (error: unknown) {
       setFormError(messageOf(error));
     }
+  }
+
+  let buyAuthorizationRequired = true;
+  try {
+    const { maximumPayment } = paymentAmounts();
+    buyAuthorizationRequired = authorizationRequired(
+      mode === "allowance" ? vaultAllowance : permit2Allowance,
+      maximumPayment,
+    );
+  } catch {
+    // Invalid values are surfaced on submit without breaking the form render.
   }
 
   return (
@@ -796,23 +1037,23 @@ function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymen
         <label><span>购买结果</span><select value={outcome} onChange={(event) => setOutcome(event.currentTarget.value)}>{Array.from({ length: market.outcomeCount }, (_, index) => <option value={index} key={index}>{outcomeLabels?.[index] ?? `结果 ${index + 1}`}</option>)}</select></label>
         <label><span>Shares</span><input inputMode="decimal" value={shares} onChange={(event) => setShares(event.currentTarget.value)} /></label>
         <label><span>Max slippage (bps)</span><input inputMode="numeric" value={slippage} onChange={(event) => setSlippage(event.currentTarget.value)} /></label>
-        <button className="button primary wide" disabled={!primaryWriteReady || busy}>{busy ? "处理中…" : !primaryBuyOpen ? "已截止，待结算" : writeReady ? mode === "permit2" ? "签名并购买" : "模拟并购买" : "写操作已锁定"}</button>
+        <button className="button primary wide" disabled={!primaryWriteReady || busy}>{busy ? "处理中…" : !primaryBuyOpen ? "已截止，待结算" : writeReady ? mode === "permit2" ? buyAuthorizationRequired ? "精确授权并签名购买" : "签名并购买" : buyAuthorizationRequired ? "精确授权并模拟购买" : "模拟并购买" : "写操作已锁定"}</button>
       </form>
       {formError ? <p className="form-error" role="alert">{formError}</p> : null}
       {mode === "allowance" ? (
         <PrimaryAllowanceRow
           label="Vault allowance"
-          allowance={account?.vaultAllowance ?? null}
+          allowance={vaultAllowance}
           paymentTokenSymbol={paymentTokenSymbol}
           actionLabel="精确授权"
           disabled={!primaryWriteReady || busy}
-          onApprove={() => void execute(`Approve vault ${paymentTokenSymbol}`, () => client!.approvePaymentToken(trust!.addresses!.usdc, market.address, parseUnits(shares, 6)))}
+          onApprove={() => void approveVault()}
         />
       ) : (
         <>
           <PrimaryAllowanceRow
             label="Permit2 allowance"
-            allowance={account?.permit2Allowance ?? null}
+            allowance={permit2Allowance}
             paymentTokenSymbol={paymentTokenSymbol}
             actionLabel={`精确授权 ${paymentTokenSymbol} → Permit2`}
             disabled={!primaryWriteReady || busy}
@@ -842,18 +1083,25 @@ export function PrimaryAllowanceRow(props: {
   );
 }
 
-function CreatePage({ writeReady, trust, client, wallet, protocol, paymentTokenSymbol, metadataBasePath, busy, execute, onMarketCreated }: { writeReady: boolean; trust: TrustReport | null; client: CpredictClient | null; wallet: ConnectedWallet | null; protocol: ProtocolSnapshot | null; paymentTokenSymbol: string; metadataBasePath: string | null; busy: boolean; execute: ExecuteTransaction; onMarketCreated: (result: CreateMarketResult) => Promise<void> }) {
+function CreatePage({ writeReady, trust, client, wallet, account, protocol, paymentTokenSymbol, metadataBasePath, busy, execute, onMarketCreated }: { writeReady: boolean; trust: TrustReport | null; client: CpredictClient | null; wallet: ConnectedWallet | null; account: AccountSnapshot | null; protocol: ProtocolSnapshot | null; paymentTokenSymbol: string; metadataBasePath: string | null; busy: boolean; execute: ExecuteTransaction; onMarketCreated: (result: CreateMarketResult) => Promise<void> }) {
   const addresses = trust?.addresses;
-  return <Panel title="创建市场" subtitle="问题、结果和判定依据会由钱包签名并永久锁定">{client === null || wallet === null || addresses === null || addresses === undefined || protocol === null || metadataBasePath === null ? <Empty title="创建上下文不足" detail="需要通过部署验证、连接钱包，并加载 ProtocolConfig 与 Metadata 服务。" /> : <CreateMarketForm client={client} factory={addresses.contracts.factory} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} creator={wallet.address} creationFee={protocol.creationFee} maxFullMarketCap={protocol.maxFullMarketCap} maxCloneMarketCap={protocol.maxCloneMarketCap} maxPerUserPrimaryCap={protocol.maxPerUserPrimaryCap} maxCreatorRakeBps={protocol.maxCreatorRakeBps} maxCreatorC2CFeeBps={protocol.maxCreatorC2CFeeBps} metadataBasePath={metadataBasePath} wallet={wallet} writeReady={writeReady} busy={busy} execute={execute} onMarketCreated={onMarketCreated} />}<p className="callout">建议试运行仅开放 Full；Clone 需要甲方显式接受 delegatecall 风险和 500 {paymentTokenSymbol} 硬上限。</p></Panel>;
+  return <Panel title="创建市场" subtitle="问题、结果和判定依据会由钱包签名并永久锁定">{client === null || wallet === null || addresses === null || addresses === undefined || protocol === null || metadataBasePath === null ? <Empty title="创建上下文不足" detail="需要通过部署验证、连接钱包，并加载 ProtocolConfig 与 Metadata 服务。" /> : <CreateMarketForm client={client} factory={addresses.contracts.factory} factoryAllowance={account?.factoryAllowance ?? null} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} creator={wallet.address} creationFee={protocol.creationFee} maxFullMarketCap={protocol.maxFullMarketCap} maxCloneMarketCap={protocol.maxCloneMarketCap} maxPerUserPrimaryCap={protocol.maxPerUserPrimaryCap} maxCreatorRakeBps={protocol.maxCreatorRakeBps} maxCreatorC2CFeeBps={protocol.maxCreatorC2CFeeBps} metadataBasePath={metadataBasePath} wallet={wallet} writeReady={writeReady} busy={busy} execute={execute} onMarketCreated={onMarketCreated} />}<p className="callout">建议试运行仅开放 Full；Clone 需要甲方显式接受 delegatecall 风险和 500 {paymentTokenSymbol} 硬上限。</p></Panel>;
 }
 
-function PositionsPage({ market, account, wallet, indexerEnabled, indexerBasePath, chainId, onOpenMarket }: { market: MarketSnapshot | null; account: AccountSnapshot | null; wallet: ConnectedWallet | null; indexerEnabled: boolean; indexerBasePath: string; chainId: number; onOpenMarket: (market: Address) => void }) {
-  return <><Panel title="全部持仓" subtitle={wallet === null ? "连接钱包后汇总所有市场" : short(wallet.address)}><WalletPositionsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} wallet={wallet?.address ?? null} onOpenMarket={onOpenMarket} /></Panel><Panel title="当前市场持仓" subtitle={market === null ? "尚未选择市场" : short(market.address)}>{market === null || account === null ? <Empty title="暂无当前市场快照" detail="从上方持仓或市场列表打开一个市场。" /> : <div className="position-grid">{account.positions.map((value, index) => <div key={index}><small>结果 {index + 1}</small><strong>{formatShareUnits(value)}</strong></div>)}</div>}</Panel></>;
+export function PositionsPage({ market, account, wallet, indexerEnabled, indexerBasePath, chainId, targetBlock, onOpenMarket }: { market: MarketSnapshot | null; account: AccountSnapshot | null; wallet: ConnectedWallet | null; indexerEnabled: boolean; indexerBasePath: string; chainId: number; targetBlock: bigint | null; onOpenMarket: (market: Address) => void }) {
+  const livePositions = market === null || account === null
+    ? []
+    : account.positions.map((balance, outcomeId) => ({
+        vault: market.address,
+        outcomeId: BigInt(outcomeId),
+        balance,
+      }));
+  return <><Panel title="全部持仓" subtitle={wallet === null ? "连接钱包后汇总所有市场" : short(wallet.address)}><WalletPositionsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} wallet={wallet?.address ?? null} livePositions={livePositions} targetBlock={targetBlock} onOpenMarket={onOpenMarket} /></Panel><Panel title="当前市场持仓" subtitle={market === null ? "尚未选择市场" : short(market.address)}>{market === null || account === null ? <Empty title="暂无当前市场快照" detail="从上方持仓或市场列表打开一个市场。" /> : <div className="position-grid">{account.positions.map((value, index) => <div key={index}><small>结果 {index + 1}</small><strong>{formatShareUnits(value)}</strong></div>)}</div>}</Panel></>;
 }
 
-function MarketplacePage({ writeReady, market, trust, client, paymentTokenSymbol, indexerEnabled, indexerBasePath, chainId, onSelectMarket }: { writeReady: boolean; market: MarketSnapshot | null; trust: TrustReport | null; client: CpredictClient | null; paymentTokenSymbol: string; indexerEnabled: boolean; indexerBasePath: string; chainId: number; onSelectMarket: (market: Address) => void }) {
+function MarketplacePage({ writeReady, market, account, trust, client, paymentTokenSymbol, indexerEnabled, indexerBasePath, chainId, onSelectMarket }: { writeReady: boolean; market: MarketSnapshot | null; account: AccountSnapshot | null; trust: TrustReport | null; client: CpredictClient | null; paymentTokenSymbol: string; indexerEnabled: boolean; indexerBasePath: string; chainId: number; onSelectMarket: (market: Address) => void }) {
   const addresses = trust?.addresses;
-  return <><Panel title="活跃 C2C 挂单" subtitle="先选择挂单所属市场，再在下方成交或管理挂单"><ListingsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} paymentTokenSymbol={paymentTokenSymbol} onOpenMarket={onSelectMarket} /></Panel><Panel title="固定价 C2C" subtitle={market === null ? "尚未选择市场" : `当前 Vault ${short(market.address)}`}>{market !== null && addresses !== null && addresses !== undefined && client !== null && writeReady ? <div className="embedded-example"><MarketplacePanel client={client} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} vault={market.address} marketplace={addresses.contracts.marketplace} /></div> : <Empty title={market === null ? "先选择市场" : "C2C 写操作已锁定"} detail="部署、钱包、网络与 Vault 上下文通过后开放 allowance listing/fill/cancel；Permit2 fill 由 SDK 提供。" />}</Panel><Panel title="安全参数"><dl className="definition-grid"><div><dt>Marketplace</dt><dd className="mono">{addresses ? short(addresses.contracts.marketplace) : "—"}</dd></div><div><dt>Fill protection</dt><dd>minUnits / maxGross / deadline</dd></div></dl></Panel></>;
+  return <><Panel title="活跃 C2C 挂单" subtitle="先选择挂单所属市场，再在下方成交或管理挂单"><ListingsPanel enabled={indexerEnabled} indexerBasePath={indexerBasePath} chainId={chainId} paymentTokenSymbol={paymentTokenSymbol} onOpenMarket={onSelectMarket} /></Panel><Panel title="固定价 C2C" subtitle={market === null ? "尚未选择市场" : `当前 Vault ${short(market.address)}`}>{market !== null && addresses !== null && addresses !== undefined && client !== null && writeReady ? <div className="embedded-example"><MarketplacePanel client={client} paymentToken={addresses.usdc} paymentTokenSymbol={paymentTokenSymbol} vault={market.address} marketplace={addresses.contracts.marketplace} paymentTokenAllowance={account?.marketplaceAllowance ?? null} shareEscrowApproved={account?.marketplaceApproved ?? null} /></div> : <Empty title={market === null ? "先选择市场" : "C2C 写操作已锁定"} detail="部署、钱包、网络与 Vault 上下文通过后开放 allowance listing/fill/cancel；Permit2 fill 由 SDK 提供。" />}</Panel><Panel title="安全参数"><dl className="definition-grid"><div><dt>Marketplace</dt><dd className="mono">{addresses ? short(addresses.contracts.marketplace) : "—"}</dd></div><div><dt>Fill protection</dt><dd>minUnits / maxGross / deadline</dd></div></dl></Panel></>;
 }
 
 function SettlementPage({ writeReady, market, wallet, client, execute, evidenceUploader }: { writeReady: boolean; market: MarketSnapshot | null; wallet: ConnectedWallet | null; client: CpredictClient | null; execute: ExecuteTransaction; evidenceUploader: CanonicalEvidenceUploader | undefined }) {
@@ -877,17 +1125,69 @@ export function Inspector({ trust, runtime, market, wallet }: { trust: TrustRepo
     ["Permit2", trust?.addresses ? short(trust.addresses.permit2) : "—"],
     ["Market", market === null ? "—" : short(market.address)],
   ];
-  return <aside className="inspector"><div className="panel-heading"><div><p className="eyebrow">LIVE CONTEXT</p><h3>地址检查器</h3></div><span className="status-dot" data-level={trust?.level ?? "blocked"} /></div><div className="inspector-rows">{rows.map(([key, value]) => <div key={key}><span>{key}</span><strong className="mono">{value}</strong><button type="button" aria-label={`复制 ${key}`} onClick={() => void copyText(value)}>▣</button></div>)}</div><div className="inspector-note"><strong>Write gate</strong><p>{trust?.writeEnabled ? trust.level === "debug" ? "DEBUG enabled" : "VERIFIED enabled" : "LOCKED"}</p></div></aside>;
+  return <section className="inspector"><div className="panel-heading"><div><p className="eyebrow">LIVE CONTEXT</p><h3>地址检查器</h3></div><span className="status-dot" data-level={trust?.level ?? "blocked"} /></div><div className="inspector-rows">{rows.map(([key, value]) => <div key={key}><span>{key}</span><strong className="mono">{value}</strong><button type="button" aria-label={`复制 ${key}`} onClick={() => void copyText(value)}>▣</button></div>)}</div><div className="inspector-note"><strong>Write gate</strong><p>{trust?.writeEnabled ? trust.level === "debug" ? "DEBUG enabled" : "VERIFIED enabled" : "LOCKED"}</p></div></section>;
+}
+
+export function DeploymentDrawer({ open, onClose, runtime, trust, debug, setDebug, onVerify, busy }: {
+  open: boolean;
+  onClose: () => void;
+  runtime: LoadedRuntime | null;
+  trust: TrustReport | null;
+  debug: DebugAddressInput;
+  setDebug: (value: DebugAddressInput) => void;
+  onVerify: (event: FormEvent<HTMLFormElement>) => void;
+  busy: boolean;
+}) {
+  if (!open) return null;
+  return <div className="runtime-drawer-layer"><button type="button" className="runtime-drawer-backdrop" aria-label="关闭部署验证抽屉" onClick={onClose} /><aside id="deployment-drawer" className="runtime-drawer deployment-drawer" role="dialog" aria-modal="true" aria-label="部署验证"><div className="runtime-drawer-header"><div><p className="eyebrow">DEPLOYMENT</p><h2>部署验证</h2></div><button type="button" className="drawer-close" aria-label="关闭部署验证抽屉" onClick={onClose}>×</button></div><div className="runtime-drawer-content"><DeploymentPage runtime={runtime} trust={trust} debug={debug} setDebug={setDebug} onVerify={onVerify} busy={busy} /></div></aside></div>;
+}
+
+export function DeploymentVerificationToast({ toast, onClose }: {
+  toast: DeploymentToast | null;
+  onClose: () => void;
+}) {
+  if (toast === null) return null;
+  const dismissible = toast.state === "error";
+  return (
+    <aside
+      className={`deployment-toast ${toast.state}`}
+      role={dismissible ? "alert" : "status"}
+      aria-live={dismissible ? "assertive" : "polite"}
+      aria-atomic="true"
+    >
+      <span className="deployment-toast-indicator" aria-hidden="true" />
+      <div><strong>{toast.title}</strong><p>{toast.detail}</p></div>
+      {dismissible ? <button type="button" aria-label="关闭部署验证提示" onClick={onClose}>×</button> : null}
+    </aside>
+  );
+}
+
+export function RuntimeDrawer({ open, onClose, trust, runtime, market, wallet }: {
+  open: boolean;
+  onClose: () => void;
+  trust: TrustReport | null;
+  runtime: LoadedRuntime | null;
+  market: MarketSnapshot | null;
+  wallet: ConnectedWallet | null;
+}) {
+  if (!open) return null;
+  return <div className="runtime-drawer-layer"><button type="button" className="runtime-drawer-backdrop" aria-label="关闭运行状态抽屉" onClick={onClose} /><aside id="runtime-drawer" className="runtime-drawer" role="dialog" aria-modal="true" aria-label="运行状态"><div className="runtime-drawer-header"><div><p className="eyebrow">RUNTIME</p><h2>运行状态</h2></div><button type="button" className="drawer-close" aria-label="关闭运行状态抽屉" onClick={onClose}>×</button></div><div className="runtime-drawer-content"><Inspector trust={trust} runtime={runtime} market={market} wallet={wallet} /></div></aside></div>;
+}
+
+export function ActivityDrawer({ open, onClose, activity, explorerOrigin }: {
+  open: boolean;
+  onClose: () => void;
+  activity: ActivityItem[];
+  explorerOrigin: string;
+}) {
+  if (!open) return null;
+  return <div className="runtime-drawer-layer"><button type="button" className="runtime-drawer-backdrop" aria-label="关闭事件与回执抽屉" onClick={onClose} /><aside id="activity-drawer" className="runtime-drawer activity-drawer" role="dialog" aria-modal="true" aria-label="事件与回执"><div className="runtime-drawer-header"><div><p className="eyebrow">SESSION ACTIVITY</p><h2>事件与回执</h2></div><div className="drawer-header-actions"><span>{activity.length} 条</span><button type="button" className="drawer-close" aria-label="关闭事件与回执抽屉" onClick={onClose}>×</button></div></div><div className="runtime-drawer-content"><section className="activity-log" aria-label="本会话事件列表"><div className="activity-table">{activity.map((item) => <ActivityLine key={item.id} item={item} explorerOrigin={explorerOrigin} compact />)}</div></section></div></aside></div>;
 }
 
 export function formatResolutionWindow(seconds: number | null | undefined): string {
   if (seconds === null || seconds === undefined) return "—";
   if (seconds % 60 === 0) return `${seconds / 60} 分钟 / ${seconds} 秒`;
   return `${seconds} 秒`;
-}
-
-function ActivityLog({ items, explorerOrigin }: { items: ActivityItem[]; explorerOrigin: string }) {
-  return <section className="activity-log"><div className="panel-heading"><div><p className="eyebrow">SESSION ACTIVITY</p><h3>事件与回执</h3></div><span>{items.length} 条</span></div><div className="activity-table">{items.map((item) => <ActivityLine key={item.id} item={item} explorerOrigin={explorerOrigin} compact />)}</div></section>;
 }
 
 export function ActivityLine({ item, explorerOrigin, compact = false }: { item: ActivityItem; explorerOrigin: string; compact?: boolean }) {
@@ -903,8 +1203,12 @@ function StatusCard({ label, value, hint, state }: { label: string; value: strin
   return <div className={`status-card ${state}`}><div><span>{label}</span><i className="status-dot" /></div><strong>{value}</strong><small>{hint}</small></div>;
 }
 
-function StatusBadge({ state }: { state: "verified" | "debug" | "blocked" }) {
-  return <span className={`status-badge ${state}`}>{state === "verified" ? "VERIFIED" : state === "debug" ? "DEBUG" : "LOCKED"}</span>;
+function deploymentStatusLabel(state: "verified" | "debug" | "blocked" | "checking") {
+  return state === "verified" ? "验证通过" : state === "debug" ? "调试验证通过" : state === "checking" ? "正在检查" : "写操作已锁定";
+}
+
+export function deploymentIndicatorState(state: "verified" | "debug" | "blocked" | "checking"): "running" | "error" | "success" {
+  return state === "checking" ? "running" : state === "blocked" ? "error" : "success";
 }
 
 function StatusPill({ value }: { value: string }) { return <span className="status-pill">{value}</span>; }
@@ -944,16 +1248,31 @@ function parseMarketRoute(hash: string | undefined): Address | null {
     : null;
 }
 
-async function refreshTrust(client: PublicClient, runtime: LoadedRuntime, setTrust: (report: TrustReport) => void, setBusy: (value: boolean) => void, setActivity: React.Dispatch<React.SetStateAction<ActivityItem[]>>) {
+export function deploymentToastForReport(report: TrustReport): DeploymentToast {
+  if (report.writeEnabled) {
+    return {
+      state: "success",
+      title: report.level === "debug" ? "部署验证通过（DEBUG）" : "部署验证通过",
+      detail: trustSummary(report),
+    };
+  }
+  return { state: "error", title: "部署验证未通过", detail: trustSummary(report) };
+}
+
+async function refreshTrust(client: PublicClient, runtime: LoadedRuntime, setTrust: (report: TrustReport) => void, setBusy: (value: boolean) => void, setActivity: React.Dispatch<React.SetStateAction<ActivityItem[]>>, setToast: (toast: DeploymentToast) => void) {
   setBusy(true);
+  setToast(DEPLOYMENT_CHECKING_TOAST);
   try {
     const report = runtime.debugAddresses === null
       ? await verifyManifest(client, runtime.manifest, runtime.config.paymentToken)
       : await verifyDebugAddresses(client, runtime.debugAddresses, runtime.config.paymentToken);
     setTrust(report);
+    setToast(deploymentToastForReport(report));
     push(setActivity, report.level === "verified" ? "success" : "warning", "Deployment verification", report.level === "verified" ? `${report.checks.length} checks passed` : trustSummary(report));
   } catch (error: unknown) {
-    push(setActivity, "error", "Deployment verification failed", messageOf(error));
+    const detail = messageOf(error);
+    setToast({ state: "error", title: "部署验证失败", detail });
+    push(setActivity, "error", "Deployment verification failed", detail);
   } finally {
     setBusy(false);
   }

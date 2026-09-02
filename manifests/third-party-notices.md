@@ -112,6 +112,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@types/react-dom@19.2.4:node_modules/@types/react-dom
 - npm:@types/react@19.2.18:node_modules/@types/react
 - npm:@types/ws@8.18.1:node_modules/@types/ws
+- npm:@vitejs/plugin-react@6.1.1:node_modules/@vitejs/plugin-react
 - npm:@vitest/expect@4.1.10:node_modules/@vitest/expect
 - npm:@vitest/mocker@4.1.10:node_modules/@vitest/mocker
 - npm:@vitest/pretty-format@4.1.10:node_modules/@vitest/pretty-format

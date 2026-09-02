@@ -80,6 +80,10 @@ Indexer 保存 raw event、checkpoint 以及每个扫描区块（含无事件块
 
 只读 API 路由为 `/v1/markets`、`/v1/markets/:market`、`/v1/listings`、`/v1/fills`、
 `/v1/positions/:owner`、`/v1/claims/:owner`，分页最大 100；金额和 block number 使用 decimal string。
+`/v1/sync-status?chainId=<id>` 只在 PostgreSQL、RPC chain 和 scheduler 健康时返回
+`indexedBlock` 与按配置确认数计算的 `safeBlock`。客户端只有在 `indexedBlock` 同时追上
+`safeBlock` 和本地已确认 receipt 的目标区块后，才可把空 position projection 展示为真实空持仓；
+此前必须保留链上直读结果并显示同步中。
 API 不把 URI 当可信 HTML，也不提供 user-controlled outbound fetch。用户在不可逆操作前仍用 RPC
 `eth_call/simulate` 验证。真实 PostgreSQL integration 只有在显式提供 disposable `TEST_DATABASE_URL`
 时运行；当前为 SKIP，内存 store 通过不能替代数据库 runtime proof。

@@ -50,6 +50,12 @@ export interface IndexedPosition {
   confirmationStatus: "provisional" | "confirmed";
 }
 
+export interface IndexerSyncStatus {
+  chainId: number;
+  indexedBlock: bigint | null;
+  safeBlock: bigint;
+}
+
 export interface IndexedListing {
   listingId: Hex;
   vault: Address;
@@ -126,6 +132,26 @@ export async function fetchWalletPositions(input: {
   url.searchParams.set("limit", "100");
   if (input.cursor !== undefined) url.searchParams.set("cursor", input.cursor);
   return fetchPage(url, parsePosition, input.signal);
+}
+
+export async function fetchIndexerSyncStatus(input: {
+  basePath: string;
+  chainId: number;
+  signal?: AbortSignal;
+}): Promise<IndexerSyncStatus> {
+  const url = endpoint(input.basePath, "/v1/sync-status");
+  url.searchParams.set("chainId", String(input.chainId));
+  const response = await fetch(url, requestInit(input.signal));
+  if (!response.ok) throw new Error(`Indexer sync HTTP ${response.status}`);
+  requireJson(response);
+  const item = record(await response.json(), "Indexer sync status");
+  if (item.status !== "ready")
+    throw new TypeError("Indexer sync status is invalid");
+  return {
+    chainId: integer(item.chainId, "chainId", 1, Number.MAX_SAFE_INTEGER),
+    indexedBlock: nullableBigint(item.indexedBlock, "indexedBlock"),
+    safeBlock: bigint(item.safeBlock, "safeBlock"),
+  };
 }
 
 export async function fetchListings(input: {

@@ -135,6 +135,43 @@ describe("read-only indexer API", () => {
     );
     await app.close();
   });
+
+  it("exposes a healthy indexed checkpoint and safe chain block", async () => {
+    const app = createIndexerApi(new FixtureQueryStore(), {
+      syncStatus: async (chainId) => ({
+        chainId,
+        indexedBlock: 304_503_617n,
+        safeBlock: 304_503_618n,
+      }),
+    });
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/sync-status?chainId=421614",
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      status: "ready",
+      chainId: 421614,
+      indexedBlock: "304503617",
+      safeBlock: "304503618",
+    });
+    await app.close();
+  });
+
+  it("fails closed when indexer sync health is unavailable", async () => {
+    const app = createIndexerApi(new FixtureQueryStore(), {
+      syncStatus: async () => {
+        throw new Error("scheduler unhealthy");
+      },
+    });
+    const response = await app.inject({
+      method: "GET",
+      url: "/v1/sync-status?chainId=421614",
+    });
+    expect(response.statusCode).toBe(503);
+    expect(response.json()).toEqual({ status: "not_ready" });
+    await app.close();
+  });
 });
 
 class FixtureQueryStore implements IndexerQueryStore {

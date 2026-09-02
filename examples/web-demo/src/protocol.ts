@@ -27,6 +27,7 @@ const vaultReadAbi = parseAbi([
   "function permit2Enabled() view returns (bool)",
   "function earlyBirdEnabled() view returns (bool)",
   "function balanceOf(address account,uint256 id) view returns (uint256)",
+  "function isApprovedForAll(address account,address operator) view returns (bool)",
   "function cumulativePrimaryBought(address user) view returns (uint256)",
   "function earlyBirdScore(address user) view returns (uint256)",
 ]);
@@ -87,6 +88,7 @@ export interface AccountSnapshot {
   vaultAllowance: bigint;
   marketplaceAllowance: bigint;
   permit2Allowance: bigint;
+  marketplaceApproved: boolean;
   positions: bigint[];
   cumulativePrimaryBought: bigint;
   earlyBirdScore: bigint;
@@ -153,12 +155,13 @@ export async function readAccount(
   marketplace: Address,
   permit2: Address,
 ): Promise<AccountSnapshot> {
-  const [usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, permit2Allowance, cumulativePrimaryBought, earlyBirdScore] = await Promise.all([
+  const [usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, permit2Allowance, marketplaceApproved, cumulativePrimaryBought, earlyBirdScore] = await Promise.all([
     client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "balanceOf", args: [account] }),
     client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, factory] }),
     client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, market.address] }),
     client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, marketplace] }),
     client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, permit2] }),
+    client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "isApprovedForAll", args: [account, marketplace] }),
     client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "cumulativePrimaryBought", args: [account] }),
     client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "earlyBirdScore", args: [account] }),
   ]);
@@ -167,7 +170,7 @@ export async function readAccount(
       client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "balanceOf", args: [account, BigInt(outcomeId)] }),
     ),
   );
-  return { usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, permit2Allowance, positions, cumulativePrimaryBought, earlyBirdScore };
+  return { usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, permit2Allowance, marketplaceApproved, positions, cumulativePrimaryBought, earlyBirdScore };
 }
 
 export async function readPaymentTokenBalance(

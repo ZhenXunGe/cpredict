@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { encodeMarketRules, type MarketRules } from "../../../offchain/sdk/src/index.js";
 import {
+  fetchIndexerSyncStatus,
   fetchMarketCatalog,
   fetchMarketRules,
   fetchWalletActivity,
+  fetchWalletPositions,
 } from "../src/indexer-client.js";
 
 const MARKET = "0x0000000000000000000000000000000000001001";
@@ -55,6 +57,44 @@ describe("same-origin indexer client", () => {
       chainId: 421614,
       owner: CREATOR,
     })).rejects.toThrow("invalid");
+  });
+
+  it("parses wallet positions and the indexer sync proof boundary", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(json({
+        status: "ready",
+        chainId: 421614,
+        indexedBlock: "304503617",
+        safeBlock: "304503618",
+      }))
+      .mockResolvedValueOnce(json({
+        items: [{
+          vault: MARKET,
+          owner: CREATOR,
+          outcomeId: "0",
+          balance: "2000000",
+          updatedBlock: "304503617",
+          confirmationStatus: "confirmed",
+        }],
+      }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchIndexerSyncStatus({
+      basePath: "/indexer",
+      chainId: 421614,
+    })).resolves.toEqual({
+      chainId: 421614,
+      indexedBlock: 304_503_617n,
+      safeBlock: 304_503_618n,
+    });
+    await expect(fetchWalletPositions({
+      basePath: "/indexer",
+      chainId: 421614,
+      owner: CREATOR,
+    })).resolves.toMatchObject({
+      items: [{ balance: 2_000_000n, outcomeId: 0n }],
+    });
   });
 
   it("accepts only self-hosted metadata whose content matches rulesHash", async () => {

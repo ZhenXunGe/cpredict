@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "cpredict-protocol-sbom",
-  "documentNamespace": "https://cpredict.example.invalid/spdx/1c46a78390997f98487f17efa776f6a6cac854ac762e7ec9de2113024ee1970c",
+  "documentNamespace": "https://cpredict.example.invalid/spdx/7a1c3589a58d7cf3f3875840bbc7981d1fef137e3c64aec1e5b925c27fa257ed",
   "creationInfo": {
     "created": "1970-01-01T00:00:00Z",
     "creators": [
@@ -1097,6 +1097,23 @@
       "licenseDeclared": "Apache-2.0",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/@typescript/typescript-win32-x64; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-1871737c7683d9bb36a95622",
+      "name": "@vitejs/plugin-react",
+      "versionInfo": "6.1.1",
+      "downloadLocation": "https://registry.npmjs.org/@vitejs/plugin-react/-/plugin-react-6.1.1.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "cb12da415f609214bc7b326a08cebe9dd53b98363a82a020ef9350fb4223c0423c2183a64028244701ca5527d65d6d3be83b2a328d0393ed052b553e33946017"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@vitejs/plugin-react; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-d6b7b5257b316ca58722ad4b",
@@ -3725,6 +3742,11 @@
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
     {
+      "spdxElementId": "SPDXRef-Package-1871737c7683d9bb36a95622",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
       "spdxElementId": "SPDXRef-Package-1c3b346fdda61d13bf468731",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
@@ -4725,7 +4747,7 @@
       "annotationDate": "1970-01-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: cpredict-sbom-generator-1",
-      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=c0ad473a28c3dc6f40174cf386a69846092044c60e6b737fec41b8399a56759c, package.json=7f5ef694b927b50a44bf0935ce0f5c4988a33d767f933d7e8303980fda995725"
+      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=6cec3388b58c75f084e905339db1bb5b637615a568e07b1d3264b8fe124698bc, package.json=04c245a0d53c738e6756e50b5e94e181fe93435ec037e0ec3d1bb3dce68a059c"
     }
   ]
 }

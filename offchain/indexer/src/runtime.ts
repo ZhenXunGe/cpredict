@@ -78,8 +78,26 @@ export async function startIndexerRuntime(
       throw new Error("indexer scheduler is not running");
     scheduler.assertHealthy();
   };
+  const syncStatus = async (chainId: number) => {
+    if (chainId !== config.chainId)
+      throw new RangeError("requested chainId does not match indexer config");
+    await readiness();
+    const [checkpoint, chainHead] = await Promise.all([
+      store.checkpoint(chainId),
+      client.getBlockNumber(),
+    ]);
+    return {
+      chainId,
+      indexedBlock: checkpoint?.blockNumber ?? null,
+      safeBlock:
+        chainHead < config.confirmations
+          ? 0n
+          : chainHead - config.confirmations,
+    };
+  };
   const app = createIndexerApi(store, {
     readiness,
+    syncStatus,
     registry: telemetry.registry,
     logLevel: config.logLevel,
     maxConnections: config.httpMaxConnections,

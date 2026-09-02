@@ -1,14 +1,46 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import App, { ActivityLine, Inspector, MarketPage, PrimaryAllowanceRow, SandboxTokenPanel } from "../src/App.js";
+import App, { ActivityDrawer, ActivityLine, BuyCard, DeploymentDrawer, DeploymentVerificationToast, deploymentCardCopy, deploymentIndicatorState, deploymentToastForReport, environmentStatusCardStates, Inspector, MarketPage, PrimaryAllowanceRow, RuntimeDrawer, SandboxTokenPanel } from "../src/App.js";
 import { CreateMarketForm } from "../src/CreateMarketForm.js";
 import { MarketCatalogCards, type CatalogEntry } from "../src/MarketCatalog.js";
 import type { MarketSnapshot } from "../src/protocol.js";
 import type { TrustReport } from "../src/trust.js";
+import type { LoadedRuntime } from "../src/config.js";
 import type { CpredictClient } from "../../../offchain/sdk/src/index.js";
 import type { ConnectedWallet } from "../src/wallet.js";
 
 describe("web demo application shell", () => {
+  it("maps deployment activity to running, error, and success indicators", () => {
+    expect(deploymentIndicatorState("checking")).toBe("running");
+    expect(deploymentIndicatorState("blocked")).toBe("error");
+    expect(deploymentIndicatorState("debug")).toBe("success");
+    expect(deploymentIndicatorState("verified")).toBe("success");
+  });
+
+  it("describes a loaded DEBUG address package as deployed but not finalized", () => {
+    const copy = deploymentCardCopy({
+      manifest: null,
+      debugAddresses: {} as NonNullable<LoadedRuntime["debugAddresses"]>,
+    });
+
+    expect(copy).toEqual({
+      value: "已部署（DEBUG）",
+      hint: "调试地址包已加载 · 尚未 FINALIZED_VERIFIED",
+    });
+  });
+
+  it("treats verified DEBUG deployment and sandbox token as healthy for that environment", () => {
+    expect(environmentStatusCardStates(
+      { level: "debug" },
+      { kind: "sandbox-test-token" },
+    )).toEqual({ deployment: "success", paymentToken: "success" });
+
+    expect(environmentStatusCardStates(
+      { level: "blocked" },
+      { kind: "sandbox-test-token" },
+    )).toEqual({ deployment: "warning", paymentToken: "warning" });
+  });
+
   it("renders the trust-first Chinese console without fabricated runtime state", () => {
     const html = renderToStaticMarkup(<App />);
     expect(html).toContain("Cpredict");
@@ -18,14 +50,154 @@ describe("web demo application shell", () => {
     for (const label of [
       "概览",
       "部署验证",
-      "市场",
       "创建市场",
+      "市场",
       "我的持仓",
       "C2C 市场",
       "结算与作废",
       "回执与事件",
     ]) expect(html).toContain(label);
+    expect(html).toContain('aria-controls="deployment-drawer"');
+    expect(html).toContain('aria-label="打开部署验证抽屉，写操作已锁定"');
+    expect(html).toContain('aria-label="打开运行状态抽屉"');
+    expect(html).toContain('aria-controls="activity-drawer"');
+    expect(html).toContain('aria-label="打开事件与回执抽屉"');
+    expect(html.indexOf("<span>创建市场</span>")).toBeLessThan(html.indexOf("<span>市场</span>"));
+    expect(html).not.toContain("LIVE CONTEXT");
+    expect(html).not.toContain("SESSION ACTIVITY");
+    expect(html).not.toContain("TRUST-FIRST WORKFLOW");
+    expect(html).not.toContain("先验证部署，再执行交易");
+    expect(html).not.toContain("开始部署验证");
+    expect(html).not.toContain("协议操作路径");
+    expect(html).not.toContain("打开市场交互");
     expect(html).not.toContain("dangerouslySetInnerHTML");
+  });
+
+  it("renders session activity in its own drawer instead of runtime status", () => {
+    const runtimeHtml = renderToStaticMarkup(
+      <RuntimeDrawer
+        open
+        onClose={() => {}}
+        trust={null}
+        runtime={null}
+        market={null}
+        wallet={null}
+      />,
+    );
+    expect(runtimeHtml).toContain('id="runtime-drawer"');
+    expect(runtimeHtml).toContain("LIVE CONTEXT");
+    expect(runtimeHtml).not.toContain("SESSION ACTIVITY");
+
+    const activityHtml = renderToStaticMarkup(
+      <ActivityDrawer
+        open
+        onClose={() => {}}
+        activity={[{
+          id: 1,
+          at: new Date("2026-09-02T00:00:00Z"),
+          level: "info",
+          label: "Console initialized",
+          detail: "等待 runtime config 与部署清单",
+        }]}
+        explorerOrigin="https://sepolia.arbiscan.io"
+      />,
+    );
+    expect(activityHtml).toContain('id="activity-drawer"');
+    expect(activityHtml).toContain('role="dialog"');
+    expect(activityHtml).toContain("SESSION ACTIVITY");
+    expect(activityHtml).toContain("事件与回执");
+    expect(activityHtml).toContain("Console initialized");
+    expect(activityHtml).toContain("等待 runtime config 与部署清单");
+    expect(activityHtml).not.toContain("LIVE CONTEXT");
+  });
+
+  it("keeps deployment status visible until success or a manually dismissed error", () => {
+    const checking = renderToStaticMarkup(
+      <DeploymentVerificationToast
+        toast={{ state: "checking", title: "正在验证部署", detail: "正在检查" }}
+        onClose={() => {}}
+      />,
+    );
+    expect(checking).toContain('role="status"');
+    expect(checking).toContain("正在验证部署");
+    expect(checking).not.toContain("关闭部署验证提示");
+
+    const successToast = deploymentToastForReport({
+      level: "verified",
+      writeEnabled: true,
+      checks: [{ id: "chain", label: "Chain", state: "pass", detail: "421614" }],
+      addresses: null,
+      paymentToken: {
+        kind: "canonical-usdc",
+        name: "USD Coin",
+        symbol: "USDC",
+        decimals: 6,
+        faucetEnabled: false,
+        faucetAmount: "0",
+      },
+      resolutionWindowSeconds: null,
+    });
+    expect(successToast).toMatchObject({ state: "success", title: "部署验证通过" });
+
+    const error = renderToStaticMarkup(
+      <DeploymentVerificationToast
+        toast={{ state: "error", title: "部署验证未通过", detail: "codehash 不匹配" }}
+        onClose={() => {}}
+      />,
+    );
+    expect(error).toContain('role="alert"');
+    expect(error).toContain('aria-label="关闭部署验证提示"');
+  });
+
+  it("renders deployment verification in a drawer", () => {
+    const address = (digit: string) => `0x${digit.repeat(40)}`;
+    const debug = {
+      timelock: address("1"),
+      config: address("2"),
+      emergencyController: address("3"),
+      exposureGuard: address("4"),
+      feeVault: address("5"),
+      bondEscrow: address("6"),
+      cloneImplementation: address("7"),
+      fullMarketDeployer: address("8"),
+      factory: address("9"),
+      marketplace: address("a"),
+      paymaster: address("b"),
+      usdc: address("c"),
+      permit2: address("d"),
+      entryPoint: address("e"),
+    };
+    const html = renderToStaticMarkup(
+      <DeploymentDrawer
+        open
+        onClose={() => {}}
+        runtime={{
+          config: {
+            chain: { name: "Arbitrum Sepolia" },
+            deployment: { allowDebugAddresses: true },
+          },
+          manifest: null,
+          debugAddresses: debug,
+          manifestError: null,
+        } as LoadedRuntime}
+        trust={null}
+        debug={debug}
+        setDebug={() => {}}
+        onVerify={() => {}}
+        busy={false}
+      />,
+    );
+    expect(html).toContain('id="deployment-drawer"');
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain("部署与正式发布");
+    expect(html).toContain("当前环境");
+    expect(html).toContain("已部署（DEBUG）");
+    expect(html).toContain("正式发布");
+    expect(html).toContain("尚未 FINALIZED_VERIFIED");
+    expect(html).toContain("不适用于 DEBUG 地址包");
+    expect(html).not.toContain("BLOCKED_NOT_DEPLOYED");
+    expect(html).toContain("自定义调试地址");
+    expect(html).toContain('aria-label="关闭部署验证抽屉"');
   });
 
   it("renders an unmistakable sandbox token faucet and balance", () => {
@@ -72,11 +244,12 @@ describe("web demo application shell", () => {
     expect(html).toContain("15 分钟 / 900 秒");
   });
 
-  it("defaults market creation to a 15-minute duration", () => {
+  it("prefills market duration and a valid public resolution source", () => {
     const html = renderToStaticMarkup(
       <CreateMarketForm
         client={{} as CpredictClient}
         factory="0x0000000000000000000000000000000000001001"
+        factoryAllowance={null}
         paymentToken="0x0000000000000000000000000000000000001002"
         paymentTokenSymbol="ctUSD"
         creator="0x0000000000000000000000000000000000001003"
@@ -97,6 +270,9 @@ describe("web demo application shell", () => {
     expect(html).toContain("市场期限（分钟，11–129600）");
     expect(html).toContain('value="15"');
     expect(html).toContain('min="11"');
+    expect(html).toMatch(
+      /id="market-source"[^>]*value="https:\/\/example\.com\/result"/,
+    );
   });
 
   it("renders the exact Permit2 token allowance required before signing", () => {
@@ -113,6 +289,49 @@ describe("web demo application shell", () => {
     expect(html).toContain("Permit2 allowance");
     expect(html).toContain("0 ctUSD");
     expect(html).toContain("精确授权 ctUSD → Permit2");
+  });
+
+  it("keeps exact authorization separate and also merges it into primary buy", () => {
+    const market: MarketSnapshot = {
+      address: "0x0000000000000000000000000000000000001001",
+      observedAt: 1_900_000_000n,
+      creator: "0x000000000000000000000000000000000000c001",
+      creatorTreasury: "0x000000000000000000000000000000000000c002",
+      rulesHash: `0x${"11".repeat(32)}`,
+      outcomeCount: 2,
+      createdAt: 1_899_999_000n,
+      closeAt: 1_900_001_000n,
+      earlyBirdStart: 1_899_999_500n,
+      featureFlags: 0n,
+      perUserPrimaryCap: 10_000_000n,
+      marketPrimaryCap: 20_000_000n,
+      minimumPrimaryUnits: 1_000_000n,
+      minimumC2CUnits: 1_000_000n,
+      creatorBond: 10_000_000n,
+      marketState: 0,
+      winningOutcome: 0,
+      totalPrincipal: 2_000_000n,
+      resolutionDeadline: 1_900_001_900n,
+      permit2Enabled: true,
+      earlyBirdEnabled: false,
+    };
+    const html = renderToStaticMarkup(
+      <BuyCard
+        market={market}
+        outcomeLabels={["Yes", "No"]}
+        account={null}
+        client={null}
+        wallet={null}
+        trust={null}
+        paymentTokenSymbol="ctUSD"
+        writeReady
+        primaryBuyOpen
+        busy={false}
+        execute={async () => null}
+      />,
+    );
+    expect(html).toContain("精确授权并模拟购买");
+    expect(html).toContain(">精确授权</button>");
   });
 
   it("renders an expired unsettled market as closed and disables primary writes", () => {

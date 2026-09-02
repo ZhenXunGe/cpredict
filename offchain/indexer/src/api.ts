@@ -3,6 +3,7 @@ import { Counter, Gauge, Histogram, Registry } from "prom-client";
 import { getAddress, isAddress, type Address, type Hex } from "viem";
 import { z } from "zod";
 import type {
+  IndexerSyncStatus,
   IndexerQueryStore,
   MarketStatus,
   QueryPage,
@@ -16,6 +17,9 @@ import type { IndexerWebSocketHub } from "./websocket.js";
 
 export interface IndexerApiOptions {
   readiness?: (() => Promise<void>) | undefined;
+  syncStatus?:
+    | ((chainId: number) => Promise<IndexerSyncStatus>)
+    | undefined;
   registry?: Registry | undefined;
   logLevel?:
     | "fatal"
@@ -135,6 +139,20 @@ export function createIndexerApi(
       if (options.readiness !== undefined) await options.readiness();
       return { status: "ready" };
     } catch {
+      return reply.code(503).send({ status: "not_ready" });
+    }
+  });
+  app.get("/v1/sync-status", async (request, reply) => {
+    const query = z.object({ chainId: chainIdSchema }).parse(request.query);
+    if (options.syncStatus === undefined)
+      return reply.code(503).send({ status: "not_ready" });
+    try {
+      const status = await options.syncStatus(query.chainId);
+      if (status.chainId !== query.chainId)
+        throw new RangeError("sync status chainId does not match request");
+      return reply.send(json({ status: "ready", ...status }));
+    } catch (error: unknown) {
+      if (error instanceof RangeError) throw error;
       return reply.code(503).send({ status: "not_ready" });
     }
   });

@@ -10,7 +10,10 @@ export interface TransactionActionState {
   result?: TransactionResult;
 }
 
-/** One click produces at most one economic transaction; failures are categorized without auto-retry. */
+/**
+ * Runs one deliberate user action. The action may contain a confirmed bounded
+ * authorization followed by one economic transaction; neither step auto-retries.
+ */
 export function useTransactionAction() {
   const active = useRef(false);
   const [state, setState] = useState<TransactionActionState>({
@@ -20,7 +23,7 @@ export function useTransactionAction() {
   const run = useCallback(async (action: () => Promise<TransactionResult>) => {
     if (active.current) return;
     active.current = true;
-    setState({ pending: true, message: "Simulating transaction…" });
+    setState({ pending: true, message: "Checking authorization and simulating…" });
     try {
       const result = await action();
       setState({

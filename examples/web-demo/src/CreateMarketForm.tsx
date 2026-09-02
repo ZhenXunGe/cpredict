@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { parseUnits, type Address } from "viem";
 import {
   encodeMarketRules,
@@ -18,6 +18,7 @@ import {
   type PublishedMarketMetadata,
 } from "./metadata-client.js";
 import type { ConnectedWallet } from "./wallet.js";
+import { authorizationRequired } from "../../react/src/authorizationFlow.js";
 
 export type ExecuteTransaction = <T extends TransactionResult>(
   label: string,
@@ -27,6 +28,7 @@ export type ExecuteTransaction = <T extends TransactionResult>(
 interface CreateMarketFormProps {
   client: CpredictClient;
   factory: Address;
+  factoryAllowance: bigint | null;
   paymentToken: Address;
   paymentTokenSymbol: string;
   creator: Address;
@@ -70,7 +72,9 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
     "Will the cited public result be Yes at market close?",
   );
   const [outcomeLabels, setOutcomeLabels] = useState("Yes\nNo");
-  const [resolutionSource, setResolutionSource] = useState("https://");
+  const [resolutionSource, setResolutionSource] = useState(
+    "https://example.com/result",
+  );
   const [resolutionCriteria, setResolutionCriteria] = useState(
     "Resolve to the outcome explicitly reported by the cited public source after market close.",
   );
@@ -91,8 +95,16 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [stage, setStage] = useState<"idle" | "publishing">("idle");
+  const [stage, setStage] = useState<"idle" | "authorizing" | "publishing">("idle");
+  const [factoryAllowance, setFactoryAllowance] = useState(
+    props.factoryAllowance,
+  );
   const salt = useMemo(() => randomBytes32(), []);
+
+  useEffect(
+    () => setFactoryAllowance(props.factoryAllowance),
+    [props.factory, props.factoryAllowance, props.creator],
+  );
 
   function marketDraft() {
     const now = BigInt(Math.floor(Date.now() / 1_000));
@@ -236,7 +248,11 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
       if (!confirmed)
         throw new Error("请先确认不可变参数与创建者单方结算风险");
       const prepared = marketDraft();
-      economicValues();
+      const amount = economicValues().bondAmount + props.creationFee;
+      if (authorizationRequired(factoryAllowance, amount)) {
+        setStage("authorizing");
+        if (!(await authorizePayment(amount))) return;
+      }
       setStage("publishing");
       const publication = await publishMarketMetadata({
         basePath: props.metadataBasePath,
@@ -261,16 +277,26 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
     try {
       if (!validateForm()) throw new Error("请先修正表单中标出的字段");
       const amount = economicValues().bondAmount + props.creationFee;
-      await props.execute("Approve creation fee + bond", () =>
-        props.client.approvePaymentToken(
-          props.paymentToken,
-          props.factory,
-          amount,
-        ),
-      );
+      setStage("authorizing");
+      await authorizePayment(amount);
     } catch (cause: unknown) {
       setError(cause instanceof Error ? cause.message : "市场草稿无效");
+    } finally {
+      setStage("idle");
     }
+  }
+
+  async function authorizePayment(amount: bigint): Promise<boolean> {
+    const result = await props.execute("Approve creation fee + bond", () =>
+      props.client.approvePaymentToken(
+        props.paymentToken,
+        props.factory,
+        amount,
+      ),
+    );
+    if (result === null) return false;
+    setFactoryAllowance(amount);
+    return true;
   }
 
   function validateForm(): boolean {
@@ -340,6 +366,8 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
     props.busy ||
     stage !== "idle";
   const advancedError = ["perUserCap", "bond", "minimumPrimary", "minimumC2C", "rake", "c2cFee"].some((name) => fieldErrors[name as FieldName] !== undefined);
+  const needsAuthorization = requiredPayment !== null &&
+    authorizationRequired(factoryAllowance, requiredPayment);
 
   return (
     <form
@@ -473,12 +501,12 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
         <div><dt>创建标识</dt><dd className="mono">{salt}</dd></div>
         <div><dt>创建费 + 保证金</dt><dd>{requiredPayment === null ? "待补全" : `${Number(requiredPayment) / 1e6} ${props.paymentTokenSymbol}`}</dd></div>
       </dl>
-      <p className="callout">提交时先由钱包签名发布不可变规则，再单独确认创建交易；平台自动生成 Metadata URI，无需手工填写。</p>
+      <p className="callout">提交时如额度不足会先请求精确授权，再由钱包签名发布不可变规则并单独确认创建交易；平台自动生成 Metadata URI，无需手工填写。</p>
       <label className="confirmation"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.currentTarget.checked)} /> 我已核对问题、结果、判定来源、时间、上限、费用、保证金与 Full/Clone 风险，并理解创建后经济参数不可改。</label>
       {error ? <p className="form-error" role="alert">{error}</p> : null}
       <div className="form-actions">
         <button type="button" className="button" disabled={!props.writeReady || props.busy || stage !== "idle"} onClick={() => void approve()}>精确授权创建费 + 保证金</button>
-        <button className="button primary" disabled={disabled || !confirmed}>{stage === "publishing" ? "等待规则签名…" : "签名规则并创建市场"}</button>
+        <button className="button primary" disabled={disabled || !confirmed}>{stage === "authorizing" ? "等待精确授权…" : stage === "publishing" ? "等待规则签名…" : needsAuthorization ? "精确授权、签名并创建市场" : "签名规则并创建市场"}</button>
       </div>
     </form>
   );

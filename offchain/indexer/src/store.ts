@@ -30,6 +30,12 @@ export interface ChainCheckpoint {
   blockHash: Hex;
 }
 
+export interface IndexerSyncStatus {
+  chainId: number;
+  indexedBlock: bigint | null;
+  safeBlock: bigint;
+}
+
 export interface MarketView {
   chainId: number;
   market: Address;

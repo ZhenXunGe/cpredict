@@ -45,6 +45,7 @@ const client = new Proxy(
   | "refund"
   | "claimTimeoutBonus"
   | "approvePaymentToken"
+  | "buy"
   | "buyWithPermit2"
 >;
 
@@ -88,7 +89,9 @@ describe("React protocol call examples", () => {
         creatorMode
       />,
     );
-    expect(createHtml).toContain("Create immutable market");
+    expect(createHtml).toContain(
+      "Authorize exact payment and create immutable market",
+    );
     expect(createHtml).toContain("Approve exact creation fee and bond");
     expect(lifecycleHtml).toContain("unilateral and irreversible");
     expect(lifecycleHtml).toContain("Evidence source URI");
@@ -143,8 +146,10 @@ describe("React protocol call examples", () => {
     const claimsHtml = renderToStaticMarkup(
       <ClaimsPanel client={client} vault={address} owner={address} />,
     );
-    expect(marketHtml).toContain("Step 1: approve share escrow");
+    expect(marketHtml).toContain("Approve share escrow separately");
+    expect(marketHtml).toContain("Authorize share escrow and create listing");
     expect(marketHtml).toContain("Approve exact USDC for fill");
+    expect(marketHtml).toContain("Authorize exact USDC and fill");
     expect(marketHtml).toContain("Cancel listing");
     expect(claimsHtml).toContain("Claim winnings");
     expect(claimsHtml).toContain("Refund principal");
@@ -171,7 +176,10 @@ describe("React protocol call examples", () => {
       />,
     );
     expect(html).toContain("Approve exact USDC to market");
+    expect(html).toContain("Authorize exact USDC and buy");
     expect(html).toContain("Approve exact USDC to Permit2");
-    expect(html).toContain("Sign Permit2 witness and buy");
+    expect(html).toContain(
+      "Authorize exact USDC, sign Permit2 witness and buy",
+    );
   });
 });

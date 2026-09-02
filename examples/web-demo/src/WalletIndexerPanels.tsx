@@ -1,13 +1,38 @@
 import { useEffect, useState } from "react";
 import type { Address } from "viem";
 import {
+  fetchIndexerSyncStatus,
   fetchListings,
   fetchWalletActivity,
   fetchWalletPositions,
+  type IndexerSyncStatus,
   type IndexedListing,
   type IndexedPosition,
   type WalletActivityItem,
 } from "./indexer-client.js";
+
+const POSITION_SYNC_POLL_MS = 1_500;
+
+export interface LiveWalletPosition {
+  vault: Address;
+  outcomeId: bigint;
+  balance: bigint;
+}
+
+export interface WalletPositionsState {
+  identity: string | null;
+  items: readonly IndexedPosition[];
+  syncStatus: IndexerSyncStatus | null;
+  error: string;
+}
+
+interface DisplayPosition {
+  vault: Address;
+  outcomeId: bigint;
+  balance: bigint;
+  confirmationStatus: IndexedPosition["confirmationStatus"];
+  source: "indexer" | "live";
+}
 
 export function WalletActivityPanel(props: {
   enabled: boolean;
@@ -41,24 +66,51 @@ export function WalletPositionsPanel(props: {
   indexerBasePath: string;
   chainId: number;
   wallet: Address | null;
+  livePositions?: readonly LiveWalletPosition[];
+  targetBlock?: bigint | null;
   onOpenMarket: (market: Address) => void;
 }) {
-  const state = useIndexerList(
-    props.enabled && props.wallet !== null,
-    [props.indexerBasePath, props.chainId, props.wallet],
-    (signal) => fetchWalletPositions({
-      basePath: props.indexerBasePath,
-      chainId: props.chainId,
-      owner: props.wallet!,
-      signal,
-    }).then((page) => page.items.filter((item) => item.balance > 0n)),
-  );
+  const state = useWalletPositions({
+    enabled: props.enabled,
+    indexerBasePath: props.indexerBasePath,
+    chainId: props.chainId,
+    wallet: props.wallet,
+    targetBlock: props.targetBlock ?? null,
+  });
+  return <WalletPositionsView
+    enabled={props.enabled}
+    wallet={props.wallet}
+    livePositions={props.livePositions ?? []}
+    targetBlock={props.targetBlock ?? null}
+    state={state}
+    onOpenMarket={props.onOpenMarket}
+  />;
+}
+
+export function WalletPositionsView(props: {
+  enabled: boolean;
+  wallet: Address | null;
+  livePositions: readonly LiveWalletPosition[];
+  targetBlock: bigint | null;
+  state: WalletPositionsState;
+  onOpenMarket: (market: Address) => void;
+}) {
   if (!props.enabled) return <Notice title="跨市场持仓未启用" detail="当前 runtime 未开放 Indexer；已选择市场的链上余额仍可读取。" />;
   if (props.wallet === null) return <Notice title="连接钱包查看持仓" detail="连接后会汇总所有已索引市场的非零 ERC-1155 余额。" />;
-  if (state.error !== "") return <Notice title="持仓目录读取失败" detail={state.error} error />;
-  if (state.loading) return <Notice title="正在读取持仓…" detail="请稍候。" />;
-  if (state.items.length === 0) return <Notice title="暂无非零持仓" detail="购买一级份额或成交 C2C 挂单后会显示。" />;
-  return <div className="position-catalog">{state.items.map((item) => <PositionCard key={`${item.vault}:${item.outcomeId}`} item={item} onOpenMarket={props.onOpenMarket} />)}</div>;
+  const items = mergeWalletPositions(props.state.items, props.livePositions);
+  const caughtUp = indexerCaughtUp(props.state.syncStatus, props.targetBlock);
+  const statusNotice = props.state.error !== ""
+    ? <Notice title="持仓目录暂不可用" detail={`${props.state.error}；正在自动重试，链上已确认的当前市场持仓仍会保留。`} error />
+    : !caughtUp
+      ? <Notice title="持仓目录同步中" detail={syncDetail(props.state.syncStatus, props.targetBlock)} />
+      : null;
+  if (items.length > 0) {
+    return <>{statusNotice}<div className="position-catalog">{items.map((item) => <PositionCard key={`${item.vault}:${item.outcomeId}`} item={item} syncing={!caughtUp} onOpenMarket={props.onOpenMarket} />)}</div></>;
+  }
+  if (props.state.error !== "") return statusNotice;
+  if (props.state.syncStatus === null) return <Notice title="正在读取持仓…" detail="正在检查 Indexer 健康状态与同步高度。" />;
+  if (!caughtUp) return statusNotice;
+  return <Notice title="暂无非零持仓" detail="Indexer 已同步到当前安全区块；购买一级份额或成交 C2C 挂单后会显示。" />;
 }
 
 export function ListingsPanel(props: {
@@ -115,13 +167,125 @@ function ActivityRow(props: {
   </div>;
 }
 
-function PositionCard(props: { item: IndexedPosition; onOpenMarket: (market: Address) => void }) {
+function PositionCard(props: { item: DisplayPosition; syncing: boolean; onOpenMarket: (market: Address) => void }) {
+  const status = props.item.source === "live"
+    ? `链上已确认${props.syncing ? " · 目录同步中" : ""}`
+    : props.item.confirmationStatus === "confirmed" ? "已确认" : "待确认";
   return <article>
-    <small>结果 {(props.item.outcomeId + 1n).toString()} · {props.item.confirmationStatus === "confirmed" ? "已确认" : "待确认"}</small>
+    <small>结果 {(props.item.outcomeId + 1n).toString()} · {status}</small>
     <strong>{formatShares(props.item.balance)} 份</strong>
     <span className="mono">{short(props.item.vault)}</span>
     <button type="button" className="text-button" onClick={() => props.onOpenMarket(props.item.vault)}>查看市场</button>
   </article>;
+}
+
+function useWalletPositions(input: {
+  enabled: boolean;
+  indexerBasePath: string;
+  chainId: number;
+  wallet: Address | null;
+  targetBlock: bigint | null;
+}): WalletPositionsState {
+  const identity = input.enabled && input.wallet !== null
+    ? `${input.indexerBasePath}:${input.chainId}:${input.wallet.toLowerCase()}`
+    : null;
+  const [state, setState] = useState<WalletPositionsState>(() => emptyPositionsState(identity));
+  useEffect(() => {
+    if (identity === null || input.wallet === null) {
+      setState(emptyPositionsState(null));
+      return;
+    }
+    const wallet = input.wallet;
+    const controller = new AbortController();
+    let timer: number | undefined;
+    const poll = async (): Promise<void> => {
+      try {
+        // Read sync status first: if it is caught up, the subsequent position read cannot
+        // predate the checkpoint that made an empty result authoritative.
+        const syncStatus = await fetchIndexerSyncStatus({
+          basePath: input.indexerBasePath,
+          chainId: input.chainId,
+          signal: controller.signal,
+        });
+        const page = await fetchWalletPositions({
+          basePath: input.indexerBasePath,
+          chainId: input.chainId,
+          owner: wallet,
+          signal: controller.signal,
+        });
+        if (controller.signal.aborted) return;
+        setState({
+          identity,
+          items: page.items.filter((item) => item.balance > 0n),
+          syncStatus,
+          error: "",
+        });
+        if (!indexerCaughtUp(syncStatus, input.targetBlock))
+          timer = window.setTimeout(() => void poll(), POSITION_SYNC_POLL_MS);
+      } catch (cause: unknown) {
+        if (controller.signal.aborted) return;
+        const error = cause instanceof Error ? cause.message : "未知错误";
+        setState((current) => current.identity === identity
+          ? { ...current, error }
+          : { ...emptyPositionsState(identity), error });
+        timer = window.setTimeout(() => void poll(), POSITION_SYNC_POLL_MS);
+      }
+    };
+    void poll();
+    return () => {
+      controller.abort();
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [identity, input.chainId, input.indexerBasePath, input.targetBlock, input.wallet]);
+  return state.identity === identity ? state : emptyPositionsState(identity);
+}
+
+export function indexerCaughtUp(
+  status: IndexerSyncStatus | null,
+  targetBlock: bigint | null,
+): boolean {
+  if (status?.indexedBlock === null || status === null) return false;
+  const requiredBlock = targetBlock !== null && targetBlock > status.safeBlock
+    ? targetBlock
+    : status.safeBlock;
+  return status.indexedBlock >= requiredBlock;
+}
+
+export function mergeWalletPositions(
+  indexed: readonly IndexedPosition[],
+  live: readonly LiveWalletPosition[],
+): readonly DisplayPosition[] {
+  const liveKeys = new Set(live.map(positionKey));
+  return [
+    ...indexed
+      .filter((item) => !liveKeys.has(positionKey(item)))
+      .map((item) => ({ ...item, source: "indexer" as const })),
+    ...live
+      .filter((item) => item.balance > 0n)
+      .map((item) => ({
+        ...item,
+        confirmationStatus: "confirmed" as const,
+        source: "live" as const,
+      })),
+  ];
+}
+
+function positionKey(item: { vault: Address; outcomeId: bigint }): string {
+  return `${item.vault.toLowerCase()}:${item.outcomeId.toString()}`;
+}
+
+function emptyPositionsState(identity: string | null): WalletPositionsState {
+  return { identity, items: [], syncStatus: null, error: "" };
+}
+
+function syncDetail(status: IndexerSyncStatus | null, targetBlock: bigint | null): string {
+  if (status === null)
+    return "正在确认 Indexer 健康状态与同步高度；链上已确认的当前市场持仓会先行显示。";
+  const requiredBlock = targetBlock !== null && targetBlock > status.safeBlock
+    ? targetBlock
+    : status.safeBlock;
+  const indexed = status.indexedBlock === null ? "尚未建立 checkpoint" : `已处理区块 ${status.indexedBlock.toString()}`;
+  return `Indexer ${indexed}，目标区块 ${requiredBlock.toString()}；同步完成前不会显示空状态。`;
 }
 
 function ListingCard(props: { item: IndexedListing; paymentTokenSymbol: string; onOpenMarket: (market: Address) => void }) {

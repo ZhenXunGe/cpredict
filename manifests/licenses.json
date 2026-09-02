@@ -508,6 +508,14 @@
       "sourceScope": "Node development dependency"
     },
     {
+      "identity": "npm:@vitejs/plugin-react@6.1.1:node_modules/@vitejs/plugin-react",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@vitejs/plugin-react\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
       "identity": "npm:@vitest/expect@4.1.10:node_modules/@vitest/expect",
       "kind": "development",
       "declared": "MIT",

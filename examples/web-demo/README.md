@@ -16,6 +16,27 @@ Open `http://127.0.0.1:4177`. The development server proxies:
 - `/indexer` to a local Cpredict Indexer on `127.0.0.1:8787`;
 - `/evidence` to an optional local canonical-evidence uploader on `127.0.0.1:8790`.
 
+To run the local UI against an existing remote Web Demo stack, set the optional server-side origin:
+
+```sh
+CPREDICT_DEMO_REMOTE_ORIGIN=https://101.32.241.211 npm run demo:dev
+```
+
+For a persistent local default, put the same assignment in the repository-root `.env.local`; Vite
+loads `CPREDICT_DEMO_*` from that ignored file, while an explicit shell value still takes precedence.
+
+Remote mode proxies `/runtime-config.json`, `/deployment/*`, `/rpc`, `/indexer/*` and `/metadata/*`
+to that HTTPS origin without rewriting their paths. The value must be an HTTPS origin without a
+path, query, fragment or embedded credentials. It intentionally has no `VITE_` prefix: Vite reads it
+only while configuring the development server, and it is never injected into browser code. Any
+remote Basic Auth challenge is passed through the local proxy; do not put credentials in the URL or
+in a browser-exposed environment variable. `/evidence` remains local and disabled unless the loaded
+runtime explicitly enables uploads.
+
+This switch only changes `server.proxy`. It does not modify the checked-in runtime config, Compose,
+Nginx, deployment manifests, preview server or production build output. Leaving the variable unset
+preserves the local targets above.
+
 The source `index.html` and production build keep a strict CSP without `unsafe-inline` or
 `unsafe-eval`. Vite injects development CSS through inline style elements, so the Vite-only HTML
 transform adds `style-src 'unsafe-inline'` while `npm run demo:dev` is running. It never changes the
@@ -42,9 +63,12 @@ trader roles cannot be silently mixed.
 
 - manifest, chainId, runtime codehash, Factory activation/fingerprint and dependency wiring;
 - market Vault read snapshot and ERC-1155/USDC account snapshot;
-- Full/Clone market creation with immutable review and exact fee+bond approval;
-- allowance and Permit2 primary buy with bounded witness/deadline/slippage;
-- ERC-1155 escrow approval, fixed-price listing, allowance fill and cancel;
+- Full/Clone market creation with immutable review and exact fee+bond approval, available both as a
+  standalone action and automatically before create when the current allowance is insufficient;
+- allowance and Permit2 primary buy with bounded witness/deadline/slippage and automatic exact
+  token approval when the selected path needs it;
+- ERC-1155 escrow approval, fixed-price listing, allowance fill and cancel; create/fill buttons
+  perform the required approval first while preserving the standalone approval controls;
 - canonical settlement evidence upload adapter, creator resolve/void and timeout void;
 - winner, early-bird, principal refund and timeout-bonus claims;
 - local receipt/activity log with allowlisted Arbiscan links.
@@ -58,7 +82,8 @@ fetched or rendered.
 Use three disposable browser accounts with no valuable assets:
 
 1. `A / Creator`: create a Full market, capture MarketCreated, later resolve or creator-void.
-2. `B / Trader`: allowance buy outcome 0, approve escrow, create and partially sell a listing.
+2. `B / Trader`: allowance buy outcome 0, create and partially sell a listing; the primary buttons
+   request any missing bounded authorization before the requested action.
 3. `C / Counterparty`: Permit2 buy outcome 1, fill the listing, then execute the applicable claim or
    refund after terminal state.
 
