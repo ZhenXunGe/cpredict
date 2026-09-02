@@ -6,10 +6,13 @@ import {
 } from "../../../offchain/sdk/src/index.js";
 
 export type CatalogStatus =
-  | "open"
-  | "resolved"
-  | "voided-creator"
-  | "voided-timeout";
+  "open" | "resolved" | "voided-creator" | "voided-timeout";
+
+export const TERMINAL_CATALOG_STATUSES = [
+  "resolved",
+  "voided-creator",
+  "voided-timeout",
+] as const satisfies readonly CatalogStatus[];
 
 export interface MarketCatalogItem {
   market: Address;
@@ -111,6 +114,42 @@ export async function fetchMarketCatalog(input: {
   return fetchPage(url, parseMarket, input.signal);
 }
 
+export async function fetchTerminalMarketCatalog(input: {
+  basePath: string;
+  chainId: number;
+  limit?: number;
+  owner?: Address;
+  signal?: AbortSignal;
+}): Promise<QueryPage<MarketCatalogItem>> {
+  const pages = await Promise.all(
+    TERMINAL_CATALOG_STATUSES.map((status) =>
+      fetchMarketCatalog({
+        basePath: input.basePath,
+        chainId: input.chainId,
+        status,
+        ...(input.limit === undefined ? {} : { limit: input.limit }),
+        ...(input.owner === undefined ? {} : { owner: input.owner }),
+        ...(input.signal === undefined ? {} : { signal: input.signal }),
+      }),
+    ),
+  );
+  const seen = new Set<string>();
+  const items = pages
+    .flatMap((page) => page.items)
+    .filter((item) => {
+      const key = item.market.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .toSorted((left, right) => {
+      const leftClose = left.closeAt ?? 0n;
+      const rightClose = right.closeAt ?? 0n;
+      return leftClose > rightClose ? -1 : leftClose < rightClose ? 1 : 0;
+    });
+  return { items };
+}
+
 export async function fetchWalletActivity(input: {
   basePath: string;
   chainId: number;
@@ -171,7 +210,8 @@ export async function fetchListings(input: {
   url.searchParams.set("chainId", String(input.chainId));
   url.searchParams.set("limit", "50");
   if (input.vault !== undefined) url.searchParams.set("vault", input.vault);
-  if (input.active !== undefined) url.searchParams.set("active", String(input.active));
+  if (input.active !== undefined)
+    url.searchParams.set("active", String(input.active));
   if (input.cursor !== undefined) url.searchParams.set("cursor", input.cursor);
   return fetchPage(url, parseListing, input.signal);
 }
@@ -210,9 +250,14 @@ async function fetchPage<T>(
   requireJson(response);
   const value: unknown = await response.json();
   const object = record(value, "Indexer page");
-  if (!Array.isArray(object.items)) throw new TypeError("Indexer page is invalid");
+  if (!Array.isArray(object.items))
+    throw new TypeError("Indexer page is invalid");
   const nextCursor = object.nextCursor;
-  if (nextCursor !== undefined && (typeof nextCursor !== "string" || !/^[A-Za-z0-9_-]{1,256}$/.test(nextCursor))) {
+  if (
+    nextCursor !== undefined &&
+    (typeof nextCursor !== "string" ||
+      !/^[A-Za-z0-9_-]{1,256}$/.test(nextCursor))
+  ) {
     throw new TypeError("Indexer cursor is invalid");
   }
   return {
@@ -223,8 +268,17 @@ async function fetchPage<T>(
 
 function parseMarket(value: unknown): MarketCatalogItem {
   const item = record(value, "market");
-  const outcomeCount = nullableInteger(item.outcomeCount, "outcomeCount", 2, 32);
-  const status = enumValue(item.status, ["open", "resolved", "voided-creator", "voided-timeout"] as const, "status");
+  const outcomeCount = nullableInteger(
+    item.outcomeCount,
+    "outcomeCount",
+    2,
+    32,
+  );
+  const status = enumValue(
+    item.status,
+    ["open", "resolved", "voided-creator", "voided-timeout"] as const,
+    "status",
+  );
   return {
     market: address(item.market, "market"),
     creator: address(item.creator, "creator"),
@@ -247,7 +301,25 @@ function parseActivity(value: unknown): WalletActivityItem {
   return {
     transactionHash: bytes32(item.transactionHash, "transactionHash"),
     logIndex: integer(item.logIndex, "logIndex", 0, Number.MAX_SAFE_INTEGER),
-    kind: enumValue(item.kind, ["market-created", "primary-purchased", "listing-created", "listing-filled", "listing-cancelled", "terminal-listing-returned", "market-resolved", "market-voided-creator", "market-voided-timeout", "winner-claimed", "early-bird-claimed", "principal-refunded", "timeout-bonus-claimed"] as const, "kind"),
+    kind: enumValue(
+      item.kind,
+      [
+        "market-created",
+        "primary-purchased",
+        "listing-created",
+        "listing-filled",
+        "listing-cancelled",
+        "terminal-listing-returned",
+        "market-resolved",
+        "market-voided-creator",
+        "market-voided-timeout",
+        "winner-claimed",
+        "early-bird-claimed",
+        "principal-refunded",
+        "timeout-bonus-claimed",
+      ] as const,
+      "kind",
+    ),
     vault: address(item.vault, "vault"),
     actor: nullableAddress(item.actor, "actor"),
     counterparty: nullableAddress(item.counterparty, "counterparty"),
@@ -274,7 +346,8 @@ function parsePosition(value: unknown): IndexedPosition {
 
 function parseListing(value: unknown): IndexedListing {
   const item = record(value, "listing");
-  if (typeof item.active !== "boolean") throw new TypeError("active is invalid");
+  if (typeof item.active !== "boolean")
+    throw new TypeError("active is invalid");
   return {
     listingId: bytes32(item.listingId, "listingId"),
     vault: address(item.vault, "vault"),
@@ -293,7 +366,10 @@ function endpoint(basePath: string, suffix: string): URL {
   if (!/^\/(?!\/)[A-Za-z0-9._~!$&'()*+,;=:@%/-]{0,255}$/.test(basePath))
     throw new TypeError("same-origin service path is invalid");
   const base = basePath.replace(/\/$/, "");
-  return new URL(`${base}${suffix}`, globalThis.location?.origin ?? "https://local.invalid");
+  return new URL(
+    `${base}${suffix}`,
+    globalThis.location?.origin ?? "https://local.invalid",
+  );
 }
 
 function requestInit(signal?: AbortSignal): RequestInit {
@@ -307,7 +383,11 @@ function requestInit(signal?: AbortSignal): RequestInit {
 }
 
 function requireJson(response: Response): void {
-  if (!/^application\/json(?:;|$)/i.test(response.headers.get("content-type") ?? ""))
+  if (
+    !/^application\/json(?:;|$)/i.test(
+      response.headers.get("content-type") ?? "",
+    )
+  )
     throw new TypeError("service response is not JSON");
 }
 
@@ -347,22 +427,45 @@ function nullableBigint(value: unknown, label: string): bigint | null {
   return value === null ? null : bigint(value, label);
 }
 
-function integer(value: unknown, label: string, minimum: number, maximum: number): number {
-  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < minimum || value > maximum)
+function integer(
+  value: unknown,
+  label: string,
+  minimum: number,
+  maximum: number,
+): number {
+  if (
+    typeof value !== "number" ||
+    !Number.isSafeInteger(value) ||
+    value < minimum ||
+    value > maximum
+  )
     throw new TypeError(`${label} is invalid`);
   return value;
 }
 
-function nullableInteger(value: unknown, label: string, minimum: number, maximum: number): number | null {
+function nullableInteger(
+  value: unknown,
+  label: string,
+  minimum: number,
+  maximum: number,
+): number | null {
   return value === null ? null : integer(value, label, minimum, maximum);
 }
 
-function enumValue<const T extends readonly string[]>(value: unknown, values: T, label: string): T[number] {
+function enumValue<const T extends readonly string[]>(
+  value: unknown,
+  values: T,
+  label: string,
+): T[number] {
   if (typeof value !== "string" || !values.includes(value))
     throw new TypeError(`${label} is invalid`);
   return value as T[number];
 }
 
 function confirmation(value: unknown): "provisional" | "confirmed" {
-  return enumValue(value, ["provisional", "confirmed"] as const, "confirmationStatus");
+  return enumValue(
+    value,
+    ["provisional", "confirmed"] as const,
+    "confirmationStatus",
+  );
 }

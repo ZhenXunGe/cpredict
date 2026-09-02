@@ -1,9 +1,33 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { maxUint256 } from "viem";
-import App, { ActivityDrawer, ActivityLine, BuyCard, DeploymentDrawer, DeploymentVerificationToast, deploymentCardCopy, deploymentIndicatorState, deploymentToastForReport, environmentStatusCardStates, Inspector, MarketPage, Permit2AuthorizationSwitch, PrimaryAllowanceRow, RuntimeDrawer, SandboxTokenPanel } from "../src/App.js";
+import App, {
+  ActivityDrawer,
+  ActivityLine,
+  BuyCard,
+  DeploymentDrawer,
+  DeploymentVerificationToast,
+  PERMIT2_REVOKE_CONFIRM,
+  SettlementPage,
+  deploymentCardCopy,
+  deploymentIndicatorState,
+  deploymentToastForReport,
+  environmentStatusCardStates,
+  Inspector,
+  MarketPage,
+  Permit2AuthorizationSwitch,
+  PrimaryAllowanceRow,
+  RuntimeDrawer,
+  SandboxTokenPanel,
+} from "../src/App.js";
 import { CreateMarketForm, validatedUri } from "../src/CreateMarketForm.js";
-import { MarketCatalogCards, SettlementMarketCards, settlementCatalogEntries, type CatalogEntry } from "../src/MarketCatalog.js";
+import {
+  MarketCatalog,
+  MarketCatalogCards,
+  SettlementMarketCards,
+  settlementCatalogEntries,
+  type CatalogEntry,
+} from "../src/MarketCatalog.js";
 import type { MarketSnapshot } from "../src/protocol.js";
 import type { TrustReport } from "../src/trust.js";
 import type { LoadedRuntime } from "../src/config.js";
@@ -31,15 +55,19 @@ describe("web demo application shell", () => {
   });
 
   it("treats verified DEBUG deployment and sandbox token as healthy for that environment", () => {
-    expect(environmentStatusCardStates(
-      { level: "debug" },
-      { kind: "sandbox-test-token" },
-    )).toEqual({ deployment: "success", paymentToken: "success" });
+    expect(
+      environmentStatusCardStates(
+        { level: "debug" },
+        { kind: "sandbox-test-token" },
+      ),
+    ).toEqual({ deployment: "success", paymentToken: "success" });
 
-    expect(environmentStatusCardStates(
-      { level: "blocked" },
-      { kind: "sandbox-test-token" },
-    )).toEqual({ deployment: "warning", paymentToken: "warning" });
+    expect(
+      environmentStatusCardStates(
+        { level: "blocked" },
+        { kind: "sandbox-test-token" },
+      ),
+    ).toEqual({ deployment: "warning", paymentToken: "warning" });
   });
 
   it("renders the trust-first Chinese console without fabricated runtime state", () => {
@@ -57,15 +85,18 @@ describe("web demo application shell", () => {
       "C2C 市场",
       "结算与作废",
       "回执与事件",
-    ]) expect(html).toContain(label);
+    ])
+      expect(html).toContain(label);
     expect(html).toContain('aria-controls="deployment-drawer"');
     expect(html).toContain('aria-label="打开部署验证抽屉，写操作已锁定"');
     expect(html).toContain('aria-label="打开运行状态抽屉"');
     expect(html).toContain('aria-controls="activity-drawer"');
-    expect(html).toContain('aria-label="打开事件与回执抽屉"');
-    expect(html.indexOf("<span>创建市场</span>")).toBeLessThan(html.indexOf("<span>市场</span>"));
-    expect(html).not.toContain("LIVE CONTEXT");
-    expect(html).not.toContain("SESSION ACTIVITY");
+    expect(html).toContain('aria-label="打开回执与事件抽屉"');
+    expect(html.indexOf("<span>创建市场</span>")).toBeLessThan(
+      html.indexOf("<span>市场</span>"),
+    );
+    expect(html).not.toContain("实时上下文");
+    expect(html).not.toContain("本会话事件");
     expect(html).not.toContain("TRUST-FIRST WORKFLOW");
     expect(html).not.toContain("先验证部署，再执行交易");
     expect(html).not.toContain("开始部署验证");
@@ -86,30 +117,32 @@ describe("web demo application shell", () => {
       />,
     );
     expect(runtimeHtml).toContain('id="runtime-drawer"');
-    expect(runtimeHtml).toContain("LIVE CONTEXT");
-    expect(runtimeHtml).not.toContain("SESSION ACTIVITY");
+    expect(runtimeHtml).toContain("实时上下文");
+    expect(runtimeHtml).not.toContain("本会话事件");
 
     const activityHtml = renderToStaticMarkup(
       <ActivityDrawer
         open
         onClose={() => {}}
-        activity={[{
-          id: 1,
-          at: new Date("2026-09-02T00:00:00Z"),
-          level: "info",
-          label: "Console initialized",
-          detail: "等待 runtime config 与部署清单",
-        }]}
+        activity={[
+          {
+            id: 1,
+            at: new Date("2026-09-02T00:00:00Z"),
+            level: "info",
+            label: "控制台已初始化",
+            detail: "等待 runtime config 与部署清单",
+          },
+        ]}
         explorerOrigin="https://sepolia.arbiscan.io"
       />,
     );
     expect(activityHtml).toContain('id="activity-drawer"');
     expect(activityHtml).toContain('role="dialog"');
-    expect(activityHtml).toContain("SESSION ACTIVITY");
-    expect(activityHtml).toContain("事件与回执");
-    expect(activityHtml).toContain("Console initialized");
+    expect(activityHtml).toContain("本会话事件");
+    expect(activityHtml).toContain("回执与事件");
+    expect(activityHtml).toContain("控制台已初始化");
     expect(activityHtml).toContain("等待 runtime config 与部署清单");
-    expect(activityHtml).not.toContain("LIVE CONTEXT");
+    expect(activityHtml).not.toContain("实时上下文");
   });
 
   it("keeps deployment status visible until success or a manually dismissed error", () => {
@@ -126,7 +159,9 @@ describe("web demo application shell", () => {
     const successToast = deploymentToastForReport({
       level: "verified",
       writeEnabled: true,
-      checks: [{ id: "chain", label: "Chain", state: "pass", detail: "421614" }],
+      checks: [
+        { id: "chain", label: "Chain", state: "pass", detail: "421614" },
+      ],
       addresses: null,
       paymentToken: {
         kind: "canonical-usdc",
@@ -138,11 +173,18 @@ describe("web demo application shell", () => {
       },
       resolutionWindowSeconds: null,
     });
-    expect(successToast).toMatchObject({ state: "success", title: "部署验证通过" });
+    expect(successToast).toMatchObject({
+      state: "success",
+      title: "部署验证通过",
+    });
 
     const error = renderToStaticMarkup(
       <DeploymentVerificationToast
-        toast={{ state: "error", title: "部署验证未通过", detail: "codehash 不匹配" }}
+        toast={{
+          state: "error",
+          title: "部署验证未通过",
+          detail: "codehash 不匹配",
+        }}
         onClose={() => {}}
       />,
     );
@@ -172,15 +214,17 @@ describe("web demo application shell", () => {
       <DeploymentDrawer
         open
         onClose={() => {}}
-        runtime={{
-          config: {
-            chain: { name: "Arbitrum Sepolia" },
-            deployment: { allowDebugAddresses: true },
-          },
-          manifest: null,
-          debugAddresses: debug,
-          manifestError: null,
-        } as LoadedRuntime}
+        runtime={
+          {
+            config: {
+              chain: { name: "Arbitrum Sepolia" },
+              deployment: { allowDebugAddresses: true },
+            },
+            manifest: null,
+            debugAddresses: debug,
+            manifestError: null,
+          } as LoadedRuntime
+        }
         trust={null}
         debug={debug}
         setDebug={() => {}}
@@ -218,7 +262,7 @@ describe("web demo application shell", () => {
         onMint={async () => {}}
       />,
     );
-    expect(html).toContain("TEST TOKEN");
+    expect(html).toContain("测试代币");
     expect(html).toContain("12.5 ctUSD");
     expect(html).toContain("不是 USDC");
     expect(html).toContain("领取 ctUSD");
@@ -240,8 +284,10 @@ describe("web demo application shell", () => {
       },
       resolutionWindowSeconds: 900,
     };
-    const html = renderToStaticMarkup(<Inspector trust={report} runtime={null} market={null} wallet={null} />);
-    expect(html).toContain("Resolution window");
+    const html = renderToStaticMarkup(
+      <Inspector trust={report} runtime={null} market={null} wallet={null} />,
+    );
+    expect(html).toContain("结算窗口");
     expect(html).toContain("15 分钟 / 900 秒");
   });
 
@@ -277,10 +323,9 @@ describe("web demo application shell", () => {
     expect(validatedUri("http://example.com/result", "公开判定来源")).toBe(
       "http://example.com/result",
     );
-    expect(validatedUri(
+    expect(validatedUri("http://public.example/result", "公开判定来源")).toBe(
       "http://public.example/result",
-      "公开判定来源",
-    )).toBe("http://public.example/result");
+    );
     expect(() =>
       validatedUri("ftp://public.example/result", "公开判定来源"),
     ).toThrow(/只允许 http:、https: 或 ipfs:/);
@@ -289,7 +334,7 @@ describe("web demo application shell", () => {
   it("renders the exact Permit2 token allowance required before signing", () => {
     const html = renderToStaticMarkup(
       <PrimaryAllowanceRow
-        label="Permit2 allowance"
+        label="Permit2 授权额度"
         allowance={0n}
         paymentTokenSymbol="ctUSD"
         actionLabel="精确授权 ctUSD → Permit2"
@@ -297,7 +342,7 @@ describe("web demo application shell", () => {
         onApprove={() => {}}
       />,
     );
-    expect(html).toContain("Permit2 allowance");
+    expect(html).toContain("Permit2 授权额度");
     expect(html).toContain("0 ctUSD");
     expect(html).toContain("精确授权 ctUSD → Permit2");
   });
@@ -419,8 +464,8 @@ describe("web demo application shell", () => {
     );
     expect(html).toContain("签名并购买");
     expect(html).toContain("页头已开启可复用 Permit2 授权");
-    expect(html).toContain("Relayer 已配置");
-    expect(html).not.toContain("Vault allowance");
+    expect(html).toContain("中继已配置");
+    expect(html).not.toContain("Vault 授权额度");
     expect(html).not.toContain('class="tabs"');
   });
 
@@ -469,6 +514,7 @@ describe("web demo application shell", () => {
         wallet={null}
         trust={null}
         paymentTokenSymbol="ctUSD"
+        paymentTokenBalance={null}
         permit2Reusable={false}
         writeReady
         execute={async () => null}
@@ -489,7 +535,7 @@ describe("web demo application shell", () => {
           id: 4,
           at: new Date("2026-09-01T00:00:00.000Z"),
           level: "success",
-          label: "Market Vault ready",
+          label: "市场金库就绪",
           detail: market,
           hash,
           market,
@@ -497,9 +543,9 @@ describe("web demo application shell", () => {
         explorerOrigin="https://sepolia.arbiscan.io"
       />,
     );
-    expect(html).toContain("Market Vault ready");
+    expect(html).toContain("市场金库就绪");
     expect(html).toContain(market);
-    expect(html).toContain('aria-label="复制 Market Vault"');
+    expect(html).toContain('aria-label="复制市场金库"');
     expect(html).toContain(`https://sepolia.arbiscan.io/tx/${hash}`);
   });
 
@@ -526,11 +572,20 @@ describe("web demo application shell", () => {
         outcomes: ["Yes", "No"],
         closesAt: 1_900_000_000,
         resolutionSource: "https://example.com/result",
-        resolutionCriteria: "Use the final result published by the cited source.",
-        cancellationPolicy: "Void if no unambiguous result is published in time.",
+        resolutionCriteria:
+          "Use the final result published by the cited source.",
+        cancellationPolicy:
+          "Void if no unambiguous result is published in time.",
       },
     };
-    const html = renderToStaticMarkup(<MarketCatalogCards entries={[entry]} paymentTokenSymbol="ctUSD" selectedMarket={null} onOpen={() => {}} />);
+    const html = renderToStaticMarkup(
+      <MarketCatalogCards
+        entries={[entry]}
+        paymentTokenSymbol="ctUSD"
+        selectedMarket={null}
+        onOpen={() => {}}
+      />,
+    );
     expect(html).toContain("Will the verified public result be Yes?");
     expect(html).toContain("Yes");
     expect(html).toContain("No");
@@ -562,21 +617,284 @@ describe("web demo application shell", () => {
         outcomes: ["Yes", "No"],
         closesAt: 1_900_000_000,
         resolutionSource: "https://example.com/result",
-        resolutionCriteria: "Use the final result published by the cited source.",
-        cancellationPolicy: "Void if no unambiguous result is published in time.",
+        resolutionCriteria:
+          "Use the final result published by the cited source.",
+        cancellationPolicy:
+          "Void if no unambiguous result is published in time.",
       },
     };
-    expect(settlementCatalogEntries([entry], 1_899_999_999n, creator)).toEqual([]);
+    expect(settlementCatalogEntries([entry], 1_899_999_999n, creator)).toEqual(
+      [],
+    );
 
-    const creatorQueue = settlementCatalogEntries([entry], 1_900_000_001n, creator);
-    const creatorHtml = renderToStaticMarkup(<SettlementMarketCards entries={creatorQueue} selectedMarket={null} onOpen={() => {}} />);
+    const creatorQueue = settlementCatalogEntries(
+      [entry],
+      1_900_000_001n,
+      creator,
+    );
+    const creatorHtml = renderToStaticMarkup(
+      <SettlementMarketCards
+        entries={creatorQueue}
+        selectedMarket={null}
+        onOpen={() => {}}
+      />,
+    );
     expect(creatorHtml).toContain("可结算或作废");
     expect(creatorHtml).toContain("进入结算");
     expect(creatorHtml).toContain("Will the verified result be Yes?");
 
-    const timeoutQueue = settlementCatalogEntries([entry], 1_900_000_900n, null);
-    const timeoutHtml = renderToStaticMarkup(<SettlementMarketCards entries={timeoutQueue} selectedMarket={null} onOpen={() => {}} />);
+    const timeoutQueue = settlementCatalogEntries(
+      [entry],
+      1_900_000_900n,
+      null,
+    );
+    const timeoutHtml = renderToStaticMarkup(
+      <SettlementMarketCards
+        entries={timeoutQueue}
+        selectedMarket={null}
+        onOpen={() => {}}
+      />,
+    );
     expect(timeoutHtml).toContain("可超时作废");
     expect(timeoutHtml).toContain("任意钱包");
+  });
+
+  it("disables settlement writes and shows processing while busy", () => {
+    const market: MarketSnapshot = {
+      address: "0x0000000000000000000000000000000000001001",
+      observedAt: 1_900_000_900n,
+      creator: "0x000000000000000000000000000000000000c001",
+      creatorTreasury: "0x000000000000000000000000000000000000c002",
+      rulesHash: `0x${"11".repeat(32)}`,
+      outcomeCount: 2,
+      createdAt: 1_899_999_000n,
+      closeAt: 1_900_000_000n,
+      earlyBirdStart: 1_899_999_500n,
+      featureFlags: 0n,
+      perUserPrimaryCap: 10_000_000n,
+      marketPrimaryCap: 20_000_000n,
+      minimumPrimaryUnits: 1_000_000n,
+      minimumC2CUnits: 1_000_000n,
+      creatorBond: 10_000_000n,
+      marketState: 3,
+      winningOutcome: 0,
+      totalPrincipal: 2_000_000n,
+      resolutionDeadline: 1_900_000_900n,
+      permit2Enabled: true,
+      earlyBirdEnabled: false,
+    };
+    const html = renderToStaticMarkup(
+      <SettlementPage
+        writeReady
+        busy
+        market={market}
+        marketAddress={market.address}
+        wallet={{ address: market.creator } as ConnectedWallet}
+        client={{} as CpredictClient}
+        publicClient={null}
+        execute={async () => null}
+        evidenceUploader={undefined}
+        indexerEnabled={false}
+        indexerBasePath="/indexer"
+        metadataBasePath={null}
+        chainId={421614}
+        refreshVersion={0}
+        onSelectMarket={async () => {}}
+      />,
+    );
+    expect(html).toContain("已终局市场");
+    expect(html).toContain("领取与退款从这里进入");
+    expect(html).toContain("处理中…");
+    expect(html).not.toContain(">领取胜出款<");
+    expect(html).toContain("当前 Vault 0x000000…001001");
+  });
+
+  it("uses the live payment-token balance on the market page", () => {
+    const market: MarketSnapshot = {
+      address: "0x0000000000000000000000000000000000001001",
+      observedAt: 1_899_999_000n,
+      creator: "0x000000000000000000000000000000000000c001",
+      creatorTreasury: "0x000000000000000000000000000000000000c002",
+      rulesHash: `0x${"11".repeat(32)}`,
+      outcomeCount: 2,
+      createdAt: 1_899_999_000n,
+      closeAt: 1_900_000_000n,
+      earlyBirdStart: 1_899_999_500n,
+      featureFlags: 0n,
+      perUserPrimaryCap: 10_000_000n,
+      marketPrimaryCap: 20_000_000n,
+      minimumPrimaryUnits: 1_000_000n,
+      minimumC2CUnits: 1_000_000n,
+      creatorBond: 10_000_000n,
+      marketState: 0,
+      winningOutcome: 0,
+      totalPrincipal: 2_000_000n,
+      resolutionDeadline: 1_900_000_900n,
+      permit2Enabled: true,
+      earlyBirdEnabled: false,
+    };
+    const html = renderToStaticMarkup(
+      <MarketPage
+        marketAddress={market.address}
+        setMarketAddress={() => {}}
+        market={market}
+        marketRules={null}
+        account={{ usdcBalance: 1_000_000n } as never}
+        protocol={null}
+        onLoad={() => {}}
+        onSelect={async () => {}}
+        indexerEnabled={false}
+        indexerBasePath="/indexer"
+        metadataBasePath={null}
+        permit2RelayBasePath={null}
+        chainId={421614}
+        busy={false}
+        client={null}
+        publicClient={null}
+        wallet={null}
+        trust={null}
+        paymentTokenSymbol="ctUSD"
+        paymentTokenBalance={9_000_000n}
+        permit2Reusable={false}
+        writeReady
+        execute={async () => null}
+      />,
+    );
+    expect(html).toContain("9 ctUSD");
+    expect(html).not.toContain(">1 ctUSD<");
+  });
+
+  it("labels a voided market with the terminal state instead of pending settlement", () => {
+    const market: MarketSnapshot = {
+      address: "0x0000000000000000000000000000000000001001",
+      observedAt: 1_900_000_900n,
+      creator: "0x000000000000000000000000000000000000c001",
+      creatorTreasury: "0x000000000000000000000000000000000000c002",
+      rulesHash: `0x${"11".repeat(32)}`,
+      outcomeCount: 2,
+      createdAt: 1_899_999_000n,
+      closeAt: 1_900_000_000n,
+      earlyBirdStart: 1_899_999_500n,
+      featureFlags: 0n,
+      perUserPrimaryCap: 10_000_000n,
+      marketPrimaryCap: 20_000_000n,
+      minimumPrimaryUnits: 1_000_000n,
+      minimumC2CUnits: 1_000_000n,
+      creatorBond: 10_000_000n,
+      marketState: 3,
+      winningOutcome: 0,
+      totalPrincipal: 2_000_000n,
+      resolutionDeadline: 1_900_000_900n,
+      permit2Enabled: true,
+      earlyBirdEnabled: false,
+    };
+    const html = renderToStaticMarkup(
+      <MarketPage
+        marketAddress={market.address}
+        setMarketAddress={() => {}}
+        market={market}
+        marketRules={null}
+        account={null}
+        protocol={null}
+        onLoad={() => {}}
+        onSelect={async () => {}}
+        indexerEnabled={false}
+        indexerBasePath="/indexer"
+        metadataBasePath={null}
+        permit2RelayBasePath={null}
+        chainId={421614}
+        busy={false}
+        client={null}
+        publicClient={null}
+        wallet={null}
+        trust={null}
+        paymentTokenSymbol="ctUSD"
+        paymentTokenBalance={null}
+        permit2Reusable={false}
+        writeReady
+        execute={async () => null}
+      />,
+    );
+    expect(html).toContain("超时作废");
+    expect(html).toContain("链上已终局，目录同步中");
+    expect(html).not.toContain("已截止，待结算");
+  });
+
+  it("treats deployment checks as pending while verification is running", () => {
+    const html = renderToStaticMarkup(
+      <DeploymentDrawer
+        open
+        onClose={() => {}}
+        runtime={null}
+        trust={{
+          level: "blocked",
+          writeEnabled: false,
+          checks: [
+            {
+              id: "chain",
+              label: "Chain",
+              state: "fail",
+              detail: "上一轮失败",
+            },
+          ],
+          addresses: null,
+          paymentToken: {
+            kind: "sandbox-test-token",
+            name: "Cpredict Test USD",
+            symbol: "ctUSD",
+            decimals: 6,
+            faucetEnabled: true,
+            faucetAmount: "10000000000",
+          },
+          resolutionWindowSeconds: 900,
+        }}
+        debug={{
+          timelock: "",
+          config: "",
+          emergencyController: "",
+          exposureGuard: "",
+          feeVault: "",
+          bondEscrow: "",
+          cloneImplementation: "",
+          fullMarketDeployer: "",
+          factory: "",
+          marketplace: "",
+          paymaster: "",
+          usdc: "",
+          permit2: "",
+          entryPoint: "",
+        }}
+        setDebug={() => {}}
+        onVerify={() => {}}
+        busy
+      />,
+    );
+    expect(html).toContain("status-dot pending");
+    expect(html).toContain("正在检查…");
+    expect(html).not.toContain("上一轮失败");
+    expect(html).not.toContain("status-dot fail");
+  });
+
+  it("explains that turning off Permit2 sends a revoke transaction", () => {
+    expect(PERMIT2_REVOKE_CONFIRM).toContain("撤销 Permit2 授权");
+    expect(PERMIT2_REVOKE_CONFIRM).toContain("不是购买");
+  });
+
+  it("filters the market catalog by open and terminal states", () => {
+    const html = renderToStaticMarkup(
+      <MarketCatalog
+        enabled
+        indexerBasePath="/indexer"
+        metadataBasePath={null}
+        chainId={421614}
+        wallet={null}
+        paymentTokenSymbol="ctUSD"
+        selectedMarket={null}
+        onOpen={() => {}}
+      />,
+    );
+    expect(html).toContain("已终局");
+    expect(html).toContain("进行中");
+    expect(html).toContain("全部");
   });
 });

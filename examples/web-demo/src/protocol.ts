@@ -116,17 +116,39 @@ export interface ProtocolSnapshot {
   };
 }
 
-export async function readMarket(client: PublicClient, address: Address): Promise<MarketSnapshot> {
+export async function readMarket(
+  client: PublicClient,
+  address: Address,
+): Promise<MarketSnapshot> {
   const block = await client.getBlock({ blockTag: "latest" });
   const values = await client.multicall({
     allowFailure: false,
     blockNumber: block.number,
     contracts: [
-      "creator", "creatorTreasury", "rulesHash", "outcomeCount", "createdAt", "closeAt",
-      "earlyBirdStart", "featureFlags", "perUserPrimaryCap", "marketPrimaryCap",
-      "minimumPrimaryUnits", "minimumC2CUnits", "creatorBond", "marketState",
-      "winningOutcome", "totalPrincipal", "resolutionDeadline", "permit2Enabled", "earlyBirdEnabled",
-    ].map((functionName) => ({ address, abi: vaultReadAbi, functionName })) as never,
+      "creator",
+      "creatorTreasury",
+      "rulesHash",
+      "outcomeCount",
+      "createdAt",
+      "closeAt",
+      "earlyBirdStart",
+      "featureFlags",
+      "perUserPrimaryCap",
+      "marketPrimaryCap",
+      "minimumPrimaryUnits",
+      "minimumC2CUnits",
+      "creatorBond",
+      "marketState",
+      "winningOutcome",
+      "totalPrincipal",
+      "resolutionDeadline",
+      "permit2Enabled",
+      "earlyBirdEnabled",
+    ].map((functionName) => ({
+      address,
+      abi: vaultReadAbi,
+      functionName,
+    })) as never,
   });
   return {
     address,
@@ -162,24 +184,88 @@ export async function readAccount(
   marketplace: Address,
   permit2: Address,
 ): Promise<AccountSnapshot> {
-  const [usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, permit2Allowance, marketplaceApproved, cumulativePrimaryBought, earlyBirdScore] = await Promise.all([
-    client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "balanceOf", args: [account] }),
-    client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, factory] }),
-    client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, market.address] }),
-    client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, marketplace] }),
-    client.readContract({ address: usdc, abi: erc20ReadAbi, functionName: "allowance", args: [account, permit2] }),
-    client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "isApprovedForAll", args: [account, marketplace] }),
-    client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "cumulativePrimaryBought", args: [account] }),
-    client.readContract({ address: market.address, abi: vaultReadAbi, functionName: "earlyBirdScore", args: [account] }),
+  const [
+    usdcBalance,
+    factoryAllowance,
+    vaultAllowance,
+    marketplaceAllowance,
+    permit2Allowance,
+    marketplaceApproved,
+    cumulativePrimaryBought,
+    earlyBirdScore,
+  ] = await Promise.all([
+    client.readContract({
+      address: usdc,
+      abi: erc20ReadAbi,
+      functionName: "balanceOf",
+      args: [account],
+    }),
+    client.readContract({
+      address: usdc,
+      abi: erc20ReadAbi,
+      functionName: "allowance",
+      args: [account, factory],
+    }),
+    client.readContract({
+      address: usdc,
+      abi: erc20ReadAbi,
+      functionName: "allowance",
+      args: [account, market.address],
+    }),
+    client.readContract({
+      address: usdc,
+      abi: erc20ReadAbi,
+      functionName: "allowance",
+      args: [account, marketplace],
+    }),
+    client.readContract({
+      address: usdc,
+      abi: erc20ReadAbi,
+      functionName: "allowance",
+      args: [account, permit2],
+    }),
+    client.readContract({
+      address: market.address,
+      abi: vaultReadAbi,
+      functionName: "isApprovedForAll",
+      args: [account, marketplace],
+    }),
+    client.readContract({
+      address: market.address,
+      abi: vaultReadAbi,
+      functionName: "cumulativePrimaryBought",
+      args: [account],
+    }),
+    client.readContract({
+      address: market.address,
+      abi: vaultReadAbi,
+      functionName: "earlyBirdScore",
+      args: [account],
+    }),
   ]);
   const positions = await Promise.all(
     Array.from({ length: market.outcomeCount }, (_, outcomeId) =>
       client
-        .readContract({ address: market.address, abi: vaultReadAbi, functionName: "balanceOf", args: [account, BigInt(outcomeId)] })
+        .readContract({
+          address: market.address,
+          abi: vaultReadAbi,
+          functionName: "balanceOf",
+          args: [account, BigInt(outcomeId)],
+        })
         .then((balance) => ({ outcomeId, balance })),
     ),
   );
-  return { usdcBalance, factoryAllowance, vaultAllowance, marketplaceAllowance, permit2Allowance, marketplaceApproved, positions, cumulativePrimaryBought, earlyBirdScore };
+  return {
+    usdcBalance,
+    factoryAllowance,
+    vaultAllowance,
+    marketplaceAllowance,
+    permit2Allowance,
+    marketplaceApproved,
+    positions,
+    cumulativePrimaryBought,
+    earlyBirdScore,
+  };
 }
 
 export async function readPaymentTokenBalance(
@@ -214,21 +300,92 @@ export async function readProtocol(
   config: Address,
   paymaster: Address,
 ): Promise<ProtocolSnapshot> {
-  const [creationFee, protocolShareBps, earlyBirdShareBps, platformC2CFeeBps, maxFullMarketCap, maxCloneMarketCap, maxPerUserPrimaryCap, maxCreatorRakeBps, maxCreatorC2CFeeBps, paymasterDeposit, operation, userDay, globalDay, policyVersion] = await Promise.all([
-    client.readContract({ address: config, abi: configReadAbi, functionName: "creationFee" }),
-    client.readContract({ address: config, abi: configReadAbi, functionName: "protocolShareBps" }),
-    client.readContract({ address: config, abi: configReadAbi, functionName: "earlyBirdShareBps" }),
-    client.readContract({ address: config, abi: configReadAbi, functionName: "platformC2CFeeBps" }),
-    client.readContract({ address: config, abi: configReadAbi, functionName: "maxFullMarketCap" }),
-    client.readContract({ address: config, abi: configReadAbi, functionName: "maxCloneMarketCap" }),
-    client.readContract({ address: config, abi: configReadAbi, functionName: "maxPerUserPrimaryCap" }),
-    client.readContract({ address: config, abi: configReadAbi, functionName: "maxCreatorRakeBps" }),
-    client.readContract({ address: config, abi: configReadAbi, functionName: "maxCreatorC2CFeeBps" }),
-    client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "getDeposit" }),
-    client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "maxCostPerOperation" }),
-    client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "maxCostPerUserPerDay" }),
-    client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "maxCostGlobalPerDay" }),
-    client.readContract({ address: paymaster, abi: paymasterReadAbi, functionName: "policyVersion" }),
+  const [
+    creationFee,
+    protocolShareBps,
+    earlyBirdShareBps,
+    platformC2CFeeBps,
+    maxFullMarketCap,
+    maxCloneMarketCap,
+    maxPerUserPrimaryCap,
+    maxCreatorRakeBps,
+    maxCreatorC2CFeeBps,
+    paymasterDeposit,
+    operation,
+    userDay,
+    globalDay,
+    policyVersion,
+  ] = await Promise.all([
+    client.readContract({
+      address: config,
+      abi: configReadAbi,
+      functionName: "creationFee",
+    }),
+    client.readContract({
+      address: config,
+      abi: configReadAbi,
+      functionName: "protocolShareBps",
+    }),
+    client.readContract({
+      address: config,
+      abi: configReadAbi,
+      functionName: "earlyBirdShareBps",
+    }),
+    client.readContract({
+      address: config,
+      abi: configReadAbi,
+      functionName: "platformC2CFeeBps",
+    }),
+    client.readContract({
+      address: config,
+      abi: configReadAbi,
+      functionName: "maxFullMarketCap",
+    }),
+    client.readContract({
+      address: config,
+      abi: configReadAbi,
+      functionName: "maxCloneMarketCap",
+    }),
+    client.readContract({
+      address: config,
+      abi: configReadAbi,
+      functionName: "maxPerUserPrimaryCap",
+    }),
+    client.readContract({
+      address: config,
+      abi: configReadAbi,
+      functionName: "maxCreatorRakeBps",
+    }),
+    client.readContract({
+      address: config,
+      abi: configReadAbi,
+      functionName: "maxCreatorC2CFeeBps",
+    }),
+    client.readContract({
+      address: paymaster,
+      abi: paymasterReadAbi,
+      functionName: "getDeposit",
+    }),
+    client.readContract({
+      address: paymaster,
+      abi: paymasterReadAbi,
+      functionName: "maxCostPerOperation",
+    }),
+    client.readContract({
+      address: paymaster,
+      abi: paymasterReadAbi,
+      functionName: "maxCostPerUserPerDay",
+    }),
+    client.readContract({
+      address: paymaster,
+      abi: paymasterReadAbi,
+      functionName: "maxCostGlobalPerDay",
+    }),
+    client.readContract({
+      address: paymaster,
+      abi: paymasterReadAbi,
+      functionName: "policyVersion",
+    }),
   ]);
   return {
     creationFee,
@@ -251,12 +408,24 @@ export function formatPaymentToken(value: bigint, symbol: string): string {
 }
 
 export function formatShareUnits(value: bigint): string {
-  return `${formatUnits(value, 6)} shares`;
+  return `${formatUnits(value, 6)} 份`;
 }
 
-export const MARKET_STATE_LABELS = ["OPEN", "RESOLVED", "VOIDED_CREATOR", "VOIDED_TIMEOUT"] as const;
+export const MARKET_STATE_LABELS = [
+  "OPEN",
+  "RESOLVED",
+  "VOIDED_CREATOR",
+  "VOIDED_TIMEOUT",
+] as const;
 
 export const MARKET_CLOSED_PENDING_RESOLUTION_LABEL = "已截止，待结算";
+
+const MARKET_STATE_ZH: Record<(typeof MARKET_STATE_LABELS)[number], string> = {
+  OPEN: "进行中",
+  RESOLVED: "已结算",
+  VOIDED_CREATOR: "创建者作废",
+  VOIDED_TIMEOUT: "超时作废",
+};
 
 export interface MarketDisplayState {
   label: string;
@@ -267,8 +436,9 @@ export function marketDisplayState(
   market: Pick<MarketSnapshot, "marketState" | "closeAt" | "observedAt">,
 ): MarketDisplayState {
   if (market.marketState !== 0) {
+    const code = MARKET_STATE_LABELS[market.marketState];
     return {
-      label: MARKET_STATE_LABELS[market.marketState] ?? "UNKNOWN",
+      label: code === undefined ? "未知" : MARKET_STATE_ZH[code],
       primaryBuyOpen: false,
     };
   }
@@ -278,5 +448,5 @@ export function marketDisplayState(
       primaryBuyOpen: false,
     };
   }
-  return { label: MARKET_STATE_LABELS[0], primaryBuyOpen: true };
+  return { label: MARKET_STATE_ZH.OPEN, primaryBuyOpen: true };
 }

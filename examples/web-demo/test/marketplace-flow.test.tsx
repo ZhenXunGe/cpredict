@@ -1,11 +1,17 @@
 import { Children, isValidElement, type ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import type { CpredictClient, TransactionResult } from "../../../offchain/sdk/src/index.js";
+import type {
+  CpredictClient,
+  TransactionResult,
+} from "../../../offchain/sdk/src/index.js";
 import type { MarketplaceListingSelection } from "../../react/src/MarketplacePanel.js";
 import { MarketplacePage } from "../src/App.js";
-import { MarketCatalogSelect, type CatalogEntry } from "../src/MarketCatalog.js";
-import { ListingCard } from "../src/WalletIndexerPanels.js";
+import {
+  MarketCatalogSelect,
+  type CatalogEntry,
+} from "../src/MarketCatalog.js";
+import { ListingCard, ListingsPanel } from "../src/WalletIndexerPanels.js";
 import type { IndexedListing } from "../src/indexer-client.js";
 import type { AccountSnapshot, MarketSnapshot } from "../src/protocol.js";
 import type { TrustReport } from "../src/trust.js";
@@ -58,16 +64,19 @@ describe("C2C listing selection flow", () => {
     const catalog = MarketCatalogSelect({
       entries: [catalogEntry],
       selectedMarket: null,
-      label: "C2C Market Vault",
+      label: "C2C 市场金库",
       onOpen,
     });
     const html = renderToStaticMarkup(catalog);
-    expect(html).toContain("C2C Market Vault");
+    expect(html).toContain("C2C 市场金库");
     expect(html).toContain("这把游戏能胜利吗");
 
     const select = Children.toArray(catalog.props.children).find(
-      (child): child is ReactElement<{ onChange: (event: { currentTarget: { value: string } }) => void }> =>
-        isValidElement(child) && child.type === "select",
+      (
+        child,
+      ): child is ReactElement<{
+        onChange: (event: { currentTarget: { value: string } }) => void;
+      }> => isValidElement(child) && child.type === "select",
     );
     expect(select).toBeDefined();
     select?.props.onChange({ currentTarget: { value: VAULT } });
@@ -96,16 +105,20 @@ describe("C2C listing selection flow", () => {
       <MarketplacePage
         writeReady
         market={{ address: VAULT } as unknown as MarketSnapshot}
-        account={{
-          marketplaceAllowance: 0n,
-          marketplaceApproved: true,
-        } as AccountSnapshot}
-        trust={{
-          addresses: {
-            usdc: "0x0000000000000000000000000000000000004001",
-            contracts: { marketplace: MARKETPLACE },
-          },
-        } as unknown as TrustReport}
+        account={
+          {
+            marketplaceAllowance: 0n,
+            marketplaceApproved: true,
+          } as AccountSnapshot
+        }
+        trust={
+          {
+            addresses: {
+              usdc: "0x0000000000000000000000000000000000004001",
+              contracts: { marketplace: MARKETPLACE },
+            },
+          } as unknown as TrustReport
+        }
         client={{} as CpredictClient}
         selectedMarketAddress={VAULT}
         marketBusy={false}
@@ -127,14 +140,16 @@ describe("C2C listing selection flow", () => {
       />,
     );
     expect(html).toContain("选择 C2C 市场");
-    expect(html).toContain("当前 runtime 未开放 Indexer，暂时无法从 C2C 页面选择市场。");
-    const selectedSection = html.slice(html.indexOf("Selected listing"));
+    expect(html).toContain(
+      "当前 runtime 未开放 Indexer，暂时无法从 C2C 页面选择市场。",
+    );
+    const selectedSection = html.slice(html.indexOf("已选挂单"));
     expect(selectedSection).toContain(LISTING_ID);
-    expect(selectedSection).toContain("Fixed price");
+    expect(selectedSection).toContain("固定价");
     expect(selectedSection).toContain("0.9 ctUSD");
-    expect(selectedSection).toContain("Remaining");
-    expect(selectedSection).toContain("2 shares");
-    expect(selectedSection).toContain("Total: 1.8 ctUSD");
+    expect(selectedSection).toContain("剩余");
+    expect(selectedSection).toContain("2 份");
+    expect(selectedSection).toContain("合计：1.8 ctUSD");
     expect(selectedSection).not.toContain('<input value="0x');
     expect(selectedSection).not.toContain('value="0.9"');
   });
@@ -166,5 +181,48 @@ describe("C2C listing selection flow", () => {
     expect(html).toContain("正在读取 Vault 0x000000…001001");
     expect(html).toContain("正在读取市场");
     expect(html).not.toContain("先从上方选择市场");
+  });
+
+  it("asks for a Vault before listing C2C orders, then scopes the request to that Vault", () => {
+    const empty = renderToStaticMarkup(
+      <ListingsPanel
+        enabled
+        indexerBasePath="/indexer"
+        chainId={421614}
+        paymentTokenSymbol="ctUSD"
+        selectedListingId={null}
+        refreshVersion={0}
+        vault={null}
+        onSelectListing={() => {}}
+      />,
+    );
+    expect(empty).toContain("先选择 C2C 市场");
+
+    const scoped = renderToStaticMarkup(
+      <MarketplacePage
+        writeReady={false}
+        market={null}
+        selectedMarketAddress={VAULT}
+        marketBusy
+        marketLoadError={null}
+        account={null}
+        trust={null}
+        client={null}
+        wallet={null}
+        paymentTokenSymbol="ctUSD"
+        indexerEnabled
+        indexerBasePath="/indexer"
+        metadataBasePath="/metadata"
+        chainId={421614}
+        selectedListing={null}
+        refreshVersion={0}
+        targetBlock={12n}
+        onSelectMarket={() => {}}
+        onSelectListing={() => {}}
+        onListingChange={() => {}}
+      />,
+    );
+    expect(scoped).toContain("正在读取活跃挂单");
+    expect(scoped).not.toContain("先选择 C2C 市场");
   });
 });

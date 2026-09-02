@@ -92,14 +92,21 @@ export async function verifyManifest(
       addresses: null,
       paymentToken,
       resolutionWindowSeconds: null,
-      checks: [{ id: "manifest", label: "Final deployment manifest", state: "fail", detail: "未加载 FINALIZED_VERIFIED 清单" }],
+      checks: [
+        {
+          id: "manifest",
+          label: "正式发布清单",
+          state: "fail",
+          detail: "未加载 FINALIZED_VERIFIED 清单",
+        },
+      ],
     };
   }
   const checks: TrustCheck[] = [];
   const chainId = await client.getChainId();
   checks.push({
     id: "chain",
-    label: "RPC chainId",
+    label: "RPC 链 ID",
     state: chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "pass" : "fail",
     detail: String(chainId),
   });
@@ -107,15 +114,23 @@ export async function verifyManifest(
     const referenceBlock = await client.getBlock({
       blockNumber: BigInt(manifest.referenceBlock.number),
     });
-    const referenceHash = referenceBlock.hash?.toLowerCase() ?? "missing hash";
+    const referenceHash = referenceBlock.hash?.toLowerCase() ?? "缺少哈希";
     checks.push({
       id: "reference-block",
-      label: "Finalized reference block hash",
-      state: referenceHash === manifest.referenceBlock.hash.toLowerCase() ? "pass" : "fail",
+      label: "已确认参考区块哈希",
+      state:
+        referenceHash === manifest.referenceBlock.hash.toLowerCase()
+          ? "pass"
+          : "fail",
       detail: referenceHash,
     });
   } catch (error: unknown) {
-    checks.push({ id: "reference-block", label: "Finalized reference block hash", state: "fail", detail: errorMessage(error) });
+    checks.push({
+      id: "reference-block",
+      label: "已确认参考区块哈希",
+      state: "fail",
+      detail: errorMessage(error),
+    });
   }
 
   const codeRecords = [
@@ -130,23 +145,42 @@ export async function verifyManifest(
         address: record.address,
         blockNumber: BigInt(manifest.referenceBlock.number),
       });
-      const actual = code === undefined || code === "0x" ? null : keccak256(code);
-      const pass = actual?.toLowerCase() === record.runtimeCodehash.toLowerCase();
+      const actual =
+        code === undefined || code === "0x" ? null : keccak256(code);
+      const pass =
+        actual?.toLowerCase() === record.runtimeCodehash.toLowerCase();
       checks.push({
         id: `code-${key}`,
-        label: `${key} runtime codehash`,
+        label: `${key} 运行时代码哈希`,
         state: pass ? "pass" : "fail",
-        detail: actual ?? "no code",
+        detail: actual ?? "无合约代码",
       });
     } catch (error: unknown) {
-      checks.push({ id: `code-${key}`, label: `${key} runtime codehash`, state: "fail", detail: errorMessage(error) });
+      checks.push({
+        id: `code-${key}`,
+        label: `${key} 运行时代码哈希`,
+        state: "fail",
+        detail: errorMessage(error),
+      });
     }
   }
 
   const addresses = addressesFromManifest(manifest);
-  const resolutionWindowSeconds = await verifyWiring(client, addresses, paymentToken, checks);
+  const resolutionWindowSeconds = await verifyWiring(
+    client,
+    addresses,
+    paymentToken,
+    checks,
+  );
   const writeEnabled = checks.every((check) => check.state === "pass");
-  return { level: writeEnabled ? "verified" : "blocked", writeEnabled, checks, addresses, paymentToken, resolutionWindowSeconds };
+  return {
+    level: writeEnabled ? "verified" : "blocked",
+    writeEnabled,
+    checks,
+    addresses,
+    paymentToken,
+    resolutionWindowSeconds,
+  };
 }
 
 export async function verifyDebugAddresses(
@@ -162,16 +196,36 @@ export async function verifyDebugAddresses(
       addresses: null,
       paymentToken,
       resolutionWindowSeconds: null,
-      checks: [{ id: "debug-addresses", label: "调试地址格式", state: "fail", detail: "所有调试地址必须是有效 EVM 地址" }],
+      checks: [
+        {
+          id: "debug-addresses",
+          label: "调试地址格式",
+          state: "fail",
+          detail: "所有调试地址必须是有效 EVM 地址",
+        },
+      ],
     };
   }
-  const parsed = Object.fromEntries(required.map(([key, value]) => [key, getAddress(value)])) as Record<keyof DebugAddressInput, Address>;
+  const parsed = Object.fromEntries(
+    required.map(([key, value]) => [key, getAddress(value)]),
+  ) as Record<keyof DebugAddressInput, Address>;
   const checks: TrustCheck[] = [];
   const chainId = await client.getChainId();
-  checks.push({ id: "chain", label: "RPC chainId", state: chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "pass" : "fail", detail: String(chainId) });
+  checks.push({
+    id: "chain",
+    label: "RPC 链 ID",
+    state: chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "pass" : "fail",
+    detail: String(chainId),
+  });
   for (const [key, address] of Object.entries(parsed)) {
     const code = await client.getCode({ address });
-    checks.push({ id: `debug-${key}`, label: `${key} 合约代码`, state: code !== undefined && code !== "0x" ? "pass" : "fail", detail: code === undefined || code === "0x" ? "no code" : keccak256(code) });
+    checks.push({
+      id: `debug-${key}`,
+      label: `${key} 合约代码`,
+      state: code !== undefined && code !== "0x" ? "pass" : "fail",
+      detail:
+        code === undefined || code === "0x" ? "无合约代码" : keccak256(code),
+    });
   }
   const contracts = Object.fromEntries(
     CONTRACT_KEYS.map((key) => [key, parsed[key]]),
@@ -190,14 +244,30 @@ export async function verifyDebugAddresses(
     permit2: parsed.permit2,
     entryPoint: parsed.entryPoint,
   };
-  const resolutionWindowSeconds = await verifyWiring(client, addresses, paymentToken, checks);
+  const resolutionWindowSeconds = await verifyWiring(
+    client,
+    addresses,
+    paymentToken,
+    checks,
+  );
   const valid = checks.every((check) => check.state === "pass");
-  return { level: valid ? "debug" : "blocked", writeEnabled: valid, checks, addresses, paymentToken, resolutionWindowSeconds };
+  return {
+    level: valid ? "debug" : "blocked",
+    writeEnabled: valid,
+    checks,
+    addresses,
+    paymentToken,
+    resolutionWindowSeconds,
+  };
 }
 
-export function addressesFromManifest(manifest: FinalManifest): ProtocolAddresses {
+export function addressesFromManifest(
+  manifest: FinalManifest,
+): ProtocolAddresses {
   return {
-    contracts: Object.fromEntries(CONTRACT_KEYS.map((key) => [key, manifest.contracts[key].address])) as Record<ContractKey, Address>,
+    contracts: Object.fromEntries(
+      CONTRACT_KEYS.map((key) => [key, manifest.contracts[key].address]),
+    ) as Record<ContractKey, Address>,
     usdc: manifest.externalContracts.usdc.address,
     permit2: manifest.externalContracts.permit2.address,
     entryPoint: manifest.externalContracts.entryPoint.address,
@@ -235,75 +305,295 @@ async function verifyWiring(
       permit2,
       decimals,
     ] = await Promise.all([
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "active" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "marketplace" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "config" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "emergencyController" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "exposureGuard" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "feeVault" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "bondEscrow" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "cloneImplementation" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "fullMarketDeployer" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "paymentToken" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "permit2" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "resolutionWindow" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "MIN_RESOLUTION_WINDOW" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "MAX_RESOLUTION_WINDOW" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "dependencyFingerprint" }),
-      client.readContract({ address: addresses.contracts.factory, abi: factoryAbi, functionName: "activationFingerprint" }),
-      client.readContract({ address: addresses.contracts.marketplace, abi: marketplaceAbi, functionName: "factory" }),
-      client.readContract({ address: addresses.contracts.marketplace, abi: marketplaceAbi, functionName: "emergencyController" }),
-      client.readContract({ address: addresses.contracts.marketplace, abi: marketplaceAbi, functionName: "feeVault" }),
-      client.readContract({ address: addresses.contracts.marketplace, abi: marketplaceAbi, functionName: "paymentToken" }),
-      client.readContract({ address: addresses.contracts.marketplace, abi: marketplaceAbi, functionName: "permit2" }),
-      client.readContract({ address: addresses.usdc, abi: erc20Abi, functionName: "decimals" }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "active",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "marketplace",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "config",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "emergencyController",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "exposureGuard",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "feeVault",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "bondEscrow",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "cloneImplementation",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "fullMarketDeployer",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "paymentToken",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "permit2",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "resolutionWindow",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "MIN_RESOLUTION_WINDOW",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "MAX_RESOLUTION_WINDOW",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "dependencyFingerprint",
+      }),
+      client.readContract({
+        address: addresses.contracts.factory,
+        abi: factoryAbi,
+        functionName: "activationFingerprint",
+      }),
+      client.readContract({
+        address: addresses.contracts.marketplace,
+        abi: marketplaceAbi,
+        functionName: "factory",
+      }),
+      client.readContract({
+        address: addresses.contracts.marketplace,
+        abi: marketplaceAbi,
+        functionName: "emergencyController",
+      }),
+      client.readContract({
+        address: addresses.contracts.marketplace,
+        abi: marketplaceAbi,
+        functionName: "feeVault",
+      }),
+      client.readContract({
+        address: addresses.contracts.marketplace,
+        abi: marketplaceAbi,
+        functionName: "paymentToken",
+      }),
+      client.readContract({
+        address: addresses.contracts.marketplace,
+        abi: marketplaceAbi,
+        functionName: "permit2",
+      }),
+      client.readContract({
+        address: addresses.usdc,
+        abi: erc20Abi,
+        functionName: "decimals",
+      }),
     ]);
     checks.push(
-      check("factory-active", "Factory activated", active === true, String(active)),
-      check("factory-marketplace", "Factory → Marketplace", sameAddress(marketplace, addresses.contracts.marketplace), marketplace),
-      check("factory-config", "Factory → Config", sameAddress(config, addresses.contracts.config), config),
-      check("factory-emergency", "Factory → EmergencyController", sameAddress(emergencyController, addresses.contracts.emergencyController), emergencyController),
-      check("factory-guard", "Factory → ExposureGuard", sameAddress(exposureGuard, addresses.contracts.exposureGuard), exposureGuard),
-      check("factory-fee-vault", "Factory → FeeVault", sameAddress(feeVault, addresses.contracts.feeVault), feeVault),
-      check("factory-bond", "Factory → BondEscrow", sameAddress(bondEscrow, addresses.contracts.bondEscrow), bondEscrow),
-      check("factory-clone", "Factory → Clone implementation", sameAddress(cloneImplementation, addresses.contracts.cloneImplementation), cloneImplementation),
-      check("factory-full", "Factory → Full deployer", sameAddress(fullMarketDeployer, addresses.contracts.fullMarketDeployer), fullMarketDeployer),
-      check("factory-token", `Factory → ${paymentTokenConfig.symbol}`, sameAddress(factoryPaymentToken, addresses.usdc), factoryPaymentToken),
-      check("factory-permit2", "Factory → Permit2", sameAddress(factoryPermit2, addresses.permit2), factoryPermit2),
+      check(
+        "factory-active",
+        "Factory 已激活",
+        active === true,
+        String(active),
+      ),
+      check(
+        "factory-marketplace",
+        "Factory → Marketplace",
+        sameAddress(marketplace, addresses.contracts.marketplace),
+        marketplace,
+      ),
+      check(
+        "factory-config",
+        "Factory → Config",
+        sameAddress(config, addresses.contracts.config),
+        config,
+      ),
+      check(
+        "factory-emergency",
+        "Factory → EmergencyController",
+        sameAddress(
+          emergencyController,
+          addresses.contracts.emergencyController,
+        ),
+        emergencyController,
+      ),
+      check(
+        "factory-guard",
+        "Factory → ExposureGuard",
+        sameAddress(exposureGuard, addresses.contracts.exposureGuard),
+        exposureGuard,
+      ),
+      check(
+        "factory-fee-vault",
+        "Factory → FeeVault",
+        sameAddress(feeVault, addresses.contracts.feeVault),
+        feeVault,
+      ),
+      check(
+        "factory-bond",
+        "Factory → BondEscrow",
+        sameAddress(bondEscrow, addresses.contracts.bondEscrow),
+        bondEscrow,
+      ),
+      check(
+        "factory-clone",
+        "Factory → Clone 实现",
+        sameAddress(
+          cloneImplementation,
+          addresses.contracts.cloneImplementation,
+        ),
+        cloneImplementation,
+      ),
+      check(
+        "factory-full",
+        "Factory → Full 部署器",
+        sameAddress(fullMarketDeployer, addresses.contracts.fullMarketDeployer),
+        fullMarketDeployer,
+      ),
+      check(
+        "factory-token",
+        `Factory → ${paymentTokenConfig.symbol}`,
+        sameAddress(factoryPaymentToken, addresses.usdc),
+        factoryPaymentToken,
+      ),
+      check(
+        "factory-permit2",
+        "Factory → Permit2",
+        sameAddress(factoryPermit2, addresses.permit2),
+        factoryPermit2,
+      ),
       check(
         "factory-resolution-window",
-        "Factory resolution window",
-        resolutionWindow >= minResolutionWindow && resolutionWindow <= maxResolutionWindow,
-        `${resolutionWindow}s (allowed ${minResolutionWindow}-${maxResolutionWindow}s)`,
+        "Factory 结算窗口",
+        resolutionWindow >= minResolutionWindow &&
+          resolutionWindow <= maxResolutionWindow,
+        `${resolutionWindow} 秒（允许 ${minResolutionWindow}-${maxResolutionWindow} 秒）`,
       ),
-      check("fingerprint", "Factory dependency fingerprint", dependency === activation, dependency),
-      check("marketplace-factory", "Marketplace → Factory", sameAddress(marketFactory, addresses.contracts.factory), marketFactory),
-      check("marketplace-emergency", "Marketplace → EmergencyController", sameAddress(marketEmergencyController, addresses.contracts.emergencyController), marketEmergencyController),
-      check("marketplace-fee-vault", "Marketplace → FeeVault", sameAddress(marketFeeVault, addresses.contracts.feeVault), marketFeeVault),
-      check("marketplace-token", `Marketplace → ${paymentTokenConfig.symbol}`, sameAddress(paymentToken, addresses.usdc), paymentToken),
-      check("marketplace-permit2", "Marketplace → Permit2", sameAddress(permit2, addresses.permit2), permit2),
-      check("payment-token-decimals", `${paymentTokenConfig.symbol} decimals`, decimals === paymentTokenConfig.decimals, String(decimals)),
+      check(
+        "fingerprint",
+        "Factory 依赖指纹",
+        dependency === activation,
+        dependency,
+      ),
+      check(
+        "marketplace-factory",
+        "Marketplace → Factory",
+        sameAddress(marketFactory, addresses.contracts.factory),
+        marketFactory,
+      ),
+      check(
+        "marketplace-emergency",
+        "Marketplace → EmergencyController",
+        sameAddress(
+          marketEmergencyController,
+          addresses.contracts.emergencyController,
+        ),
+        marketEmergencyController,
+      ),
+      check(
+        "marketplace-fee-vault",
+        "Marketplace → FeeVault",
+        sameAddress(marketFeeVault, addresses.contracts.feeVault),
+        marketFeeVault,
+      ),
+      check(
+        "marketplace-token",
+        `Marketplace → ${paymentTokenConfig.symbol}`,
+        sameAddress(paymentToken, addresses.usdc),
+        paymentToken,
+      ),
+      check(
+        "marketplace-permit2",
+        "Marketplace → Permit2",
+        sameAddress(permit2, addresses.permit2),
+        permit2,
+      ),
+      check(
+        "payment-token-decimals",
+        `${paymentTokenConfig.symbol} 小数位`,
+        decimals === paymentTokenConfig.decimals,
+        String(decimals),
+      ),
     );
     if (paymentTokenConfig.kind === "sandbox-test-token") {
       const [name, symbol, marker] = await Promise.all([
-        client.readContract({ address: addresses.usdc, abi: erc20Abi, functionName: "name" }),
-        client.readContract({ address: addresses.usdc, abi: erc20Abi, functionName: "symbol" }),
-        client.readContract({ address: addresses.usdc, abi: erc20Abi, functionName: "IS_CPREDICT_SANDBOX_TOKEN" }),
+        client.readContract({
+          address: addresses.usdc,
+          abi: erc20Abi,
+          functionName: "name",
+        }),
+        client.readContract({
+          address: addresses.usdc,
+          abi: erc20Abi,
+          functionName: "symbol",
+        }),
+        client.readContract({
+          address: addresses.usdc,
+          abi: erc20Abi,
+          functionName: "IS_CPREDICT_SANDBOX_TOKEN",
+        }),
       ]);
       checks.push(
-        check("sandbox-token-name", "Sandbox token name", name === paymentTokenConfig.name, name),
-        check("sandbox-token-symbol", "Sandbox token symbol", symbol === paymentTokenConfig.symbol, symbol),
-        check("sandbox-token-marker", "Sandbox token marker", marker === true, marker),
+        check(
+          "sandbox-token-name",
+          "沙箱代币名称",
+          name === paymentTokenConfig.name,
+          name,
+        ),
+        check(
+          "sandbox-token-symbol",
+          "沙箱代币符号",
+          symbol === paymentTokenConfig.symbol,
+          symbol,
+        ),
+        check("sandbox-token-marker", "沙箱代币标记", marker === true, marker),
       );
     }
     return Number(resolutionWindow);
   } catch (error: unknown) {
-    checks.push({ id: "wiring", label: "关键 wiring/getter", state: "fail", detail: errorMessage(error) });
+    checks.push({
+      id: "wiring",
+      label: "关键接线 / 读取",
+      state: "fail",
+      detail: errorMessage(error),
+    });
     return null;
   }
 }
 
-function check(id: string, label: string, pass: boolean, detail: string | boolean | bigint | Hex | Address): TrustCheck {
+function check(
+  id: string,
+  label: string,
+  pass: boolean,
+  detail: string | boolean | bigint | Hex | Address,
+): TrustCheck {
   return { id, label, state: pass ? "pass" : "fail", detail: String(detail) };
 }
 
@@ -312,5 +602,5 @@ function sameAddress(actual: Address, expected: Address): boolean {
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "unknown error";
+  return error instanceof Error ? error.message : "未知错误";
 }
