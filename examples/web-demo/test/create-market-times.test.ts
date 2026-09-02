@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildCreateMarketTimes,
+  MAX_MARKET_DURATION_MINUTES,
   MARKET_CREATION_MINING_BUFFER_SECONDS,
+  MIN_MARKET_DURATION_MINUTES,
 } from "../src/create-market-times.js";
 
 describe("buildCreateMarketTimes", () => {
@@ -9,20 +11,26 @@ describe("buildCreateMarketTimes", () => {
     const submittedAt = 1_000_000n;
     const minedAt = submittedAt + 8n;
 
-    const times = buildCreateMarketTimes(submittedAt, 1);
+    const times = buildCreateMarketTimes(submittedAt, 15);
 
     expect(times.earlyBirdStart).toBe(submittedAt + MARKET_CREATION_MINING_BUFFER_SECONDS);
     expect(times.earlyBirdStart).toBeGreaterThanOrEqual(minedAt);
     expect(times.earlyBirdStart).toBeLessThan(times.closeAt);
   });
 
-  it("preserves the requested duration for the 90-day boundary", () => {
+  it("preserves a requested 15-minute duration", () => {
     const submittedAt = 1_000_000n;
 
-    expect(buildCreateMarketTimes(submittedAt, 90).closeAt).toBe(submittedAt + 90n * 86_400n);
+    expect(buildCreateMarketTimes(submittedAt, 15).closeAt).toBe(submittedAt + 15n * 60n);
   });
 
-  it.each([0, 91, 1.5])("rejects an invalid duration of %s days", (durationDays) => {
-    expect(() => buildCreateMarketTimes(1_000_000n, durationDays)).toThrow(RangeError);
+  it("preserves the 90-day maximum boundary", () => {
+    const submittedAt = 1_000_000n;
+
+    expect(buildCreateMarketTimes(submittedAt, MAX_MARKET_DURATION_MINUTES).closeAt).toBe(submittedAt + 90n * 86_400n);
+  });
+
+  it.each([MIN_MARKET_DURATION_MINUTES - 1, MAX_MARKET_DURATION_MINUTES + 1, 15.5])("rejects an invalid duration of %s minutes", (durationMinutes) => {
+    expect(() => buildCreateMarketTimes(1_000_000n, durationMinutes)).toThrow(RangeError);
   });
 });

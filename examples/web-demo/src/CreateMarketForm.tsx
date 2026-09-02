@@ -8,7 +8,11 @@ import {
   type MarketRules,
   type TransactionResult,
 } from "../../../offchain/sdk/src/index.js";
-import { buildCreateMarketTimes } from "./create-market-times.js";
+import {
+  buildCreateMarketTimes,
+  MAX_MARKET_DURATION_MINUTES,
+  MIN_MARKET_DURATION_MINUTES,
+} from "./create-market-times.js";
 import {
   publishMarketMetadata,
   type PublishedMarketMetadata,
@@ -73,7 +77,7 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
   const [cancellationPolicy, setCancellationPolicy] = useState(
     "Void the market if the cited source is unavailable or does not provide an unambiguous result during the resolution window.",
   );
-  const [durationDays, setDurationDays] = useState("7");
+  const [durationMinutes, setDurationMinutes] = useState("15");
   const [mode, setMode] = useState<"0" | "1">("0");
   const [rakeBps, setRakeBps] = useState("200");
   const [creatorC2CFeeBps, setCreatorC2CFeeBps] = useState("0");
@@ -92,8 +96,8 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
 
   function marketDraft() {
     const now = BigInt(Math.floor(Date.now() / 1_000));
-    const days = parseInteger(durationDays, 1, 90, "市场期限");
-    const { closeAt, earlyBirdStart } = buildCreateMarketTimes(now, days);
+    const minutes = parseInteger(durationMinutes, MIN_MARKET_DURATION_MINUTES, MAX_MARKET_DURATION_MINUTES, "市场期限");
+    const { closeAt, earlyBirdStart } = buildCreateMarketTimes(now, minutes);
     const outcomes = outcomeLabels
       .split(/\r?\n/)
       .map((value) => value.trim())
@@ -281,7 +285,7 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
     validate(next, "source", () => validatedUri(resolutionSource, "公开判定来源"));
     validateText(next, "criteria", resolutionCriteria, "判定方式", 8, 2_048);
     validateText(next, "cancellation", cancellationPolicy, "作废条件", 8, 2_048);
-    validate(next, "duration", () => parseInteger(durationDays, 1, 90, "市场期限"));
+    validate(next, "duration", () => parseInteger(durationMinutes, MIN_MARKET_DURATION_MINUTES, MAX_MARKET_DURATION_MINUTES, "市场期限"));
     validate(next, "marketCap", marketCapValue);
     const cap = next.marketCap === undefined ? marketCapValue() : null;
     if (cap !== null) {
@@ -419,11 +423,15 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
           <FieldError id="market-cancellation-error" message={fieldErrors.cancellation} />
         </label>
         <label>
-          <span>市场期限（天，1–90）</span>
+          <span>市场期限（分钟，11–129600）</span>
           <input
+            type="number"
             inputMode="numeric"
-            value={durationDays}
-            onChange={(event) => { setDurationDays(event.currentTarget.value); clearField("duration"); }}
+            min={MIN_MARKET_DURATION_MINUTES}
+            max={MAX_MARKET_DURATION_MINUTES}
+            step="1"
+            value={durationMinutes}
+            onChange={(event) => { setDurationMinutes(event.currentTarget.value); clearField("duration"); }}
             aria-invalid={fieldErrors.duration !== undefined}
             required
           />

@@ -1,9 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import App, { ActivityLine, Inspector, MarketPage, PrimaryAllowanceRow, SandboxTokenPanel } from "../src/App.js";
+import { CreateMarketForm } from "../src/CreateMarketForm.js";
 import { MarketCatalogCards, type CatalogEntry } from "../src/MarketCatalog.js";
 import type { MarketSnapshot } from "../src/protocol.js";
 import type { TrustReport } from "../src/trust.js";
+import type { CpredictClient } from "../../../offchain/sdk/src/index.js";
+import type { ConnectedWallet } from "../src/wallet.js";
 
 describe("web demo application shell", () => {
   it("renders the trust-first Chinese console without fabricated runtime state", () => {
@@ -67,6 +70,33 @@ describe("web demo application shell", () => {
     const html = renderToStaticMarkup(<Inspector trust={report} runtime={null} market={null} wallet={null} />);
     expect(html).toContain("Resolution window");
     expect(html).toContain("15 分钟 / 900 秒");
+  });
+
+  it("defaults market creation to a 15-minute duration", () => {
+    const html = renderToStaticMarkup(
+      <CreateMarketForm
+        client={{} as CpredictClient}
+        factory="0x0000000000000000000000000000000000001001"
+        paymentToken="0x0000000000000000000000000000000000001002"
+        paymentTokenSymbol="ctUSD"
+        creator="0x0000000000000000000000000000000000001003"
+        creationFee={0n}
+        maxFullMarketCap={1_000_000_000n}
+        maxCloneMarketCap={1_000_000_000n}
+        maxPerUserPrimaryCap={1_000_000_000n}
+        maxCreatorRakeBps={1_000}
+        maxCreatorC2CFeeBps={1_000}
+        metadataBasePath="/metadata"
+        wallet={{} as ConnectedWallet}
+        writeReady={false}
+        busy={false}
+        execute={async () => null}
+        onMarketCreated={async () => {}}
+      />,
+    );
+    expect(html).toContain("市场期限（分钟，11–129600）");
+    expect(html).toContain('value="15"');
+    expect(html).toContain('min="11"');
   });
 
   it("renders the exact Permit2 token allowance required before signing", () => {
