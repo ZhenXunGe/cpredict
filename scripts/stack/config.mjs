@@ -14,9 +14,15 @@ const SECRET_KEYS = new Set([
   "CPREDICT_STACK_BACKUP_PASSWORD",
   "CPREDICT_METADATA_PUBLIC_BASE_URL",
   "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
+  "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH",
+  "CPREDICT_RELAY_EXPECTED_SENDER",
 ]);
 const REQUIRED_SECRET_KEYS = [...SECRET_KEYS].filter(
-  (key) => key !== "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
+  (key) => ![
+    "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
+    "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH",
+    "CPREDICT_RELAY_EXPECTED_SENDER",
+  ].includes(key),
 );
 const REQUIRED_PUBLIC_KEYS = [
   "CPREDICT_STACK_RUNTIME_ROOT",
@@ -30,6 +36,9 @@ const REQUIRED_PUBLIC_KEYS = [
   "CPREDICT_PAYMASTER_MAX_COST_PER_REQUEST",
   "CPREDICT_PAYMASTER_MAX_COST_PER_USER_DAY",
   "CPREDICT_PAYMASTER_MAX_COST_GLOBAL_DAY",
+  "CPREDICT_RELAY_FACTORY_ADDRESS",
+  "CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS",
+  "CPREDICT_RELAY_PERMIT2_ADDRESS",
 ];
 const SAFE_PASSWORD = /^[A-Za-z0-9_-]{24,128}$/;
 
@@ -37,6 +46,7 @@ export async function loadStackConfiguration({
   secretPath = resolve(ROOT, ".env.compose.local"),
   publicPath,
   sponsorship = false,
+  relay = false,
   runtimeBoundary = resolve(ROOT, "runtime/arbitrum-sepolia"),
 } = {}) {
   const secret = await readRestrictedEnv(secretPath);
@@ -70,6 +80,11 @@ export async function loadStackConfiguration({
     "CPREDICT_PAYMASTER_ADDRESS",
     "CPREDICT_PAYMASTER_EXPECTED_SIGNER",
   ]) validateAddress(publicEnv[key], key);
+  for (const key of [
+    "CPREDICT_RELAY_FACTORY_ADDRESS",
+    "CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS",
+    "CPREDICT_RELAY_PERMIT2_ADDRESS",
+  ]) validateAddress(publicEnv[key], key);
   validateUnsigned(publicEnv.CPREDICT_INDEXER_DEPLOYMENT_BLOCK, "deployment block");
   validateUnsigned(publicEnv.CPREDICT_PAYMASTER_POLICY_VERSION, "policy version");
   for (const key of [
@@ -85,6 +100,20 @@ export async function loadStackConfiguration({
     const adapter = requireValue(secret, "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH");
     if (!isAbsolute(adapter)) throw new Error("paymaster adapter host path must be absolute");
     await access(adapter);
+  }
+  if (relay) {
+    const adapter = requireValue(secret, "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH");
+    if (!isAbsolute(adapter)) throw new Error("relay adapter host path must be absolute");
+    await access(adapter);
+    validateAddress(
+      requireValue(secret, "CPREDICT_RELAY_EXPECTED_SENDER"),
+      "relay expected sender",
+    );
+    const runtimeConfig = JSON.parse(
+      await readFile(resolve(runtimeRoot, "web-demo/runtime-config.json"), "utf8"),
+    );
+    if (runtimeConfig.permit2Relay?.enabled !== true)
+      throw new Error("runtime package must enable permit2Relay before the relay profile starts");
   }
   return {
     secretPath,

@@ -15,6 +15,7 @@ const INDEXER_TABLES = [
 ];
 const PAYMASTER_TABLES = [
   "sponsor_budget_global_usage", "sponsor_budget_user_usage", "sponsor_budget_leases",
+  "permit2_relay_intents",
 ];
 const METADATA_TABLES = ["metadata_challenges", "market_publications"];
 
@@ -157,6 +158,7 @@ async function migrationInventory() {
       (name) => `offchain/indexer/migrations/${name}`,
     ),
     "offchain/paymaster-service/migrations/001_sponsor_budget.sql",
+    "offchain/paymaster-service/migrations/002_permit2_relay_intents.sql",
     "offchain/metadata-service/migrations/001_metadata.sql",
   ];
   return Promise.all(files.map(async (path) => ({ path, sha256: await sha256File(resolve(ROOT, path)) })));

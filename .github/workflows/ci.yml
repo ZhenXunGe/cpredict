@@ -119,9 +119,10 @@ jobs:
           docker compose -f compose.yaml config --no-interpolate --quiet
           docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.offchain --target indexer --tag cpredict-indexer:ci .
           docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.offchain --target paymaster --tag cpredict-paymaster:ci .
+          docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.offchain --target permit2-relay --tag cpredict-permit2-relay:ci .
           docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.offchain --target metadata --tag cpredict-metadata:ci .
           docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.demo --tag cpredict-web-demo:ci .
-          for image in cpredict-indexer:ci cpredict-paymaster:ci cpredict-metadata:ci cpredict-web-demo:ci; do
+          for image in cpredict-indexer:ci cpredict-paymaster:ci cpredict-permit2-relay:ci cpredict-metadata:ci cpredict-web-demo:ci; do
             test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")" = "$GITHUB_SHA"
           done
       - name: Scan container images for fixable high-severity vulnerabilities

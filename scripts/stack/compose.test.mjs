@@ -9,7 +9,8 @@ const compose = JSON.parse(
 test("Compose exposes only application services on loopback", () => {
   assert.equal(compose.services.postgres.ports, undefined);
   assert.deepEqual(compose.services.paymaster.profiles, ["sponsorship"]);
-  for (const name of ["web-demo", "indexer", "metadata", "paymaster"])
+  assert.deepEqual(compose.services["permit2-relay"].profiles, ["relay"]);
+  for (const name of ["web-demo", "indexer", "metadata", "paymaster", "permit2-relay"])
     for (const port of compose.services[name].ports)
       assert.match(port, /^127\.0\.0\.1:/, `${name} must bind loopback`);
   assert.equal(
@@ -21,12 +22,20 @@ test("Compose exposes only application services on loopback", () => {
     "true",
   );
   assert.equal(
+    compose.services["permit2-relay"].environment.CPREDICT_RELAY_CONTAINER_MODE,
+    "true",
+  );
+  assert.equal(
     compose.services.metadata.environment.CPREDICT_METADATA_CONTAINER_MODE,
     "true",
   );
   assert.equal(
     compose.services.paymaster.environment.CPREDICT_PAYMASTER_ADAPTER_MODULE,
     "file:///run/cpredict/paymaster-adapter.mjs",
+  );
+  assert.equal(
+    compose.services["permit2-relay"].environment.CPREDICT_RELAY_ADAPTER_MODULE,
+    "file:///run/cpredict/permit2-relay-adapter.mjs",
   );
   assert.equal(compose.services.postgres.networks.includes("app"), false);
 });
@@ -42,6 +51,7 @@ test("runtime services are least privilege, bounded and health ordered", async (
     "metadata",
     "web-demo",
     "paymaster",
+    "permit2-relay",
   ]) {
     const service = compose.services[name];
     assert.equal(
@@ -54,7 +64,7 @@ test("runtime services are least privilege, bounded and health ordered", async (
     assert.ok(service.deploy.resources.limits.memory, name);
     assert.ok(service.deploy.resources.limits.cpus, name);
   }
-  for (const name of ["postgres", "indexer", "metadata", "web-demo", "paymaster"])
+  for (const name of ["postgres", "indexer", "metadata", "web-demo", "paymaster", "permit2-relay"])
     assert.match(
       compose.services[name].stop_grace_period,
       /^[1-9][0-9]*s$/,
@@ -131,6 +141,8 @@ test("runtime services are least privilege, bounded and health ordered", async (
   );
   assert.match(nginx, /location \/indexer\/[\s\S]*limit_except GET HEAD/);
   assert.match(nginx, /location \/metadata\/[\s\S]*limit_except GET HEAD POST/);
+  assert.match(nginx, /location \/relay\/[\s\S]*limit_except POST/);
+  assert.match(nginx, /location \/relay\/[\s\S]*rewrite \^\/relay\/\(\.\*\)\$ \/\$1 break/);
 });
 
 test("Compose never carries browser-prefixed or embedded secret values", () => {
@@ -146,7 +158,7 @@ test("Compose never carries browser-prefixed or embedded secret values", () => {
 });
 
 test("Compose injects the orchestrator source revision into every application build", () => {
-  for (const name of ["indexer", "metadata", "paymaster", "web-demo"])
+  for (const name of ["indexer", "metadata", "paymaster", "permit2-relay", "web-demo"])
     assert.equal(
       compose.services[name].build.args.CPREDICT_IMAGE_REVISION,
       "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}",

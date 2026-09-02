@@ -8,15 +8,16 @@ import { readSourceRevision } from "./source-revision.mjs";
 const ROOT = resolve(import.meta.dirname, "../..");
 const command = process.argv[2] ?? "help";
 const sponsorship = process.argv.includes("--sponsorship");
+const relay = process.argv.includes("--relay");
 const allowed = new Set(["up", "status", "logs", "down", "config"]);
 
 if (command === "help" || !allowed.has(command)) {
   process.stdout.write(
-    "usage: node scripts/stack/stack.mjs up|status|logs|down|config [--sponsorship]\n",
+    "usage: node scripts/stack/stack.mjs up|status|logs|down|config [--sponsorship] [--relay]\n",
   );
   process.exitCode = command === "help" ? 0 : 2;
 } else {
-  const configuration = await loadStackConfiguration({ sponsorship });
+  const configuration = await loadStackConfiguration({ sponsorship, relay });
   const sourceRevision = readSourceRevision({ root: ROOT });
   const compose = [
     "compose",
@@ -30,6 +31,7 @@ if (command === "help" || !allowed.has(command)) {
     resolve(ROOT, "compose.yaml"),
   ];
   if (sponsorship) compose.push("--profile", "sponsorship");
+  if (relay) compose.push("--profile", "relay");
   const args =
     command === "up"
       ? [...compose, "up", "--build", "--detach", "--wait"]

@@ -12,6 +12,10 @@ export const POSTGRES_INTEGRATION_INVENTORY = Object.freeze([
     tests: 2,
   }),
   Object.freeze({
+    path: "offchain/permit2-relay-service/test/postgres-intent-store.integration.test.ts",
+    tests: 3,
+  }),
+  Object.freeze({
     path: "offchain/metadata-service/test/postgres.integration.test.ts",
     tests: 2,
   }),

@@ -21,6 +21,8 @@ async function fixture() {
         (name) => `CPREDICT_STACK_${name}_PASSWORD=${name.toLowerCase()}_${"x".repeat(32)}`,
       ),
       "CPREDICT_METADATA_PUBLIC_BASE_URL=https://101.32.241.211/metadata",
+      `CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH=${join(root, "relay-adapter.mjs")}`,
+      `CPREDICT_RELAY_EXPECTED_SENDER=${address("e4")}`,
     ].join("\n") + "\n",
   );
   await chmod(secretPath, 0o600);
@@ -39,6 +41,9 @@ async function fixture() {
       "CPREDICT_PAYMASTER_MAX_COST_PER_REQUEST=1",
       "CPREDICT_PAYMASTER_MAX_COST_PER_USER_DAY=2",
       "CPREDICT_PAYMASTER_MAX_COST_GLOBAL_DAY=3",
+      `CPREDICT_RELAY_FACTORY_ADDRESS=${address("f1")}`,
+      `CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS=${address("e5")}`,
+      `CPREDICT_RELAY_PERMIT2_ADDRESS=${address("e6")}`,
     ].join("\n") + "\n",
   );
   return { root, runtime, secretPath, publicPath };
@@ -52,6 +57,32 @@ test("stack config keeps secret and public deployment inputs separate", async ()
     runtimeBoundary: join(value.root, "runtime/arbitrum-sepolia"),
   });
   assert.equal(parsed.runtimeRoot, await realpath(value.runtime));
+});
+
+test("relay profile requires an accessible adapter and an explicitly enabled runtime", async () => {
+  const value = await fixture();
+  await assert.rejects(
+    loadStackConfiguration({
+      secretPath: value.secretPath,
+      publicPath: value.publicPath,
+      runtimeBoundary: join(value.root, "runtime/arbitrum-sepolia"),
+      relay: true,
+    }),
+    /adapter|permit2Relay/,
+  );
+  await writeFile(join(value.root, "relay-adapter.mjs"), "export {};\n");
+  await writeFile(
+    join(value.runtime, "web-demo/runtime-config.json"),
+    '{"permit2Relay":{"enabled":true,"basePath":"/relay"}}\n',
+  );
+  await expectNoRejection(
+    loadStackConfiguration({
+      secretPath: value.secretPath,
+      publicPath: value.publicPath,
+      runtimeBoundary: join(value.root, "runtime/arbitrum-sepolia"),
+      relay: true,
+    }),
+  );
 });
 
 test("stack config rejects public secret keys and permissive secret files", async () => {
@@ -76,6 +107,10 @@ test("stack config rejects public secret keys and permissive secret files", asyn
     /permissions must be 0600/,
   );
 });
+
+async function expectNoRejection(promise) {
+  await promise;
+}
 
 test("stack config rejects runtime paths outside the repository runtime boundary", async () => {
   const value = await fixture();
@@ -111,6 +146,8 @@ test("committed Compose example declares every server secret without a value", a
     "CPREDICT_STACK_METADATA_PASSWORD",
     "CPREDICT_STACK_BACKUP_PASSWORD",
     "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
+    "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH",
+    "CPREDICT_RELAY_EXPECTED_SENDER",
   ]) assert.match(text, new RegExp(`^${key}=$`, "m"), key);
   assert.match(
     text,

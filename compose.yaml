@@ -308,6 +308,52 @@
       "networks": ["app", "data"],
       "deploy": {"resources": {"limits": {"cpus": "1.0", "memory": "512M"}}},
       "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
+    },
+    "permit2-relay": {
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "permit2-relay",
+        "args": {"CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"}
+      },
+      "restart": "unless-stopped",
+      "stop_grace_period": "15s",
+      "profiles": ["relay"],
+      "depends_on": {"migrate-paymaster": {"condition": "service_completed_successfully"}},
+      "environment": {
+        "CPREDICT_RELAY_HOST": "0.0.0.0",
+        "CPREDICT_RELAY_CONTAINER_MODE": "true",
+        "CPREDICT_RELAY_PORT": "8792",
+        "CPREDICT_RELAY_LOG_LEVEL": "info",
+        "CPREDICT_RELAY_ADAPTER_MODULE": "file:///run/cpredict/permit2-relay-adapter.mjs",
+        "CPREDICT_RELAY_DATABASE_URL": "postgresql://cpredict_paymaster:${CPREDICT_STACK_PAYMASTER_PASSWORD}@postgres/cpredict_paymaster?sslmode=disable",
+        "CPREDICT_RELAY_RPC_URL": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}",
+        "CPREDICT_RELAY_CHAIN_ID": "421614",
+        "CPREDICT_RELAY_FACTORY_ADDRESS": "${CPREDICT_RELAY_FACTORY_ADDRESS:?run deploy:sync first}",
+        "CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS": "${CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS:?run deploy:sync first}",
+        "CPREDICT_RELAY_PERMIT2_ADDRESS": "${CPREDICT_RELAY_PERMIT2_ADDRESS:?run deploy:sync first}",
+        "CPREDICT_RELAY_EXPECTED_SENDER": "${CPREDICT_RELAY_EXPECTED_SENDER:?set the KMS relayer address}",
+        "CPREDICT_RELAY_MAX_DEADLINE_SECONDS": "900",
+        "CPREDICT_RELAY_MAX_GAS": "370000",
+        "CPREDICT_RELAY_MAX_TRANSACTION_FEE_WEI": "10000000000000000"
+      },
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH:-/dev/null}",
+          "target": "/run/cpredict/permit2-relay-adapter.mjs",
+          "read_only": true
+        }
+      ],
+      "ports": ["127.0.0.1:${CPREDICT_STACK_RELAY_PORT:-8792}:8792"],
+      "read_only": true,
+      "tmpfs": ["/tmp:rw,noexec,nosuid,size=16m"],
+      "security_opt": ["no-new-privileges:true"],
+      "cap_drop": ["ALL"],
+      "healthcheck": {"test": ["CMD", "node", "-e", "fetch('http://127.0.0.1:8792/readyz').then(r=>{if(!r.ok)process.exit(1)})"], "interval": "10s", "timeout": "5s", "retries": 12, "start_period": "15s"},
+      "networks": ["app", "data"],
+      "deploy": {"resources": {"limits": {"cpus": "1.0", "memory": "512M"}}},
+      "logging": {"driver": "json-file", "options": {"max-size": "10m", "max-file": "3"}}
     }
   },
   "networks": {

@@ -11,6 +11,7 @@ describe("web demo development proxy", () => {
       "https://sepolia-rollup.arbitrum.io",
     );
     expect(proxy["/indexer"]?.target).toBe("http://127.0.0.1:8787");
+    expect(proxy["/relay"]?.target).toBe("http://127.0.0.1:8792");
     expect(proxy["/runtime-config.json"]).toBeUndefined();
     expect(proxy["/metadata"]).toBeUndefined();
   });
@@ -23,6 +24,7 @@ describe("web demo development proxy", () => {
       "/rpc",
       "/indexer",
       "/metadata",
+      "/relay",
     ]) {
       expect(proxy[path]).toMatchObject({
         target: "https://101.32.241.211",

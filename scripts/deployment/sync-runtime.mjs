@@ -70,10 +70,16 @@ const PAYMENT_TOKENS = Object.freeze({
 
 export function parseSyncArgs(argv) {
   if (argv.length === 0 || !["candidate", "final"].includes(argv[0]))
-    throw new Error("usage: deploy:sync -- candidate|final [options]");
+    throw new Error("usage: deploy:sync -- candidate|final [options] [--permit2-relay]");
   const output = { mode: argv[0] };
   for (let index = 1; index < argv.length; index += 1) {
     const flag = argv[index];
+    if (flag === "--permit2-relay") {
+      if (output.permit2RelayEnabled === true)
+        throw new Error(`duplicate option ${flag}`);
+      output.permit2RelayEnabled = true;
+      continue;
+    }
     const value = argv[++index];
     if (value === undefined || value.startsWith("--"))
       throw new Error(`${flag}: missing value`);
@@ -96,7 +102,7 @@ export function parseSyncArgs(argv) {
   return output;
 }
 
-export function buildRuntimePackage({ mode, deployment, deploymentBlock, inputSha256 }) {
+export function buildRuntimePackage({ mode, deployment, deploymentBlock, inputSha256, permit2RelayEnabled = false }) {
   if (deployment.chainId !== CHAIN_ID) throw new Error(`deployment chainId must equal ${CHAIN_ID}`);
   if (mode === "candidate" && deployment.status !== "BOOTSTRAP_SCHEDULED_NOT_FINAL")
     throw new Error("candidate package requires BOOTSTRAP_SCHEDULED_NOT_FINAL input");
@@ -161,6 +167,7 @@ export function buildRuntimePackage({ mode, deployment, deploymentBlock, inputSh
     factory: normalizedAddresses.factory,
     inputSha256,
     sourceManifestSha256,
+    permit2RelayEnabled,
   }).slice(0, 24);
   const runtimeRoot = `runtime/arbitrum-sepolia/${identity}`;
   const runtimeConfig = {
@@ -181,6 +188,7 @@ export function buildRuntimePackage({ mode, deployment, deploymentBlock, inputSh
     paymentToken,
     indexer: { enabled: true, basePath: "/indexer" },
     metadata: { enabled: true, basePath: "/metadata" },
+    permit2Relay: { enabled: permit2RelayEnabled, basePath: "/relay" },
     evidence: { uploadEnabled: false, endpointPath: "/evidence" },
   };
   const deploymentAddresses = {
@@ -212,6 +220,9 @@ export function buildRuntimePackage({ mode, deployment, deploymentBlock, inputSh
     CPREDICT_PAYMASTER_MAX_COST_PER_REQUEST: String(budgets.request),
     CPREDICT_PAYMASTER_MAX_COST_PER_USER_DAY: String(budgets.userDay),
     CPREDICT_PAYMASTER_MAX_COST_GLOBAL_DAY: String(budgets.globalDay),
+    CPREDICT_RELAY_FACTORY_ADDRESS: normalizedAddresses.factory,
+    CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS: normalizedExternal.usdc,
+    CPREDICT_RELAY_PERMIT2_ADDRESS: normalizedExternal.permit2,
   };
   const files = {
     "web-demo/runtime-config.json": prettyJson(runtimeConfig),
@@ -352,6 +363,7 @@ async function main(argv = process.argv.slice(2)) {
     deployment,
     deploymentBlock,
     inputSha256,
+    permit2RelayEnabled: options.permit2RelayEnabled === true,
   });
   const result = await writeRuntimePackage(pkg, {
     outputRoot: options.output ? resolveInput(options.output) : RUNTIME_BOUNDARY,

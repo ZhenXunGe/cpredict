@@ -315,6 +315,7 @@ export function snapshotTables(kind) {
     "sponsor_budget_global_usage",
     "sponsor_budget_user_usage",
     "sponsor_budget_leases",
+    "permit2_relay_intents",
   ];
   if (kind === "metadata") return [
     "metadata_challenges",

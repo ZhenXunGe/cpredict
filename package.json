@@ -16,6 +16,7 @@
     "demo:test": "vitest run examples/web-demo/test",
     "build:offchain": "tsc -p tsconfig.json",
     "start:paymaster-service": "node dist/offchain/paymaster-service/src/main.js",
+    "start:permit2-relay-service": "node dist/offchain/permit2-relay-service/src/main.js",
     "start:metadata-service": "node dist/offchain/metadata-service/src/main.js",
     "check:offchain": "tsc -p tsconfig.json --noEmit",
     "test:offchain": "vitest run",

@@ -20,6 +20,7 @@ import {
   BUY_WITH_PERMIT2_SELECTOR,
   CpredictClient,
   classifyProtocolError,
+  createHttpPermit2BuyRelayer,
   type CreateMarketResult,
   type MarketRules,
   type TransactionResult,
@@ -684,7 +685,7 @@ export default function App() {
         <main className="page-grid">
           <section className="main-column">
             {route === "overview" ? <Overview runtime={runtime} trust={trust} wallet={wallet} market={market} protocol={protocolSnapshot} paymentToken={paymentToken} paymentTokenBalance={paymentTokenBalance} writeReady={writeReady} busy={operationBusy} onMint={handleSandboxMint} /> : null}
-            {route === "markets" ? <MarketPage marketAddress={marketAddress} setMarketAddress={setMarketAddress} market={market} marketRules={selectedMarketRules} account={accountSnapshot} protocol={protocolSnapshot} onLoad={handleMarketLoad} onSelect={handleMarketSelect} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} busy={operationBusy} client={client} wallet={wallet} trust={trust} paymentTokenSymbol={paymentTokenSymbol} permit2Reusable={permit2Reusable} writeReady={writeReady} execute={executeOperation} /> : null}
+            {route === "markets" ? <MarketPage marketAddress={marketAddress} setMarketAddress={setMarketAddress} market={market} marketRules={selectedMarketRules} account={accountSnapshot} protocol={protocolSnapshot} onLoad={handleMarketLoad} onSelect={handleMarketSelect} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} permit2RelayBasePath={runtime?.config.permit2Relay.enabled === true ? runtime.config.permit2Relay.basePath : null} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} busy={operationBusy} client={client} publicClient={publicClient} wallet={wallet} trust={trust} paymentTokenSymbol={paymentTokenSymbol} permit2Reusable={permit2Reusable} writeReady={writeReady} execute={executeOperation} /> : null}
             {route === "create" ? <CreatePage writeReady={writeReady} trust={trust} client={client} wallet={wallet} account={accountSnapshot} protocol={protocolSnapshot} paymentTokenSymbol={paymentTokenSymbol} metadataBasePath={runtime?.config.metadata.enabled === true ? runtime.config.metadata.basePath : null} busy={operationBusy} execute={executeOperation} onMarketCreated={handleMarketCreated} /> : null}
             {route === "positions" ? <PositionsPage market={market} account={accountSnapshot} wallet={wallet} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} targetBlock={positionTargetBlock} onOpenMarket={(address) => void handleMarketSelect(address, null)} /> : null}
             {route === "marketplace" ? <MarketplacePage writeReady={writeReady} market={market} account={accountSnapshot} trust={trust} client={client} paymentTokenSymbol={paymentTokenSymbol} indexerEnabled={runtime?.config.indexer.enabled === true} indexerBasePath={runtime?.config.indexer.basePath ?? "/indexer"} chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID} selectedListing={selectedMarketplaceListing} refreshVersion={marketplaceRefreshVersion} onSelectListing={(listing) => void handleMarketplaceListingSelect(listing)} onListingChange={handleMarketplaceListingChange} /> : null}
@@ -877,9 +878,11 @@ export function MarketPage(props: {
   indexerEnabled: boolean;
   indexerBasePath: string;
   metadataBasePath: string | null;
+  permit2RelayBasePath: string | null;
   chainId: number;
   busy: boolean;
   client: CpredictClient | null;
+  publicClient: PublicClient | null;
   wallet: ConnectedWallet | null;
   trust: TrustReport | null;
   paymentTokenSymbol: string;
@@ -919,10 +922,12 @@ export function MarketPage(props: {
             outcomeLabels={props.marketRules?.outcomes ?? null}
             account={props.account}
             client={props.client}
+            publicClient={props.publicClient}
             wallet={props.wallet}
             trust={props.trust}
             paymentTokenSymbol={props.paymentTokenSymbol}
             permit2Mode={props.permit2Reusable && props.market.permit2Enabled}
+            permit2RelayBasePath={props.permit2RelayBasePath}
             writeReady={props.writeReady}
             primaryBuyOpen={displayState?.primaryBuyOpen === true}
             busy={props.busy}
@@ -946,15 +951,17 @@ export function MarketPage(props: {
   );
 }
 
-export function BuyCard({ market, outcomeLabels, account, client, wallet, trust, paymentTokenSymbol, permit2Mode, writeReady, primaryBuyOpen, busy, execute }: {
+export function BuyCard({ market, outcomeLabels, account, client, publicClient, wallet, trust, paymentTokenSymbol, permit2Mode, permit2RelayBasePath, writeReady, primaryBuyOpen, busy, execute }: {
   market: MarketSnapshot;
   outcomeLabels: readonly string[] | null;
   account: AccountSnapshot | null;
   client: CpredictClient | null;
+  publicClient: PublicClient | null;
   wallet: ConnectedWallet | null;
   trust: TrustReport | null;
   paymentTokenSymbol: string;
   permit2Mode: boolean;
+  permit2RelayBasePath: string | null;
   writeReady: boolean;
   primaryBuyOpen: boolean;
   busy: boolean;
@@ -1049,7 +1056,43 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
         chainId: BigInt(ARBITRUM_SEPOLIA_CHAIN_ID),
       });
       const signature = await wallet.walletClient.signTypedData({ account: wallet.account, ...typed });
-      await execute("Permit2 primary buy", () => client.buyWithPermit2({ vault: market.address, owner: wallet.address, outcomeId, desiredUnits: units, minimumUnits: units, maximumPayment, deadline, permit, signature }));
+      const relayInput = {
+        chainId: BigInt(ARBITRUM_SEPOLIA_CHAIN_ID),
+        factory: trust.addresses.contracts.factory,
+        permit2: trust.addresses.permit2,
+        vault: market.address,
+        owner: wallet.address,
+        outcomeId,
+        desiredUnits: units,
+        minimumUnits: units,
+        maximumPayment,
+        deadline,
+        permit,
+        signature,
+      } as const;
+      if (permit2RelayBasePath !== null) {
+        if (publicClient === null) throw new Error("relayer 链上确认客户端尚未就绪");
+        const relayer = createHttpPermit2BuyRelayer({
+          baseUrl: new URL(permit2RelayBasePath, globalThis.location.origin),
+        });
+        await execute("Permit2 relayed primary buy", async () => {
+          const submission = await relayer.relayBuy(relayInput);
+          const receipt = await publicClient.waitForTransactionReceipt({
+            hash: submission.transactionHash,
+            confirmations: 1,
+          });
+          if (receipt.status !== "success") {
+            throw new Error(`relayed transaction reverted: ${submission.transactionHash}`);
+          }
+          return {
+            hash: submission.transactionHash,
+            blockNumber: receipt.blockNumber,
+            gasUsed: receipt.gasUsed,
+          };
+        });
+      } else {
+        await execute("Permit2 primary buy", () => client.buyWithPermit2(relayInput));
+      }
     } catch (error: unknown) {
       setFormError(messageOf(error));
     }
@@ -1086,7 +1129,7 @@ export function BuyCard({ market, outcomeLabels, account, client, wallet, trust,
           onApprove={() => void approveVault()}
         />
       ) : (
-        <p className="callout">页头已开启可复用 Permit2 授权；每次购买仍会签署绑定 chainId、Vault、outcome、金额、nonce 与 deadline 的一次性 witness，页面不保存签名。</p>
+        <p className="callout">页头已开启可复用 Permit2 授权；每次购买仍会签署绑定 chainId、Vault、outcome、金额、nonce 与 deadline 的一次性 witness，页面不保存签名。{permit2RelayBasePath === null ? " 当前由钱包继续发送链上交易。" : " Relayer 已配置，本次 witness 签名后由服务代发，不再弹出第二次交易签名。"}</p>
       )}
     </Panel>
   );

@@ -9,21 +9,21 @@ import {
 
 test("accepts the complete PostgreSQL integration inventory with zero skips", () => {
   assert.deepEqual(validatePostgresIntegrationResult(validReport(), "/repo"), {
-    files: 3,
-    tests: 7,
-    passed: 7,
+    files: 4,
+    tests: 10,
+    passed: 10,
     skipped: 0,
   });
 });
 
 test("rejects a skipped PostgreSQL integration suite even when Vitest success is true", () => {
   const report = validReport();
-  report.numPassedTests = 6;
+  report.numPassedTests = 9;
   report.numPendingTests = 1;
   report.testResults[1].assertionResults[0].status = "skipped";
   assert.throws(
     () => validatePostgresIntegrationResult(report, "/repo"),
-    /pass exactly 7 tests/,
+    /pass exactly 10 tests/,
   );
 });
 
@@ -32,15 +32,15 @@ test("rejects missing, failed or unexpected PostgreSQL integration files", () =>
   missing.testResults.pop();
   assert.throws(
     () => validatePostgresIntegrationResult(missing, "/repo"),
-    /exactly 3 test files/,
+    /exactly 4 test files/,
   );
 
   const failed = validReport();
-  failed.numPassedTests = 6;
+  failed.numPassedTests = 9;
   failed.numFailedTests = 1;
   assert.throws(
     () => validatePostgresIntegrationResult(failed, "/repo"),
-    /pass exactly 7 tests/,
+    /pass exactly 10 tests/,
   );
 
   const unexpected = validReport();
@@ -61,8 +61,8 @@ test("runner refuses to start without TEST_DATABASE_URL", () => {
 function validReport() {
   return {
     success: true,
-    numTotalTests: 7,
-    numPassedTests: 7,
+    numTotalTests: 10,
+    numPassedTests: 10,
     numFailedTests: 0,
     numPendingTests: 0,
     numTodoTests: 0,

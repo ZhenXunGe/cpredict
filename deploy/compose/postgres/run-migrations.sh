@@ -17,7 +17,10 @@ case "$kind" in
   paymaster)
     runtime_role=cpredict_paymaster
     password_var=CPREDICT_STACK_PAYMASTER_PASSWORD
-    migrations=(/migrations/001_sponsor_budget.sql)
+    migrations=(
+      /migrations/001_sponsor_budget.sql
+      /migrations/002_permit2_relay_intents.sql
+    )
     ;;
   metadata)
     runtime_role=cpredict_metadata

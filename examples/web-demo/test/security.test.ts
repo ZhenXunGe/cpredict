@@ -21,7 +21,7 @@ describe("web demo frontend security invariants", () => {
     }
   });
 
-  it("keeps deployment, RPC, indexer, metadata and evidence endpoints same-origin", () => {
+  it("keeps deployment, RPC, indexer, metadata, relay and evidence endpoints same-origin", () => {
     const config = JSON.parse(readFileSync(new URL("../public/runtime-config.json", import.meta.url), "utf8")) as Record<string, unknown>;
     const serialized = JSON.stringify(config);
     expect(serialized).not.toContain("privateKey");
@@ -30,6 +30,7 @@ describe("web demo frontend security invariants", () => {
     expect(serialized).toContain('"rpcPath":"/rpc"');
     expect(serialized).toContain('"manifestPath":"/deployment/final.json"');
     expect(serialized).toContain('"basePath":"/metadata"');
+    expect(serialized).toContain('"basePath":"/relay"');
   });
 
   it("ships precompiled validators without eval or CommonJS runtime loaders", () => {

@@ -60,6 +60,7 @@ test("candidate package remains DEBUG and never emits final.json", () => {
   assert.equal(result.files["web-demo/deployment/final.json"], undefined);
   assert.match(result.files["web-demo/deployment/debug-addresses.json"], /DEBUG_NOT_FINALIZED/);
   assert.match(result.files["web-demo/runtime-config.json"], /canonical-usdc/);
+  assert.equal(JSON.parse(result.files["web-demo/runtime-config.json"]).permit2Relay.enabled, false);
   assert.match(result.files["compose.env"], /CPREDICT_INDEXER_DEPLOYMENT_BLOCK=123/);
   assert.doesNotMatch(result.files["compose.env"], /RPC|PASSWORD|PRIVATE|TOKEN/);
 });
@@ -95,6 +96,26 @@ test("argument parser rejects ambiguous or duplicate input", () => {
   });
   assert.throws(() => parseSyncArgs(["candidate", "--pending", "x", "--pending", "y"]), /duplicate/);
   assert.throws(() => parseSyncArgs(["release"]), /usage/);
+  assert.deepEqual(parseSyncArgs(["candidate", "--permit2-relay"]), {
+    mode: "candidate", permit2RelayEnabled: true,
+  });
+  assert.throws(() => parseSyncArgs(["candidate", "--permit2-relay", "--permit2-relay"]), /duplicate/);
+});
+
+test("relay-enabled packages bind the runtime identity and same-origin relay path", () => {
+  const disabled = buildRuntimePackage({
+    mode: "candidate", deployment: pending, deploymentBlock: 123,
+    inputSha256: "a".repeat(64),
+  });
+  const enabled = buildRuntimePackage({
+    mode: "candidate", deployment: pending, deploymentBlock: 123,
+    inputSha256: "a".repeat(64), permit2RelayEnabled: true,
+  });
+  assert.notEqual(enabled.identity, disabled.identity);
+  assert.deepEqual(JSON.parse(enabled.files["web-demo/runtime-config.json"]).permit2Relay, {
+    enabled: true,
+    basePath: "/relay",
+  });
 });
 
 test("package file hashes bind every generated payload", async () => {

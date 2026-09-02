@@ -42,12 +42,12 @@ test("Compose and restore drill pin the reviewed PostgreSQL image digest", () =>
 test("Dockerfiles pin reviewed Node and Nginx image digests", () => {
   const node = locked("node");
   const nginx = locked("nginx");
-  assert.equal(offchain.match(new RegExp(`FROM ${node}`, "g"))?.length, 5);
+  assert.equal(offchain.match(new RegExp(`FROM ${node}`, "g"))?.length, 6);
   assert.equal(
     offchain.match(
       /rm -rf \/opt\/yarn-v1\.22\.22 \/usr\/local\/lib\/node_modules\/npm/g,
     )?.length,
-    3,
+    4,
   );
   assert.match(demo, new RegExp(`FROM ${node} AS build`));
   assert.match(demo, new RegExp(`FROM ${nginx}\\n`));
@@ -59,18 +59,18 @@ test("offchain runtime images include their compiled SDK dependency", () => {
     offchain.match(
       /COPY --from=build --chown=node:node \/app\/dist\/offchain\/sdk \.\/dist\/offchain\/sdk/g,
     )?.length,
-    3,
+    4,
   );
 });
 
 test("application images validate and publish the exact source revision", () => {
   assert.equal(
     offchain.match(/ARG CPREDICT_IMAGE_REVISION/g)?.length,
-    3,
+    4,
   );
   assert.equal(
     offchain.match(/LABEL org\.opencontainers\.image\.revision=/g)?.length,
-    3,
+    4,
   );
   assert.match(demo, /ARG CPREDICT_IMAGE_REVISION/);
   assert.match(demo, /LABEL org\.opencontainers\.image\.revision=/);
@@ -137,7 +137,7 @@ test("CI builds and scans every application image with the pinned scanner", asyn
   assert.match(workflow, /npm run scan:container-config/);
   assert.equal(
     workflow.match(/--build-arg "CPREDICT_IMAGE_REVISION=\$GITHUB_SHA"/g)?.length,
-    4,
+    5,
   );
   assert.match(
     workflow,
@@ -150,6 +150,7 @@ test("CI builds and scans every application image with the pinned scanner", asyn
   for (const image of [
     "cpredict-indexer:ci",
     "cpredict-paymaster:ci",
+    "cpredict-permit2-relay:ci",
     "cpredict-metadata:ci",
     "cpredict-web-demo:ci",
   ])

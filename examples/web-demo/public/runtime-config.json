@@ -27,6 +27,10 @@
     "enabled": true,
     "basePath": "/metadata"
   },
+  "permit2Relay": {
+    "enabled": false,
+    "basePath": "/relay"
+  },
   "evidence": {
     "uploadEnabled": false,
     "endpointPath": "/evidence"

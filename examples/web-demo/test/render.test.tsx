@@ -359,10 +359,12 @@ describe("web demo application shell", () => {
         outcomeLabels={["Yes", "No"]}
         account={null}
         client={null}
+        publicClient={null}
         wallet={null}
         trust={null}
         paymentTokenSymbol="ctUSD"
         permit2Mode={false}
+        permit2RelayBasePath={null}
         writeReady
         primaryBuyOpen
         busy={false}
@@ -403,10 +405,12 @@ describe("web demo application shell", () => {
         outcomeLabels={["Yes", "No"]}
         account={null}
         client={null}
+        publicClient={null}
         wallet={null}
         trust={null}
         paymentTokenSymbol="ctUSD"
         permit2Mode
+        permit2RelayBasePath="/relay"
         writeReady
         primaryBuyOpen
         busy={false}
@@ -415,6 +419,7 @@ describe("web demo application shell", () => {
     );
     expect(html).toContain("签名并购买");
     expect(html).toContain("页头已开启可复用 Permit2 授权");
+    expect(html).toContain("Relayer 已配置");
     expect(html).not.toContain("Vault allowance");
     expect(html).not.toContain('class="tabs"');
   });
@@ -456,9 +461,11 @@ describe("web demo application shell", () => {
         indexerEnabled={false}
         indexerBasePath="/indexer"
         metadataBasePath={null}
+        permit2RelayBasePath={null}
         chainId={421614}
         busy={false}
         client={null}
+        publicClient={null}
         wallet={null}
         trust={null}
         paymentTokenSymbol="ctUSD"

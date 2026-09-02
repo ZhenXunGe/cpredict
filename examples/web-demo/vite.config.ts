@@ -20,6 +20,10 @@ export function createDevelopmentProxy(
         target: "http://127.0.0.1:8787",
         rewrite: (path) => path.replace(/^\/indexer/, ""),
       },
+      "/relay": {
+        target: "http://127.0.0.1:8792",
+        rewrite: (path) => path.replace(/^\/relay/, ""),
+      },
       "/evidence": {
         target: "http://127.0.0.1:8790",
         rewrite: (path) => path.replace(/^\/evidence/, ""),
@@ -38,6 +42,7 @@ export function createDevelopmentProxy(
     "/rpc": remote(),
     "/indexer": { ...remote(), ws: true },
     "/metadata": remote(),
+    "/relay": remote(),
     "/evidence": {
       target: "http://127.0.0.1:8790",
       rewrite: (path) => path.replace(/^\/evidence/, ""),

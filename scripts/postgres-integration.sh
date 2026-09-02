@@ -175,6 +175,15 @@ node "$repo_root/scripts/postgres-assert-vitest-report.mjs" \
   "$postgres_run_root/paymaster-postgresql.json" \
   paymaster-postgresql
 TEST_DATABASE_URL="$test_database_url" "$repo_root/node_modules/.bin/vitest" run \
+  offchain/permit2-relay-service/test/postgres-intent-store.integration.test.ts \
+  --maxWorkers=1 \
+  --reporter=verbose \
+  --reporter=json \
+  --outputFile.json="$postgres_run_root/relay-postgresql.json"
+node "$repo_root/scripts/postgres-assert-vitest-report.mjs" \
+  "$postgres_run_root/relay-postgresql.json" \
+  relay-postgresql
+TEST_DATABASE_URL="$test_database_url" "$repo_root/node_modules/.bin/vitest" run \
   offchain/indexer/test/postgres.integration.test.ts \
   --maxWorkers=1 \
   --reporter=verbose \
@@ -193,4 +202,4 @@ node "$repo_root/scripts/postgres-assert-vitest-report.mjs" \
   "$postgres_run_root/metadata-postgresql.json" \
   metadata-postgresql
 
-printf 'POSTGRES_GATE_TOTALS=11/11/0/0/0\n'
+printf 'POSTGRES_GATE_TOTALS=14/14/0/0/0\n'

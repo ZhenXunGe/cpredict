@@ -29,6 +29,7 @@ const validRuntime = {
   },
   indexer: { enabled: false, basePath: "/indexer" },
   metadata: { enabled: true, basePath: "/metadata" },
+  permit2Relay: { enabled: false, basePath: "/relay" },
   evidence: { uploadEnabled: false, endpointPath: "/evidence" },
 };
 
@@ -37,6 +38,7 @@ describe("web demo runtime trust configuration", () => {
     expect(parseRuntimeConfig(validRuntime).chain.id).toBe(421614);
     expect(() => parseRuntimeConfig({ ...validRuntime, chain: { ...validRuntime.chain, id: 84532 } })).toThrow(/invalid runtime config/);
     expect(() => parseRuntimeConfig({ ...validRuntime, indexer: { enabled: true, basePath: "https://attacker.invalid" } })).toThrow(/invalid runtime config/);
+    expect(() => parseRuntimeConfig({ ...validRuntime, permit2Relay: { enabled: true, basePath: "https://attacker.invalid" } })).toThrow(/invalid runtime config/);
   });
 
   it("rejects unknown fields and unfinalized manifests", () => {

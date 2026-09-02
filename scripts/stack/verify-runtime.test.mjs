@@ -73,6 +73,26 @@ test("runtime verifier fails on wildcard publishing, unhealthy services or skipp
   );
 });
 
+test("runtime verifier includes the relay and shared migration only when requested", () => {
+  const baseRows = [
+    row("postgres"),
+    row("bootstrap-databases", { State: "exited", Health: "", ExitCode: 0 }),
+    row("migrate-indexer", { State: "exited", Health: "", ExitCode: 0 }),
+    row("migrate-metadata", { State: "exited", Health: "", ExitCode: 0 }),
+    row("migrate-paymaster", { State: "exited", Health: "", ExitCode: 0 }),
+    row("indexer", { Publishers: [{ URL: "127.0.0.1" }] }),
+    row("metadata", { Publishers: [{ URL: "127.0.0.1" }] }),
+    row("web-demo", { Publishers: [{ URL: "127.0.0.1" }] }),
+    row("permit2-relay", { Publishers: [{ URL: "127.0.0.1" }] }),
+  ];
+  const checks = verifyComposeState(baseRows, { relay: true });
+  assert.equal(checks.some((check) => check.status === "FAIL"), false);
+  assert.equal(
+    checks.some((check) => check.name === "permit2-relay container"),
+    true,
+  );
+});
+
 test("runtime verifier proves resource and least-privilege settings were applied by Docker", () => {
   const checks = verifyHostConfig("indexer", {
     Memory: 1024,
@@ -156,6 +176,7 @@ test("runtime HTTP verification binds readiness, headers, config, RPC chain and 
           chain: { id: 421614, rpcPath: "/rpc" },
           indexer: { basePath: "/indexer" },
           metadata: { enabled: true, basePath: "/metadata" },
+          permit2Relay: { enabled: false, basePath: "/relay" },
           evidence: { uploadEnabled: false, endpointPath: "/evidence" },
         }),
         { status: 200 },
@@ -184,6 +205,7 @@ test("runtime HTTP verification rejects a public edge that blocks Metadata POST"
           chain: { id: 421614, rpcPath: "/rpc" },
           indexer: { basePath: "/indexer" },
           metadata: { enabled: true, basePath: "/metadata" },
+          permit2Relay: { enabled: false, basePath: "/relay" },
           evidence: { uploadEnabled: false, endpointPath: "/evidence" },
         }),
         { status: 200 },

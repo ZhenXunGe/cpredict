@@ -229,7 +229,7 @@ function collectRawEvidence({
     const text = readFileSync(join(outputRoot, logPath), "utf8");
     for (const marker of [
       "POSTGRES_VERSION=postgres (PostgreSQL) 17.10",
-      "POSTGRES_GATE_TOTALS=9/9/0/0/0",
+      "POSTGRES_GATE_TOTALS=14/14/0/0/0",
       "POSTGRES_STATUS_AFTER_STOP=3",
       "POSTGRES_READY_AFTER_STOP=2",
       "POSTGRES_DATA_DIRECTORY_REMOVED=true",

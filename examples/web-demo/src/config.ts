@@ -70,6 +70,7 @@ export interface RuntimeConfig {
   paymentToken: PaymentTokenConfig;
   indexer: { enabled: boolean; basePath: string };
   metadata: { enabled: boolean; basePath: string };
+  permit2Relay: { enabled: boolean; basePath: string };
   evidence: { uploadEnabled: boolean; endpointPath: string };
 }
 

@@ -29,7 +29,7 @@ export function parseComposePs(text) {
   return value;
 }
 
-export function verifyComposeState(rows, { sponsorship = false } = {}) {
+export function verifyComposeState(rows, { sponsorship = false, relay = false } = {}) {
   const checks = [];
   const byService = new Map(rows.map((row) => [row.Service, row]));
   const running = [
@@ -38,6 +38,7 @@ export function verifyComposeState(rows, { sponsorship = false } = {}) {
     "metadata",
     "web-demo",
     ...(sponsorship ? ["paymaster"] : []),
+    ...(relay ? ["permit2-relay"] : []),
   ];
   for (const service of running) {
     const row = byService.get(service);
@@ -57,7 +58,7 @@ export function verifyComposeState(rows, { sponsorship = false } = {}) {
     "bootstrap-databases",
     "migrate-indexer",
     "migrate-metadata",
-    ...(sponsorship ? ["migrate-paymaster"] : []),
+    ...(sponsorship || relay ? ["migrate-paymaster"] : []),
   ]) {
     const row = byService.get(service);
     checks.push({
@@ -75,6 +76,7 @@ export function verifyComposeState(rows, { sponsorship = false } = {}) {
     "metadata",
     "web-demo",
     ...(sponsorship ? ["paymaster"] : []),
+    ...(relay ? ["permit2-relay"] : []),
   ]) {
     const row = byService.get(service);
     const publishers = Array.isArray(row?.Publishers) ? row.Publishers : [];
@@ -290,6 +292,7 @@ export async function verifyHttpRuntime({ baseUrl, fetchFn = fetch }) {
 export async function verifyRuntime({
   configuration,
   sponsorship = false,
+  relay = false,
   run = runCommand,
   fetchFn = fetch,
   root = ROOT,
@@ -311,6 +314,7 @@ export async function verifyRuntime({
     resolve(root, "compose.yaml"),
   ];
   if (sponsorship) base.push("--profile", "sponsorship");
+  if (relay) base.push("--profile", "relay");
   const ps = run(
     "docker",
     [...base, "ps", "--all", "--format", "json"],
@@ -326,13 +330,14 @@ export async function verifyRuntime({
       },
     ];
   const rows = parseComposePs(ps.stdout);
-  const checks = verifyComposeState(rows, { sponsorship });
+  const checks = verifyComposeState(rows, { sponsorship, relay });
   for (const service of [
     "postgres",
     "indexer",
     "metadata",
     "web-demo",
     ...(sponsorship ? ["paymaster"] : []),
+    ...(relay ? ["permit2-relay"] : []),
   ]) {
     const row = rows.find((candidate) => candidate.Service === service);
     if (!row?.ID) continue;
@@ -420,12 +425,13 @@ if (
   Promise.resolve()
     .then(async () => {
       const sponsorship = process.argv.slice(2).includes("--sponsorship");
+      const relay = process.argv.slice(2).includes("--relay");
       const unknown = process.argv
         .slice(2)
-        .filter((value) => value !== "--sponsorship");
+        .filter((value) => value !== "--sponsorship" && value !== "--relay");
       if (unknown.length > 0) throw new Error(`unknown option ${unknown[0]}`);
-      const configuration = await loadStackConfiguration({ sponsorship });
-      const checks = await verifyRuntime({ configuration, sponsorship });
+      const configuration = await loadStackConfiguration({ sponsorship, relay });
+      const checks = await verifyRuntime({ configuration, sponsorship, relay });
       for (const check of checks)
         process.stdout.write(
           `${check.status.padEnd(4)} ${check.name}: ${check.detail}\n`,
