@@ -21,11 +21,12 @@
 
 当前 Web Demo 是“合约验证与交互控制台”，不是完整消费者预测市场产品。甲方开始测试前，应了解：
 
-- “市场”页通过只读 Indexer 提供市场目录，“结算与作废”页会列出已到 `closeAt`、尚未终局的市场；
+- “市场”页通过只读 Indexer 提供市场目录；“已终局”筛选包含已结算、创建者作废和超时作废；
+- “结算与作废”页同时列出待结算市场和已终局市场；领取与退款从已终局列表进入，不必绕去市场页；
 - Indexer 未启用、未同步或目标市场尚未出现时，仍需交付方提供已知 Market Vault 作为回退；
-- 创建市场页面只支持 `1–90 天`期限，不能从 UI 创建 15 分钟开放期市场；
-- 15 分钟快速验收市场必须由交付方提前创建并提供 Vault；
-- C2C 创建成功后会从链上回执自动提取 Listing ID；选择活跃挂单会自动加载对应 Vault、价格和剩余数量；
+- Indexer 目录和 C2C 挂单可能滞后于链上快照；UI 必须显示“同步中”，并以链上结果为准，不要把目录未更新当成交易失败；
+- 创建市场期限为 `11–129600` 分钟，默认 15 分钟可用；
+- C2C 创建成功后会从链上回执自动提取 Listing ID；选择活跃挂单会自动加载对应 Vault、价格和剩余数量；活跃挂单按当前 Vault 过滤；
 - C2C 页面仅开放 allowance fill，Permit2 fill 只存在于 SDK；
 - settlement evidence uploader 当前关闭，体验时不填写 evidence URI/summary；
 - Paymaster 仅只读展示，所有钱包交易仍需要测试 ETH 支付 gas；
@@ -58,21 +59,21 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 
 交付方在测试前填写以下公开信息，不填写任何私钥：
 
-| 项目 | 测试值 |
-| --- | --- |
-| Web Demo URL |  |
-| 甲方测试日期/时区 |  |
-| 浏览器与版本 |  |
-| A / Creator 钱包公开地址 |  |
-| B / Trader 钱包公开地址 |  |
-| C / Counterparty 钱包公开地址 |  |
-| OPEN 市场 Vault |  |
-| C2C 市场 Vault |  |
-| Resolve 市场 Vault / 正确 outcome |  |
-| Creator void 市场 Vault |  |
-| Timeout 市场 Vault / 可执行时间 |  |
-| 预置活跃挂单或创建方式 |  |
-| 问题反馈联系人 |  |
+| 项目                              | 测试值 |
+| --------------------------------- | ------ |
+| Web Demo URL                      |        |
+| 甲方测试日期/时区                 |        |
+| 浏览器与版本                      |        |
+| A / Creator 钱包公开地址          |        |
+| B / Trader 钱包公开地址           |        |
+| C / Counterparty 钱包公开地址     |        |
+| OPEN 市场 Vault                   |        |
+| C2C 市场 Vault                    |        |
+| Resolve 市场 Vault / 正确 outcome |        |
+| Creator void 市场 Vault           |        |
+| Timeout 市场 Vault / 可执行时间   |        |
+| 预置活跃挂单或创建方式            |        |
+| 问题反馈联系人                    |        |
 
 建议为 A/B/C 使用三个独立浏览器 Profile。不要把三个钱包的助记词或私钥写入本表、截图、聊天或测试
 报告。
@@ -81,14 +82,14 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 
 打开 Web Demo 后先检查：
 
-| 检查项 | 可以开始 | 必须停止 |
-| --- | --- | --- |
-| 页面标题 | `Cpredict 合约验证控制台` | 页面无法打开、白屏或持续报错 |
-| 网络 | `Arbitrum Sepolia / 421614` | 主网、其他测试网或网络未知 |
-| 顶部状态 | `DEBUG` | `LOCKED` |
-| 支付币 | `ctUSD`、`TEST TOKEN`、明确无真实价值 | 显示真实资产但交付方没有书面确认 |
-| 钱包 | 能发现已安装钱包并连接 | `未发现钱包` 或连接后地址不符 |
-| 写入门禁 | `DEBUG enabled` | `LOCKED` |
+| 检查项   | 可以开始                              | 必须停止                                      |
+| -------- | ------------------------------------- | --------------------------------------------- |
+| 页面标题 | `Cpredict 合约验证控制台`             | 页面无法打开、白屏或持续报错                  |
+| 网络     | `Arbitrum Sepolia / 421614`           | 主网、其他测试网或网络未知                    |
+| 顶部状态 | `DEBUG`                               | `LOCKED`                                      |
+| 支付币   | `ctUSD`、`TEST TOKEN`、明确无真实价值 | 显示真实资产但交付方没有书面确认              |
+| 钱包     | 能发现已安装钱包并连接                | `未发现钱包` 或连接后地址不符                 |
+| 写入门禁 | `DEBUG enabled`                       | `LOCKED`                                      |
 | 测试物料 | Vault、角色、正确 outcome、时间点齐全 | 要求甲方自行寻找地址、Hash、CID 或 Listing ID |
 
 任何 No-Go 出现时，记录截图和时间后停止。不要反复点击交易按钮，也不要尝试切换到主网解决。
@@ -143,9 +144,9 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 ### 场景 4：加载并理解市场
 
 1. 进入“市场”。
-2. 粘贴交付方提供的 OPEN Market Vault。
+2. 从目录选择市场，或粘贴交付方提供的 OPEN Market Vault。
 3. 点击“读取链上状态”。
-4. 核对市场状态、outcome 数量、Pool、Close at、Market cap、Creator bond、Permit2 和 Early bird。
+4. 核对市场状态、outcome 数量、Pool、Close at、Market cap、Creator bond、Permit2、Early bird 和 Wallet ctUSD。
 
 预期体验：
 
@@ -174,6 +175,7 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 - 快速双击不会发送两笔购买；
 - receipt 成功后，所选 Outcome 持仓增加 1 份；
 - 钱包 ctUSD 减少量、Pool 增加量与本次购买一致；
+- 市场页 Wallet ctUSD 与概览余额在购买成功后一致；
 - 交易失败或用户拒签后不显示持仓增加。
 
 ### 场景 6：Permit2 购买
@@ -232,6 +234,7 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 预期体验：
 
 - C2C 页面可独立浏览和选择市场；选中后当前 Vault 与固定价表单同步更新；
+- 活跃挂单只显示当前 Vault；成交后目录可能显示“挂单目录同步中”，链上 remaining=0 优先于目录；
 - 卖方持仓减少、买方持仓增加；
 - ctUSD 从买方转给卖方；
 - C2C 不改变 Market Pool 和最终 payout 规则；
@@ -246,8 +249,8 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 仅使用交付方提供的专用 Resolve 市场，且必须已到 `closeAt`。不要拿同一个市场同时测试 resolve、void
 和 timeout。
 
-1. 使用 A / Creator 加载 Resolve 市场。
-2. 打开“结算与作废”。
+1. 使用 A / Creator 打开“结算与作废”。
+2. 从“待结算市场”进入 Resolve 市场；队列高亮、URL 与表单“当前 Vault”必须一致。
 3. 核对交付方提供的正确 Outcome 和锁定规则。
 4. 当前 Sandbox 不启用 evidence uploader，因此 Evidence source URI 和 summary 均保持为空。
 5. 勾选 `I verified the locked rules and understand settlement is final.`。
@@ -258,24 +261,33 @@ Sandbox runtime，甲方不得开始测试，也不应自行在“部署验证�
 - 非 Creator 看不到 Creator resolve/creator void 表单；
 - Creator 未勾选确认前不能 Resolve；
 - closeAt 前不能结算；
-- 结算成功后状态不可逆；
+- 结算成功后状态不可逆；写入期间五颗按钮与 Resolve/Void 显示“处理中…”且不可连点；
 - 页面不会替 Creator 自动选择结果；
-- 结算结果和测试物料表一致。
+- 结算结果和测试物料表一致；
+- 终局后该市场离开待结算队列，出现在“已终局市场”。
 
 ### 场景 10：退款与领取
 
 按交付方提供的独立市场分别测试：
 
-| 市场结果 | 测试钱包 | 操作 |
-| --- | --- | --- |
-| Resolved 且持有 winning outcome | B 或 C | `Claim winnings` |
-| Resolved 且满足 early-bird | 指定钱包 | `Claim early bird` |
-| Creator void | 有 principal 的钱包 | `Refund principal` |
-| Timeout void | 有 principal 的钱包 | `Refund principal` |
-| Timeout bonus eligible | 指定钱包 | `Claim timeout bonus` |
+| 市场结果                        | 测试钱包            | 操作                  |
+| ------------------------------- | ------------------- | --------------------- |
+| Resolved 且持有 winning outcome | B 或 C              | `Claim winnings`      |
+| Resolved 且满足 early-bird      | 指定钱包            | `Claim early bird`    |
+| Creator void                    | 有 principal 的钱包 | `Refund principal`    |
+| Timeout void                    | 有 principal 的钱包 | `Refund principal`    |
+| Timeout bonus eligible          | 指定钱包            | `Claim timeout bonus` |
 
 Timeout 市场到交付方提供的 `resolutionDeadline` 后，任意钱包可先点击
-`Permissionless timeout void`，再由各自钱包领取适用款项。
+`Permissionless timeout void`，再由各自钱包领取适用款项。已终局市场可直接从结算页
+“已终局市场”进入 Claim / Refund，不必再绕去市场页。
+
+关闭页头 Permit2 开关前，页面必须提示“将发送一笔撤销 Permit2 授权的链上交易，不是购买”。
+钱包里仍可能显示“已批准授权额度”，这由 MetaMask 控制，不作为页面缺陷。
+
+链上已终局时，购买按钮应显示 `已结算` / `创建者作废` / `超时作废`，不再写“已截止，待结算”。
+顶栏抽屉与左侧导航的回执入口名称均为“回执与事件”。打开部署验证抽屉时，检查项应进入 pending，
+不得用上一轮红灯冒充当前失败。
 
 预期体验：
 
@@ -303,17 +315,17 @@ Timeout 市场到交付方提供的 `resolutionDeadline` 后，任意钱包可�
 
 至少手测以下失败场景，每个场景只触发一次，不重复发送经济交易：
 
-| 场景 | 预期表现 |
-| --- | --- |
-| 页面为 LOCKED | 所有经济写按钮不可用，说明失败原因 |
-| 钱包在错误网络 | 显示 Wrong chain，并提供“切换网络” |
-| 用户拒绝连接/签名/交易 | 不显示成功、不产生 hash、不自动重试 |
-| 快速双击购买或领取 | 最多发送一笔交易 |
-| 输入 0、负数、越界 Outcome 或过高滑点 | 页面校验或 simulation 阻止发送 |
-| 市场已关闭 | buy 不发送或链上明确拒绝 |
-| 账户在测试中切换 | 页面主动断开并要求重新连接 |
-| RPC 暂时失败 | 显示失败，不把未知结果当成功 |
-| 测试 ETH 不足 | 清楚提示 gas/余额问题，不建议切换真实资产网络 |
+| 场景                                  | 预期表现                                      |
+| ------------------------------------- | --------------------------------------------- |
+| 页面为 LOCKED                         | 所有经济写按钮不可用，说明失败原因            |
+| 钱包在错误网络                        | 显示 Wrong chain，并提供“切换网络”            |
+| 用户拒绝连接/签名/交易                | 不显示成功、不产生 hash、不自动重试           |
+| 快速双击购买或领取                    | 最多发送一笔交易                              |
+| 输入 0、负数、越界 Outcome 或过高滑点 | 页面校验或 simulation 阻止发送                |
+| 市场已关闭                            | buy 不发送或链上明确拒绝                      |
+| 账户在测试中切换                      | 页面主动断开并要求重新连接                    |
+| RPC 暂时失败                          | 显示失败，不把未知结果当成功                  |
+| 测试 ETH 不足                         | 清楚提示 gas/余额问题，不建议切换真实资产网络 |
 
 若钱包已经弹出交易并可能发送，但页面结果未知，停止操作，保存钱包中的 tx hash 并联系交付方核对
 receipt。不要再次点击同一按钮。
@@ -337,7 +349,6 @@ receipt。不要再次点击同一按钮。
 以下能力当前保持 `未提供 / 不适用 / 已知限制`，不能让甲方通过技术操作补齐：
 
 - 市场全文搜索和高级筛选；
-- 通过 UI 创建 15 分钟开放期市场；
 - 一键分享 Listing ID；
 - C2C Permit2 fill；
 - settlement evidence 上传；
@@ -345,6 +356,7 @@ receipt。不要再次点击同一按钮。
 - 移动端 C2C、结算和回执入口；
 - 刷新后持久化本会话 Activity；
 - C2C 和 Creator 结算写入自动汇总到全局回执列表；
+- 加快 Indexer 确认深度或回填速度（UI 只提示同步中，并以链上快照为准）；
 - 完整消费者产品的信息架构、内容展示和非技术化创建市场流程。
 
 如果甲方认为上述能力属于本轮验收目标，应记录为产品缺口，而不是测试失败后改成“操作不当”。
