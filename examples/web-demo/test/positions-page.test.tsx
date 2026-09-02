@@ -33,31 +33,37 @@ describe("positions page synchronization", () => {
   });
 
   it("does not convert an empty result into an empty position until sync is proven", () => {
-    const behind = renderPositions({
-      identity: "wallet",
-      items: [],
-      syncStatus: {
-        chainId: 421614,
-        indexedBlock: 304_503_617n,
-        safeBlock: 304_503_618n,
+    const behind = renderPositions(
+      {
+        identity: "wallet",
+        items: [],
+        syncStatus: {
+          chainId: 421614,
+          indexedBlock: 304_503_617n,
+          safeBlock: 304_503_618n,
+        },
+        error: "",
       },
-      error: "",
-    }, 304_503_618n);
+      304_503_618n,
+    );
     expect(behind).toContain("持仓目录同步中");
     expect(behind).not.toContain("暂无非零持仓");
 
-    const caughtUp = renderPositions({
-      identity: "wallet",
-      items: [],
-      syncStatus: {
-        chainId: 421614,
-        indexedBlock: 304_503_618n,
-        safeBlock: 304_503_618n,
+    const caughtUp = renderPositions(
+      {
+        identity: "wallet",
+        items: [],
+        syncStatus: {
+          chainId: 421614,
+          indexedBlock: 304_503_618n,
+          safeBlock: 304_503_618n,
+        },
+        error: "",
       },
-      error: "",
-    }, 304_503_618n);
+      304_503_618n,
+    );
     expect(caughtUp).toContain("暂无非零持仓");
-    expect(caughtUp).toContain("Indexer 已同步到当前安全区块");
+    expect(caughtUp).toContain("索引服务已同步到当前安全区块");
   });
 
   it("uses the receipt block as an additional synchronization target", () => {
@@ -67,11 +73,16 @@ describe("positions page synchronization", () => {
       safeBlock: 304_503_618n,
     };
     expect(indexerCaughtUp(status, 304_503_619n)).toBe(false);
-    expect(indexerCaughtUp({ ...status, indexedBlock: 304_503_619n }, 304_503_619n)).toBe(true);
+    expect(
+      indexerCaughtUp({ ...status, indexedBlock: 304_503_619n }, 304_503_619n),
+    ).toBe(true);
   });
 });
 
-function renderPositions(state: WalletPositionsState, targetBlock: bigint): string {
+function renderPositions(
+  state: WalletPositionsState,
+  targetBlock: bigint,
+): string {
   return renderToStaticMarkup(
     <WalletPositionsView
       enabled

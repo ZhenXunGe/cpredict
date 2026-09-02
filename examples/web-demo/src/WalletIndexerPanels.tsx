@@ -56,7 +56,7 @@ export function WalletActivityPanel(props: {
   );
   if (!props.enabled)
     return (
-      <Notice title="链上活动未启用" detail="当前 runtime 未开放 Indexer。" />
+      <Notice title="链上活动未启用" detail="当前运行配置未开放索引服务。" />
     );
   if (props.wallet === null)
     return (
@@ -71,7 +71,7 @@ export function WalletActivityPanel(props: {
     return (
       <Notice
         title="正在读取链上活动…"
-        detail="Indexer 正在返回确认与未确认事件。"
+        detail="索引服务正在返回确认与未确认事件。"
       />
     );
   if (state.items.length === 0)
@@ -136,7 +136,7 @@ export function WalletPositionsView(props: {
     return (
       <Notice
         title="跨市场持仓未启用"
-        detail="当前 runtime 未开放 Indexer；已选择市场的链上余额仍可读取。"
+        detail="当前运行配置未开放索引服务；已选择市场的链上余额仍可读取。"
       />
     );
   if (props.wallet === null)
@@ -183,14 +183,14 @@ export function WalletPositionsView(props: {
     return (
       <Notice
         title="正在读取持仓…"
-        detail="正在检查 Indexer 健康状态与同步高度。"
+        detail="正在检查索引服务健康状态与同步高度。"
       />
     );
   if (!caughtUp) return statusNotice;
   return (
     <Notice
       title="暂无非零持仓"
-      detail="Indexer 已同步到当前安全区块；购买一级份额或成交 C2C 挂单后会显示。"
+      detail="索引服务已同步到当前安全区块；购买一级份额或成交 C2C 挂单后会显示。"
     />
   );
 }
@@ -219,7 +219,7 @@ export function ListingsPanel(props: {
     return (
       <Notice
         title="C2C 挂单目录未启用"
-        detail="当前 runtime 未开放 Indexer。"
+        detail="当前运行配置未开放索引服务。"
       />
     );
   if (vault === null)
@@ -542,7 +542,7 @@ function listingSyncDetail(
   targetBlock: bigint | null,
 ): string {
   if (status === null)
-    return "正在确认 Indexer 健康状态与同步高度；链上成交结果以选中挂单卡片为准。";
+    return "正在确认索引服务健康状态与同步高度；链上成交结果以选中挂单卡片为准。";
   const requiredBlock =
     targetBlock !== null && targetBlock > status.safeBlock
       ? targetBlock
@@ -551,7 +551,7 @@ function listingSyncDetail(
     status.indexedBlock === null
       ? "尚未建立 checkpoint"
       : `已处理区块 ${status.indexedBlock.toString()}`;
-  return `Indexer ${indexed}，目标区块 ${requiredBlock.toString()}；追上前可能仍显示已成交挂单。`;
+  return `索引服务 ${indexed}，目标区块 ${requiredBlock.toString()}；追上前可能仍显示已成交挂单。`;
 }
 
 export function mergeWalletPositions(
@@ -586,7 +586,7 @@ function syncDetail(
   targetBlock: bigint | null,
 ): string {
   if (status === null)
-    return "正在确认 Indexer 健康状态与同步高度；链上已确认的当前市场持仓会先行显示。";
+    return "正在确认索引服务健康状态与同步高度；链上已确认的当前市场持仓会先行显示。";
   const requiredBlock =
     targetBlock !== null && targetBlock > status.safeBlock
       ? targetBlock
@@ -595,7 +595,7 @@ function syncDetail(
     status.indexedBlock === null
       ? "尚未建立 checkpoint"
       : `已处理区块 ${status.indexedBlock.toString()}`;
-  return `Indexer ${indexed}，目标区块 ${requiredBlock.toString()}；同步完成前不会显示空状态。`;
+  return `索引服务 ${indexed}，目标区块 ${requiredBlock.toString()}；同步完成前不会显示空状态。`;
 }
 
 export function ListingCard(props: {
@@ -619,7 +619,7 @@ export function ListingCard(props: {
         {formatPayment(props.item.unitPrice, props.paymentTokenSymbol)}
       </strong>
       <span className="mono">Vault {short(props.item.vault)}</span>
-      <small className="mono">Listing {short(props.item.listingId)}</small>
+      <small className="mono">挂单 {short(props.item.listingId)}</small>
       <small>
         到期{" "}
         {new Date(Number(props.item.expiresAt) * 1_000).toLocaleString(

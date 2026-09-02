@@ -40,7 +40,9 @@ export interface ConnectedWallet {
   walletClient: WalletClient;
 }
 
-export function createProtocolPublicClient(config: RuntimeConfig): PublicClient {
+export function createProtocolPublicClient(
+  config: RuntimeConfig,
+): PublicClient {
   return createPublicClient({
     chain: arbitrumSepolia,
     transport: http(config.chain.rpcPath, {
@@ -51,23 +53,31 @@ export function createProtocolPublicClient(config: RuntimeConfig): PublicClient 
   });
 }
 
-export function discoverWallets(onUpdate: (wallets: DiscoveredWallet[]) => void): () => void {
+export function discoverWallets(
+  onUpdate: (wallets: DiscoveredWallet[]) => void,
+): () => void {
   const discovered = new Map<string, DiscoveredWallet>();
   const announce = (event: Event) => {
     const detail = (event as CustomEvent<Eip6963AnnounceDetail>).detail;
     if (!isProviderDetail(detail)) return;
-    discovered.set(detail.info.uuid, { info: detail.info, provider: detail.provider });
+    discovered.set(detail.info.uuid, {
+      info: detail.info,
+      provider: detail.provider,
+    });
     onUpdate([...discovered.values()]);
   };
   window.addEventListener("eip6963:announceProvider", announce);
   window.dispatchEvent(new Event("eip6963:requestProvider"));
 
   const legacy = (globalThis as { ethereum?: EIP1193Provider }).ethereum;
-  if (legacy !== undefined && ![...discovered.values()].some((wallet) => wallet.provider === legacy)) {
+  if (
+    legacy !== undefined &&
+    ![...discovered.values()].some((wallet) => wallet.provider === legacy)
+  ) {
     discovered.set("legacy-window-ethereum", {
       info: {
         uuid: "legacy-window-ethereum",
-        name: "Browser Wallet",
+        name: "浏览器钱包",
         icon: null,
         rdns: "legacy.window.ethereum",
       },
@@ -85,7 +95,10 @@ export function watchWallet(
 ): () => void {
   type ObservableProvider = EIP1193Provider & {
     on?: (event: string, listener: (value: unknown) => void) => void;
-    removeListener?: (event: string, listener: (value: unknown) => void) => void;
+    removeListener?: (
+      event: string,
+      listener: (value: unknown) => void,
+    ) => void;
   };
   const provider = connected.provider.provider as ObservableProvider;
   const accountsChanged = (value: unknown) => {
@@ -93,7 +106,11 @@ export function watchWallet(
       onAccountChanged(null);
       return;
     }
-    try { onAccountChanged(getAddress(value[0])); } catch { onAccountChanged(null); }
+    try {
+      onAccountChanged(getAddress(value[0]));
+    } catch {
+      onAccountChanged(null);
+    }
   };
   const chainChanged = (value: unknown) => {
     if (typeof value === "string" && /^0x[0-9a-f]+$/i.test(value)) {
@@ -108,8 +125,12 @@ export function watchWallet(
   };
 }
 
-export async function connectWallet(wallet: DiscoveredWallet): Promise<ConnectedWallet> {
-  const accounts = await wallet.provider.request({ method: "eth_requestAccounts" });
+export async function connectWallet(
+  wallet: DiscoveredWallet,
+): Promise<ConnectedWallet> {
+  const accounts = await wallet.provider.request({
+    method: "eth_requestAccounts",
+  });
   if (!Array.isArray(accounts) || typeof accounts[0] !== "string") {
     throw new Error("wallet returned no account");
   }
@@ -124,7 +145,9 @@ export async function connectWallet(wallet: DiscoveredWallet): Promise<Connected
   return { provider: wallet, account, address, chainId, walletClient };
 }
 
-export async function switchToArbitrumSepolia(provider: EIP1193Provider): Promise<number> {
+export async function switchToArbitrumSepolia(
+  provider: EIP1193Provider,
+): Promise<number> {
   try {
     await provider.request({
       method: "wallet_switchEthereumChain",
@@ -148,7 +171,9 @@ export async function switchToArbitrumSepolia(provider: EIP1193Provider): Promis
   return readProviderChainId(provider);
 }
 
-export async function readProviderChainId(provider: EIP1193Provider): Promise<number> {
+export async function readProviderChainId(
+  provider: EIP1193Provider,
+): Promise<number> {
   const value = await provider.request({ method: "eth_chainId" });
   if (typeof value !== "string" || !/^0x[0-9a-f]+$/i.test(value)) {
     throw new Error("wallet returned invalid chain id");

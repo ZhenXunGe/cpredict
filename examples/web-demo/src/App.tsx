@@ -192,7 +192,7 @@ export default function App() {
     useState<DeploymentToast | null>({
       state: "checking",
       title: "正在加载部署配置",
-      detail: "部署验证将在 runtime config 加载后自动开始…",
+      detail: "部署验证将在运行配置加载后自动开始…",
     });
   const deploymentVerificationRef = useRef<Promise<void> | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([
@@ -201,7 +201,7 @@ export default function App() {
       at: new Date(),
       level: "info",
       label: "控制台已初始化",
-      detail: "等待 runtime config 与部署清单",
+      detail: "等待运行配置与部署清单",
     },
   ]);
 
@@ -717,7 +717,7 @@ export default function App() {
         setActivity,
         "success",
         label,
-        `区块 ${result.blockNumber} · gas ${result.gasUsed}`,
+        `区块 ${result.blockNumber} · Gas ${result.gasUsed}`,
         result.hash,
       );
       setAccountRefreshVersion((version) => version + 1);
@@ -968,7 +968,7 @@ export default function App() {
         <div className="trust-banner" data-level={trust?.level ?? "blocked"}>
           <strong>
             {paymentToken?.kind === "sandbox-test-token"
-              ? "TEST ONLY：ctUSD 可由任何人任意增发，无真实价值"
+              ? "仅测试：ctUSD 可由任何人任意增发，无真实价值"
               : trust?.level === "verified"
                 ? "正式清单与链上代码已验证"
                 : trust?.level === "debug"
@@ -1211,7 +1211,7 @@ export function deploymentCardCopy(
       hint: "调试地址包已加载 · 尚未 FINALIZED_VERIFIED",
     };
   }
-  return { value: "BLOCKED_NOT_DEPLOYED", hint: "需加载部署地址包" };
+  return { value: "未部署，已锁定", hint: "需加载部署地址包" };
 }
 
 export function environmentStatusCardStates(
@@ -1279,7 +1279,7 @@ function Overview({
       value: paymentToken === null ? "待加载" : paymentTokenSymbol,
       hint:
         paymentToken?.kind === "sandbox-test-token"
-          ? "TEST / 任意增发 / 无真实价值"
+          ? "测试 / 任意增发 / 无真实价值"
           : "正式 Arbitrum Sepolia USDC",
       state: environmentStates.paymentToken,
     },
@@ -1345,7 +1345,7 @@ export function SandboxTokenPanel({
 }) {
   return (
     <Panel
-      title="Sandbox 测试币"
+      title="沙箱测试币"
       subtitle="仅限 Arbitrum Sepolia 演示；任何地址都能任意 mint；不是 USDC，也没有真实价值"
       action={<span className="sandbox-chip">测试代币</span>}
     >
@@ -1401,7 +1401,7 @@ function DeploymentPage({
     runtime?.debugAddresses !== null && runtime?.debugAddresses !== undefined;
   const formalRelease =
     runtime?.manifest?.status ??
-    (debugPackageLoaded ? "尚未 FINALIZED_VERIFIED" : "BLOCKED_NOT_DEPLOYED");
+    (debugPackageLoaded ? "尚未 FINALIZED_VERIFIED" : "未部署，已锁定");
   const debugNotApplicable = debugPackageLoaded ? "不适用于 DEBUG 地址包" : "—";
   return (
     <>
@@ -1423,7 +1423,7 @@ function DeploymentPage({
             <dd>{runtime?.config.chain.name ?? "—"}</dd>
           </div>
           <div>
-            <dt>Commit</dt>
+            <dt>提交</dt>
             <dd className="mono">
               {runtime?.manifest?.source.commit ?? debugNotApplicable}
             </dd>
@@ -1507,7 +1507,7 @@ export function MarketPage(props: {
     <>
       <Panel
         title="市场列表"
-        subtitle="直接浏览已创建市场；目录来自只读 Indexer，进入后再读取 Vault 链上状态"
+        subtitle="直接浏览已创建市场；目录来自只读索引服务，进入后再读取 Vault 链上状态"
       >
         <MarketCatalog
           enabled={props.indexerEnabled}
@@ -1521,8 +1521,8 @@ export function MarketPage(props: {
         />
       </Panel>
       <Panel
-        title="加载 Vault"
-        subtitle="也可直接粘贴 Factory 创建的 Market Vault 地址"
+        title="加载金库"
+        subtitle="也可直接粘贴 Factory 创建的市场金库地址"
       >
         <form className="inline-form" onSubmit={props.onLoad}>
           <input
@@ -1554,17 +1554,17 @@ export function MarketPage(props: {
                 </p>
               ) : null}
               <p className="mono market-vault-address">
-                Vault {props.market.address}{" "}
+                金库 {props.market.address}{" "}
                 <button
                   type="button"
                   className="text-button"
                   onClick={() => void copyText(props.market!.address)}
                 >
-                  复制 Vault
+                  复制金库
                 </button>
               </p>
               <p className="mono">
-                rulesHash {shortHash(props.market.rulesHash)}
+                规则哈希 {shortHash(props.market.rulesHash)}
               </p>
             </div>
             <div className="market-stat">
@@ -1630,11 +1630,11 @@ export function MarketPage(props: {
                 <dd>{props.market.earlyBirdEnabled ? "已启用" : "已关闭"}</dd>
               </div>
               <div>
-                <dt>Creator</dt>
+                <dt>创建者</dt>
                 <dd className="mono">{short(props.market.creator)}</dd>
               </div>
               <div>
-                <dt>Wallet {props.paymentTokenSymbol}</dt>
+                <dt>钱包 {props.paymentTokenSymbol}</dt>
                 <dd>
                   {walletPaymentBalance === null
                     ? "—"
@@ -1755,7 +1755,7 @@ export function BuyCard({
       const { units, maximumPayment } = paymentAmounts();
       const outcomeId = BigInt(outcome);
       if (outcomeId < 0n || outcomeId >= BigInt(market.outcomeCount))
-        throw new RangeError("outcome 越界");
+        throw new RangeError("结果编号越界");
       if (!permit2Mode) {
         const needsAuthorization = authorizationRequired(
           vaultAllowance,
@@ -2237,7 +2237,7 @@ export function MarketplacePage({
           variant="select"
           selectLabel="C2C 市场金库"
           selectionBusy={loadingSelectedMarket}
-          disabledDetail="当前 runtime 未开放 Indexer，暂时无法从 C2C 页面选择市场。"
+          disabledDetail="当前运行配置未开放索引服务，暂时无法从 C2C 页面选择市场。"
           onOpen={onSelectMarket}
         />
         {marketLoadError === null ? null : (
@@ -2318,7 +2318,7 @@ export function MarketplacePage({
       <Panel title="安全参数">
         <dl className="definition-grid">
           <div>
-            <dt>Marketplace</dt>
+            <dt>C2C 合约</dt>
             <dd className="mono">
               {addresses ? short(addresses.contracts.marketplace) : "—"}
             </dd>
@@ -2374,7 +2374,7 @@ export function SettlementPage({
     <>
       <Panel
         title="待结算市场"
-        subtitle="Indexer 按截止时间发现候选市场；进入后再次读取 Vault 链上状态"
+        subtitle="索引服务按截止时间发现候选市场；进入后再次读取 Vault 链上状态"
       >
         <SettlementMarketCatalog
           enabled={indexerEnabled}
@@ -2513,7 +2513,7 @@ export function SettlementPage({
           />
         </div>
         <p className="callout danger">
-          Demo 不暴露管理员调用，也不会替 Creator 自动选择结果。Creator
+          Demo 不暴露管理员调用，也不会替创建者自动选择结果。创建者
           终局必须人工复核锁定规则。
         </p>
       </Panel>
@@ -2562,7 +2562,7 @@ function ReceiptsPage({
     <>
       <Panel
         title="链上活动"
-        subtitle="由 Indexer 重建；刷新或换设备后仍可按当前钱包查看"
+        subtitle="由索引服务重建；刷新或换设备后仍可按当前钱包查看"
       >
         <WalletActivityPanel
           enabled={indexerEnabled}
@@ -2913,7 +2913,7 @@ export function ActivityLine({
             type="button"
             className="text-button"
             aria-label="复制市场金库"
-            title="复制 Vault"
+            title="复制金库"
             onClick={() => void copyText(item.market!)}
           >
             复制

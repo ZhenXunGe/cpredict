@@ -778,7 +778,7 @@ function validateText(
 export function validatedUri(value: string, label: string): string {
   const normalized = value.trim().normalize("NFC");
   if (new TextEncoder().encode(normalized).byteLength > 512)
-    throw new RangeError(`${label} 超过 512 UTF-8 bytes`);
+    throw new RangeError(`${label} 超过 512 字节`);
   let url: URL;
   try {
     url = new URL(normalized);
@@ -793,7 +793,7 @@ export function validatedUri(value: string, label: string): string {
     throw new TypeError(`${label} 只允许 http:、https: 或 ipfs:`);
   }
   if (url.username !== "" || url.password !== "")
-    throw new TypeError(`${label} 不允许 credentials`);
+    throw new TypeError(`${label} 不允许用户名密码`);
   return url.href;
 }
 

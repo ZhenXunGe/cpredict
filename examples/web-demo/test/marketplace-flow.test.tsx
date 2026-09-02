@@ -141,7 +141,7 @@ describe("C2C listing selection flow", () => {
     );
     expect(html).toContain("选择 C2C 市场");
     expect(html).toContain(
-      "当前 runtime 未开放 Indexer，暂时无法从 C2C 页面选择市场。",
+      "当前运行配置未开放索引服务，暂时无法从 C2C 页面选择市场。",
     );
     const selectedSection = html.slice(html.indexOf("已选挂单"));
     expect(selectedSection).toContain(LISTING_ID);

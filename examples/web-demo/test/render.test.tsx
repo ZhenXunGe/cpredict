@@ -75,7 +75,7 @@ describe("web demo application shell", () => {
     expect(html).toContain("Cpredict");
     expect(html).toContain("合约验证控制台");
     expect(html).toContain("写操作已锁定");
-    expect(html).toContain("BLOCKED_NOT_DEPLOYED");
+    expect(html).toContain("未部署，已锁定");
     for (const label of [
       "概览",
       "部署验证",
@@ -130,7 +130,7 @@ describe("web demo application shell", () => {
             at: new Date("2026-09-02T00:00:00Z"),
             level: "info",
             label: "控制台已初始化",
-            detail: "等待 runtime config 与部署清单",
+            detail: "等待运行配置与部署清单",
           },
         ]}
         explorerOrigin="https://sepolia.arbiscan.io"
@@ -141,7 +141,7 @@ describe("web demo application shell", () => {
     expect(activityHtml).toContain("本会话事件");
     expect(activityHtml).toContain("回执与事件");
     expect(activityHtml).toContain("控制台已初始化");
-    expect(activityHtml).toContain("等待 runtime config 与部署清单");
+    expect(activityHtml).toContain("等待运行配置与部署清单");
     expect(activityHtml).not.toContain("实时上下文");
   });
 
@@ -240,7 +240,7 @@ describe("web demo application shell", () => {
     expect(html).toContain("正式发布");
     expect(html).toContain("尚未 FINALIZED_VERIFIED");
     expect(html).toContain("不适用于 DEBUG 地址包");
-    expect(html).not.toContain("BLOCKED_NOT_DEPLOYED");
+    expect(html).not.toContain("未部署，已锁定");
     expect(html).toContain("自定义调试地址");
     expect(html).toContain('aria-label="关闭部署验证抽屉"');
   });

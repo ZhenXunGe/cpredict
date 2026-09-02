@@ -186,11 +186,10 @@ export async function fetchIndexerSyncStatus(input: {
   const url = endpoint(input.basePath, "/v1/sync-status");
   url.searchParams.set("chainId", String(input.chainId));
   const response = await fetch(url, requestInit(input.signal));
-  if (!response.ok) throw new Error(`Indexer sync HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`索引服务同步 HTTP ${response.status}`);
   requireJson(response);
   const item = record(await response.json(), "Indexer sync status");
-  if (item.status !== "ready")
-    throw new TypeError("Indexer sync status is invalid");
+  if (item.status !== "ready") throw new TypeError("索引服务同步状态无效");
   return {
     chainId: integer(item.chainId, "chainId", 1, Number.MAX_SAFE_INTEGER),
     indexedBlock: nullableBigint(item.indexedBlock, "indexedBlock"),
@@ -246,19 +245,18 @@ async function fetchPage<T>(
   signal?: AbortSignal,
 ): Promise<QueryPage<T>> {
   const response = await fetch(url, requestInit(signal));
-  if (!response.ok) throw new Error(`Indexer HTTP ${response.status}`);
+  if (!response.ok) throw new Error(`索引服务 HTTP ${response.status}`);
   requireJson(response);
   const value: unknown = await response.json();
   const object = record(value, "Indexer page");
-  if (!Array.isArray(object.items))
-    throw new TypeError("Indexer page is invalid");
+  if (!Array.isArray(object.items)) throw new TypeError("索引服务分页无效");
   const nextCursor = object.nextCursor;
   if (
     nextCursor !== undefined &&
     (typeof nextCursor !== "string" ||
       !/^[A-Za-z0-9_-]{1,256}$/.test(nextCursor))
   ) {
-    throw new TypeError("Indexer cursor is invalid");
+    throw new TypeError("索引服务游标无效");
   }
   return {
     items: object.items.map(parseItem),

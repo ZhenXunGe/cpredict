@@ -132,7 +132,7 @@ export function MarketCatalog(props: {
         title="市场目录尚未启用"
         detail={
           props.disabledDetail ??
-          "Indexer 未在当前 runtime 中开放；仍可在下方粘贴 Vault 地址读取链上状态。"
+          "索引服务未在当前运行配置中开放；仍可在下方粘贴金库地址读取链上状态。"
         }
       />
     );
@@ -186,7 +186,7 @@ export function MarketCatalog(props: {
           detail={
             mineOnly && props.wallet === null
               ? "连接钱包后查看自己创建的市场。"
-              : "新市场被 Indexer 确认后会自动出现在这里。"
+              : "新市场被索引服务确认后会自动出现在这里。"
           }
         />
       ) : props.variant === "select" ? (
@@ -330,7 +330,7 @@ export function MarketCatalogSelect(props: {
     );
   return (
     <label className="catalog-select">
-      <span>{props.label ?? "Market Vault"}</span>
+      <span>{props.label ?? "市场金库"}</span>
       <select
         aria-label={props.label ?? "选择市场"}
         aria-busy={props.disabled === true}
@@ -478,7 +478,7 @@ export function SettlementMarketCatalog(props: {
     return (
       <CatalogEmpty
         title="结算队列尚未启用"
-        detail="Indexer 未在当前 runtime 中开放，无法自动发现待结算市场。"
+        detail="索引服务未在当前运行配置中开放，无法自动发现待结算市场。"
       />
     );
   }
@@ -587,7 +587,7 @@ export function TerminalMarketCatalog(props: {
     return (
       <CatalogEmpty
         title="已终局目录尚未启用"
-        detail="Indexer 未在当前 runtime 中开放，无法列出已结算或已作废市场。"
+        detail="索引服务未在当前运行配置中开放，无法列出已结算或已作废市场。"
       />
     );
   }
