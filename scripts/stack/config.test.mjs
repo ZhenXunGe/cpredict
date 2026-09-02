@@ -49,13 +49,17 @@ async function fixture() {
   return { root, runtime, secretPath, publicPath };
 }
 
-async function withoutRelayPublicKeys(path) {
+async function withoutRelayKeys(path) {
   const text = await readFile(path, "utf8");
   await writeFile(
     path,
     text
       .split("\n")
-      .filter((line) => !line.startsWith("CPREDICT_RELAY_"))
+      .filter(
+        (line) =>
+          !line.startsWith("CPREDICT_RELAY_") &&
+          !line.startsWith("CPREDICT_STACK_RELAY_"),
+      )
       .join("\n"),
   );
 }
@@ -70,9 +74,10 @@ test("stack config keeps secret and public deployment inputs separate", async ()
   assert.equal(parsed.runtimeRoot, await realpath(value.runtime));
 });
 
-test("default stack accepts a legacy runtime without relay public keys", async () => {
+test("default stack accepts a legacy runtime without relay configuration", async () => {
   const value = await fixture();
-  await withoutRelayPublicKeys(value.publicPath);
+  await withoutRelayKeys(value.secretPath);
+  await withoutRelayKeys(value.publicPath);
   await expectNoRejection(
     loadStackConfiguration({
       secretPath: value.secretPath,

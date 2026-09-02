@@ -41,6 +41,7 @@ test("Compose exposes only application services on loopback", () => {
     "CPREDICT_RELAY_FACTORY_ADDRESS",
     "CPREDICT_RELAY_PAYMENT_ASSET_ADDRESS",
     "CPREDICT_RELAY_PERMIT2_ADDRESS",
+    "CPREDICT_RELAY_EXPECTED_SENDER",
   ]) {
     assert.equal(
       compose.services["permit2-relay"].environment[key],
@@ -48,6 +49,11 @@ test("Compose exposes only application services on loopback", () => {
       key,
     );
   }
+  assert.doesNotMatch(
+    JSON.stringify(compose.services["permit2-relay"]),
+    /\$\{(?:CPREDICT_RELAY_|CPREDICT_STACK_RELAY_)[^}:]*:\?/,
+    "inactive relay profile must not require relay-only interpolation",
+  );
   assert.equal(compose.services.postgres.networks.includes("app"), false);
 });
 
