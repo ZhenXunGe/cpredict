@@ -10,6 +10,7 @@ import {
 } from "../../../offchain/sdk/src/index.js";
 import {
   buildCreateMarketTimes,
+  formatCreatorSettlementWindow,
   MAX_MARKET_DURATION_MINUTES,
   MIN_MARKET_DURATION_MINUTES,
 } from "./create-market-times.js";
@@ -44,6 +45,7 @@ interface CreateMarketFormProps {
   busy: boolean;
   execute: ExecuteTransaction;
   onMarketCreated: (result: CreateMarketResult) => Promise<void>;
+  resolutionWindowSeconds?: number | null;
 }
 
 type FieldName =
@@ -547,6 +549,11 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
             required
           />
           <FieldError message={fieldErrors.duration} />
+          <small>
+            市场期限是购买截止时间，不是结算截止。截止后创建者还有{" "}
+            {formatCreatorSettlementWindow(props.resolutionWindowSeconds)}{" "}
+            可以指定获胜结果；逾期只能超时作废（全员退本金，不能再选赢家）。
+          </small>
         </label>
         <label>
           <span>市场总上限（{props.paymentTokenSymbol}）</span>

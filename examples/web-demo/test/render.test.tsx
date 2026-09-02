@@ -312,11 +312,14 @@ describe("web demo application shell", () => {
         busy={false}
         execute={async () => null}
         onMarketCreated={async () => {}}
+        resolutionWindowSeconds={900}
       />,
     );
     expect(html).toContain("市场期限（分钟，11–129600）");
     expect(html).toContain('value="15"');
     expect(html).toContain('min="11"');
+    expect(html).toContain("市场期限是购买截止时间，不是结算截止");
+    expect(html).toContain("15 分钟");
     expect(html).toMatch(
       /id="market-source"[^>]*value="http:\/\/example\.com\/result"/,
     );
@@ -699,6 +702,7 @@ describe("web demo application shell", () => {
         metadataBasePath={null}
         chainId={421614}
         refreshVersion={0}
+        marketRules={null}
         onSelectMarket={async () => {}}
       />,
     );
@@ -707,6 +711,66 @@ describe("web demo application shell", () => {
     expect(html).toContain("处理中…");
     expect(html).not.toContain(">领取胜出款<");
     expect(html).toContain("当前 Vault 0x000000…001001");
+  });
+
+  it("shows named winning outcomes and blocks resolve after the creator window", () => {
+    const market: MarketSnapshot = {
+      address: "0x0000000000000000000000000000000000001001",
+      observedAt: 1_900_000_900n,
+      creator: "0x000000000000000000000000000000000000c001",
+      creatorTreasury: "0x000000000000000000000000000000000000c002",
+      rulesHash: `0x${"11".repeat(32)}`,
+      outcomeCount: 2,
+      createdAt: 1_899_999_000n,
+      closeAt: 1_900_000_000n,
+      earlyBirdStart: 1_899_999_500n,
+      featureFlags: 0n,
+      perUserPrimaryCap: 10_000_000n,
+      marketPrimaryCap: 20_000_000n,
+      minimumPrimaryUnits: 1_000_000n,
+      minimumC2CUnits: 1_000_000n,
+      creatorBond: 10_000_000n,
+      marketState: 0,
+      winningOutcome: 0,
+      totalPrincipal: 2_000_000n,
+      resolutionDeadline: 1_900_000_900n,
+      permit2Enabled: true,
+      earlyBirdEnabled: false,
+    };
+    const html = renderToStaticMarkup(
+      <SettlementPage
+        writeReady
+        busy={false}
+        market={market}
+        marketAddress={market.address}
+        wallet={{ address: market.creator } as ConnectedWallet}
+        client={{} as CpredictClient}
+        publicClient={null}
+        execute={async () => null}
+        evidenceUploader={undefined}
+        indexerEnabled={false}
+        indexerBasePath="/indexer"
+        metadataBasePath={null}
+        chainId={421614}
+        refreshVersion={0}
+        marketRules={{
+          version: "cpredict-rules-v1",
+          question: "王者荣耀这局谁赢？",
+          outcomes: ["王者赢", "对手赢"],
+          closesAt: 1_900_000_000,
+          resolutionSource: "https://example.invalid/result",
+          resolutionCriteria: "按公开赛果进行结算。",
+          cancellationPolicy: "窗口内无结果则作废",
+        }}
+        onSelectMarket={async () => {}}
+      />,
+    );
+    expect(html).toContain(">王者赢<");
+    expect(html).toContain(">对手赢<");
+    expect(html).toContain("创建者结算窗口已过");
+    expect(html).toContain("本金退还给所有人");
+    expect(html).toContain("不要填写数字编号");
+    expect(html).not.toMatch(/获胜结果\s*<input/);
   });
 
   it("uses the live payment-token balance on the market page", () => {
@@ -762,6 +826,7 @@ describe("web demo application shell", () => {
     );
     expect(html).toContain("9 ctUSD");
     expect(html).not.toContain(">1 ctUSD<");
+    expect(html).toContain("结算截止");
   });
 
   it("labels a voided market with the terminal state instead of pending settlement", () => {

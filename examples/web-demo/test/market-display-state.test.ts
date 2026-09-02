@@ -20,6 +20,20 @@ describe("market display state", () => {
     });
   });
 
+  it("labels an expired resolution window as timeout-void pending", () => {
+    expect(
+      marketDisplayState({
+        marketState: 0,
+        observedAt: 200n,
+        closeAt: 100n,
+        resolutionDeadline: 200n,
+      }),
+    ).toEqual({
+      label: "结算窗口已过，待超时作废",
+      primaryBuyOpen: false,
+    });
+  });
+
   it("keeps terminal markets closed regardless of closeAt", () => {
     expect(
       marketDisplayState({ marketState: 1, observedAt: 99n, closeAt: 100n }),

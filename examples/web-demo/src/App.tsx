@@ -599,25 +599,28 @@ export default function App() {
   }, [routeMarketAddress, publicClient]);
 
   useEffect(() => {
-    if (
-      publicClient === null ||
-      market === null ||
-      market.marketState !== 0 ||
-      market.observedAt >= market.closeAt
-    )
+    if (publicClient === null || market === null || market.marketState !== 0)
       return;
-    const millisecondsUntilClose = Number(
-      (market.closeAt - market.observedAt) * 1_000n,
+    const nextBoundary =
+      market.observedAt < market.closeAt
+        ? market.closeAt
+        : market.observedAt < market.resolutionDeadline
+          ? market.resolutionDeadline
+          : null;
+    if (nextBoundary === null) return;
+    const millisecondsUntil = Number(
+      (nextBoundary - market.observedAt) * 1_000n,
     );
     const timer = window.setTimeout(
       () => void loadMarketAddress(market.address),
-      Math.min(millisecondsUntilClose + 1_000, 2_147_483_647),
+      Math.min(millisecondsUntil + 1_000, 2_147_483_647),
     );
     return () => window.clearTimeout(timer);
   }, [
     publicClient,
     market?.address,
     market?.closeAt,
+    market?.resolutionDeadline,
     market?.marketState,
     market?.observedAt,
   ]);
@@ -1122,6 +1125,7 @@ export default function App() {
                 }
                 chainId={runtime?.config.chain.id ?? ARBITRUM_SEPOLIA_CHAIN_ID}
                 refreshVersion={settlementRefreshVersion}
+                marketRules={selectedMarketRules}
                 onSelectMarket={handleSettlementSelect}
               />
             ) : null}
@@ -1604,6 +1608,10 @@ export function MarketPage(props: {
                 <dd>{formatTimestamp(props.market.closeAt)}</dd>
               </div>
               <div>
+                <dt>结算截止</dt>
+                <dd>{formatTimestamp(props.market.resolutionDeadline)}</dd>
+              </div>
+              <div>
                 <dt>市场上限</dt>
                 <dd>
                   {formatPaymentToken(
@@ -2084,6 +2092,7 @@ function CreatePage({
           busy={busy}
           execute={execute}
           onMarketCreated={onMarketCreated}
+          resolutionWindowSeconds={trust?.resolutionWindowSeconds ?? null}
         />
       )}
       <p className="callout">
@@ -2348,6 +2357,7 @@ export function SettlementPage({
   metadataBasePath,
   chainId,
   refreshVersion,
+  marketRules,
   onSelectMarket,
 }: {
   writeReady: boolean;
@@ -2364,6 +2374,7 @@ export function SettlementPage({
   metadataBasePath: string | null;
   chainId: number;
   refreshVersion: number;
+  marketRules: MarketRules | null;
   onSelectMarket: (market: Address, rules: MarketRules | null) => Promise<void>;
 }) {
   const selectedAddress = isAddress(marketAddress)
@@ -2447,6 +2458,11 @@ export function SettlementPage({
               creatorMode={creator}
               disabled={busy}
               uploadCanonicalEvidence={evidenceUploader}
+              outcomeLabels={marketRules?.outcomes ?? null}
+              closeAt={market.closeAt}
+              resolutionDeadline={market.resolutionDeadline}
+              observedAt={market.observedAt}
+              marketState={market.marketState}
             />
           ) : (
             <Empty
@@ -2462,7 +2478,11 @@ export function SettlementPage({
       >
         <div className="operation-grid">
           <SettlementActionButton
-            writeReady={writeReady}
+            writeReady={
+              writeReady &&
+              market.marketState === 0 &&
+              market.observedAt >= market.resolutionDeadline
+            }
             busy={busy}
             label="超时作废"
             onClick={() =>

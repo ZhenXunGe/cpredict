@@ -940,6 +940,16 @@ textarea:focus {
   font-size: 9px;
   overflow-wrap: anywhere;
 }
+.embedded-example select {
+  width: 100%;
+}
+.embedded-example p[role="alert"] {
+  color: #81383f;
+  background: var(--red-soft);
+  border-left: 3px solid var(--red);
+  padding: 8px 10px;
+  border-radius: 6px;
+}
 .marketplace-section {
   display: grid;
   gap: 10px;

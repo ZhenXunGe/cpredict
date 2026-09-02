@@ -433,7 +433,9 @@ export interface MarketDisplayState {
 }
 
 export function marketDisplayState(
-  market: Pick<MarketSnapshot, "marketState" | "closeAt" | "observedAt">,
+  market: Pick<MarketSnapshot, "marketState" | "closeAt" | "observedAt"> & {
+    resolutionDeadline?: bigint;
+  },
 ): MarketDisplayState {
   if (market.marketState !== 0) {
     const code = MARKET_STATE_LABELS[market.marketState];
@@ -443,8 +445,13 @@ export function marketDisplayState(
     };
   }
   if (market.observedAt >= market.closeAt) {
+    const expired =
+      market.resolutionDeadline !== undefined &&
+      market.observedAt >= market.resolutionDeadline;
     return {
-      label: MARKET_CLOSED_PENDING_RESOLUTION_LABEL,
+      label: expired
+        ? "结算窗口已过，待超时作废"
+        : MARKET_CLOSED_PENDING_RESOLUTION_LABEL,
       primaryBuyOpen: false,
     };
   }
