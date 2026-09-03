@@ -129,13 +129,13 @@ contract MarketVaultInternalHarnessTest is Test {
         assertEq(harness.guardExposure(), 500);
 
         harness.configureCoverage(
-            token, ProtocolTypes.MarketState.VOIDED_CREATOR, 0, 0, 0, 600, 100
+            token, ProtocolTypes.MarketState.VOIDED, 0, 0, 0, 600, 100
         );
         harness.exposedAssertCoverage();
         assertEq(harness.guardExposure(), 700);
 
         harness.configureCoverage(
-            token, ProtocolTypes.MarketState.VOIDED_TIMEOUT, 0, 0, 0, 600, 500
+            token, ProtocolTypes.MarketState.VOIDED, 0, 0, 0, 600, 500
         );
         vm.expectPartialRevert(Insolvent.selector);
         harness.exposedAssertCoverage();

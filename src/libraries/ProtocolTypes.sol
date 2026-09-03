@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.36;
 
-/// @notice Shared V1 protocol data types. Values are ABI-stable within V1.
+/// @notice Shared target-protocol types. This development revision requires a fresh deployment.
 library ProtocolTypes {
     uint256 internal constant BPS = 10_000;
     uint256 internal constant SHARE_SCALE = 1_000_000;
@@ -24,8 +24,14 @@ library ProtocolTypes {
     enum MarketState {
         OPEN,
         RESOLVED,
-        VOIDED_CREATOR,
-        VOIDED_TIMEOUT
+        VOIDED
+    }
+
+    enum VoidReason {
+        NONE,
+        CREATOR,
+        NO_WINNING_SUPPLY,
+        TIMEOUT
     }
 
     struct CreateMarketParams {

@@ -72,10 +72,7 @@ contract MarketAccountingHandler is Test {
 
     function refund(uint256 actorSeed) external {
         ProtocolTypes.MarketState state = market.marketState();
-        if (
-            state != ProtocolTypes.MarketState.VOIDED_CREATOR
-                && state != ProtocolTypes.MarketState.VOIDED_TIMEOUT
-        ) return;
+        if (state != ProtocolTypes.MarketState.VOIDED) return;
         address actor = _actors[actorSeed % _actors.length];
         uint256 balance;
         for (uint256 outcome = 0; outcome < market.outcomeCount(); ++outcome) {
