@@ -1878,32 +1878,6 @@
     ]
   },
   {
-    "contract": "CloneMarketVaultV1",
-    "name": "WinningOutcomeHasNoSupply",
-    "signature": "WinningOutcomeHasNoSupply(uint256)",
-    "selector": "0xe8327997",
-    "inputs": [
-      {
-        "name": "outcomeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "contract": "FullMarketVaultV1",
-    "name": "WinningOutcomeHasNoSupply",
-    "signature": "WinningOutcomeHasNoSupply(uint256)",
-    "selector": "0xe8327997",
-    "inputs": [
-      {
-        "name": "outcomeId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
     "contract": "BondEscrowV1",
     "name": "ZeroAddress",
     "signature": "ZeroAddress()",

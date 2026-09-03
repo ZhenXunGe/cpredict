@@ -22,10 +22,10 @@
   },
   {
     "contract": "BondEscrowV1",
-    "creationBytecodeSha256": "6cd1385177204f1be033fc3e3131cd136bf4b3aa2c6d4d83d86697c2bac9b285",
-    "runtimeBytecodeSha256": "63bb4d20b7136d1f6fe9519bebecbacc7aa7710ac255e9bfbeacb57f583be4f5",
-    "creationBytes": 3088,
-    "runtimeBytes": 2794
+    "creationBytecodeSha256": "2ccf6f2783e28585ebae71c7e8960aa34fd921447e216d5598a15f84ce7126fc",
+    "runtimeBytecodeSha256": "1c0463a1ddbc8b64187ad4187458876cef188f2056521be17827d1e930e3a8d0",
+    "creationBytes": 3214,
+    "runtimeBytes": 2920
   },
   {
     "contract": "FeeVaultV1",
@@ -36,10 +36,10 @@
   },
   {
     "contract": "FullMarketDeployerV1",
-    "creationBytecodeSha256": "c119efef97444092d65a9a85fdb64b623d771139db7aa64e5c517eaec06a290f",
-    "runtimeBytecodeSha256": "d3566578e8aa4d5315555df2b65c312c4fe20a4b655ba8d7d5847898764865ae",
-    "creationBytes": 24179,
-    "runtimeBytes": 24026
+    "creationBytecodeSha256": "8d83f4ec98b2131902b58a709c87c5a63a40dbdc0fd85b96f50418069f3a609f",
+    "runtimeBytecodeSha256": "b0d8a01b21fa2bbd8216d30a0ed22df7e6faf17790aab7d5bb532eca86a948fc",
+    "creationBytes": 24385,
+    "runtimeBytes": 24232
   },
   {
     "contract": "MarketFactoryV1",
@@ -50,17 +50,17 @@
   },
   {
     "contract": "FullMarketVaultV1",
-    "creationBytecodeSha256": "f6a3cabd3a5a559df8afa74af04161db463f5fec1e49fa4c18abf8071a537f3f",
-    "runtimeBytecodeSha256": "11b003d0560152f935727056147e1ddb6f45c6f4e9854ab13150994116b3eba5",
-    "creationBytes": 23458,
-    "runtimeBytes": 23238
+    "creationBytecodeSha256": "53f430654771c59f6a67c16811558494b35888f32b6a089cce8bcd92924e2875",
+    "runtimeBytecodeSha256": "b79436a788e464d38f013ff2a94377e90f9bd96f9f3eba1227cb3ed327d766db",
+    "creationBytes": 23664,
+    "runtimeBytes": 23444
   },
   {
     "contract": "CloneMarketVaultV1",
-    "creationBytecodeSha256": "7ccb942cb7a4a13f0f4ebb5458106a6a89917c784b6b393398e9fcac9a1a6759",
-    "runtimeBytecodeSha256": "11b003d0560152f935727056147e1ddb6f45c6f4e9854ab13150994116b3eba5",
-    "creationBytes": 23471,
-    "runtimeBytes": 23238
+    "creationBytecodeSha256": "2b21a33eb344df975a5a958a8ff131c968c0582407ddad6ade36d9c6e699a224",
+    "runtimeBytecodeSha256": "b79436a788e464d38f013ff2a94377e90f9bd96f9f3eba1227cb3ed327d766db",
+    "creationBytes": 23677,
+    "runtimeBytes": 23444
   },
   {
     "contract": "FixedPriceMarketplaceV1",

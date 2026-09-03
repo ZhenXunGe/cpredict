@@ -1721,6 +1721,16 @@
   },
   {
     "contract": "CloneMarketVaultV1",
+    "signature": "voidReason()",
+    "selector": "0x69b4c018"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "voidReason()",
+    "selector": "0x69b4c018"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
     "signature": "winningOutcome()",
     "selector": "0x9b34ae03"
   },

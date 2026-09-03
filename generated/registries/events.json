@@ -1534,10 +1534,10 @@
     "selector": "0xe024ffd90e32f461bcc6bde2258c83a403ff23e5fc7caba346fb301cd23ffd1e",
     "inputs": [
       {
-        "name": "terminalState",
+        "name": "reason",
         "type": "uint8",
         "indexed": true,
-        "internalType": "enum ProtocolTypes.MarketState"
+        "internalType": "enum ProtocolTypes.VoidReason"
       },
       {
         "name": "caller",
@@ -1566,10 +1566,10 @@
     "selector": "0xe024ffd90e32f461bcc6bde2258c83a403ff23e5fc7caba346fb301cd23ffd1e",
     "inputs": [
       {
-        "name": "terminalState",
+        "name": "reason",
         "type": "uint8",
         "indexed": true,
-        "internalType": "enum ProtocolTypes.MarketState"
+        "internalType": "enum ProtocolTypes.VoidReason"
       },
       {
         "name": "caller",
