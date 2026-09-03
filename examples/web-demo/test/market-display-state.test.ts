@@ -46,13 +46,23 @@ describe("market display state", () => {
       primaryBuyOpen: false,
     });
     expect(
-      marketDisplayState({ marketState: 2, observedAt: 99n, closeAt: 100n }),
+      marketDisplayState({
+        marketState: 2,
+        voidReason: 1,
+        observedAt: 99n,
+        closeAt: 100n,
+      }),
     ).toEqual({
       label: "创建者作废",
       primaryBuyOpen: false,
     });
     expect(
-      marketDisplayState({ marketState: 3, observedAt: 99n, closeAt: 100n }),
+      marketDisplayState({
+        marketState: 2,
+        voidReason: 3,
+        observedAt: 99n,
+        closeAt: 100n,
+      }),
     ).toEqual({
       label: "超时作废",
       primaryBuyOpen: false,
@@ -69,7 +79,7 @@ describe("market display state", () => {
       ]),
     ).toBe("No");
     expect(
-      marketFinalResultLabel({ marketState: 3, winningOutcome: 0 }, [
+      marketFinalResultLabel({ marketState: 2, winningOutcome: 0 }, [
         "Yes",
         "No",
       ]),

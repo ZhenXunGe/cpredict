@@ -5,6 +5,7 @@ import {
   type Hex,
   type PublicClient,
 } from "viem";
+import { assertMarketState } from "../../../offchain/sdk/src/market-state.js";
 
 const vaultReadAbi = parseAbi([
   "function creator() view returns (address)",
@@ -21,6 +22,7 @@ const vaultReadAbi = parseAbi([
   "function minimumC2CUnits() view returns (uint128)",
   "function creatorBond() view returns (uint128)",
   "function marketState() view returns (uint8)",
+  "function voidReason() view returns (uint8)",
   "function winningOutcome() view returns (uint8)",
   "function totalPrincipal() view returns (uint256)",
   "function resolutionDeadline() view returns (uint256)",
@@ -75,6 +77,7 @@ export interface MarketSnapshot {
   minimumC2CUnits: bigint;
   creatorBond: bigint;
   marketState: number;
+  voidReason: number;
   winningOutcome: number;
   totalPrincipal: bigint;
   resolutionDeadline: bigint;
@@ -144,12 +147,14 @@ export async function readMarket(
       "resolutionDeadline",
       "permit2Enabled",
       "earlyBirdEnabled",
+      "voidReason",
     ].map((functionName) => ({
       address,
       abi: vaultReadAbi,
       functionName,
     })) as never,
   });
+  assertMarketState(Number(values[13]), Number(values[19]));
   return {
     address,
     observedAt: block.timestamp,
@@ -167,6 +172,7 @@ export async function readMarket(
     minimumC2CUnits: values[11] as bigint,
     creatorBond: values[12] as bigint,
     marketState: Number(values[13]),
+    voidReason: Number(values[19]),
     winningOutcome: Number(values[14]),
     totalPrincipal: values[15] as bigint,
     resolutionDeadline: values[16] as bigint,
@@ -411,21 +417,28 @@ export function formatShareUnits(value: bigint): string {
   return `${formatUnits(value, 6)} 份`;
 }
 
-export const MARKET_STATE_LABELS = [
-  "OPEN",
-  "RESOLVED",
-  "VOIDED_CREATOR",
-  "VOIDED_TIMEOUT",
-] as const;
+export const MARKET_STATE_LABELS = ["OPEN", "RESOLVED", "VOIDED"] as const;
 
 export const MARKET_CLOSED_PENDING_RESOLUTION_LABEL = "已截止，待结算";
 
 const MARKET_STATE_ZH: Record<(typeof MARKET_STATE_LABELS)[number], string> = {
   OPEN: "进行中",
   RESOLVED: "已结算",
-  VOIDED_CREATOR: "创建者作废",
-  VOIDED_TIMEOUT: "超时作废",
+  VOIDED: "已作废",
 };
+
+export function voidReasonLabel(reason: number | undefined): string {
+  switch (reason) {
+    case 1:
+      return "创建者作废";
+    case 2:
+      return "零胜方份额作废";
+    case 3:
+      return "超时作废";
+    default:
+      return "作废原因未知";
+  }
+}
 
 export interface MarketDisplayState {
   label: string;
@@ -456,12 +469,18 @@ export function marketFinalResultLabel(
 export function marketDisplayState(
   market: Pick<MarketSnapshot, "marketState" | "closeAt" | "observedAt"> & {
     resolutionDeadline?: bigint;
+    voidReason?: number;
   },
 ): MarketDisplayState {
   if (market.marketState !== 0) {
     const code = MARKET_STATE_LABELS[market.marketState];
     return {
-      label: code === undefined ? "未知" : MARKET_STATE_ZH[code],
+      label:
+        code === "VOIDED"
+          ? voidReasonLabel(market.voidReason)
+          : code === undefined
+            ? "未知"
+            : MARKET_STATE_ZH[code],
       primaryBuyOpen: false,
     };
   }

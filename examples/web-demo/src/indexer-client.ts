@@ -1,17 +1,16 @@
 import { getAddress, isAddress, type Address, type Hex } from "viem";
 import {
   encodeMarketRules,
+  assertMarketState,
   marketRulesSchema,
   type MarketRules,
 } from "../../../offchain/sdk/src/index.js";
 
-export type CatalogStatus =
-  "open" | "resolved" | "voided-creator" | "voided-timeout";
+export type CatalogStatus = "open" | "resolved" | "voided";
 
 export const TERMINAL_CATALOG_STATUSES = [
   "resolved",
-  "voided-creator",
-  "voided-timeout",
+  "voided",
 ] as const satisfies readonly CatalogStatus[];
 
 export interface MarketCatalogItem {
@@ -26,6 +25,7 @@ export interface MarketCatalogItem {
   primaryFilledUnits: bigint;
   creatorBond: bigint;
   status: CatalogStatus;
+  voidReason: number;
   winningOutcome: bigint | null;
   createdBlock: bigint;
   confirmationStatus: "provisional" | "confirmed";
@@ -85,6 +85,7 @@ export type ActivityKind =
   | "terminal-listing-returned"
   | "market-resolved"
   | "market-voided-creator"
+  | "market-voided-no-winning-supply"
   | "market-voided-timeout"
   | "winner-claimed"
   | "early-bird-claimed"
@@ -277,8 +278,13 @@ function parseMarket(value: unknown): MarketCatalogItem {
   );
   const status = enumValue(
     item.status,
-    ["open", "resolved", "voided-creator", "voided-timeout"] as const,
+    ["open", "resolved", "voided"] as const,
     "status",
+  );
+  const voidReason = integer(item.voidReason, "voidReason", 0, 3);
+  assertMarketState(
+    status === "open" ? 0 : status === "resolved" ? 1 : 2,
+    voidReason,
   );
   const winningOutcome =
     item.winningOutcome === undefined
@@ -303,6 +309,7 @@ function parseMarket(value: unknown): MarketCatalogItem {
     primaryFilledUnits: bigint(item.primaryFilledUnits, "primaryFilledUnits"),
     creatorBond: bigint(item.creatorBond, "creatorBond"),
     status,
+    voidReason,
     winningOutcome,
     createdBlock: bigint(item.createdBlock, "createdBlock"),
     confirmationStatus: confirmation(item.confirmationStatus),
@@ -325,6 +332,7 @@ function parseActivity(value: unknown): WalletActivityItem {
         "terminal-listing-returned",
         "market-resolved",
         "market-voided-creator",
+        "market-voided-no-winning-supply",
         "market-voided-timeout",
         "winner-claimed",
         "early-bird-claimed",
