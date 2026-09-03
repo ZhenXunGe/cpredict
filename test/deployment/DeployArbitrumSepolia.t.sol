@@ -53,6 +53,7 @@ contract DeployArbitrumSepoliaBehaviorTest is Test {
     }
 
     function testPreviewDeploysWiringWithoutSchedulingBootstrap() public {
+        _configureSandbox();
         vm.setEnv("DEPLOYMENT_PREVIEW_ONLY", "true");
 
         DeployArbitrumSepolia.Deployment memory deployed = deploymentScript.run();
@@ -70,7 +71,9 @@ contract DeployArbitrumSepoliaBehaviorTest is Test {
         assertFalse(deployed.timelock.isOperation(operationId));
     }
 
-    function testNonPreviewSchedulesExactBootstrapBatchAfterDelay() public {
+    function testSandboxSchedulesExactBootstrapBatchWithoutDelay() public {
+        _configureSandbox();
+        vm.warp(1_000_000);
         vm.setEnv("DEPLOYMENT_PREVIEW_ONLY", "true");
         uint256 snapshot = vm.snapshotState();
         DeployArbitrumSepolia.Deployment memory preview = deploymentScript.run();
@@ -83,9 +86,14 @@ contract DeployArbitrumSepoliaBehaviorTest is Test {
         DeployArbitrumSepolia.Deployment memory deployed = deploymentScript.run();
         bytes32 operationId = _bootstrapOperationId(deployed, fingerprint);
 
-        assertTrue(deployed.timelock.isOperationPending(operationId));
-        assertEq(deployed.timelock.getTimestamp(operationId), block.timestamp + TIMELOCK_DELAY);
+        assertTrue(deployed.timelock.isOperationReady(operationId));
+        assertEq(deployed.timelock.getTimestamp(operationId), block.timestamp);
         assertFalse(deployed.factory.active());
+    }
+
+    function _configureSandbox() internal {
+        vm.setEnv("CPREDICT_SANDBOX_TOKEN_ENABLED", "true");
+        vm.setEnv("CPREDICT_TIMELOCK_DELAY_SECONDS", "0");
     }
 
     function _bootstrapOperationId(

@@ -9,6 +9,7 @@ import {
   SANDBOX_TOKEN_KIND,
   USDC,
   extractFingerprint,
+  forgeEnvironment,
   parseArgs,
   parseEnvText,
   validateBroadcastDocument,
@@ -78,6 +79,25 @@ test("CLI parser exposes staged and one-command deployment flows", () => {
   assert.throws(() => parseArgs(["deploy", "--poll-seconds", "1"]), />= 5/);
   assert.throws(() => parseArgs(["launch"]), /unknown command/);
   assert.equal(parseArgs(["deploy", "--profile", "sandbox"]).profile, "sandbox");
+});
+
+test("deployment profile owns the Timelock delay policy", () => {
+  const config = (profile) => ({
+    profile,
+    env: { CPREDICT_TIMELOCK_DELAY_SECONDS: "1800" },
+    rpcA: "https://rpc.example.test",
+    privateKey: "0x" + "11".repeat(32),
+    roles: {
+      governanceSafe: address(1),
+      emergencySafe: address(2),
+      treasury: address(3),
+      sponsorSigner: address(4),
+    },
+    stateDir: "/tmp/cpredict-test-state",
+  });
+  assert.equal(forgeEnvironment(config("sandbox")).CPREDICT_TIMELOCK_DELAY_SECONDS, "0");
+  assert.equal(forgeEnvironment(config("debug")).CPREDICT_TIMELOCK_DELAY_SECONDS, "0");
+  assert.equal(forgeEnvironment(config("formal")).CPREDICT_TIMELOCK_DELAY_SECONDS, "3600");
 });
 
 test("fingerprint parser requires the explicit Solidity preview marker", () => {

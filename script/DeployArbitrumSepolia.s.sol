@@ -18,8 +18,8 @@ import { FixedPriceMarketplaceV1 } from "../src/marketplace/FixedPriceMarketplac
 import { SponsorshipPaymasterV1 } from "../src/paymaster/SponsorshipPaymasterV1.sol";
 import { CpredictSandboxToken } from "../src/testnet/CpredictSandboxToken.sol";
 
-/// @notice Deploys V1 and schedules the one-time factory wiring through the 1-hour timelock.
-/// @dev Run only on Arbitrum Sepolia (421614). Finalize with FinalizeBootstrap after the delay.
+/// @notice Deploys V1 and schedules the one-time factory wiring through the Timelock.
+/// @dev Sandbox and debug deployments use a zero delay; formal retains the 1-hour delay.
 contract DeployArbitrumSepolia is Script {
     uint256 internal constant ARBITRUM_SEPOLIA_CHAIN_ID = 421_614;
     uint256 internal constant TIMELOCK_DELAY = 1 hours;
@@ -88,7 +88,7 @@ contract DeployArbitrumSepolia is Script {
         }
         console2.log("Timelock", address(deployed.timelock));
         console2.log("Factory", address(deployed.factory));
-        console2.log("Bootstrap execute after", block.timestamp + TIMELOCK_DELAY);
+        console2.log("Bootstrap execute after", block.timestamp + _timelockDelay());
     }
 
     function _loadDeploymentInputs(uint256 deployerKey)
@@ -132,7 +132,7 @@ contract DeployArbitrumSepolia is Script {
             paymentToken = address(deployed.sandboxToken);
         }
         deployed.timelock =
-            new TimelockController(TIMELOCK_DELAY, proposers, executors, inputs.deployer);
+            new TimelockController(_timelockDelay(), proposers, executors, inputs.deployer);
         address governance = address(deployed.timelock);
         deployed.config = new ProtocolConfigV1(governance, paymentToken, inputs.treasury);
         deployed.emergency = new EmergencyControllerV1(governance, inputs.emergencySafe);
@@ -176,8 +176,13 @@ contract DeployArbitrumSepolia is Script {
         );
         (address[] memory targets, uint256[] memory values, bytes[] memory payloads) =
             _bootstrapBatch(deployed, expectedFactoryFingerprint);
-        deployed.timelock
-            .scheduleBatch(targets, values, payloads, bytes32(0), BOOTSTRAP_SALT, TIMELOCK_DELAY);
+        deployed.timelock.scheduleBatch(
+            targets, values, payloads, bytes32(0), BOOTSTRAP_SALT, _timelockDelay()
+        );
+    }
+
+    function _timelockDelay() internal view returns (uint256) {
+        return vm.envOr("CPREDICT_TIMELOCK_DELAY_SECONDS", TIMELOCK_DELAY);
     }
 
     /// @dev Isolated only to keep the deployment script compilable in Foundry's unoptimized,
