@@ -273,6 +273,8 @@ describe("React protocol call examples", () => {
         paymentToken={address}
         vault={address}
         marketplace={address}
+        observedAt={1_800_000_000n}
+        closeAt={1_900_000_000n}
         selectedListing={{
           listingId,
           vault: address,
@@ -312,20 +314,44 @@ describe("React protocol call examples", () => {
       active: true,
       observedAt: 1_800_000_000n,
     };
-    expect(quoteFillFromChain(listing, address, 1_000_000n)).toBe(900_000n);
+    expect(
+      quoteFillFromChain(listing, address, 1_000_000n, 1_900_000_000n),
+    ).toBe(900_000n);
     expect(() =>
-      quoteFillFromChain({ ...listing, active: false }, address, 1_000_000n),
+      quoteFillFromChain(
+        { ...listing, active: false },
+        address,
+        1_000_000n,
+        1_900_000_000n,
+      ),
     ).toThrow("已失效");
     expect(() =>
       quoteFillFromChain(
         { ...listing, observedAt: listing.expiresAt },
         address,
         1_000_000n,
+        1_900_000_000n,
       ),
     ).toThrow("已过期");
-    expect(() => quoteFillFromChain(listing, address, 3_000_000n)).toThrow(
-      "超过",
-    );
+    expect(() =>
+      quoteFillFromChain(listing, address, 3_000_000n, 1_900_000_000n),
+    ).toThrow("超过");
+    expect(() =>
+      quoteFillFromChain(
+        { ...listing, unitPrice: 1_200_000n },
+        address,
+        1_000_000n,
+        1_900_000_000n,
+      ),
+    ).toThrow("池子直买更便宜");
+    expect(
+      quoteFillFromChain(
+        { ...listing, unitPrice: 1_200_000n },
+        address,
+        1_000_000n,
+        listing.observedAt,
+      ),
+    ).toBe(1_200_000n);
   });
 
   it("renders both bounded primary-payment authorization paths", () => {
