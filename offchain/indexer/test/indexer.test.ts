@@ -258,6 +258,39 @@ describe("ChainIndexer canonical ingestion", () => {
     ).toBe(2);
   });
 
+  it("attaches market terminal state onto remaining positions", async () => {
+    const client = new FakeClient(4n, [
+      marketCreatedLog(1n, MARKET_A),
+      marketInitializedLog(1n, MARKET_A),
+      transferLog(2n, MARKET_A, ZERO, ALICE, 0n, 10n),
+      transferLog(3n, MARKET_A, ZERO, ALICE, 1n, 7n),
+      marketResolvedLog(4n, MARKET_A, EVIDENCE_HASH),
+    ]);
+    const store = new MemoryEventStore();
+    await createIndexer(client, store).runBatch();
+
+    const positions = (
+      await store.listPositions(CHAIN_ID, ALICE, { limit: 10 })
+    ).items;
+    expect(positions).toHaveLength(2);
+    expect(positions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          outcomeId: 0n,
+          balance: 10n,
+          marketState: 1,
+          winningOutcome: 1n,
+        }),
+        expect.objectContaining({
+          outcomeId: 1n,
+          balance: 7n,
+          marketState: 1,
+          winningOutcome: 1n,
+        }),
+      ]),
+    );
+  });
+
   it("materializes metadata, primary totals, catalog filters, and wallet activity", async () => {
     const rulesHash = hash(801n);
     const sourceHash = hash(802n);
@@ -292,10 +325,12 @@ describe("ChainIndexer canonical ingestion", () => {
         .items,
     ).toHaveLength(1);
     expect(
-      (await store.listMarketCatalog(CHAIN_ID, {
-        limit: 10,
-        status: "resolved",
-      })).items,
+      (
+        await store.listMarketCatalog(CHAIN_ID, {
+          limit: 10,
+          status: "resolved",
+        })
+      ).items,
     ).toHaveLength(0);
 
     expect(

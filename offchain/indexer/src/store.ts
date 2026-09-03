@@ -101,6 +101,17 @@ export interface PositionView {
   balance: bigint;
   updatedBlock: bigint;
   confirmationStatus: ConfirmationStatus;
+  marketState: number | null;
+  winningOutcome: bigint | null;
+}
+
+export function positionMarketSnapshot(
+  market: Pick<MarketView, "state" | "winningOutcome"> | undefined,
+): Pick<PositionView, "marketState" | "winningOutcome"> {
+  return {
+    marketState: market?.state ?? null,
+    winningOutcome: market?.winningOutcome ?? null,
+  };
 }
 
 export interface ClaimView {
@@ -117,7 +128,8 @@ export interface ClaimView {
   confirmationStatus: ConfirmationStatus;
 }
 
-export type MarketStatus = "open" | "resolved" | "voided-creator" | "voided-timeout";
+export type MarketStatus =
+  "open" | "resolved" | "voided-creator" | "voided-timeout";
 
 export interface MarketCatalogOptions {
   limit: number;
