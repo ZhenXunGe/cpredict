@@ -68,6 +68,13 @@ export const marketFactoryAbi = [
 export const marketVaultAbi = [
   {
     type: "function",
+    name: "voidReason",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint8" }],
+  },
+  {
+    type: "function",
     name: "buy",
     stateMutability: "nonpayable",
     inputs: [
@@ -256,7 +263,7 @@ export const marketVaultAbi = [
     name: "MarketVoided",
     anonymous: false,
     inputs: [
-      { name: "terminalState", type: "uint8", indexed: true },
+      { name: "reason", type: "uint8", indexed: true },
       { name: "caller", type: "address", indexed: true },
       { name: "refundPrincipal", type: "uint256", indexed: false },
       { name: "evidenceHash", type: "bytes32", indexed: true },
@@ -339,11 +346,6 @@ export const marketVaultAbi = [
     type: "error",
     name: "Unauthorized",
     inputs: [{ name: "caller", type: "address" }],
-  },
-  {
-    type: "error",
-    name: "WinningOutcomeHasNoSupply",
-    inputs: [{ name: "outcomeId", type: "uint256" }],
   },
 ] as const;
 
