@@ -1,0 +1,29 @@
+---
+description: 产品唯一权威是 product-framework.md v0.21；经济、C2C、结算、抽水以该原文为准
+alwaysApply: true
+---
+
+# 产品权威来源
+
+唯一权威：`product-framework.md` **v0.21**（2026-08-04）。
+
+- 仓库副本：`docs/product-framework.md`
+- 锁路径：`/Users/undef1ned/Downloads/product-framework.md`
+- 指纹：31,449 bytes，SHA-256 `5a76a9e0d98691ccc20a1faa37b1607a1d4afd2ca5b17563641cad707ff9aca4`
+- 锁文件：`manifests/requirements.lock`
+
+回答产品、经济、C2C、结算、抽水问题时，先对这份原文，再对 `docs/zh/01`、`03`、`docs/en/ECONOMIC_SPEC.md`。不要把单测夹具或 Demo 表单默认值说成需求默认值。
+
+## 原文已写死
+
+- 1 份 = 1 USDC 本金；一级彩池，C2C 是二级卖单。
+- C2C 成交不改变池子比例、不影响派彩；C2C 不沉淀本金。
+- C2C 平台费 + creator 分成：**MVP 默认均为 0**。
+- 派彩按当前持有人；早鸟按原下注人，转让不带走。
+- **结算抽水归 creator**，在合约硬上限内自设；平台从抽水中抽成。原文**没有**冻结 5% 或 2%。
+- 封盘后 creator 须在**结算时限内**宣布结果；超时 → 自动作废、每份 1 USDC 退当前持有人。
+
+## 不要写成需求
+
+- 创建页 `rakeBps = 200`、单测 `creatorRakeBps: 500` 都是实现/夹具，不是 v0.21 默认抽水率。
+- `mvp-engineering-requirements.md` 对 v0.19–v0.21 机制变更已过期。
