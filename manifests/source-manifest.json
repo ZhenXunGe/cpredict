@@ -198,7 +198,7 @@
     },
     {
       "path": "examples/react/src/MarketLifecyclePanel.tsx",
-      "sha256": "2706974ad628d9ead96f40ef1b0ed0afadcc38330fc4c2868d13e498d63d433f"
+      "sha256": "d5be98205002e5a57b2fb0d0558e987853861031063ac4d5ddde49f1da8e4766"
     },
     {
       "path": "examples/react/src/MarketplacePanel.tsx",
@@ -214,7 +214,7 @@
     },
     {
       "path": "examples/react/src/settlementEvidence.ts",
-      "sha256": "00b65d162b52bae7779d23c3c03ed2e3f93514037562c3f435a67cd2042f3312"
+      "sha256": "82888424b1d427944f2c0de5f5425a1dca3e92f8c31cdf37c72a49398f8c5e03"
     },
     {
       "path": "examples/react/src/transactionTiming.ts",
@@ -230,7 +230,7 @@
     },
     {
       "path": "examples/react/test/components.test.tsx",
-      "sha256": "c6057d60b803d36027721cdc6155b59bd8e9cb286903485f93ffa1b95e3f5872"
+      "sha256": "3cbe76937de02ba697bfd14ea72cecce79ab2e2f11cea3590301086078eac2fb"
     },
     {
       "path": "examples/web-demo/README.md",
@@ -250,7 +250,7 @@
     },
     {
       "path": "examples/web-demo/src/App.tsx",
-      "sha256": "c45dd184f9bf228657a45c940a021ee8e6de1804696ad6e318130ca3b9090585"
+      "sha256": "bdd586b3039501c39e758eb381d03f26c502fbd59a3785c01db7eff7de3d2731"
     },
     {
       "path": "examples/web-demo/src/CreateMarketForm.tsx",
@@ -930,7 +930,7 @@
     },
     {
       "path": "offchain/sdk/src/transaction-policy.ts",
-      "sha256": "116e3014b0c3b73bbf36e9aa0de9520eb86aa60e4db7c117ffb4868b79cccbb2"
+      "sha256": "a345ea7f11dd84a048c6b01aebfe8a6931f2c7d869756d6db175c2c16e10946d"
     },
     {
       "path": "offchain/sdk/src/units.ts",
@@ -970,7 +970,7 @@
     },
     {
       "path": "offchain/sdk/test/transaction-policy.test.ts",
-      "sha256": "7ac023933019ca0724ffed2cef82f4b493a68f59af408c4c481e5e970d92de2c"
+      "sha256": "fef27a8f2e2677ab66bd911c559b3cb96a5fc09512a649679a911c7fc439eeaa"
     },
     {
       "path": "offchain/sdk/test/units.test.ts",
