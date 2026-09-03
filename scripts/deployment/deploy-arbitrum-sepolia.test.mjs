@@ -84,7 +84,7 @@ test("CLI parser exposes staged and one-command deployment flows", () => {
 test("deployment profile owns the Timelock delay policy", () => {
   const config = (profile) => ({
     profile,
-    env: { CPREDICT_TIMELOCK_DELAY_SECONDS: "1800" },
+    env: { CPREDICT_DEPLOYMENT_PROFILE: "formal" },
     rpcA: "https://rpc.example.test",
     privateKey: "0x" + "11".repeat(32),
     roles: {
@@ -95,9 +95,9 @@ test("deployment profile owns the Timelock delay policy", () => {
     },
     stateDir: "/tmp/cpredict-test-state",
   });
-  assert.equal(forgeEnvironment(config("sandbox")).CPREDICT_TIMELOCK_DELAY_SECONDS, "0");
-  assert.equal(forgeEnvironment(config("debug")).CPREDICT_TIMELOCK_DELAY_SECONDS, "0");
-  assert.equal(forgeEnvironment(config("formal")).CPREDICT_TIMELOCK_DELAY_SECONDS, "3600");
+  assert.equal(forgeEnvironment(config("sandbox")).CPREDICT_DEPLOYMENT_PROFILE, "sandbox");
+  assert.equal(forgeEnvironment(config("debug")).CPREDICT_DEPLOYMENT_PROFILE, "debug");
+  assert.equal(forgeEnvironment(config("formal")).CPREDICT_DEPLOYMENT_PROFILE, "formal");
 });
 
 test("fingerprint parser requires the explicit Solidity preview marker", () => {

@@ -37,6 +37,7 @@ contract DeployArbitrumSepoliaBehaviorTest is Test {
         vm.setEnv("PROTOCOL_TREASURY", vm.toString(treasury));
         vm.setEnv("SPONSOR_SIGNER", vm.toString(sponsorSigner));
         vm.setEnv("CPREDICT_SANDBOX_TOKEN_ENABLED", "true");
+        vm.setEnv("CPREDICT_DEPLOYMENT_PROFILE", "sandbox");
         vm.setEnv("MARKET_RESOLUTION_WINDOW_SECONDS", "900");
     }
 
@@ -93,7 +94,7 @@ contract DeployArbitrumSepoliaBehaviorTest is Test {
 
     function _configureSandbox() internal {
         vm.setEnv("CPREDICT_SANDBOX_TOKEN_ENABLED", "true");
-        vm.setEnv("CPREDICT_TIMELOCK_DELAY_SECONDS", "0");
+        vm.setEnv("CPREDICT_DEPLOYMENT_PROFILE", "sandbox");
     }
 
     function _bootstrapOperationId(

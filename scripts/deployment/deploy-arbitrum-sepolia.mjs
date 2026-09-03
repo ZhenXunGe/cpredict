@@ -666,8 +666,8 @@ export function forgeEnvironment(config, extra = {}) {
     ...extra,
     // The selected CLI profile owns this flag; an env file cannot silently switch tokens.
     CPREDICT_SANDBOX_TOKEN_ENABLED: config.profile === "sandbox" ? "true" : "false",
-    // The selected profile owns the Timelock policy; local env cannot weaken formal deployments.
-    CPREDICT_TIMELOCK_DELAY_SECONDS: config.profile === "formal" ? "3600" : "0",
+    // The selected CLI profile owns the Timelock policy; an env file cannot weaken formal deployments.
+    CPREDICT_DEPLOYMENT_PROFILE: config.profile,
   };
 }
 

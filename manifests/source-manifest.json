@@ -1046,7 +1046,7 @@
     },
     {
       "path": "script/DeployArbitrumSepolia.s.sol",
-      "sha256": "9a4e3b0a598c790d2b87c7b3f06f14bff0703d5ce2ae11b13cfcd46625507ed2"
+      "sha256": "82d8d5d6c057f29c4876406e43339530330a5cc3bb7f322d0df43da80f9dfbaa"
     },
     {
       "path": "script/FinalizeBootstrap.s.sol",
@@ -1094,7 +1094,7 @@
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.mjs",
-      "sha256": "129412246e35dd3c6b06328d8ac300625181dc9a37c81a63a994f02fa856f671"
+      "sha256": "eba892d22d3c6aa923d71f1f3b33005683905cbab1ebf89b04cd920edbeb1d7f"
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.sh",
@@ -1102,7 +1102,7 @@
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.test.mjs",
-      "sha256": "5536185bcd4accf9e35a4872556726857494494900bbdcf2224d0b58229871b6"
+      "sha256": "2961e720f831c5aca5e9a30917e28551600c73d8ab927b792ceab0cb131fc16e"
     },
     {
       "path": "scripts/deployment/deployment-evidence.test.mjs",
@@ -1734,7 +1734,7 @@
     },
     {
       "path": "test/deployment/DeployArbitrumSepolia.t.sol",
-      "sha256": "cbba53165d587d152414854ec39501744b6a91c182c2016c0009915bb7c215b4"
+      "sha256": "65e9b4f5078b5fe58b70e765e0a7bed42a82c7e99274d173e9626e651d87eca5"
     },
     {
       "path": "test/gas/ProtocolGasGates.t.sol",

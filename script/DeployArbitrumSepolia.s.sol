@@ -79,7 +79,7 @@ contract DeployArbitrumSepolia is Script {
             return deployed;
         }
 
-        _scheduleBootstrap(deployed, actualFactoryFingerprint);
+        _scheduleBootstrap(deployed, inputs, actualFactoryFingerprint);
         vm.stopBroadcast();
 
         // A dry-run must never leave an address file that could be mistaken for broadcast evidence.
@@ -88,7 +88,7 @@ contract DeployArbitrumSepolia is Script {
         }
         console2.log("Timelock", address(deployed.timelock));
         console2.log("Factory", address(deployed.factory));
-        console2.log("Bootstrap execute after", block.timestamp + _timelockDelay());
+        console2.log("Bootstrap execute after", block.timestamp + _timelockDelay(inputs));
     }
 
     function _loadDeploymentInputs(uint256 deployerKey)
@@ -131,8 +131,9 @@ contract DeployArbitrumSepolia is Script {
             deployed.sandboxToken = new CpredictSandboxToken();
             paymentToken = address(deployed.sandboxToken);
         }
-        deployed.timelock =
-            new TimelockController(_timelockDelay(), proposers, executors, inputs.deployer);
+        deployed.timelock = new TimelockController(
+            _timelockDelay(inputs), proposers, executors, inputs.deployer
+        );
         address governance = address(deployed.timelock);
         deployed.config = new ProtocolConfigV1(governance, paymentToken, inputs.treasury);
         deployed.emergency = new EmergencyControllerV1(governance, inputs.emergencySafe);
@@ -165,7 +166,11 @@ contract DeployArbitrumSepolia is Script {
         return deployed.factory.dependencyFingerprintFor(address(deployed.marketplace));
     }
 
-    function _scheduleBootstrap(Deployment memory deployed, bytes32 actualFactoryFingerprint)
+    function _scheduleBootstrap(
+        Deployment memory deployed,
+        DeploymentInputs memory inputs,
+        bytes32 actualFactoryFingerprint
+    )
         internal
     {
         bytes32 expectedFactoryFingerprint =
@@ -177,12 +182,15 @@ contract DeployArbitrumSepolia is Script {
         (address[] memory targets, uint256[] memory values, bytes[] memory payloads) =
             _bootstrapBatch(deployed, expectedFactoryFingerprint);
         deployed.timelock.scheduleBatch(
-            targets, values, payloads, bytes32(0), BOOTSTRAP_SALT, _timelockDelay()
+            targets, values, payloads, bytes32(0), BOOTSTRAP_SALT, _timelockDelay(inputs)
         );
     }
 
-    function _timelockDelay() internal view returns (uint256) {
-        return vm.envOr("CPREDICT_TIMELOCK_DELAY_SECONDS", TIMELOCK_DELAY);
+    function _timelockDelay(DeploymentInputs memory inputs) internal view returns (uint256) {
+        if (inputs.sandboxTokenEnabled) return 0;
+        return keccak256(bytes(vm.envString("CPREDICT_DEPLOYMENT_PROFILE"))) == keccak256("debug")
+            ? 0
+            : TIMELOCK_DELAY;
     }
 
     /// @dev Isolated only to keep the deployment script compilable in Foundry's unoptimized,
