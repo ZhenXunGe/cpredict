@@ -1,4 +1,4 @@
-FROM node:22.23.2-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS build
+FROM node:26.8.1-bookworm-slim@sha256:367679cf9792759492a486e4aa4b421764d71a9546a6dae8aab81a99eb797b3e AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
 RUN npm ci --ignore-scripts
@@ -7,12 +7,12 @@ COPY examples ./examples
 COPY generated ./generated
 RUN npm run build:offchain
 
-FROM node:22.23.2-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS runtime-deps
+FROM node:26.8.1-bookworm-slim@sha256:367679cf9792759492a486e4aa4b421764d71a9546a6dae8aab81a99eb797b3e AS runtime-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts --omit=dev && npm cache clean --force
 
-FROM node:22.23.2-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS indexer
+FROM node:26.8.1-bookworm-slim@sha256:367679cf9792759492a486e4aa4b421764d71a9546a6dae8aab81a99eb797b3e AS indexer
 ARG CPREDICT_IMAGE_REVISION
 RUN printf '%s' "$CPREDICT_IMAGE_REVISION" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${CPREDICT_IMAGE_REVISION}"
@@ -27,7 +27,7 @@ COPY package.json ./package.json
 USER node
 CMD ["node", "dist/offchain/indexer/src/main.js"]
 
-FROM node:22.23.2-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS paymaster
+FROM node:26.8.1-bookworm-slim@sha256:367679cf9792759492a486e4aa4b421764d71a9546a6dae8aab81a99eb797b3e AS paymaster
 ARG CPREDICT_IMAGE_REVISION
 RUN printf '%s' "$CPREDICT_IMAGE_REVISION" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${CPREDICT_IMAGE_REVISION}"
@@ -42,7 +42,7 @@ COPY package.json ./package.json
 USER node
 CMD ["node", "dist/offchain/paymaster-service/src/main.js"]
 
-FROM node:22.23.2-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS metadata
+FROM node:26.8.1-bookworm-slim@sha256:367679cf9792759492a486e4aa4b421764d71a9546a6dae8aab81a99eb797b3e AS metadata
 ARG CPREDICT_IMAGE_REVISION
 RUN printf '%s' "$CPREDICT_IMAGE_REVISION" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${CPREDICT_IMAGE_REVISION}"
@@ -57,7 +57,7 @@ COPY package.json ./package.json
 USER node
 CMD ["node", "dist/offchain/metadata-service/src/main.js"]
 
-FROM node:22.23.2-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS permit2-relay
+FROM node:26.8.1-bookworm-slim@sha256:367679cf9792759492a486e4aa4b421764d71a9546a6dae8aab81a99eb797b3e AS permit2-relay
 ARG CPREDICT_IMAGE_REVISION
 RUN printf '%s' "$CPREDICT_IMAGE_REVISION" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${CPREDICT_IMAGE_REVISION}"
