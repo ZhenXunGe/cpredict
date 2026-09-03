@@ -22,6 +22,26 @@ export type CanonicalEvidenceUploader = (
   request: CanonicalEvidenceUploadRequest,
 ) => Promise<CanonicalEvidenceUploadResult>;
 
+export const EVIDENCE_BOTH_OR_NEITHER_MESSAGE =
+  "证据来源 URI 和摘要必须同时填写，或同时留空。";
+export const EVIDENCE_UPLOAD_UNAVAILABLE_MESSAGE =
+  "当前部署未接入证据上传。请清空证据来源和摘要后再结算；结算不需要填写证据。";
+export const EVIDENCE_URI_MISMATCH_MESSAGE =
+  "证据上传返回的 URI 与规范文档不一致，未提交结算。";
+
+export function settlementEvidenceBlockReason(
+  sourceUri: string,
+  summary: string,
+  hasUploader: boolean,
+): string | null {
+  const hasSource = sourceUri.trim().length !== 0;
+  const hasSummary = summary.trim().length !== 0;
+  if (!hasSource && !hasSummary) return null;
+  if (!hasSource || !hasSummary) return EVIDENCE_BOTH_OR_NEITHER_MESSAGE;
+  if (!hasUploader) return EVIDENCE_UPLOAD_UNAVAILABLE_MESSAGE;
+  return null;
+}
+
 export async function evidenceHashForSettlement(
   input: {
     sourceUri: string;
@@ -30,16 +50,19 @@ export async function evidenceHashForSettlement(
   },
   uploader?: CanonicalEvidenceUploader | undefined,
 ): Promise<Hex> {
-  const hasSource = input.sourceUri.trim().length !== 0;
-  const hasSummary = input.summary.trim().length !== 0;
-  if (!hasSource && !hasSummary) return ZERO_EVIDENCE_HASH;
-  if (!hasSource || !hasSummary) {
-    throw new RangeError(
-      "evidence source URI and summary must be supplied together",
-    );
+  const blockReason = settlementEvidenceBlockReason(
+    input.sourceUri,
+    input.summary,
+    uploader !== undefined,
+  );
+  if (blockReason !== null) {
+    throw blockReason === EVIDENCE_BOTH_OR_NEITHER_MESSAGE
+      ? new RangeError(blockReason)
+      : new Error(blockReason);
   }
+  if (input.sourceUri.trim().length === 0) return ZERO_EVIDENCE_HASH;
   if (uploader === undefined) {
-    throw new Error("settlement evidence requires an injected IPFS uploader");
+    throw new Error(EVIDENCE_UPLOAD_UNAVAILABLE_MESSAGE);
   }
   const prepared = prepareSettlementEvidenceV1({
     sourceUri: input.sourceUri,
@@ -53,9 +76,7 @@ export async function evidenceHashForSettlement(
     mediaType: SETTLEMENT_EVIDENCE_MEDIA_TYPE,
   });
   if (uploaded.uri !== prepared.evidenceUri) {
-    throw new Error(
-      "IPFS uploader returned a URI that does not match the canonical evidence bytes",
-    );
+    throw new Error(EVIDENCE_URI_MISMATCH_MESSAGE);
   }
   return prepared.evidenceHash;
 }

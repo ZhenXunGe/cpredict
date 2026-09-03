@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from "react";
 import type { Address } from "viem";
 import type { CpredictClient } from "../../../offchain/sdk/src/index.js";
-import { useTransactionAction } from "./useTransactionAction.js";
 import {
   evidenceHashForSettlement,
+  settlementEvidenceBlockReason,
   type CanonicalEvidenceUploader,
 } from "./settlementEvidence.js";
+import { useTransactionAction } from "./useTransactionAction.js";
 
 export type CreatorSettlementPhase =
   "before-close" | "creator-window" | "window-expired" | "terminal";
@@ -61,6 +62,15 @@ export function MarketLifecyclePanel(props: {
   const creatorVoidAllowed =
     phase === null || phase === "before-close" || phase === "creator-window";
   const timeoutAllowed = phase === null || phase === "window-expired";
+  const hasEvidenceUploader = props.uploadCanonicalEvidence !== undefined;
+  const evidenceBlockReason = settlementEvidenceBlockReason(
+    evidenceSourceUri,
+    evidenceSummary,
+    hasEvidenceUploader,
+  );
+  const evidenceBlocked = evidenceBlockReason !== null;
+  const hasEvidenceDraft =
+    evidenceSourceUri.length !== 0 || evidenceSummary.length !== 0;
 
   function resolve(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -68,6 +78,7 @@ export function MarketLifecyclePanel(props: {
     if (
       !confirmed ||
       blocked ||
+      evidenceBlocked ||
       !resolveAllowed ||
       outcome < 0n ||
       outcome >= BigInt(props.outcomeCount)
@@ -133,6 +144,7 @@ export function MarketLifecyclePanel(props: {
               <input
                 type="url"
                 maxLength={512}
+                placeholder="选填，可留空"
                 value={evidenceSourceUri}
                 onChange={(event) =>
                   setEvidenceSourceUri(event.currentTarget.value)
@@ -143,17 +155,32 @@ export function MarketLifecyclePanel(props: {
               证据摘要
               <textarea
                 maxLength={2_048}
+                placeholder="选填，可留空"
                 value={evidenceSummary}
                 onChange={(event) =>
                   setEvidenceSummary(event.currentTarget.value)
                 }
               />
             </label>
+            {hasEvidenceDraft ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setEvidenceSourceUri("");
+                  setEvidenceSummary("");
+                }}
+              >
+                清空证据
+              </button>
+            ) : null}
             <p role="note">
-              本仓库不会上传证据。两个字段都填写时，会生成规范 UTF-8
-              字节，交给注入的 IPFS 上传器，校验返回的确定性 URI，然后才提交
-              SHA-256 哈希。
+              {hasEvidenceUploader
+                ? "证据为可选项。两个字段都留空即按无证据结算。都填写时会生成规范文档并上传，链上只提交哈希。"
+                : "证据为可选项，不是结算前置条件。当前部署未开启证据上传，请将两个字段留空后直接结算。"}
             </p>
+            {evidenceBlockReason === null ? null : (
+              <p role="alert">{evidenceBlockReason}</p>
+            )}
           </fieldset>
           <label>
             <input
@@ -164,16 +191,26 @@ export function MarketLifecyclePanel(props: {
             我已核对锁定规则，并理解结算不可撤销。
           </label>
           <button
-            disabled={!confirmed || blocked || !resolveAllowed}
+            disabled={
+              !confirmed || blocked || evidenceBlocked || !resolveAllowed
+            }
             type="submit"
           >
             {blocked ? "处理中…" : "结算"}
           </button>
           <button
-            disabled={!confirmed || blocked || !creatorVoidAllowed}
+            disabled={
+              !confirmed || blocked || evidenceBlocked || !creatorVoidAllowed
+            }
             type="button"
             onClick={() => {
-              if (!confirmed || blocked || !creatorVoidAllowed) return;
+              if (
+                !confirmed ||
+                blocked ||
+                evidenceBlocked ||
+                !creatorVoidAllowed
+              )
+                return;
               void run(creatorVoid);
             }}
           >

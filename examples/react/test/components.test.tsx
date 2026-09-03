@@ -21,7 +21,10 @@ import {
 } from "../src/MarketplacePanel.js";
 import { PrimaryPaymentPanel } from "../src/PrimaryPaymentPanel.js";
 import {
+  EVIDENCE_UPLOAD_UNAVAILABLE_MESSAGE,
+  EVIDENCE_URI_MISMATCH_MESSAGE,
   evidenceHashForSettlement,
+  settlementEvidenceBlockReason,
   type CanonicalEvidenceUploadRequest,
 } from "../src/settlementEvidence.js";
 
@@ -104,8 +107,9 @@ describe("React protocol call examples", () => {
     expect(createHtml).toContain("Approve exact creation fee and bond");
     expect(lifecycleHtml).toContain("单方面且不可逆");
     expect(lifecycleHtml).toContain("证据来源 URI");
-    expect(lifecycleHtml).toContain("规范 UTF-8");
-    expect(lifecycleHtml).toContain("不会上传证据");
+    expect(lifecycleHtml).toContain("证据为可选项");
+    expect(lifecycleHtml).toContain("未开启证据上传");
+    expect(lifecycleHtml).toContain("选填，可留空");
     expect(lifecycleHtml).toContain("超时作废");
     expect(lifecycleHtml).toContain("结果 1");
     expect(lifecycleHtml).toContain("结果 2");
@@ -219,6 +223,12 @@ describe("React protocol call examples", () => {
       evidenceHashForSettlement({ sourceUri: "", summary: "" }),
     ).resolves.toBe(ZERO_EVIDENCE_HASH);
     await expect(
+      evidenceHashForSettlement({
+        sourceUri: "https://example.invalid/result",
+        summary: "Official result confirmed outcome 1.",
+      }),
+    ).rejects.toThrow(EVIDENCE_UPLOAD_UNAVAILABLE_MESSAGE);
+    await expect(
       evidenceHashForSettlement(
         {
           sourceUri: "https://example.invalid/result",
@@ -227,7 +237,32 @@ describe("React protocol call examples", () => {
         },
         async () => ({ uri: "ipfs://wrong" }),
       ),
-    ).rejects.toThrow("does not match");
+    ).rejects.toThrow(EVIDENCE_URI_MISMATCH_MESSAGE);
+    expect(
+      settlementEvidenceBlockReason(
+        "https://example.invalid/result",
+        "Official result confirmed outcome 1.",
+        false,
+      ),
+    ).toBe(EVIDENCE_UPLOAD_UNAVAILABLE_MESSAGE);
+    expect(settlementEvidenceBlockReason("", "", false)).toBeNull();
+  });
+
+  it("explains optional evidence upload when an uploader is injected", () => {
+    const html = renderToStaticMarkup(
+      <MarketLifecyclePanel
+        client={client}
+        vault={address}
+        outcomeCount={2}
+        creatorMode
+        uploadCanonicalEvidence={async (request) => ({
+          uri: request.expectedUri,
+        })}
+      />,
+    );
+    expect(html).toContain("证据为可选项");
+    expect(html).toContain("都填写时会生成规范文档并上传");
+    expect(html).not.toContain("未开启证据上传");
   });
 
   it("renders separate marketplace approval and all four claim paths", () => {
