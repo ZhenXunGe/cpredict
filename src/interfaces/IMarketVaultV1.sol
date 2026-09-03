@@ -15,6 +15,7 @@ interface IMarketVaultV1 is IERC1155 {
     function resolutionWindow() external view returns (uint64);
     function minimumC2CUnits() external view returns (uint128);
     function marketState() external view returns (ProtocolTypes.MarketState);
+    function voidReason() external view returns (ProtocolTypes.VoidReason);
     function isTerminal() external view returns (bool);
     function permit2Enabled() external view returns (bool);
     function totalPrincipal() external view returns (uint256);

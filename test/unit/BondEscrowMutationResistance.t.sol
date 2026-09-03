@@ -45,8 +45,14 @@ contract BondReentrantObservationUSDC is ERC20 {
 
 contract BondMutationMarketMock {
     ProtocolTypes.MarketState public marketState;
+    ProtocolTypes.VoidReason public voidReason;
     uint256 public totalPrincipal;
     uint256 public funded;
+
+    function setVoidReason(ProtocolTypes.VoidReason reason) external {
+        marketState = ProtocolTypes.MarketState.VOIDED;
+        voidReason = reason;
+    }
 
     function setState(ProtocolTypes.MarketState state) external {
         marketState = state;
@@ -80,7 +86,7 @@ contract BondEscrowMutationResistanceTest is Test {
         emit BondLocked(address(market), CREATOR, 10);
         escrow.lockBond(address(market), CREATOR, 10);
 
-        market.setState(ProtocolTypes.MarketState.VOIDED_CREATOR);
+        market.setVoidReason(ProtocolTypes.VoidReason.CREATOR);
         vm.expectEmit(true, true, false, true, address(escrow));
         emit BondCredited(address(market), CREATOR, 10);
         vm.recordLogs();
@@ -105,7 +111,7 @@ contract BondEscrowMutationResistanceTest is Test {
         escrow.setFactory(address(this));
         token.mint(address(escrow), 10);
         escrow.lockBond(address(market), CREATOR, 10);
-        market.setState(ProtocolTypes.MarketState.VOIDED_CREATOR);
+        market.setVoidReason(ProtocolTypes.VoidReason.CREATOR);
         escrow.settleBond(address(market));
         token.arm(address(escrow));
 
@@ -137,7 +143,7 @@ contract BondEscrowMutationResistanceTest is Test {
         assertEq(escrow.totalLocked(), 25);
         assertEq(escrow.totalCredits(), 0);
 
-        first.setState(ProtocolTypes.MarketState.VOIDED_CREATOR);
+        first.setState(ProtocolTypes.MarketState.VOIDED);
         escrow.settleBond(address(first));
         assertEq(escrow.totalLocked(), 18);
         assertEq(escrow.creditOf(CREATOR), 7);
@@ -151,13 +157,13 @@ contract BondEscrowMutationResistanceTest is Test {
         assertEq(escrow.totalLocked(), 26);
         assertEq(escrow.totalCredits(), 7);
 
-        second.setState(ProtocolTypes.MarketState.VOIDED_CREATOR);
+        second.setState(ProtocolTypes.MarketState.VOIDED);
         escrow.settleBond(address(second));
         assertEq(escrow.totalLocked(), 13);
         assertEq(escrow.creditOf(CREATOR), 20);
         assertEq(escrow.totalCredits(), 20);
 
-        third.setState(ProtocolTypes.MarketState.VOIDED_CREATOR);
+        third.setState(ProtocolTypes.MarketState.VOIDED);
         escrow.settleBond(address(third));
         assertEq(escrow.totalLocked(), 8);
         assertEq(escrow.creditOf(OTHER_CREATOR), 5);

@@ -32,7 +32,6 @@ import {
     ZeroAmount,
     FillBelowMinimum,
     PaymentAboveMaximum,
-    WinningOutcomeHasNoSupply,
     NothingToClaim,
     AlreadySettled,
     InexactTokenTransfer,
@@ -86,6 +85,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     uint64 public resolutionWindow;
     ProtocolTypes.DeploymentMode public deploymentMode;
     ProtocolTypes.MarketState public marketState;
+    ProtocolTypes.VoidReason public voidReason;
     uint256 public featureFlags;
 
     uint128 public perUserPrimaryCap;
@@ -164,7 +164,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         bytes32 indexed evidenceHash
     );
     event MarketVoided(
-        ProtocolTypes.MarketState indexed terminalState,
+        ProtocolTypes.VoidReason indexed reason,
         address indexed caller,
         uint256 refundPrincipal,
         bytes32 indexed evidenceHash
@@ -570,7 +570,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
 
     /// @notice Resolves the market and commits any creator-supplied evidence in the terminal event.
     /// @dev Opaque event-only hash; it never affects auth, state, or payouts. Zero means absent.
-    /// @param outcomeId The winning outcome whose outstanding supply receives the winner pool.
+    /// @param outcomeId The selected outcome; zero supply voids without rake or bond slash.
     /// @param evidenceHash Hash commitment to offchain resolution evidence; zero if absent.
     function resolve(uint256 outcomeId, bytes32 evidenceHash) external onlyCreator nonReentrant {
         if (marketState != ProtocolTypes.MarketState.OPEN) revert MarketTerminal();
@@ -578,7 +578,10 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         if (block.timestamp >= resolutionDeadline()) revert ResolutionWindowExpired();
         if (outcomeId >= outcomeCount) revert InvalidOutcome(outcomeId, outcomeCount);
         uint256 winningSupply = totalSupply(outcomeId);
-        if (winningSupply == 0) revert WinningOutcomeHasNoSupply(outcomeId);
+        if (winningSupply == 0) {
+            _void(ProtocolTypes.VoidReason.NO_WINNING_SUPPLY, evidenceHash);
+            return;
+        }
 
         ProtocolTypes.PayoutBreakdown memory breakdown = _calculatePayouts();
         marketState = ProtocolTypes.MarketState.RESOLVED;
@@ -625,7 +628,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     function creatorVoid(bytes32 evidenceHash) external onlyCreator {
         if (marketState != ProtocolTypes.MarketState.OPEN) revert MarketTerminal();
         if (block.timestamp >= resolutionDeadline()) revert ResolutionWindowExpired();
-        _void(ProtocolTypes.MarketState.VOIDED_CREATOR, evidenceHash);
+        _void(ProtocolTypes.VoidReason.CREATOR, evidenceHash);
     }
 
     /// @notice Permissionlessly voids a market after the resolution deadline.
@@ -633,14 +636,15 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     function voidAfterDeadline() external {
         if (marketState != ProtocolTypes.MarketState.OPEN) revert MarketTerminal();
         if (block.timestamp < resolutionDeadline()) revert TimeoutNotReached();
-        _void(ProtocolTypes.MarketState.VOIDED_TIMEOUT, bytes32(0));
+        _void(ProtocolTypes.VoidReason.TIMEOUT, bytes32(0));
     }
 
-    function _void(ProtocolTypes.MarketState terminalState, bytes32 evidenceHash) internal {
-        marketState = terminalState;
+    function _void(ProtocolTypes.VoidReason reason, bytes32 evidenceHash) internal {
+        marketState = ProtocolTypes.MarketState.VOIDED;
+        voidReason = reason;
         uint256 principal = totalPrincipal();
         remainingRefundPrincipal = principal;
-        emit MarketVoided(terminalState, msg.sender, principal, evidenceHash);
+        emit MarketVoided(reason, msg.sender, principal, evidenceHash);
     }
 
     function claimWinnings() external returns (uint256 payout) {
@@ -690,11 +694,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     }
 
     function refundFor(address owner) public nonReentrant returns (uint256 amount) {
-        ProtocolTypes.MarketState state = marketState;
-        if (
-            state != ProtocolTypes.MarketState.VOIDED_CREATOR
-                && state != ProtocolTypes.MarketState.VOIDED_TIMEOUT
-        ) revert MarketNotClosed();
+        if (marketState != ProtocolTypes.MarketState.VOIDED) revert MarketNotClosed();
         _rejectProtocolMarketplaceOwner(owner);
 
         for (uint256 outcomeId = 0; outcomeId < outcomeCount; ++outcomeId) {
@@ -702,7 +702,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         }
         if (amount == 0) revert NothingToClaim();
         remainingRefundPrincipal -= amount;
-        if (state == ProtocolTypes.MarketState.VOIDED_TIMEOUT) {
+        if (voidReason == ProtocolTypes.VoidReason.TIMEOUT) {
             timeoutBonusUnits[owner] += amount;
         }
         for (uint256 outcomeId = 0; outcomeId < outcomeCount; ++outcomeId) {
@@ -711,13 +711,16 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         }
         _paymentToken.safeTransfer(owner, amount);
         emit PrincipalRefunded(
-            owner, msg.sender, amount, amount, state == ProtocolTypes.MarketState.VOIDED_TIMEOUT
+            owner, msg.sender, amount, amount, voidReason == ProtocolTypes.VoidReason.TIMEOUT
         );
     }
 
     function fundTimeoutBonus(uint256 amount) external nonReentrant {
         if (msg.sender != bondEscrow) revert Unauthorized(msg.sender);
-        if (marketState != ProtocolTypes.MarketState.VOIDED_TIMEOUT) revert MarketNotClosed();
+        if (
+            marketState != ProtocolTypes.MarketState.VOIDED
+                || voidReason != ProtocolTypes.VoidReason.TIMEOUT
+        ) revert MarketNotClosed();
         if (timeoutBonusFunded) revert AlreadySettled();
         if (amount == 0) revert ZeroAmount();
         timeoutBonusFunded = true;
@@ -817,10 +820,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         uint256 liabilities;
         if (marketState == ProtocolTypes.MarketState.RESOLVED) {
             liabilities = remainingWinnerPool + remainingEarlyBirdPool;
-        } else if (
-            marketState == ProtocolTypes.MarketState.VOIDED_CREATOR
-                || marketState == ProtocolTypes.MarketState.VOIDED_TIMEOUT
-        ) {
+        } else if (marketState == ProtocolTypes.MarketState.VOIDED) {
             liabilities = remainingRefundPrincipal + remainingTimeoutBonusPool;
         } else {
             liabilities = totalPrincipal();

@@ -24,7 +24,6 @@ import {
     ZeroAmount,
     FillBelowMinimum,
     PaymentAboveMaximum,
-    WinningOutcomeHasNoSupply,
     NothingToClaim,
     AlreadySettled,
     AlreadyInitialized,
@@ -388,7 +387,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         bytes32 indexed evidenceHash
     );
     event MarketVoided(
-        ProtocolTypes.MarketState indexed terminalState,
+        ProtocolTypes.VoidReason indexed reason,
         address indexed caller,
         uint256 refundPrincipal,
         bytes32 indexed evidenceHash
@@ -412,7 +411,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         );
         _buy(creatorVoided, ALICE, 0, 20e6);
         vm.expectEmit(true, true, true, true, address(creatorVoided));
-        emit MarketVoided(ProtocolTypes.MarketState.VOIDED_CREATOR, CREATOR, 20e6, voidEvidence);
+        emit MarketVoided(ProtocolTypes.VoidReason.CREATOR, CREATOR, 20e6, voidEvidence);
         vm.prank(CREATOR);
         creatorVoided.creatorVoid(voidEvidence);
 
@@ -421,7 +420,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         );
         vm.warp(timeoutVoided.resolutionDeadline());
         vm.expectEmit(true, true, true, true, address(timeoutVoided));
-        emit MarketVoided(ProtocolTypes.MarketState.VOIDED_TIMEOUT, ALICE, 0, bytes32(0));
+        emit MarketVoided(ProtocolTypes.VoidReason.TIMEOUT, ALICE, 0, bytes32(0));
         vm.prank(ALICE);
         timeoutVoided.voidAfterDeadline();
     }
@@ -449,9 +448,6 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         vm.expectPartialRevert(InvalidOutcome.selector);
         market.resolve(2, bytes32(0));
         vm.prank(CREATOR);
-        vm.expectPartialRevert(WinningOutcomeHasNoSupply.selector);
-        market.resolve(1, bytes32(0));
-        vm.prank(CREATOR);
         market.resolve(0, bytes32(0));
         assertTrue(market.isTerminal());
         vm.prank(CREATOR);
@@ -475,7 +471,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         vm.expectRevert(ResolutionWindowExpired.selector);
         market.resolve(0, bytes32(0));
         market.voidAfterDeadline();
-        assertEq(uint8(market.marketState()), uint8(ProtocolTypes.MarketState.VOIDED_TIMEOUT));
+        assertEq(uint8(market.marketState()), uint8(ProtocolTypes.MarketState.VOIDED));
     }
 
     function testCreatorVoidExpiresAtDeadlineAndCannotRacePermissionlessTimeout() public {
@@ -486,7 +482,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         vm.prank(CREATOR);
         beforeDeadline.creatorVoid(bytes32(0));
         assertEq(
-            uint8(beforeDeadline.marketState()), uint8(ProtocolTypes.MarketState.VOIDED_CREATOR)
+            uint8(beforeDeadline.marketState()), uint8(ProtocolTypes.MarketState.VOIDED)
         );
 
         MarketVaultCoreV1 atDeadline = _create(
@@ -498,7 +494,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         atDeadline.creatorVoid(bytes32(0));
         vm.prank(ALICE);
         atDeadline.voidAfterDeadline();
-        assertEq(uint8(atDeadline.marketState()), uint8(ProtocolTypes.MarketState.VOIDED_TIMEOUT));
+        assertEq(uint8(atDeadline.marketState()), uint8(ProtocolTypes.MarketState.VOIDED));
         vm.prank(CREATOR);
         vm.expectRevert(MarketTerminal.selector);
         atDeadline.creatorVoid(bytes32(0));
