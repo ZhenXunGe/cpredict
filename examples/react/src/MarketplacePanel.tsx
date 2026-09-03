@@ -15,6 +15,7 @@ import {
   authorizationRequired,
   authorizeThenExecute,
 } from "./authorizationFlow.js";
+import { shouldFoldListingBeforeClose } from "./marketplacePresentation.js";
 import { transactionDeadline, unixTimeSeconds } from "./transactionTiming.js";
 
 const LISTING_LIFETIME_SECONDS = 24n * 60n * 60n;
@@ -32,12 +33,18 @@ export function quoteFillFromChain(
   listing: ListingSnapshot,
   expectedVault: Address,
   desiredUnits: bigint,
+  closeAt: bigint,
 ): bigint {
   if (!listing.active) throw new Error("所选挂单已失效，请刷新活跃挂单。");
   if (listing.vault.toLowerCase() !== expectedVault.toLowerCase())
     throw new Error("所选挂单不属于当前市场。");
   if (listing.observedAt >= listing.expiresAt)
     throw new Error("所选挂单已过期，请刷新活跃挂单。");
+  if (
+    shouldFoldListingBeforeClose(listing.unitPrice, listing.observedAt, closeAt)
+  ) {
+    throw new Error("封盘前一级池仍按 1 USDC/份供应，池子直买更便宜。");
+  }
   if (desiredUnits <= 0n) throw new RangeError("买入数量必须大于 0。");
   if (desiredUnits > listing.remainingUnits)
     throw new Error("买入份数超过挂单剩余数量。");
@@ -73,6 +80,8 @@ export function MarketplacePanel(props: {
   paymentTokenSymbol?: string;
   vault: Address;
   marketplace: Address;
+  observedAt: bigint;
+  closeAt: bigint;
   paymentTokenAllowance?: bigint | null;
   shareEscrowApproved?: boolean | null;
   selectedListing?: MarketplaceListingSelection | null;
@@ -167,12 +176,28 @@ export function MarketplacePanel(props: {
   async function freshFillQuote() {
     if (selectedListing === null)
       throw new Error("请先选择一笔活跃挂单再买入。");
+    if (
+      shouldFoldListingBeforeClose(
+        selectedListing.unitPrice,
+        props.observedAt,
+        props.closeAt,
+      )
+    ) {
+      throw new Error(
+        `封盘前一级池仍按 1 ${paymentTokenSymbol}/份供应，池子直买更便宜。`,
+      );
+    }
     const desiredUnits = parseShareUnits(fillAmount);
     const listing = await props.client.readListing(
       props.marketplace,
       selectedListing.listingId,
     );
-    const gross = quoteFillFromChain(listing, props.vault, desiredUnits);
+    const gross = quoteFillFromChain(
+      listing,
+      props.vault,
+      desiredUnits,
+      props.closeAt,
+    );
     setSelectedListing(selectionFromSnapshot(listing));
     return { desiredUnits, gross, listing };
   }
@@ -255,6 +280,26 @@ export function MarketplacePanel(props: {
   const fillAuthorizationRequired =
     draftGross === null ||
     authorizationRequired(paymentTokenAllowance, draftGross);
+  let draftSellUnitPrice: bigint | null = null;
+  try {
+    draftSellUnitPrice = parseUsdc(sellUnitPrice);
+  } catch {
+    draftSellUnitPrice = null;
+  }
+  const sellPriceWillBeFolded =
+    draftSellUnitPrice !== null &&
+    shouldFoldListingBeforeClose(
+      draftSellUnitPrice,
+      props.observedAt,
+      props.closeAt,
+    );
+  const selectedListingIsFolded =
+    selectedListing !== null &&
+    shouldFoldListingBeforeClose(
+      selectedListing.unitPrice,
+      props.observedAt,
+      props.closeAt,
+    );
 
   return (
     <section aria-labelledby="marketplace-title">
@@ -292,6 +337,15 @@ export function MarketplacePanel(props: {
               onChange={(event) => setSellUnitPrice(event.currentTarget.value)}
             />
           </label>
+          {props.observedAt < props.closeAt ? (
+            <p role={sellPriceWillBeFolded ? "alert" : "note"}>
+              封盘前一级池按 1 {paymentTokenSymbol}/份供应；高于 1{" "}
+              {paymentTokenSymbol}
+              的挂单会被折叠，池子直买更便宜。
+            </p>
+          ) : (
+            <p role="note">市场已封盘，终局前 C2C 可以自由定价。</p>
+          )}
           <button disabled={state.pending} type="submit">
             {shareEscrowApproved ? "创建挂单" : "授权份额托管并创建挂单"}
           </button>
@@ -329,6 +383,12 @@ export function MarketplacePanel(props: {
                 <dd>{formatShareUnits(selectedListing.remainingUnits)} 份</dd>
               </div>
             </dl>
+            {selectedListingIsFolded ? (
+              <p role="alert">
+                该挂单已按封盘前规则折叠：一级池按 1 {paymentTokenSymbol}
+                /份供应，池子直买更便宜。封盘后且挂单仍有效时可成交，卖家现在仍可取消。
+              </p>
+            ) : null}
             <label>
               买入份数{" "}
               <input
@@ -341,14 +401,14 @@ export function MarketplacePanel(props: {
               {paymentTokenSymbol}
             </p>
             <button
-              disabled={state.pending}
+              disabled={state.pending || selectedListingIsFolded}
               type="button"
               onClick={() => void run(approveFillPayment)}
             >
               精确授权 {paymentTokenSymbol} 用于成交
             </button>
             <button
-              disabled={state.pending}
+              disabled={state.pending || selectedListingIsFolded}
               type="button"
               onClick={() => void run(fill)}
             >
