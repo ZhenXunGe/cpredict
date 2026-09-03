@@ -178,7 +178,7 @@
     },
     {
       "path": "examples/react/README.md",
-      "sha256": "ff9c83198b5cb9eda1941c6ce9ba8e30661053d6c5d8ef109a16e8156937c633"
+      "sha256": "3b4f7a0f44f8ab88a762a055b6f0a70397e5bc49fa77ef0fb6dc152172ef50b2"
     },
     {
       "path": "examples/react/security-headers.conf",
@@ -190,7 +190,7 @@
     },
     {
       "path": "examples/react/src/ClaimsPanel.tsx",
-      "sha256": "09b7ab7c709b3bf9362060c9a2beb2fb1a056935d62e921f37cf365e9ff47b8f"
+      "sha256": "1ea1353b23a27f3309807fdc23272f7673b2b91ce043f981116a5996b9bac237"
     },
     {
       "path": "examples/react/src/CreateMarketPanel.tsx",
@@ -198,11 +198,11 @@
     },
     {
       "path": "examples/react/src/MarketLifecyclePanel.tsx",
-      "sha256": "d5be98205002e5a57b2fb0d0558e987853861031063ac4d5ddde49f1da8e4766"
+      "sha256": "c800bf90ee4be9e0357400f10772bed227a4432295413783329675ac013e3441"
     },
     {
       "path": "examples/react/src/MarketplacePanel.tsx",
-      "sha256": "6a58bdb0f4053ec3719a1c4c6c04d7d4a8d6f65823f59f692fc415db6b07e210"
+      "sha256": "5e4b9b81a294e5daa4f51c369bf9d7b5a854bc9439aba8858111b825b8ca750f"
     },
     {
       "path": "examples/react/src/PrimaryPaymentPanel.tsx",
@@ -211,6 +211,10 @@
     {
       "path": "examples/react/src/authorizationFlow.ts",
       "sha256": "5c00c5e72c46ca5747c8107dcfa04d786e3a30b199bd239dd0bd80208dbf6fb6"
+    },
+    {
+      "path": "examples/react/src/marketplacePresentation.ts",
+      "sha256": "270e6e36e0580eab08e8e27f767b5fb18747250a3b617a29cf7e77c399ea0d11"
     },
     {
       "path": "examples/react/src/settlementEvidence.ts",
@@ -230,7 +234,7 @@
     },
     {
       "path": "examples/react/test/components.test.tsx",
-      "sha256": "3cbe76937de02ba697bfd14ea72cecce79ab2e2f11cea3590301086078eac2fb"
+      "sha256": "af3026ecea9d30c0983f47a0f5081ad3e4dac64857f01836fb9f1e4dd323c7d5"
     },
     {
       "path": "examples/web-demo/README.md",
@@ -250,7 +254,7 @@
     },
     {
       "path": "examples/web-demo/src/App.tsx",
-      "sha256": "25812247726f407e400fe3d30c60a27ea59f53369e8a7d573cfd9984ad338892"
+      "sha256": "a814bad791a64dedcb863036c85b8f8583bcd77dd3a0a87d769da7d821f3a1fa"
     },
     {
       "path": "examples/web-demo/src/CreateMarketForm.tsx",
@@ -258,11 +262,11 @@
     },
     {
       "path": "examples/web-demo/src/MarketCatalog.tsx",
-      "sha256": "5d374edec576bb0b2b8d9ba15bdfb34f1e2407ab82983ea26fb05cccbbc9cbb1"
+      "sha256": "89edadb1f98c8a5b822f0e41a1187cbd1c47172160d65e8b0ed8a8d2bebfa096"
     },
     {
       "path": "examples/web-demo/src/WalletIndexerPanels.tsx",
-      "sha256": "1e839f6a89c09294a8aba2dcf8a753cd9410018cc7da2034f78928f1fa5e3667"
+      "sha256": "67bb49558d8fda7cebbaa28200c9cd7137279c390fa855b791ea5781b2bb3d9e"
     },
     {
       "path": "examples/web-demo/src/config.ts",
@@ -282,7 +286,7 @@
     },
     {
       "path": "examples/web-demo/src/indexer-client.ts",
-      "sha256": "8ec1306e7650938448be40f2c4069377284a34f74fa28650150c8467965decef"
+      "sha256": "b24f6c1cad94eef4c3674af7217417ed76f8992b60f9db87e5585dc667af7012"
     },
     {
       "path": "examples/web-demo/src/main.tsx",
@@ -298,7 +302,7 @@
     },
     {
       "path": "examples/web-demo/src/protocol.ts",
-      "sha256": "9d2c97ccd6d77d745c634001aaab1600b5599450dbd4f6f5e5bbb9d25fe9d2bb"
+      "sha256": "3fbe01d2a81dba5f58141c98ae92d0719f817a10dad4e83c4326c97012894d5b"
     },
     {
       "path": "examples/web-demo/src/runtime-config.schema.json",
@@ -310,7 +314,7 @@
     },
     {
       "path": "examples/web-demo/src/styles.css",
-      "sha256": "f671ef2d56be392ccffb676b3f867097af8e51b188588fba94fcbd2e7eb73f75"
+      "sha256": "f922fde816731f163d475437beb328ea71cb904e2b99e320b422673dacdfdcb2"
     },
     {
       "path": "examples/web-demo/src/trust.ts",
@@ -334,7 +338,7 @@
     },
     {
       "path": "examples/web-demo/test/indexer-client.test.ts",
-      "sha256": "6faa4e375c7d4d28a9a037101df6d542836cf9c597f3ddbf1a2bbad772faee1c"
+      "sha256": "54308ceb2745b2cc8a31c850050fa0f208add4d36517612ce89e5b9f5fcc74c0"
     },
     {
       "path": "examples/web-demo/test/market-creation-flow.test.ts",
@@ -342,11 +346,11 @@
     },
     {
       "path": "examples/web-demo/test/market-display-state.test.ts",
-      "sha256": "c5a90ffcd78dc3c214499d8ae55882ded1f72469dcd2dabc661074df8c617226"
+      "sha256": "74185103228f7091eb5887790bebafec7f1648e5cc667569df954c5a706cd721"
     },
     {
       "path": "examples/web-demo/test/marketplace-flow.test.tsx",
-      "sha256": "38d85e57796c356d5991eb28b16449040e5537ad8f6f90d1d8f68ebe0da6f93d"
+      "sha256": "a2baf0cd0a36f3f0b9304ec3f43fff8de8c35eaf2cba424790413efaac61add9"
     },
     {
       "path": "examples/web-demo/test/metadata-client.test.ts",
@@ -354,7 +358,7 @@
     },
     {
       "path": "examples/web-demo/test/positions-page.test.tsx",
-      "sha256": "fb2c865fd5452da2d2cdb296287aa0abde3d1a8bce386adcc004704e4a527337"
+      "sha256": "8cc0e5e1695e9a516ef608fd9c4c649bd4a87e0062dc9e2db8fa9590ddb0972b"
     },
     {
       "path": "examples/web-demo/test/react-dev-props.test.ts",
@@ -362,7 +366,7 @@
     },
     {
       "path": "examples/web-demo/test/render.test.tsx",
-      "sha256": "182ef44d90d716e1752ff39c6c4824436c3e44f85f8464d017f7b1b5d5be97ec"
+      "sha256": "197ec21282a3c050bfc6eae87a05c7abe6dc3ce873290acad1eae319c4878d4d"
     },
     {
       "path": "examples/web-demo/test/sandbox-token.test.ts",
@@ -890,11 +894,11 @@
     },
     {
       "path": "offchain/sdk/src/abis.ts",
-      "sha256": "013c98a41ff4d95043d40d46d99cb81474e8b4004a07b46cd66a9b1802482874"
+      "sha256": "d821765d5fa56ea175441e6238bc1909b8dac57ca4560d70bb0981cffee8ba72"
     },
     {
       "path": "offchain/sdk/src/client.ts",
-      "sha256": "f6be602bc7f4646d0f66b7181996b0ba66583aad7ab59e82f03727f6612b09cc"
+      "sha256": "abb631980e91ba3ea2673f974a2699fdf107a9bf58ef6a4cb17965441fd702c7"
     },
     {
       "path": "offchain/sdk/src/errors.ts",
@@ -946,7 +950,7 @@
     },
     {
       "path": "offchain/sdk/test/client.test.ts",
-      "sha256": "41b954f565ea152e80e0fcdda24aa3673228138c41cc9e8dee789669e3143bb2"
+      "sha256": "2cc1f938a6b9402e5037b954b1ef71bd4496ee8dcbcc18723c7ded2e672cd09c"
     },
     {
       "path": "offchain/sdk/test/errors.test.ts",
