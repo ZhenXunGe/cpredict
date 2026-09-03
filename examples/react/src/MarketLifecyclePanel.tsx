@@ -240,7 +240,11 @@ function SettlementWindowStatus(props: {
 }) {
   if (props.phase === null) return null;
   if (props.phase === "terminal") {
-    return <p role="status">该市场已终局，不能再次结算或作废。</p>;
+    return (
+      <p role="status">
+        该市场已终局，不能再次结算或作废。正常结算或创建者作废后，请到下方释放并领取押金；仅超时弃盘且有参与者时押金罚没。
+      </p>
+    );
   }
   if (props.phase === "before-close") {
     const closeAt = props.closeAt;

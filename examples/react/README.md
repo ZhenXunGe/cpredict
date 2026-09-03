@@ -9,7 +9,8 @@ These components demonstrate the complete transaction surfaces expected from a p
 - `MarketLifecyclePanel`: creator resolve/void, optional canonical settlement evidence and
   permissionless timeout void;
 - `MarketplacePanel`: ERC-1155 escrow approval, listing, exact USDC fill allowance, fill and cancellation;
-- `ClaimsPanel`: winner, early-bird, principal and timeout-bonus claims.
+- `ClaimsPanel`: winner, early-bird, principal, timeout-bonus and creator-bond
+  release/claim.
 
 They intentionally do not bundle a wallet vendor, Paymaster credential or RPC URL. An application must
 inject the SDK client, re-read authoritative chain state before each economic action and use the SDK's
