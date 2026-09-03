@@ -58,7 +58,7 @@
     },
     {
       "path": "compose.yaml",
-      "sha256": "ccc228b2cd6d3a19fe9e8b4df607db5a62e7f4252b77579cf538209d46578cfc"
+      "sha256": "8bc34194f276c9d7750d79f2acf6d60883b509fbb6ff7922024671ffbc0ea19b"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
@@ -1506,7 +1506,7 @@
     },
     {
       "path": "scripts/stack/compose.test.mjs",
-      "sha256": "85f786269c096283e9813e551c6c4478bf1e15154945ec463f627c57f3a0dae8"
+      "sha256": "eb8bfdad8d8709b4d850171daa1671ef0335a73d2ef03514020668fc44af96cd"
     },
     {
       "path": "scripts/stack/config.mjs",

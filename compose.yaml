@@ -128,7 +128,7 @@
         "CPREDICT_INDEXER_PORT": "8787",
         "CPREDICT_INDEXER_LOG_LEVEL": "info",
         "CPREDICT_INDEXER_CHAIN_ID": "421614",
-        "CPREDICT_INDEXER_RPC_URL": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}",
+        "CPREDICT_INDEXER_RPC_URL": "${CPREDICT_INDEXER_RPC_URL:-${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}}",
         "CPREDICT_INDEXER_DATABASE_URL": "postgresql://cpredict_indexer:${CPREDICT_STACK_INDEXER_PASSWORD}@postgres/cpredict_indexer?sslmode=disable",
         "CPREDICT_INDEXER_FACTORY_ADDRESS": "${CPREDICT_INDEXER_FACTORY_ADDRESS:?run deploy:sync first}",
         "CPREDICT_INDEXER_CORE_ADDRESSES": "${CPREDICT_INDEXER_CORE_ADDRESSES:?run deploy:sync first}",
