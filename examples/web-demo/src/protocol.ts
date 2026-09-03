@@ -432,6 +432,27 @@ export interface MarketDisplayState {
   primaryBuyOpen: boolean;
 }
 
+export function outcomeDisplayLabel(
+  outcomeId: number | bigint,
+  labels: readonly string[] | null | undefined,
+): string {
+  const index = Number(outcomeId);
+  const name = Number.isSafeInteger(index)
+    ? labels?.[index]?.trim()
+    : undefined;
+  if (name !== undefined && name !== "") return name;
+  return `结果 ${(BigInt(outcomeId) + 1n).toString()}`;
+}
+
+export function marketFinalResultLabel(
+  market: Pick<MarketSnapshot, "marketState" | "winningOutcome">,
+  labels: readonly string[] | null | undefined,
+): string | null {
+  if (market.marketState === 0) return null;
+  if (market.marketState !== 1) return "无获胜结果（已作废）";
+  return outcomeDisplayLabel(market.winningOutcome, labels);
+}
+
 export function marketDisplayState(
   market: Pick<MarketSnapshot, "marketState" | "closeAt" | "observedAt"> & {
     resolutionDeadline?: bigint;

@@ -324,6 +324,13 @@ textarea:focus {
   width: 100%;
   min-height: 46px;
 }
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+}
 .text-button {
   border: 0;
   padding: 0;
@@ -1110,6 +1117,28 @@ textarea:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.outcome-list span.winner {
+  color: var(--green);
+  background: var(--green-soft);
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(22, 128, 80, 0.18);
+}
+.market-terminal-result {
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--green);
+  background: var(--green-soft);
+  font-size: 10px;
+}
+.market-terminal-result strong {
+  overflow-wrap: anywhere;
+  text-align: right;
+}
 .market-card-stats {
   margin: 0;
   display: grid;
@@ -1213,6 +1242,10 @@ textarea:focus {
 .listing-catalog strong {
   font-size: 12px;
 }
+.position-catalog .position-claim-note {
+  color: var(--green);
+  font-weight: 800;
+}
 .listing-catalog article > div {
   display: flex;
   justify-content: space-between;
@@ -1273,6 +1306,33 @@ textarea:focus {
   border-color: var(--red);
   background: var(--red-soft);
   color: #81383f;
+}
+.callout.success {
+  border-color: var(--green);
+  background: var(--green-soft);
+  color: var(--green);
+}
+.claim-reminder {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid rgba(22, 128, 80, 0.24);
+  border-radius: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  color: var(--green);
+  background: var(--green-soft);
+}
+.claim-reminder div {
+  display: grid;
+  gap: 5px;
+}
+.claim-reminder p {
+  margin: 0;
+  color: #3d7258;
+  font-size: 10px;
+  line-height: 1.5;
 }
 .sandbox-chip {
   display: inline-flex;
@@ -1543,6 +1603,9 @@ textarea:focus {
   }
   .market-stat strong {
     font-size: 16px;
+  }
+  .claim-reminder {
+    grid-template-columns: 1fr;
   }
   .operation-grid,
   .position-grid {

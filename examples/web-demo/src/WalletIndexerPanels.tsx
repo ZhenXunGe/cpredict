@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Address, Hex } from "viem";
+import { shouldFoldListingBeforeClose } from "../../react/src/marketplacePresentation.js";
 import {
   fetchIndexerSyncStatus,
   fetchListings,
@@ -208,6 +209,8 @@ export function ListingsPanel(props: {
   refreshVersion: number;
   vault?: Address | null;
   targetBlock?: bigint | null;
+  marketObservedAt?: bigint | null;
+  marketCloseAt?: bigint | null;
   onSelectListing: (listing: IndexedListing) => void;
 }) {
   const vault = props.vault ?? null;
@@ -238,6 +241,13 @@ export function ListingsPanel(props: {
   const caughtUp = indexerCaughtUp(state.syncStatus, props.targetBlock ?? null);
   if (state.loading && state.items.length === 0)
     return <Notice title="正在读取活跃挂单…" detail="请稍候。" />;
+  if (props.marketObservedAt == null || props.marketCloseAt == null)
+    return (
+      <Notice
+        title="正在确认市场阶段"
+        detail="读取封盘时间后再展示可成交挂单。"
+      />
+    );
   if (!caughtUp) {
     return (
       <>
@@ -249,37 +259,85 @@ export function ListingsPanel(props: {
           )}
         />
         {state.items.length === 0 ? null : (
-          <div className="listing-catalog">
-            {state.items.map((item) => (
-              <ListingCard
-                key={item.listingId}
-                item={item}
-                paymentTokenSymbol={props.paymentTokenSymbol}
-                selected={item.listingId === props.selectedListingId}
-                onSelect={props.onSelectListing}
-              />
-            ))}
-          </div>
+          <ActiveListingsCatalog
+            items={state.items}
+            paymentTokenSymbol={props.paymentTokenSymbol}
+            selectedListingId={props.selectedListingId}
+            observedAt={props.marketObservedAt}
+            closeAt={props.marketCloseAt}
+            onSelectListing={props.onSelectListing}
+          />
         )}
       </>
     );
   }
-  if (state.items.length === 0)
-    return (
-      <Notice title="暂无活跃挂单" detail="创建挂单后会直接显示在这里。" />
-    );
   return (
-    <div className="listing-catalog">
-      {state.items.map((item) => (
-        <ListingCard
-          key={item.listingId}
-          item={item}
-          paymentTokenSymbol={props.paymentTokenSymbol}
-          selected={item.listingId === props.selectedListingId}
-          onSelect={props.onSelectListing}
+    <ActiveListingsCatalog
+      items={state.items}
+      paymentTokenSymbol={props.paymentTokenSymbol}
+      selectedListingId={props.selectedListingId}
+      observedAt={props.marketObservedAt}
+      closeAt={props.marketCloseAt}
+      onSelectListing={props.onSelectListing}
+    />
+  );
+}
+
+export function ActiveListingsCatalog(props: {
+  items: readonly IndexedListing[];
+  paymentTokenSymbol: string;
+  selectedListingId: Hex | null;
+  observedAt: bigint;
+  closeAt: bigint;
+  onSelectListing: (listing: IndexedListing) => void;
+}) {
+  const visibleItems: IndexedListing[] = [];
+  let foldedCount = 0;
+  for (const item of props.items) {
+    if (
+      shouldFoldListingBeforeClose(
+        item.unitPrice,
+        props.observedAt,
+        props.closeAt,
+      )
+    ) {
+      foldedCount += 1;
+    } else {
+      visibleItems.push(item);
+    }
+  }
+
+  if (visibleItems.length === 0) {
+    return foldedCount === 0 ? (
+      <Notice title="暂无活跃挂单" detail="创建挂单后会直接显示在这里。" />
+    ) : (
+      <Notice
+        title={`${foldedCount} 笔高价挂单已折叠`}
+        detail={`封盘前一级池按 1 ${props.paymentTokenSymbol}/份供应，池子直买更便宜；封盘后这些挂单会恢复显示。`}
+      />
+    );
+  }
+
+  return (
+    <>
+      {foldedCount === 0 ? null : (
+        <Notice
+          title={`${foldedCount} 笔高价挂单已折叠`}
+          detail={`封盘前一级池按 1 ${props.paymentTokenSymbol}/份供应，池子直买更便宜；封盘后这些挂单会恢复显示。`}
         />
-      ))}
-    </div>
+      )}
+      <div className="listing-catalog">
+        {visibleItems.map((item) => (
+          <ListingCard
+            key={item.listingId}
+            item={item}
+            paymentTokenSymbol={props.paymentTokenSymbol}
+            selected={item.listingId === props.selectedListingId}
+            onSelect={props.onSelectListing}
+          />
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -340,6 +398,7 @@ function PositionCard(props: {
   syncing: boolean;
   onOpenMarket: (market: Address) => void;
 }) {
+  const claimableWinner = isClaimableWinningPosition(props.item);
   const status =
     props.item.source === "live"
       ? `链上已确认${props.syncing ? " · 目录同步中" : ""}`
@@ -349,17 +408,30 @@ function PositionCard(props: {
   return (
     <article>
       <small>
-        结果 {(props.item.outcomeId + 1n).toString()} · {status}
+        {claimableWinner ? "获胜结果" : "结果"}{" "}
+        {(props.item.outcomeId + 1n).toString()} · {status}
       </small>
       <strong>{formatShares(props.item.balance)} 份</strong>
+      {claimableWinner ? (
+        <span className="position-claim-note">胜出款待领取</span>
+      ) : null}
       <span className="mono">{short(props.item.vault)}</span>
-      <button
-        type="button"
-        className="text-button"
-        onClick={() => props.onOpenMarket(props.item.vault)}
-      >
-        查看市场
-      </button>
+      {claimableWinner ? (
+        <a
+          className="button primary wide button-link"
+          href={`#/settlement/${props.item.vault}`}
+        >
+          去领取胜出款
+        </a>
+      ) : (
+        <button
+          type="button"
+          className="text-button"
+          onClick={() => props.onOpenMarket(props.item.vault)}
+        >
+          查看市场
+        </button>
+      )}
     </article>
   );
 }
@@ -579,6 +651,21 @@ export function mergeWalletPositions(
 
 const RESOLVED_MARKET_STATE = 1;
 
+export function isClaimableWinningPosition(position: {
+  balance: bigint;
+  outcomeId: bigint | number;
+  marketState?: number | null;
+  winningOutcome?: bigint | number | null;
+}): boolean {
+  return (
+    position.balance > 0n &&
+    position.marketState === RESOLVED_MARKET_STATE &&
+    position.winningOutcome !== null &&
+    position.winningOutcome !== undefined &&
+    BigInt(position.outcomeId) === BigInt(position.winningOutcome)
+  );
+}
+
 /** Holdings keep claimable/tradable shares; resolved losing outcomes stay off the list. */
 export function isActiveHolding(position: {
   balance: bigint;
@@ -590,7 +677,7 @@ export function isActiveHolding(position: {
   if (position.marketState !== RESOLVED_MARKET_STATE) return true;
   if (position.winningOutcome === null || position.winningOutcome === undefined)
     return true;
-  return BigInt(position.outcomeId) === BigInt(position.winningOutcome);
+  return isClaimableWinningPosition(position);
 }
 
 function positionKey(item: { vault: Address; outcomeId: bigint }): string {

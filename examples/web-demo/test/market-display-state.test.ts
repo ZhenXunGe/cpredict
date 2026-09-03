@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { marketDisplayState } from "../src/protocol.js";
+import {
+  marketDisplayState,
+  marketFinalResultLabel,
+  outcomeDisplayLabel,
+} from "../src/protocol.js";
 
 describe("market display state", () => {
   it("keeps an unexpired open market tradable", () => {
@@ -53,5 +57,22 @@ describe("market display state", () => {
       label: "超时作废",
       primaryBuyOpen: false,
     });
+  });
+
+  it("maps terminal outcomes to rule labels and keeps voids winnerless", () => {
+    expect(outcomeDisplayLabel(0, ["Yes", "No"])).toBe("Yes");
+    expect(outcomeDisplayLabel(1n, null)).toBe("结果 2");
+    expect(
+      marketFinalResultLabel({ marketState: 1, winningOutcome: 1 }, [
+        "Yes",
+        "No",
+      ]),
+    ).toBe("No");
+    expect(
+      marketFinalResultLabel({ marketState: 3, winningOutcome: 0 }, [
+        "Yes",
+        "No",
+      ]),
+    ).toBe("无获胜结果（已作废）");
   });
 });

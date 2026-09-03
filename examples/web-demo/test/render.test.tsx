@@ -25,6 +25,7 @@ import {
   MarketCatalog,
   MarketCatalogCards,
   SettlementMarketCards,
+  TerminalMarketCards,
   settlementCatalogEntries,
   type CatalogEntry,
 } from "../src/MarketCatalog.js";
@@ -529,6 +530,92 @@ describe("web demo application shell", () => {
     expect(html).not.toContain(">模拟并购买<");
   });
 
+  it("shows the resolved outcome and a direct claim reminder to a winning wallet", () => {
+    const market: MarketSnapshot = {
+      address: "0x0000000000000000000000000000000000001001",
+      observedAt: 1_900_000_100n,
+      creator: "0x000000000000000000000000000000000000c001",
+      creatorTreasury: "0x000000000000000000000000000000000000c002",
+      rulesHash: `0x${"11".repeat(32)}`,
+      outcomeCount: 2,
+      createdAt: 1_899_999_000n,
+      closeAt: 1_900_000_000n,
+      earlyBirdStart: 1_899_999_500n,
+      featureFlags: 0n,
+      perUserPrimaryCap: 10_000_000n,
+      marketPrimaryCap: 20_000_000n,
+      minimumPrimaryUnits: 1_000_000n,
+      minimumC2CUnits: 1_000_000n,
+      creatorBond: 10_000_000n,
+      marketState: 1,
+      winningOutcome: 1,
+      totalPrincipal: 2_000_000n,
+      resolutionDeadline: 1_900_000_900n,
+      permit2Enabled: true,
+      earlyBirdEnabled: false,
+    };
+    const html = renderToStaticMarkup(
+      <MarketPage
+        marketAddress={market.address}
+        setMarketAddress={() => {}}
+        market={market}
+        marketRules={{
+          version: "cpredict-rules-v1",
+          question: "Will the verified public result be Yes?",
+          outcomes: ["Yes", "No"],
+          closesAt: 1_900_000_000,
+          resolutionSource: "https://example.com/result",
+          resolutionCriteria:
+            "Use the final result published by the cited source.",
+          cancellationPolicy:
+            "Void if no unambiguous result is published in time.",
+        }}
+        account={{
+          usdcBalance: 0n,
+          factoryAllowance: 0n,
+          vaultAllowance: 0n,
+          marketplaceAllowance: 0n,
+          permit2Allowance: 0n,
+          marketplaceApproved: false,
+          positions: [
+            { outcomeId: 0, balance: 0n },
+            { outcomeId: 1, balance: 2_000_000n },
+          ],
+          cumulativePrimaryBought: 2_000_000n,
+          earlyBirdScore: 0n,
+        }}
+        protocol={null}
+        onLoad={() => {}}
+        onSelect={async () => {}}
+        indexerEnabled={false}
+        indexerBasePath="/indexer"
+        metadataBasePath={null}
+        permit2RelayBasePath={null}
+        chainId={421614}
+        busy={false}
+        client={null}
+        publicClient={null}
+        wallet={
+          {
+            address: "0x000000000000000000000000000000000000b001",
+          } as unknown as ConnectedWallet
+        }
+        trust={null}
+        paymentTokenSymbol="ctUSD"
+        paymentTokenBalance={null}
+        permit2Reusable={false}
+        writeReady
+        execute={async () => null}
+      />,
+    );
+    expect(html).toContain("链上已终局，结算结果：No");
+    expect(html).toContain("结算结果</dt><dd>No</dd>");
+    expect(html).toContain("你持有获胜结果");
+    expect(html).toContain("2 份胜出款待领取");
+    expect(html).toContain("去领取胜出款");
+    expect(html).toContain(`href="#/settlement/${market.address}"`);
+  });
+
   it("renders the created Market Vault as a copyable transaction receipt", () => {
     const market = "0xb3c7c04fbbea7873bcfc1ea5b5288601486ec9a3";
     const hash = `0x${"12".repeat(32)}` as `0x${string}`;
@@ -566,6 +653,7 @@ describe("web demo application shell", () => {
         primaryFilledUnits: 5_000_000n,
         creatorBond: 10_000_000n,
         status: "open",
+        winningOutcome: null,
         createdBlock: 100n,
         confirmationStatus: "confirmed",
       },
@@ -596,6 +684,48 @@ describe("web demo application shell", () => {
     expect(html).toContain("查看并交易");
   });
 
+  it("shows and highlights the named winning result on terminal market cards", () => {
+    const entry: CatalogEntry = {
+      market: {
+        market: "0x0000000000000000000000000000000000001001",
+        creator: "0x000000000000000000000000000000000000c001",
+        deploymentMode: 0,
+        outcomeCount: 2,
+        closeAt: 1_900_000_000n,
+        resolutionWindow: 900n,
+        rulesHash: `0x${"11".repeat(32)}`,
+        marketPrimaryCap: 20_000_000n,
+        primaryFilledUnits: 5_000_000n,
+        creatorBond: 10_000_000n,
+        status: "resolved",
+        winningOutcome: 1n,
+        createdBlock: 100n,
+        confirmationStatus: "confirmed",
+      },
+      rules: {
+        version: "cpredict-rules-v1",
+        question: "Will the verified public result be Yes?",
+        outcomes: ["Yes", "No"],
+        closesAt: 1_900_000_000,
+        resolutionSource: "https://example.com/result",
+        resolutionCriteria:
+          "Use the final result published by the cited source.",
+        cancellationPolicy:
+          "Void if no unambiguous result is published in time.",
+      },
+    };
+    const html = renderToStaticMarkup(
+      <TerminalMarketCards
+        entries={[entry]}
+        selectedMarket={null}
+        onOpen={() => {}}
+      />,
+    );
+    expect(html).toContain("结算结果");
+    expect(html).toContain('<span class="winner">No</span>');
+    expect(html).toContain("<strong>No</strong>");
+  });
+
   it("lists only closed unresolved markets and explains who can finalize them", () => {
     const creator = "0x000000000000000000000000000000000000c001";
     const entry: CatalogEntry = {
@@ -611,6 +741,7 @@ describe("web demo application shell", () => {
         primaryFilledUnits: 5_000_000n,
         creatorBond: 10_000_000n,
         status: "open",
+        winningOutcome: null,
         createdBlock: 100n,
         confirmationStatus: "confirmed",
       },
@@ -881,7 +1012,8 @@ describe("web demo application shell", () => {
       />,
     );
     expect(html).toContain("超时作废");
-    expect(html).toContain("链上已终局，目录同步中");
+    expect(html).toContain("链上已终局，无获胜结果（已作废）");
+    expect(html).toContain("结算结果</dt><dd>无获胜结果（已作废）</dd>");
     expect(html).not.toContain("已截止，待结算");
   });
 

@@ -26,6 +26,7 @@ export interface MarketCatalogItem {
   primaryFilledUnits: bigint;
   creatorBond: bigint;
   status: CatalogStatus;
+  winningOutcome: bigint | null;
   createdBlock: bigint;
   confirmationStatus: "provisional" | "confirmed";
 }
@@ -279,6 +280,17 @@ function parseMarket(value: unknown): MarketCatalogItem {
     ["open", "resolved", "voided-creator", "voided-timeout"] as const,
     "status",
   );
+  const winningOutcome =
+    item.winningOutcome === undefined
+      ? null
+      : nullableBigint(item.winningOutcome, "winningOutcome");
+  if (
+    winningOutcome !== null &&
+    outcomeCount !== null &&
+    winningOutcome >= BigInt(outcomeCount)
+  ) {
+    throw new TypeError("winningOutcome is invalid");
+  }
   return {
     market: address(item.market, "market"),
     creator: address(item.creator, "creator"),
@@ -291,6 +303,7 @@ function parseMarket(value: unknown): MarketCatalogItem {
     primaryFilledUnits: bigint(item.primaryFilledUnits, "primaryFilledUnits"),
     creatorBond: bigint(item.creatorBond, "creatorBond"),
     status,
+    winningOutcome,
     createdBlock: bigint(item.createdBlock, "createdBlock"),
     confirmationStatus: confirmation(item.confirmationStatus),
   };

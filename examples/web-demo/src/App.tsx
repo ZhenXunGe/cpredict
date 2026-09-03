@@ -36,7 +36,9 @@ import {
 import {
   formatPaymentToken,
   formatShareUnits,
+  marketFinalResultLabel,
   marketDisplayState,
+  outcomeDisplayLabel,
   readAccount,
   readMarket,
   readPaymentTokenAllowance,
@@ -1507,6 +1509,20 @@ export function MarketPage(props: {
     : (props.market?.address ?? null);
   const walletPaymentBalance =
     props.paymentTokenBalance ?? props.account?.usdcBalance ?? null;
+  const finalResult =
+    props.market === null
+      ? null
+      : marketFinalResultLabel(
+          props.market,
+          props.marketRules?.outcomes ?? null,
+        );
+  const claimableWinner =
+    props.market === null || props.market.marketState !== 1
+      ? undefined
+      : props.account?.positions.find(
+          ({ balance, outcomeId }) =>
+            balance > 0n && outcomeId === props.market!.winningOutcome,
+        );
   return (
     <>
       <Panel
@@ -1553,8 +1569,17 @@ export function MarketPage(props: {
                 <StatusPill value={displayState?.label ?? "未知"} />
               </h2>
               {props.market.marketState !== 0 ? (
-                <p className="callout">
-                  链上已终局，目录同步中。购买与结算以链上快照为准。
+                <p
+                  className={
+                    props.market.marketState === 1
+                      ? "callout success"
+                      : "callout"
+                  }
+                >
+                  {props.market.marketState === 1
+                    ? `链上已终局，结算结果：${finalResult ?? "结果同步中"}。`
+                    : `链上已终局，${finalResult ?? "无获胜结果（已作废）"}。`}
+                  目录可能仍在同步，终局状态以链上快照为准。
                 </p>
               ) : null}
               <p className="mono market-vault-address">
@@ -1581,6 +1606,29 @@ export function MarketPage(props: {
               </strong>
             </div>
           </div>
+          {claimableWinner === undefined ? null : (
+            <div className="claim-reminder" role="status">
+              <div>
+                <strong>
+                  你持有获胜结果{" "}
+                  {outcomeDisplayLabel(
+                    claimableWinner.outcomeId,
+                    props.marketRules?.outcomes ?? null,
+                  )}
+                </strong>
+                <p>
+                  {formatShareUnits(claimableWinner.balance)}
+                  胜出款待领取；领取时仍需在钱包中确认交易。
+                </p>
+              </div>
+              <a
+                className="button primary button-link"
+                href={`#/settlement/${props.market.address}`}
+              >
+                去领取胜出款
+              </a>
+            </div>
+          )}
           <BuyCard
             market={props.market}
             outcomeLabels={props.marketRules?.outcomes ?? null}
@@ -1611,6 +1659,12 @@ export function MarketPage(props: {
                 <dt>结算截止</dt>
                 <dd>{formatTimestamp(props.market.resolutionDeadline)}</dd>
               </div>
+              {finalResult === null ? null : (
+                <div>
+                  <dt>结算结果</dt>
+                  <dd>{finalResult}</dd>
+                </div>
+              )}
               <div>
                 <dt>市场上限</dt>
                 <dd>
@@ -2277,6 +2331,8 @@ export function MarketplacePage({
           refreshVersion={refreshVersion}
           vault={selectedMarketAddress}
           targetBlock={targetBlock ?? null}
+          marketObservedAt={market?.observedAt ?? null}
+          marketCloseAt={market?.closeAt ?? null}
           onSelectListing={onSelectListing}
         />
       </Panel>
@@ -2302,6 +2358,8 @@ export function MarketplacePage({
               paymentTokenSymbol={paymentTokenSymbol}
               vault={market.address}
               marketplace={addresses.contracts.marketplace}
+              observedAt={market.observedAt}
+              closeAt={market.closeAt}
               paymentTokenAllowance={account?.marketplaceAllowance ?? null}
               shareEscrowApproved={account?.marketplaceApproved ?? null}
               selectedListing={selectedListingForMarket}

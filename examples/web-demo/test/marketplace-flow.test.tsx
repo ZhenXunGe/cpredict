@@ -11,7 +11,11 @@ import {
   MarketCatalogSelect,
   type CatalogEntry,
 } from "../src/MarketCatalog.js";
-import { ListingCard, ListingsPanel } from "../src/WalletIndexerPanels.js";
+import {
+  ActiveListingsCatalog,
+  ListingCard,
+  ListingsPanel,
+} from "../src/WalletIndexerPanels.js";
 import type { IndexedListing } from "../src/indexer-client.js";
 import type { AccountSnapshot, MarketSnapshot } from "../src/protocol.js";
 import type { TrustReport } from "../src/trust.js";
@@ -44,6 +48,7 @@ const catalogEntry: CatalogEntry = {
     primaryFilledUnits: 5_000_000n,
     creatorBond: 10_000_000n,
     status: "open",
+    winningOutcome: null,
     createdBlock: 100n,
     confirmationStatus: "confirmed",
   },
@@ -104,7 +109,13 @@ describe("C2C listing selection flow", () => {
     const html = renderToStaticMarkup(
       <MarketplacePage
         writeReady
-        market={{ address: VAULT } as unknown as MarketSnapshot}
+        market={
+          {
+            address: VAULT,
+            observedAt: 1_899_999_000n,
+            closeAt: 1_900_000_000n,
+          } as unknown as MarketSnapshot
+        }
         account={
           {
             marketplaceAllowance: 0n,
@@ -224,5 +235,101 @@ describe("C2C listing selection flow", () => {
     );
     expect(scoped).toContain("正在读取活跃挂单");
     expect(scoped).not.toContain("先选择 C2C 市场");
+  });
+
+  it("folds listings above the primary price before close and restores them at close", () => {
+    const expensive = {
+      ...listing,
+      listingId: `0x${"cd".repeat(32)}` as const,
+      unitPrice: 1_200_000n,
+    };
+    const atPrimaryPrice = {
+      ...listing,
+      listingId: `0x${"ef".repeat(32)}` as const,
+      unitPrice: 1_000_000n,
+    };
+    const beforeClose = renderToStaticMarkup(
+      <ActiveListingsCatalog
+        items={[listing, atPrimaryPrice, expensive]}
+        paymentTokenSymbol="ctUSD"
+        selectedListingId={null}
+        observedAt={1_899_999_999n}
+        closeAt={1_900_000_000n}
+        onSelectListing={() => {}}
+      />,
+    );
+    expect(beforeClose).toContain("1 笔高价挂单已折叠");
+    expect(beforeClose).toContain("池子直买更便宜");
+    expect(beforeClose).toContain("0.9 ctUSD");
+    expect(beforeClose).toContain("1 ctUSD");
+    expect(beforeClose).not.toContain("1.2 ctUSD");
+
+    const atClose = renderToStaticMarkup(
+      <ActiveListingsCatalog
+        items={[listing, atPrimaryPrice, expensive]}
+        paymentTokenSymbol="ctUSD"
+        selectedListingId={null}
+        observedAt={1_900_000_000n}
+        closeAt={1_900_000_000n}
+        onSelectListing={() => {}}
+      />,
+    );
+    expect(atClose).not.toContain("高价挂单已折叠");
+    expect(atClose).toContain("0.9 ctUSD");
+    expect(atClose).toContain("1 ctUSD");
+    expect(atClose).toContain("1.2 ctUSD");
+  });
+
+  it("blocks a stale selected high-price listing from filling before close but keeps cancellation", () => {
+    const html = renderToStaticMarkup(
+      <MarketplacePage
+        writeReady
+        market={
+          {
+            address: VAULT,
+            observedAt: 1_899_999_000n,
+            closeAt: 1_900_000_000n,
+          } as unknown as MarketSnapshot
+        }
+        account={
+          {
+            marketplaceAllowance: 0n,
+            marketplaceApproved: true,
+          } as AccountSnapshot
+        }
+        trust={
+          {
+            addresses: {
+              usdc: "0x0000000000000000000000000000000000004001",
+              contracts: { marketplace: MARKETPLACE },
+            },
+          } as unknown as TrustReport
+        }
+        client={{} as CpredictClient}
+        selectedMarketAddress={VAULT}
+        marketBusy={false}
+        marketLoadError={null}
+        wallet="0x0000000000000000000000000000000000005001"
+        paymentTokenSymbol="ctUSD"
+        indexerEnabled={false}
+        indexerBasePath="/indexer"
+        metadataBasePath="/metadata"
+        chainId={421614}
+        selectedListing={{ ...listing, unitPrice: 1_200_000n }}
+        refreshVersion={0}
+        onSelectMarket={() => {}}
+        onSelectListing={() => {}}
+        onListingChange={() => {}}
+      />,
+    );
+    const selectedSection = html.slice(html.indexOf("已选挂单"));
+    expect(selectedSection).toContain("该挂单已按封盘前规则折叠");
+    expect(selectedSection).toContain("池子直买更便宜");
+    expect(selectedSection).toContain(
+      '<button disabled="" type="button">精确授权 ctUSD 用于成交</button>',
+    );
+    expect(selectedSection).toContain(
+      '<button type="button">取消所选挂单</button>',
+    );
   });
 });
