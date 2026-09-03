@@ -8,6 +8,7 @@ import {
   type CatalogStatus,
   type MarketCatalogItem,
 } from "./indexer-client.js";
+import { outcomeDisplayLabel } from "./protocol.js";
 
 export interface CatalogEntry {
   market: MarketCatalogItem;
@@ -272,6 +273,7 @@ export function MarketCatalogCards(props: {
                 </span>
               ) : null}
             </div>
+            <TerminalResult market={market} rules={rules} />
             <dl className="market-card-stats">
               <div>
                 <dt>截止</dt>
@@ -619,64 +621,113 @@ export function TerminalMarketCatalog(props: {
           detail="领取与退款从这里进入。目录可能滞后于链上状态。"
         />
       ) : (
-        <div className="market-catalog">
-          {entries.map(({ market, rules }) => (
-            <article
-              className={
-                props.selectedMarket?.toLowerCase() ===
-                market.market.toLowerCase()
-                  ? "market-card selected"
-                  : "market-card"
-              }
-              key={market.market}
-            >
-              <div className="market-card-heading">
-                <Status
-                  status={market.status}
-                  confirmation={market.confirmationStatus}
-                />
-                <span className="mono">{short(market.market)}</span>
-              </div>
-              <h3>{rules?.question ?? "规则元数据尚未同步"}</h3>
-              <div className="outcome-list">
-                {(
-                  rules?.outcomes ??
-                  Array.from(
-                    { length: market.outcomeCount ?? 0 },
-                    (_, index) => `结果 ${index + 1}`,
-                  )
-                )
-                  .slice(0, 4)
-                  .map((outcome) => (
-                    <span key={outcome}>{outcome}</span>
-                  ))}
-              </div>
-              <dl className="market-card-stats">
-                <div>
-                  <dt>截止</dt>
-                  <dd>
-                    {market.closeAt === null
-                      ? "—"
-                      : formatTimestamp(market.closeAt, true)}
-                  </dd>
-                </div>
-                <div>
-                  <dt>状态</dt>
-                  <dd>{catalogStatusLabel(market.status)}</dd>
-                </div>
-              </dl>
-              <button
-                type="button"
-                className="button primary wide"
-                onClick={() => props.onOpen(market.market, rules)}
-              >
-                进入处理
-              </button>
-            </article>
-          ))}
-        </div>
+        <TerminalMarketCards
+          entries={entries}
+          selectedMarket={props.selectedMarket}
+          onOpen={props.onOpen}
+        />
       )}
     </>
+  );
+}
+
+export function TerminalMarketCards(props: {
+  entries: readonly CatalogEntry[];
+  selectedMarket: Address | null;
+  onOpen: (market: Address, rules: MarketRules | null) => void;
+}) {
+  return (
+    <div className="market-catalog">
+      {props.entries.map(({ market, rules }) => (
+        <article
+          className={
+            props.selectedMarket?.toLowerCase() === market.market.toLowerCase()
+              ? "market-card selected"
+              : "market-card"
+          }
+          key={market.market}
+        >
+          <div className="market-card-heading">
+            <Status
+              status={market.status}
+              confirmation={market.confirmationStatus}
+            />
+            <span className="mono">{short(market.market)}</span>
+          </div>
+          <h3>{rules?.question ?? "规则元数据尚未同步"}</h3>
+          <div className="outcome-list">
+            {(
+              rules?.outcomes ??
+              Array.from(
+                { length: market.outcomeCount ?? 0 },
+                (_, index) => `结果 ${index + 1}`,
+              )
+            )
+              .slice(0, 4)
+              .map((outcome, index) => (
+                <span
+                  className={
+                    market.status === "resolved" &&
+                    market.winningOutcome === BigInt(index)
+                      ? "winner"
+                      : undefined
+                  }
+                  key={`${index}:${outcome}`}
+                >
+                  {outcome}
+                </span>
+              ))}
+          </div>
+          <TerminalResult market={market} rules={rules} />
+          <dl className="market-card-stats">
+            <div>
+              <dt>截止</dt>
+              <dd>
+                {market.closeAt === null
+                  ? "—"
+                  : formatTimestamp(market.closeAt, true)}
+              </dd>
+            </div>
+            <div>
+              <dt>状态</dt>
+              <dd>{catalogStatusLabel(market.status)}</dd>
+            </div>
+          </dl>
+          <button
+            type="button"
+            className="button primary wide"
+            onClick={() => props.onOpen(market.market, rules)}
+          >
+            进入处理
+          </button>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+export function terminalResultLabel(
+  market: Pick<MarketCatalogItem, "status" | "winningOutcome">,
+  rules: MarketRules | null,
+): string {
+  if (market.status === "open") return "尚未终局";
+  if (market.status !== "resolved") return "无获胜结果（已作废）";
+  if (market.winningOutcome === null) return "结果同步中";
+  return outcomeDisplayLabel(market.winningOutcome, rules?.outcomes);
+}
+
+function TerminalResult(props: {
+  market: MarketCatalogItem;
+  rules: MarketRules | null;
+}) {
+  if (props.market.status === "open") return null;
+  return (
+    <p className="market-terminal-result" role="status">
+      <span>
+        {props.market.status === "resolved" ? "结算结果" : "终局结果"}
+      </span>
+      <strong>{terminalResultLabel(props.market, props.rules)}</strong>
+    </p>
   );
 }
 

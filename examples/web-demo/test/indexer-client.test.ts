@@ -35,6 +35,7 @@ describe("same-origin indexer client", () => {
             primaryFilledUnits: "3000000",
             creatorBond: "10000000",
             status: "open",
+            winningOutcome: null,
             createdBlock: "123",
             confirmationStatus: "confirmed",
           },
@@ -55,6 +56,7 @@ describe("same-origin indexer client", () => {
       marketPrimaryCap: 20_000_000n,
       primaryFilledUnits: 3_000_000n,
       resolutionWindow: 900n,
+      winningOutcome: null,
     });
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("owner=0x");
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("status=open");
@@ -87,6 +89,7 @@ describe("same-origin indexer client", () => {
         primaryFilledUnits: "3000000",
         creatorBond: "10000000",
         status,
+        winningOutcome: status === "resolved" ? "0" : null,
         createdBlock: "123",
         confirmationStatus: "confirmed",
       };
@@ -110,6 +113,7 @@ describe("same-origin indexer client", () => {
       "voided-timeout",
       "resolved",
     ]);
+    expect(page.items.at(-1)?.winningOutcome).toBe(0n);
   });
 
   it("filters listings by vault", async () => {
