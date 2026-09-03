@@ -269,6 +269,7 @@ function market(chainId: number, zeroEvidence = false): MarketView {
     primaryPayment: 25_000_000n,
     creatorBond: 10_000_000n,
     state: 1,
+    voidReason: 0,
     winningOutcome: 0n,
     evidenceHash: zeroEvidence ? `0x${"00".repeat(32)}` : EVIDENCE_HASH,
     evidenceUri: "ipfs://untrusted-store-value",

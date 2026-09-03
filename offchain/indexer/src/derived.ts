@@ -62,9 +62,14 @@ export type DerivedMutation =
   | {
       kind: "market-terminal";
       market: Address;
-      terminalKind: "resolved" | "voided-creator" | "voided-timeout";
+      terminalKind:
+        | "resolved"
+        | "voided-creator"
+        | "voided-no-winning-supply"
+        | "voided-timeout";
       caller: Address | null;
       state: number;
+      voidReason: number;
       winningOutcome: bigint | null;
       evidenceHash: Hex | null;
     }
@@ -218,6 +223,7 @@ export function deriveMutations(
           terminalKind: "resolved",
           caller: null,
           state: 1,
+          voidReason: 0,
           winningOutcome: bigint(args.winningOutcome),
           evidenceHash: optionalEvidenceHash(args.evidenceHash),
         },
@@ -227,9 +233,10 @@ export function deriveMutations(
         {
           kind: "market-terminal",
           market: event.address,
-          terminalKind: terminalKind(args.terminalState),
+          terminalKind: terminalKind(args.reason),
           caller: address(args.caller),
-          state: number(args.terminalState),
+          state: 2,
+          voidReason: number(args.reason),
           winningOutcome: null,
           evidenceHash: optionalEvidenceHash(args.evidenceHash),
         },
@@ -418,11 +425,12 @@ function optionalEvidenceHash(value: unknown): Hex | null {
 
 function terminalKind(
   value: unknown,
-): "voided-creator" | "voided-timeout" {
-  const state = number(value);
-  if (state === 2) return "voided-creator";
-  if (state === 3) return "voided-timeout";
-  throw new RangeError(`invalid terminal market state ${state}`);
+): "voided-creator" | "voided-no-winning-supply" | "voided-timeout" {
+  const reason = number(value);
+  if (reason === 1) return "voided-creator";
+  if (reason === 2) return "voided-no-winning-supply";
+  if (reason === 3) return "voided-timeout";
+  throw new RangeError(`invalid void reason ${reason}`);
 }
 
 function bigint(value: unknown): bigint {

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS activities (
     'terminal-listing-returned',
     'market-resolved',
     'market-voided-creator',
+    'market-voided-no-winning-supply',
     'market-voided-timeout',
     'winner-claimed',
     'early-bird-claimed',

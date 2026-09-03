@@ -17,9 +17,7 @@ import type { IndexerWebSocketHub } from "./websocket.js";
 
 export interface IndexerApiOptions {
   readiness?: (() => Promise<void>) | undefined;
-  syncStatus?:
-    | ((chainId: number) => Promise<IndexerSyncStatus>)
-    | undefined;
+  syncStatus?: ((chainId: number) => Promise<IndexerSyncStatus>) | undefined;
   registry?: Registry | undefined;
   logLevel?:
     | "fatal"
@@ -60,7 +58,7 @@ const opaqueCursorSchema = z
   .regex(/^[A-Za-z0-9_-]{1,256}$/)
   .optional();
 const marketStatusSchema = z
-  .enum(["open", "resolved", "voided-creator", "voided-timeout"])
+  .enum(["open", "resolved", "voided"])
   .transform((value) => value as MarketStatus);
 
 export function createIndexerApi(
@@ -346,6 +344,7 @@ function jsonMarketV1(value: MarketView): unknown {
     marketPrimaryCap: value.marketPrimaryCap,
     creatorBond: value.creatorBond,
     state: value.state,
+    voidReason: value.voidReason,
     winningOutcome: value.winningOutcome,
     ...evidence,
     createdBlock: value.createdBlock,

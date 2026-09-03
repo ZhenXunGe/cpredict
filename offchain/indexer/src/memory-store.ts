@@ -381,6 +381,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
             primaryPayment: 0n,
             creatorBond: mutation.creatorBond,
             state: 0,
+            voidReason: 0,
             winningOutcome: null,
             evidenceHash: null,
             evidenceUri: null,
@@ -420,6 +421,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           primaryPayment: current?.primaryPayment ?? 0n,
           creatorBond: mutation.creatorBond,
           state: current?.state ?? 0,
+          voidReason: current?.voidReason ?? 0,
           winningOutcome: current?.winningOutcome ?? null,
           evidenceHash: current?.evidenceHash ?? null,
           evidenceUri: current?.evidenceUri ?? null,
@@ -485,6 +487,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
         this.markets.set(key, {
           ...current,
           state: mutation.state,
+          voidReason: mutation.voidReason,
           winningOutcome: mutation.winningOutcome,
           evidenceHash: mutation.evidenceHash,
           evidenceUri:
@@ -831,13 +834,19 @@ function compareActivityToCursor(
 }
 
 function terminalActivityKind(
-  value: "resolved" | "voided-creator" | "voided-timeout",
+  value:
+    | "resolved"
+    | "voided-creator"
+    | "voided-no-winning-supply"
+    | "voided-timeout",
 ): ActivityKind {
   switch (value) {
     case "resolved":
       return "market-resolved";
     case "voided-creator":
       return "market-voided-creator";
+    case "voided-no-winning-supply":
+      return "market-voided-no-winning-supply";
     case "voided-timeout":
       return "market-voided-timeout";
   }
