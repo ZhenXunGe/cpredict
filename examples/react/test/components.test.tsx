@@ -56,6 +56,8 @@ const client = new Proxy(
   | "claimEarlyBird"
   | "refund"
   | "claimTimeoutBonus"
+  | "settleBond"
+  | "claimBondFor"
   | "approvePaymentToken"
   | "buy"
   | "buyWithPermit2"
@@ -160,6 +162,24 @@ describe("React protocol call examples", () => {
       /type="submit"[^>]*disabled|disabled[^>]*type="submit"/,
     );
     expect(html).toMatch(/超时作废<\/button>/);
+  });
+
+  it("points creators to bond release after a non-timeout terminal", () => {
+    const html = renderToStaticMarkup(
+      <MarketLifecyclePanel
+        client={client}
+        vault={address}
+        outcomeCount={2}
+        creatorMode
+        closeAt={1_900_000_000n}
+        resolutionDeadline={1_900_000_900n}
+        observedAt={1_900_000_200n}
+        marketState={1}
+      />,
+    );
+    expect(html).toContain("该市场已终局");
+    expect(html).toContain("释放并领取押金");
+    expect(html).toContain("仅超时弃盘且有参与者时押金罚没");
   });
 
   it("maps settlement phases from closeAt and resolutionDeadline", () => {
@@ -286,7 +306,13 @@ describe("React protocol call examples", () => {
       />,
     );
     const claimsHtml = renderToStaticMarkup(
-      <ClaimsPanel client={client} vault={address} owner={address} />,
+      <ClaimsPanel
+        client={client}
+        vault={address}
+        owner={address}
+        bondEscrow={address}
+        creator={address}
+      />,
     );
     expect(marketHtml).toContain("单独授权份额托管");
     expect(marketHtml).toContain("授权份额托管并创建挂单");
@@ -300,6 +326,9 @@ describe("React protocol call examples", () => {
     expect(claimsHtml).toContain("Claim winnings");
     expect(claimsHtml).toContain("Refund principal");
     expect(claimsHtml).toContain("Claim timeout bond bonus");
+    expect(claimsHtml).toContain("Release creator bond");
+    expect(claimsHtml).toContain("Claim creator bond");
+    expect(claimsHtml).toContain("Timeout abandonment with participants");
   });
 
   it("quotes only an active, unexpired onchain listing with enough remaining shares", () => {
