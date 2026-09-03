@@ -1115,6 +1115,7 @@ export default function App() {
                 client={client}
                 publicClient={publicClient}
                 execute={executeOperation}
+                bondEscrow={trust?.addresses?.contracts.bondEscrow ?? null}
                 evidenceUploader={
                   runtime === null ? undefined : makeEvidenceUploader(runtime)
                 }
@@ -2418,6 +2419,7 @@ export function SettlementPage({
   client,
   publicClient,
   execute,
+  bondEscrow,
   evidenceUploader,
   indexerEnabled,
   indexerBasePath,
@@ -2435,6 +2437,7 @@ export function SettlementPage({
   client: CpredictClient | null;
   publicClient: PublicClient | null;
   execute: ExecuteTransaction;
+  bondEscrow: Address | null;
   evidenceUploader: CanonicalEvidenceUploader | undefined;
   indexerEnabled: boolean;
   indexerBasePath: string;
@@ -2598,7 +2601,32 @@ export function SettlementPage({
               )
             }
           />
+          <SettlementActionButton
+            writeReady={writeReady && bondEscrow !== null}
+            busy={busy}
+            label="释放押金"
+            onClick={() => {
+              if (bondEscrow === null) return;
+              void execute("释放押金", () =>
+                client.settleBond(bondEscrow, market.address),
+              );
+            }}
+          />
+          <SettlementActionButton
+            writeReady={writeReady && bondEscrow !== null}
+            busy={busy}
+            label="领取押金"
+            onClick={() => {
+              if (bondEscrow === null) return;
+              void execute("领取押金", () =>
+                client.claimBondFor(bondEscrow, market.creator),
+              );
+            }}
+          />
         </div>
+        <p className="callout">
+          押金只在超时弃盘且该盘有本金时罚没，并随作废退款按本金比例分给参与者。正常结算或创建者手动作废后，先点「释放押金」把该盘押金记到创建者名下，再点「领取押金」打给创建者。领取会把该创建者已释放的全部押金一次性转出。
+        </p>
         <p className="callout danger">
           Demo 不暴露管理员调用，也不会替创建者自动选择结果。创建者
           终局必须人工复核锁定规则。
