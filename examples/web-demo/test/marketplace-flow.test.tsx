@@ -48,6 +48,7 @@ const catalogEntry: CatalogEntry = {
     primaryFilledUnits: 5_000_000n,
     creatorBond: 10_000_000n,
     status: "open",
+    voidReason: 0,
     winningOutcome: null,
     createdBlock: 100n,
     confirmationStatus: "confirmed",

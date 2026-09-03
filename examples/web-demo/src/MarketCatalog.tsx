@@ -944,8 +944,7 @@ function catalogStatusLabel(status: CatalogStatus): string {
   const labels: Record<CatalogStatus, string> = {
     open: "进行中",
     resolved: "已结算",
-    "voided-creator": "创建者作废",
-    "voided-timeout": "超时作废",
+    voided: "已作废",
   };
   return labels[status];
 }

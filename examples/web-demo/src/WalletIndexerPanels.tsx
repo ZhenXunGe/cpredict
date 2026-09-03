@@ -356,6 +356,7 @@ function ActivityRow(props: {
     "terminal-listing-returned": "终局退回挂单",
     "market-resolved": "市场已结算",
     "market-voided-creator": "创建者作废",
+    "market-voided-no-winning-supply": "零胜方份额作废",
     "market-voided-timeout": "超时作废",
     "winner-claimed": "领取胜出款",
     "early-bird-claimed": "领取早鸟奖励",

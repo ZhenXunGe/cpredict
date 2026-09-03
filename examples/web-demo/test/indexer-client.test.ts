@@ -35,6 +35,7 @@ describe("same-origin indexer client", () => {
             primaryFilledUnits: "3000000",
             creatorBond: "10000000",
             status: "open",
+            voidReason: 0,
             winningOutcome: null,
             createdBlock: "123",
             confirmationStatus: "confirmed",
@@ -73,22 +74,18 @@ describe("same-origin indexer client", () => {
         market:
           status === "resolved"
             ? MARKET
-            : `0x000000000000000000000000000000000000100${status === "voided-creator" ? "2" : "3"}`,
+            : "0x0000000000000000000000000000000000001002",
         creator: CREATOR,
         deploymentMode: 0,
         outcomeCount: 2,
-        closeAt:
-          status === "resolved"
-            ? "100"
-            : status === "voided-creator"
-              ? "300"
-              : "200",
+        closeAt: status === "resolved" ? "100" : "200",
         resolutionWindow: "900",
         rulesHash: `0x${"11".repeat(32)}`,
         marketPrimaryCap: "20000000",
         primaryFilledUnits: "3000000",
         creatorBond: "10000000",
         status,
+        voidReason: status === "resolved" ? 0 : 1,
         winningOutcome: status === "resolved" ? "0" : null,
         createdBlock: "123",
         confirmationStatus: "confirmed",
@@ -100,17 +97,15 @@ describe("same-origin indexer client", () => {
       basePath: "/indexer",
       chainId: 421614,
     });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls.map((call) => String(call[0]))).toEqual(
       expect.arrayContaining([
         expect.stringContaining("status=resolved"),
-        expect.stringContaining("status=voided-creator"),
-        expect.stringContaining("status=voided-timeout"),
+        expect.stringContaining("status=voided"),
       ]),
     );
     expect(page.items.map((item) => item.status)).toEqual([
-      "voided-creator",
-      "voided-timeout",
+      "voided",
       "resolved",
     ]);
     expect(page.items.at(-1)?.winningOutcome).toBe(0n);

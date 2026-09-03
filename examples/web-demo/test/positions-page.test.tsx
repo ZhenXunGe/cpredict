@@ -294,6 +294,7 @@ function market(overrides: Partial<MarketSnapshot> = {}): MarketSnapshot {
     minimumC2CUnits: 1_000_000n,
     creatorBond: 10_000_000n,
     marketState: 0,
+    voidReason: 0,
     winningOutcome: 0,
     totalPrincipal: 2_000_000n,
     resolutionDeadline: 1_900_001_900n,
