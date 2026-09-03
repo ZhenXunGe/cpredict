@@ -166,6 +166,63 @@ export function verifyImageRevision(service, labels, expectedRevision) {
   };
 }
 
+export function verifyDeploymentRuntime(service, container, configuration) {
+  const expectedFactory = configuration.publicEnv.CPREDICT_INDEXER_FACTORY_ADDRESS;
+  const environment = Object.fromEntries(
+    (container.Config?.Env ?? [])
+      .map((value) => {
+        const separator = value.indexOf("=");
+        return separator === -1
+          ? [value, ""]
+          : [value.slice(0, separator), value.slice(separator + 1)];
+      }),
+  );
+  const checks = [];
+  if (service === "metadata" || service === "indexer") {
+    const key =
+      service === "metadata"
+        ? "CPREDICT_METADATA_FACTORY_ADDRESS"
+        : "CPREDICT_INDEXER_FACTORY_ADDRESS";
+    const actual = environment[key];
+    checks.push({
+      status: actual?.toLowerCase() === expectedFactory.toLowerCase() ? "PASS" : "FAIL",
+      name: `${service} deployment Factory`,
+      detail:
+        actual === undefined
+          ? `missing; expected ${expectedFactory}`
+          : `${actual}; expected ${expectedFactory}`,
+    });
+  }
+  if (service === "web-demo") {
+    const expectedRoot = configuration.runtimeRoot;
+    const requiredMounts = [
+      ["/usr/share/nginx/html/runtime-config.json", "runtime config"],
+      ["/usr/share/nginx/html/deployment", "deployment manifest"],
+    ];
+    for (const [destination, label] of requiredMounts) {
+      const mount = (container.Mounts ?? []).find(
+        (candidate) => candidate.Destination === destination,
+      );
+      checks.push({
+        status:
+          mount?.RW === false &&
+          typeof mount.Source === "string" &&
+          mount.Source.startsWith(`${expectedRoot}/`)
+            ? "PASS"
+            : "FAIL",
+        name: `web-demo ${label} mount`,
+        detail:
+          mount === undefined
+            ? "missing"
+            : mount.Source.startsWith(`${expectedRoot}/`) && mount.RW === false
+              ? "current runtime package, read-only"
+              : "not the current runtime package or writable",
+      });
+    }
+  }
+  return checks;
+}
+
 export async function verifyHttpRuntime({ baseUrl, fetchFn = fetch }) {
   const checks = [];
   const request = async (path, options = {}) => {
@@ -365,6 +422,7 @@ export async function verifyRuntime({
             sourceRevision,
           ),
         );
+      checks.push(...verifyDeploymentRuntime(service, container, configuration));
     } catch {
       checks.push({
         status: "FAIL",
