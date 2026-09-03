@@ -27,6 +27,7 @@ import {
   decodeOpaqueCursor,
   encodeOpaqueCursor,
   marketState,
+  positionMarketSnapshot,
 } from "./store.js";
 
 type Db = Sql | TransactionSql;
@@ -298,11 +299,23 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     const vaultFilter =
       options.vault === undefined
         ? this.sql``
-        : this.sql`AND vault = ${getAddress(options.vault)}`;
+        : this.sql`AND p.vault = ${getAddress(options.vault)}`;
     const rows = await this.sql<Array<PositionRow>>`
-      SELECT * FROM positions
-      WHERE chain_id = ${chainId} AND owner = ${getAddress(owner)} ${vaultFilter} AND balance > 0
-      ORDER BY updated_block DESC, vault, outcome_id OFFSET ${offset} LIMIT ${limit + 1}
+      SELECT
+        p.chain_id,
+        p.vault,
+        p.owner,
+        p.outcome_id,
+        p.balance,
+        p.updated_block,
+        p.confirmation_status,
+        m.state AS market_state,
+        m.winning_outcome
+      FROM positions p
+      LEFT JOIN markets m
+        ON m.chain_id = p.chain_id AND m.market = p.vault
+      WHERE p.chain_id = ${chainId} AND p.owner = ${getAddress(owner)} ${vaultFilter} AND p.balance > 0
+      ORDER BY p.updated_block DESC, p.vault, p.outcome_id OFFSET ${offset} LIMIT ${limit + 1}
     `;
     return page(rows.map(mapPosition), limit, offset);
   }
@@ -332,9 +345,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
   ): Promise<QueryPage<ActivityView>> {
     validateLimit(options.limit);
     const cursor =
-      options.cursor === undefined
-        ? undefined
-        : activityCursor(options.cursor);
+      options.cursor === undefined ? undefined : activityCursor(options.cursor);
     const cursorFilter =
       cursor === undefined
         ? this.sql``
@@ -639,9 +650,7 @@ async function applyMutation(
       });
       return;
     case "listing-filled": {
-      const listings = await db<
-        Array<{ vault: Address; outcome_id: string }>
-      >`
+      const listings = await db<Array<{ vault: Address; outcome_id: string }>>`
         UPDATE listings SET remaining_units = ${mutation.remainingUnits.toString()},
           active = ${mutation.remainingUnits !== 0n}, updated_block = ${event.blockNumber.toString()},
           confirmation_status = ${event.confirmationStatus}
@@ -676,9 +685,7 @@ async function applyMutation(
       return;
     }
     case "listing-closed": {
-      const listings = await db<
-        Array<{ vault: Address; outcome_id: string }>
-      >`
+      const listings = await db<Array<{ vault: Address; outcome_id: string }>>`
         UPDATE listings SET remaining_units = 0, active = FALSE,
           updated_block = ${event.blockNumber.toString()}, confirmation_status = ${event.confirmationStatus}
         WHERE chain_id = ${event.chainId} AND listing_id = ${mutation.listingId}
@@ -686,7 +693,9 @@ async function applyMutation(
       `;
       const listing = listings[0];
       if (listing === undefined)
-        throw new Error(`close references unknown listing ${mutation.listingId}`);
+        throw new Error(
+          `close references unknown listing ${mutation.listingId}`,
+        );
       await recordActivity(db, event, {
         kind: mutation.closeKind,
         vault: listing.vault,
@@ -891,6 +900,8 @@ interface PositionRow {
   balance: string;
   updated_block: string;
   confirmation_status: ConfirmationStatus;
+  market_state: number | string | null;
+  winning_outcome: string | null;
 }
 
 interface ClaimRow {
@@ -971,8 +982,7 @@ function mapMarket(row: MarketRow): MarketView {
       row.early_bird_start === null ? null : BigInt(row.early_bird_start),
     creatorTreasury:
       row.creator_treasury === null ? null : getAddress(row.creator_treasury),
-    featureFlags:
-      row.feature_flags === null ? null : BigInt(row.feature_flags),
+    featureFlags: row.feature_flags === null ? null : BigInt(row.feature_flags),
     marketPrimaryCap:
       row.market_primary_cap === null ? null : BigInt(row.market_primary_cap),
     primaryFilledUnits: BigInt(row.primary_filled_units),
@@ -1032,6 +1042,15 @@ function mapPosition(row: PositionRow): PositionView {
     balance: BigInt(row.balance),
     updatedBlock: BigInt(row.updated_block),
     confirmationStatus: row.confirmation_status,
+    ...positionMarketSnapshot(
+      row.market_state == null
+        ? undefined
+        : {
+            state: Number(row.market_state),
+            winningOutcome:
+              row.winning_outcome == null ? null : BigInt(row.winning_outcome),
+          },
+    ),
   };
 }
 

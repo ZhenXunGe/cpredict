@@ -22,6 +22,7 @@ import {
   decodeOpaqueCursor,
   encodeOpaqueCursor,
   marketState,
+  positionMarketSnapshot,
 } from "./store.js";
 
 /** Deterministic store used by unit tests and local embedders; mirrors PostgreSQL semantics. */
@@ -161,9 +162,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
     const owner =
       options.owner === undefined ? undefined : getAddress(options.owner);
     const cursor =
-      options.cursor === undefined
-        ? undefined
-        : marketCursor(options.cursor);
+      options.cursor === undefined ? undefined : marketCursor(options.cursor);
     const items = [...this.markets.values()]
       .filter((market) => market.chainId === chainId)
       .filter(
@@ -271,7 +270,13 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
             options.vault === undefined ||
             position.vault === getAddress(options.vault),
         )
-        .sort((a, b) => compareBigintDesc(a.updatedBlock, b.updatedBlock)),
+        .sort((a, b) => compareBigintDesc(a.updatedBlock, b.updatedBlock))
+        .map((position) => ({
+          ...position,
+          ...positionMarketSnapshot(
+            this.markets.get(addressKey(position.chainId, position.vault)),
+          ),
+        })),
       options,
     );
   }
@@ -306,9 +311,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
     validateLimit(options.limit);
     const normalizedOwner = getAddress(owner);
     const cursor =
-      options.cursor === undefined
-        ? undefined
-        : activityCursor(options.cursor);
+      options.cursor === undefined ? undefined : activityCursor(options.cursor);
     const items = [...this.activities.entries()]
       .filter(
         ([key, activity]) =>
@@ -457,8 +460,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           );
         this.markets.set(key, {
           ...current,
-          primaryFilledUnits:
-            current.primaryFilledUnits + mutation.filledUnits,
+          primaryFilledUnits: current.primaryFilledUnits + mutation.filledUnits,
           primaryPayment: mutation.totalPrincipal,
           updatedBlock: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
@@ -622,6 +624,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           balance,
           updatedBlock: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
+          ...positionMarketSnapshot(undefined),
         });
         return;
       }
