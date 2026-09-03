@@ -58,14 +58,19 @@ CREATE TABLE IF NOT EXISTS markets (
   close_at NUMERIC(78, 0),
   market_primary_cap NUMERIC(78, 0),
   creator_bond NUMERIC(78, 0) NOT NULL,
-  state SMALLINT NOT NULL DEFAULT 0,
+  state SMALLINT NOT NULL DEFAULT 0 CHECK (state BETWEEN 0 AND 2),
+  void_reason SMALLINT NOT NULL DEFAULT 0,
   winning_outcome NUMERIC(78, 0),
   evidence_hash CHAR(66) CONSTRAINT markets_evidence_hash_format
     CHECK (evidence_hash ~ '^0x[0-9a-fA-F]{64}$'),
   created_block NUMERIC(78, 0) NOT NULL,
   updated_block NUMERIC(78, 0) NOT NULL,
   confirmation_status TEXT NOT NULL CHECK (confirmation_status IN ('provisional', 'confirmed')),
-  PRIMARY KEY (chain_id, market)
+  PRIMARY KEY (chain_id, market),
+  CONSTRAINT markets_terminal_reason CHECK (
+    (state IN (0, 1) AND void_reason = 0)
+    OR (state = 2 AND void_reason BETWEEN 1 AND 3)
+  )
 );
 
 CREATE TABLE IF NOT EXISTS listings (

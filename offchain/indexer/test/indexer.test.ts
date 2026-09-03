@@ -55,7 +55,7 @@ const marketResolvedEvent = parseAbiItem(
   "event MarketResolved(uint256 indexed winningOutcome,uint256 totalPrincipal,uint256 totalRake,uint256 protocolFee,uint256 creatorFee,uint256 earlyBirdPool,uint256 winnerPool,bytes32 indexed evidenceHash)",
 );
 const marketVoidedEvent = parseAbiItem(
-  "event MarketVoided(uint8 indexed terminalState,address indexed caller,uint256 refundPrincipal,bytes32 indexed evidenceHash)",
+  "event MarketVoided(uint8 indexed reason,address indexed caller,uint256 refundPrincipal,bytes32 indexed evidenceHash)",
 );
 const LISTING_ID = hash(700n);
 const EVIDENCE_HASH = hash(701n);
@@ -375,14 +375,16 @@ describe("ChainIndexer canonical ingestion", () => {
         evidenceHash: EVIDENCE_HASH,
       },
       {
-        terminal: marketVoidedLog(2n, MARKET_A, 2, EVIDENCE_HASH),
+        terminal: marketVoidedLog(2n, MARKET_A, 1, EVIDENCE_HASH),
         state: 2,
+        voidReason: 1,
         winningOutcome: null,
         evidenceHash: EVIDENCE_HASH,
       },
       {
         terminal: marketVoidedLog(2n, MARKET_A, 3, ZERO_EVIDENCE_HASH),
-        state: 3,
+        state: 2,
+        voidReason: 3,
         winningOutcome: null,
         evidenceHash: null,
       },
@@ -398,6 +400,7 @@ describe("ChainIndexer canonical ingestion", () => {
       await createIndexer(client, store).runBatch();
       expect(await store.market(CHAIN_ID, MARKET_A)).toMatchObject({
         state: scenario.state,
+        voidReason: "voidReason" in scenario ? scenario.voidReason : 0,
         winningOutcome: scenario.winningOutcome,
         evidenceHash: scenario.evidenceHash,
         evidenceUri:
@@ -741,7 +744,7 @@ function marketResolvedLog(
 function marketVoidedLog(
   blockNumber: bigint,
   vault: Address,
-  terminalState: number,
+  reason: number,
   evidenceHash: Hex,
 ): Log {
   return fixtureLog(
@@ -751,7 +754,7 @@ function marketVoidedLog(
     encodeEventTopics({
       abi: [marketVoidedEvent],
       eventName: "MarketVoided",
-      args: { terminalState, caller: CREATOR, evidenceHash },
+      args: { reason, caller: CREATOR, evidenceHash },
     }) as unknown as readonly Hex[],
     encodeAbiParameters([{ type: "uint256" }], [100n]),
   );

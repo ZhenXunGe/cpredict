@@ -609,6 +609,7 @@ async function applyMutation(
       `;
       await db`
         UPDATE markets SET state = ${mutation.state},
+          void_reason = ${mutation.voidReason},
           winning_outcome = ${nullableBigint(mutation.winningOutcome)},
           evidence_hash = ${mutation.evidenceHash},
           updated_block = ${event.blockNumber.toString()}, confirmation_status = ${event.confirmationStatus}
@@ -856,6 +857,7 @@ interface MarketRow {
   primary_payment: string;
   creator_bond: string;
   state: number;
+  void_reason: number;
   winning_outcome: string | null;
   evidence_hash: Hex | null;
   created_block: string;
@@ -989,6 +991,7 @@ function mapMarket(row: MarketRow): MarketView {
     primaryPayment: BigInt(row.primary_payment),
     creatorBond: BigInt(row.creator_bond),
     state: row.state,
+    voidReason: row.void_reason,
     winningOutcome:
       row.winning_outcome === null ? null : BigInt(row.winning_outcome),
     evidenceHash,
@@ -1173,13 +1176,19 @@ function activityCursor(value: string): ActivityCursor {
 }
 
 function terminalActivityKind(
-  value: "resolved" | "voided-creator" | "voided-timeout",
+  value:
+    | "resolved"
+    | "voided-creator"
+    | "voided-no-winning-supply"
+    | "voided-timeout",
 ): ActivityKind {
   switch (value) {
     case "resolved":
       return "market-resolved";
     case "voided-creator":
       return "market-voided-creator";
+    case "voided-no-winning-supply":
+      return "market-voided-no-winning-supply";
     case "voided-timeout":
       return "market-voided-timeout";
   }

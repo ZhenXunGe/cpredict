@@ -56,6 +56,7 @@ export interface MarketView {
   primaryPayment: bigint;
   creatorBond: bigint;
   state: number;
+  voidReason: number;
   winningOutcome: bigint | null;
   evidenceHash: Hex | null;
   evidenceUri: `ipfs://${string}` | null;
@@ -128,8 +129,7 @@ export interface ClaimView {
   confirmationStatus: ConfirmationStatus;
 }
 
-export type MarketStatus =
-  "open" | "resolved" | "voided-creator" | "voided-timeout";
+export type MarketStatus = "open" | "resolved" | "voided";
 
 export interface MarketCatalogOptions {
   limit: number;
@@ -147,6 +147,7 @@ export type ActivityKind =
   | "terminal-listing-returned"
   | "market-resolved"
   | "market-voided-creator"
+  | "market-voided-no-winning-supply"
   | "market-voided-timeout"
   | "winner-claimed"
   | "early-bird-claimed"
@@ -245,10 +246,8 @@ export function marketState(status: MarketStatus): number {
       return 0;
     case "resolved":
       return 1;
-    case "voided-creator":
+    case "voided":
       return 2;
-    case "voided-timeout":
-      return 3;
   }
 }
 
@@ -259,9 +258,7 @@ export function marketStatus(state: number): MarketStatus {
     case 1:
       return "resolved";
     case 2:
-      return "voided-creator";
-    case 3:
-      return "voided-timeout";
+      return "voided";
     default:
       throw new RangeError(`unknown market state ${state}`);
   }
