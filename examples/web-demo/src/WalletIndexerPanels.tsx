@@ -17,6 +17,8 @@ export interface LiveWalletPosition {
   vault: Address;
   outcomeId: bigint;
   balance: bigint;
+  marketState: number | null;
+  winningOutcome: bigint | null;
 }
 
 export interface WalletPositionsState {
@@ -32,6 +34,8 @@ interface DisplayPosition {
   balance: bigint;
   confirmationStatus: IndexedPosition["confirmationStatus"];
   source: "indexer" | "live";
+  marketState: number | null;
+  winningOutcome: bigint | null;
 }
 
 export function WalletActivityPanel(props: {
@@ -570,7 +574,23 @@ export function mergeWalletPositions(
         confirmationStatus: "confirmed" as const,
         source: "live" as const,
       })),
-  ];
+  ].filter(isActiveHolding);
+}
+
+const RESOLVED_MARKET_STATE = 1;
+
+/** Holdings keep claimable/tradable shares; resolved losing outcomes stay off the list. */
+export function isActiveHolding(position: {
+  balance: bigint;
+  outcomeId: bigint | number;
+  marketState?: number | null;
+  winningOutcome?: bigint | number | null;
+}): boolean {
+  if (position.balance <= 0n) return false;
+  if (position.marketState !== RESOLVED_MARKET_STATE) return true;
+  if (position.winningOutcome === null || position.winningOutcome === undefined)
+    return true;
+  return BigInt(position.outcomeId) === BigInt(position.winningOutcome);
 }
 
 function positionKey(item: { vault: Address; outcomeId: bigint }): string {
