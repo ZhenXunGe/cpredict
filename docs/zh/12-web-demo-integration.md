@@ -23,12 +23,12 @@ npm run demo:dev
 
 访问 `http://127.0.0.1:4177`。Vite 开发代理：
 
-| Browser path | 开发目标 | 生产要求 |
-| --- | --- | --- |
-| `/rpc` | 官方 Arbitrum Sepolia HTTP RPC | 同源反向代理到受控 RPC；限速和超时 |
-| `/indexer` | `127.0.0.1:8787` | 同源只读 Indexer/API |
-| `/evidence` | `127.0.0.1:8790` | 可选 canonical bytes 上传适配器；浏览器不携带 cookie |
-| `/deployment/final.json` | 默认不存在 | 受控发布产生的最终清单 |
+| Browser path             | 开发目标                       | 生产要求                                             |
+| ------------------------ | ------------------------------ | ---------------------------------------------------- |
+| `/rpc`                   | 官方 Arbitrum Sepolia HTTP RPC | 同源反向代理到受控 RPC；限速和超时                   |
+| `/indexer`               | `127.0.0.1:8787`               | 同源只读 Indexer/API                                 |
+| `/evidence`              | `127.0.0.1:8790`               | 可选 canonical bytes 上传适配器；浏览器不携带 cookie |
+| `/deployment/final.json` | 默认不存在                     | 受控发布产生的最终清单                               |
 
 生产构建：
 
@@ -73,16 +73,16 @@ Paymaster signer；任何浏览器 runtime config 都视为公开数据。
 
 ## 4. 已接调用面
 
-| 页面 | 读 | 写 |
-| --- | --- | --- |
-| 部署验证 | schema、chainId、codehash、Factory/Marketplace/payment-token wiring | 无治理写 |
-| 概览 | payment token 类型、钱包余额、Sandbox 警告 | sandbox mint 10,000 ctUSD |
-| 市场 | Vault 状态、cap、bond、flags、pool、ERC-1155/payment-token/allowance | exact allowance、buy、Permit2 buy |
-| 创建市场 | Config fee、不可变参数、rules/source hash、Full/Clone 风险 | fee+bond approval、createMarket |
-| 我的持仓 | ERC-1155 outcomes、累计一级购买、early score | 领取入口在结算页 |
-| C2C | Marketplace/Vault 地址与状态 | ERC-1155 approval、listing、allowance fill、cancel |
-| 结算与作废 | Creator/状态/deadline | evidence-backed resolve/creatorVoid、timeout void、四类 claim |
-| 回执与事件 | 本会话 simulate/receipt/error | 无 |
+| 页面       | 读                                                                   | 写                                                                            |
+| ---------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 部署验证   | schema、chainId、codehash、Factory/Marketplace/payment-token wiring  | 无治理写                                                                      |
+| 概览       | payment token 类型、钱包余额、Sandbox 警告                           | sandbox mint 10,000 ctUSD                                                     |
+| 市场       | Vault 状态、cap、bond、flags、pool、ERC-1155/payment-token/allowance | exact allowance、buy、Permit2 buy                                             |
+| 创建市场   | Config fee、不可变参数、rules/source hash、Full/Clone 风险           | fee+bond approval、createMarket                                               |
+| 我的持仓   | ERC-1155 outcomes、累计一级购买、early score                         | 领取入口在结算页                                                              |
+| C2C        | Marketplace/Vault 地址与状态                                         | ERC-1155 approval、listing、allowance fill、cancel                            |
+| 结算与作废 | Creator/状态/deadline                                                | evidence-backed resolve/creatorVoid、timeout void、四类 claim、押金释放与领取 |
+| 回执与事件 | 本会话 simulate/receipt/error                                        | 无                                                                            |
 
 所有 SDK 写操作统一 `validate → simulate → send once → receipt.status`，不自动重发经济交易。Allowance
 只授权本次精确额度；Permit2 witness 绑定 owner/spender/selector/market/outcome/amount/nonce/deadline/
