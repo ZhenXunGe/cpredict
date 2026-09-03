@@ -58,7 +58,7 @@
     },
     {
       "path": "compose.yaml",
-      "sha256": "fbdda7c52adfbe61b89b3e201f2a2b8a0753332a4a25fbddfbe026560dce17da"
+      "sha256": "ccc228b2cd6d3a19fe9e8b4df607db5a62e7f4252b77579cf538209d46578cfc"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
