@@ -5,6 +5,11 @@ server {
   root /usr/share/nginx/html;
   index index.html;
 
+  gzip on;
+  gzip_vary on;
+  gzip_min_length 1024;
+  gzip_types application/javascript application/json text/css image/svg+xml;
+
   add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; worker-src 'none'" always;
   add_header X-Content-Type-Options "nosniff" always;
   add_header X-Frame-Options "DENY" always;
@@ -32,8 +37,10 @@ server {
   location = /rpc {
     limit_except POST { deny all; }
     client_max_body_size 64k;
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $rpc_upstream ${CPREDICT_RPC_UPSTREAM};
     rewrite ^ / break;
-    proxy_pass ${CPREDICT_RPC_UPSTREAM};
+    proxy_pass $rpc_upstream;
     proxy_http_version 1.1;
     proxy_ssl_server_name on;
     proxy_ssl_name $proxy_host;

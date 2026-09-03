@@ -15,6 +15,11 @@ import { ARBITRUM_SEPOLIA_CHAIN_ID, type RuntimeConfig } from "./config.js";
 
 export { arbitrumSepolia };
 
+export const PROTOCOL_RPC_BATCH = {
+  batchSize: 32,
+  wait: 20,
+} as const;
+
 export interface WalletProviderInfo {
   uuid: string;
   name: string;
@@ -46,6 +51,9 @@ export function createProtocolPublicClient(
   return createPublicClient({
     chain: arbitrumSepolia,
     transport: http(config.chain.rpcPath, {
+      batch: {
+        ...PROTOCOL_RPC_BATCH,
+      },
       retryCount: 1,
       timeout: 15_000,
     }),

@@ -149,7 +149,14 @@ test("runtime services are least privilege, bounded and health ordered", async (
     /location = \/readyz[\s\S]*proxy_pass http:\/\/indexer:8787\/readyz/,
   );
   assert.match(nginx, /location = \/rpc[\s\S]*limit_except POST/);
+  assert.match(nginx, /gzip on;/);
+  assert.match(nginx, /gzip_vary on;/);
+  assert.match(nginx, /gzip_min_length 1024;/);
+  assert.match(nginx, /gzip_types application\/javascript application\/json text\/css image\/svg\+xml;/);
+  assert.match(nginx, /location = \/rpc[\s\S]*resolver 127\.0\.0\.11 valid=10s ipv6=off/);
+  assert.match(nginx, /location = \/rpc[\s\S]*set \$rpc_upstream \$\{CPREDICT_RPC_UPSTREAM\}/);
   assert.match(nginx, /location = \/rpc[\s\S]*rewrite \^ \/ break/);
+  assert.match(nginx, /location = \/rpc[\s\S]*proxy_pass \$rpc_upstream/);
   assert.match(nginx, /location = \/rpc[\s\S]*proxy_ssl_server_name on/);
   assert.match(nginx, /location = \/rpc[\s\S]*proxy_ssl_name \$proxy_host/);
   assert.match(

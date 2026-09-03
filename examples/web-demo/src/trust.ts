@@ -217,16 +217,19 @@ export async function verifyDebugAddresses(
     state: chainId === ARBITRUM_SEPOLIA_CHAIN_ID ? "pass" : "fail",
     detail: String(chainId),
   });
-  for (const [key, address] of Object.entries(parsed)) {
-    const code = await client.getCode({ address });
-    checks.push({
-      id: `debug-${key}`,
-      label: `${key} 合约代码`,
-      state: code !== undefined && code !== "0x" ? "pass" : "fail",
-      detail:
-        code === undefined || code === "0x" ? "无合约代码" : keccak256(code),
-    });
-  }
+  const codeChecks = await Promise.all(
+    Object.entries(parsed).map(async ([key, address]) => {
+      const code = await client.getCode({ address });
+      return {
+        id: `debug-${key}`,
+        label: `${key} 合约代码`,
+        state: code !== undefined && code !== "0x" ? "pass" : "fail",
+        detail:
+          code === undefined || code === "0x" ? "无合约代码" : keccak256(code),
+      } satisfies TrustCheck;
+    }),
+  );
+  checks.push(...codeChecks);
   const contracts = Object.fromEntries(
     CONTRACT_KEYS.map((key) => [key, parsed[key]]),
   ) as Record<ContractKey, Address>;

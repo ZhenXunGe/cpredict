@@ -70,7 +70,7 @@
     },
     {
       "path": "deploy/compose/nginx/default.conf.template",
-      "sha256": "5bb8342a07f44367d7c4d65ed54b82a8ac91d67ea80992e6ce5fc175d63a1af6"
+      "sha256": "a91fdb14a4cc3251af7980c1ff2657c6cf9623272403b20ae4cdfdc9b0c26fd2"
     },
     {
       "path": "deploy/compose/postgres/init/00-create-databases.sh",
@@ -198,7 +198,7 @@
     },
     {
       "path": "examples/react/src/MarketLifecyclePanel.tsx",
-      "sha256": "33ea164114807d8142ceba9ae0be97e3544af0b9061c13281eff80d6df202fa2"
+      "sha256": "2706974ad628d9ead96f40ef1b0ed0afadcc38330fc4c2868d13e498d63d433f"
     },
     {
       "path": "examples/react/src/MarketplacePanel.tsx",
@@ -230,7 +230,7 @@
     },
     {
       "path": "examples/react/test/components.test.tsx",
-      "sha256": "9942bc6f32c70be6fdb10ebc10abf239055676711f45610b63c7a649a7c4758d"
+      "sha256": "c6057d60b803d36027721cdc6155b59bd8e9cb286903485f93ffa1b95e3f5872"
     },
     {
       "path": "examples/web-demo/README.md",
@@ -250,11 +250,11 @@
     },
     {
       "path": "examples/web-demo/src/App.tsx",
-      "sha256": "2a63330a676cd5b249702bffd304a100965bb77a8956c05b8ec20bef3039f470"
+      "sha256": "c45dd184f9bf228657a45c940a021ee8e6de1804696ad6e318130ca3b9090585"
     },
     {
       "path": "examples/web-demo/src/CreateMarketForm.tsx",
-      "sha256": "85cf7f22257ec70359e602e4253e7539572d07e90d0b9a4115d3e5b8833faa54"
+      "sha256": "89b31e4d75cbab6ed2d642c44d73a10bccaab162e70ac6a4a95ff9a70f727bf1"
     },
     {
       "path": "examples/web-demo/src/MarketCatalog.tsx",
@@ -270,7 +270,7 @@
     },
     {
       "path": "examples/web-demo/src/create-market-times.ts",
-      "sha256": "5306c3274a01192bc1fb4967b8da5a4079d63bfe91950d1dd098883321a74e96"
+      "sha256": "4f4e1fd14fa92281f915bc52636c54b1ce509192c8d6379b9222d32e60ff9c9c"
     },
     {
       "path": "examples/web-demo/src/generated-validators.d.ts",
@@ -298,7 +298,7 @@
     },
     {
       "path": "examples/web-demo/src/protocol.ts",
-      "sha256": "957b99dc01e9eb3a98a9dfb21424aaab22c34c1bac16c19cfcfff5fda4080ba5"
+      "sha256": "9d2c97ccd6d77d745c634001aaab1600b5599450dbd4f6f5e5bbb9d25fe9d2bb"
     },
     {
       "path": "examples/web-demo/src/runtime-config.schema.json",
@@ -310,11 +310,11 @@
     },
     {
       "path": "examples/web-demo/src/styles.css",
-      "sha256": "55fe0079c1a126230bac05d32dce4057b28fea62293fe2b703a77af6893516c4"
+      "sha256": "f671ef2d56be392ccffb676b3f867097af8e51b188588fba94fcbd2e7eb73f75"
     },
     {
       "path": "examples/web-demo/src/trust.ts",
-      "sha256": "580c2be8b970bc229a35b5295ecc982aa1dc02beee146fffa196224a39396a7d"
+      "sha256": "86941985aa90aedf9f93fa102425ede4cb685dc9ab7e4a6e1152df3f27f6f138"
     },
     {
       "path": "examples/web-demo/src/vite-env.d.ts",
@@ -322,7 +322,7 @@
     },
     {
       "path": "examples/web-demo/src/wallet.ts",
-      "sha256": "5789a2c0347aaea73e1fb44ee3b9650edad737ff8a8e40fcae8b945de84cbae3"
+      "sha256": "0564b207c49a9678e1b46ababc3aa8aad2b2ac13853f3203091d24ee33450da0"
     },
     {
       "path": "examples/web-demo/test/config.test.ts",
@@ -330,7 +330,7 @@
     },
     {
       "path": "examples/web-demo/test/create-market-times.test.ts",
-      "sha256": "7e319f23a55bf5459a0e6ad0bf23f221ff51e61fa4d4854faacaee32b5c305a0"
+      "sha256": "45adfcbf441931e868a1dcd6076d58c771b0344cc5021ce160af9f92a98e9703"
     },
     {
       "path": "examples/web-demo/test/indexer-client.test.ts",
@@ -342,7 +342,7 @@
     },
     {
       "path": "examples/web-demo/test/market-display-state.test.ts",
-      "sha256": "df180ad7622fe0e8be95e22d0a790c1c803b8f90013c5bbbf6bd512a49c20c77"
+      "sha256": "c5a90ffcd78dc3c214499d8ae55882ded1f72469dcd2dabc661074df8c617226"
     },
     {
       "path": "examples/web-demo/test/marketplace-flow.test.tsx",
@@ -362,7 +362,7 @@
     },
     {
       "path": "examples/web-demo/test/render.test.tsx",
-      "sha256": "109bbebd6f97a8558fb2e6db5a3901c466d541d78b69160c6518aeeb02221895"
+      "sha256": "182ef44d90d716e1752ff39c6c4824436c3e44f85f8464d017f7b1b5d5be97ec"
     },
     {
       "path": "examples/web-demo/test/sandbox-token.test.ts",
@@ -378,7 +378,7 @@
     },
     {
       "path": "examples/web-demo/test/trust.test.ts",
-      "sha256": "b1ecbe9515429c6d6774742133301e14e3d077b40d9ebd309c264987ddb16bd2"
+      "sha256": "91b7f0dde80615e40402623e95dee02731e82420d9e86ec28b394f6fa4f94043"
     },
     {
       "path": "examples/web-demo/test/vite-config.test.ts",
@@ -386,7 +386,7 @@
     },
     {
       "path": "examples/web-demo/test/wallet.test.ts",
-      "sha256": "98774d2e3723eca735114d785aac0dcf50b2e7624f8cdd191ec9a5a938c72d50"
+      "sha256": "299c67a17a48ec3595a6d6d5ad9e7d9bc737c5a33cb588e1e6939f13e429b179"
     },
     {
       "path": "examples/web-demo/vite.config.ts",
@@ -898,7 +898,7 @@
     },
     {
       "path": "offchain/sdk/src/errors.ts",
-      "sha256": "82d2174edaee22359ebc23a3ace346ecb0bdbb2fc57476c12f2c8338699a15aa"
+      "sha256": "726e7f527658e90b288dc4ba2db38c29f8336b0c5c6352df88ad30f553aed3fb"
     },
     {
       "path": "offchain/sdk/src/evidence.ts",
@@ -950,7 +950,7 @@
     },
     {
       "path": "offchain/sdk/test/errors.test.ts",
-      "sha256": "c045afc7e7f44edfc95c7b7df0055ed70e7cb56c5db930f59b915c4a12d8e909"
+      "sha256": "913694f8d92f1eb2809976eb9f09fad336d4af5868198bcb5676005ba219561c"
     },
     {
       "path": "offchain/sdk/test/evidence.test.ts",
@@ -1506,7 +1506,7 @@
     },
     {
       "path": "scripts/stack/compose.test.mjs",
-      "sha256": "f530c4456ca558a3570bc8bc15a4d9d996f56fcfaf05991bc1ff74c991e878e0"
+      "sha256": "85f786269c096283e9813e551c6c4478bf1e15154945ec463f627c57f3a0dae8"
     },
     {
       "path": "scripts/stack/config.mjs",

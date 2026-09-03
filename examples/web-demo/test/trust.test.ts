@@ -81,6 +81,30 @@ describe("web demo write-gate verification", () => {
       expect.objectContaining({ id: "sandbox-token-marker", state: "pass" }),
     ]));
   });
+
+  it("checks every DEBUG address code concurrently before verifying wiring", async () => {
+    const publicClient = client();
+    let activeReads = 0;
+    let peakReads = 0;
+    const originalGetCode = publicClient.getCode.bind(publicClient);
+    (publicClient as unknown as { getCode: typeof publicClient.getCode }).getCode = async (input) => {
+      activeReads += 1;
+      peakReads = Math.max(peakReads, activeReads);
+      await Promise.resolve();
+      activeReads -= 1;
+      return originalGetCode(input);
+    };
+
+    const report = await verifyDebugAddresses(publicClient, {
+      ...addresses,
+      usdc,
+      permit2,
+      entryPoint,
+    });
+
+    expect(report.writeEnabled).toBe(true);
+    expect(peakReads).toBe(Object.keys({ ...addresses, usdc, permit2, entryPoint }).length);
+  });
 });
 
 function client(): PublicClient {
