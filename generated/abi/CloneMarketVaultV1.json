@@ -1643,6 +1643,19 @@
   },
   {
     "type": "function",
+    "name": "voidReason",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "enum ProtocolTypes.VoidReason"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "winningOutcome",
     "inputs": [],
     "outputs": [
@@ -1973,10 +1986,10 @@
     "name": "MarketVoided",
     "inputs": [
       {
-        "name": "terminalState",
+        "name": "reason",
         "type": "uint8",
         "indexed": true,
-        "internalType": "enum ProtocolTypes.MarketState"
+        "internalType": "enum ProtocolTypes.VoidReason"
       },
       {
         "name": "caller",
@@ -2634,17 +2647,6 @@
       },
       {
         "name": "maximum",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "WinningOutcomeHasNoSupply",
-    "inputs": [
-      {
-        "name": "outcomeId",
         "type": "uint256",
         "internalType": "uint256"
       }
