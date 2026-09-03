@@ -19,7 +19,7 @@ SDK 不做无界重试。nonce underpriced、cap/listing race、deadline expired
 是强制用户保护，不允许 UI 偷设无限值。
 
 `CpredictClient` 已覆盖 create/update、allowance/Permit2 buy、ERC-1155 approval、create/fill/cancel/
-terminal return、resolve/creator void/timeout、四类 claim、bond settle 与 Guard sync。每个写入口统一
+terminal return、resolve/creator void/timeout、四类 claim、bond settle/claim 与 Guard sync。每个写入口统一
 `simulate → send once → receipt.status`；simulate 拒绝时不发送，receipt revert 不自动重发。
 
 ## 3. 一级购买
@@ -100,7 +100,7 @@ Terminal worker 从 Indexer API 有界分页读取 terminal markets，对每个 
 `examples/react/src` 现包含 `CreateMarketPanel`、`PrimaryPaymentPanel`、`BuyPanel`、
 `MarketLifecyclePanel`、`MarketplacePanel` 与 `ClaimsPanel`：覆盖不可变创建复核、allowance/Permit2、
 显式上下限、creator 单方不可逆结算警告、permissionless timeout、ERC-1155 approval、list/fill/cancel
-以及 winner/early/refund/bonus 四类 claim；共享 hook 防重复点击并展示 receipt/revert。SSR 用例只证明
+以及 winner/early/refund/bonus 四类 claim 与 creator 押金释放/领取；共享 hook 防重复点击并展示 receipt/revert。SSR 用例只证明
 组件调用面和关键文案存在。其中 creation 明示精确 `fee+bond` 授权，Permit2 明示先精确授权给 Permit2，
 allowance fill 明示精确 `maxGross` 授权给 Marketplace。它不是完整旗舰 UI，没有 wallet onboarding、真实钱包/链状态、creator
 信用、查询列表、可访问性或浏览器 E2E。
@@ -108,7 +108,7 @@ allowance fill 明示精确 `maxGross` 授权给 Marketplace。它不是完整�
 
 `examples/web-demo` 在上述最小组件之上提供可运行 Vite 控制台：固定 Arbitrum Sepolia、EIP-6963
 钱包、runtime config/final manifest JSON Schema 校验、runtime codehash/wiring 门禁、Full/Clone
-创建复核、Allowance/Permit2 buy、C2C、canonical evidence 与四类 claim。它不会把 DEBUG 地址标成
+创建复核、Allowance/Permit2 buy、C2C、canonical evidence、四类 claim 与押金释放/领取。它不会把 DEBUG 地址标成
 正式验证，也不提供管理员任意调用或 AA UserOperation。完整运行与甲方验收见
 `12-web-demo-integration.md`。
 
