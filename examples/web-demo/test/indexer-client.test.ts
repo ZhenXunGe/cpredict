@@ -191,7 +191,52 @@ describe("same-origin indexer client", () => {
         owner: CREATOR,
       }),
     ).resolves.toMatchObject({
-      items: [{ balance: 2_000_000n, outcomeId: 0n }],
+      items: [
+        {
+          balance: 2_000_000n,
+          outcomeId: 0n,
+          marketState: null,
+          winningOutcome: null,
+        },
+      ],
+    });
+  });
+
+  it("parses indexed position market snapshots when present", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        json({
+          items: [
+            {
+              vault: MARKET,
+              owner: CREATOR,
+              outcomeId: "1",
+              balance: "5000000",
+              updatedBlock: "304503617",
+              confirmationStatus: "confirmed",
+              marketState: 1,
+              winningOutcome: "0",
+            },
+          ],
+        }),
+      ),
+    );
+    await expect(
+      fetchWalletPositions({
+        basePath: "/indexer",
+        chainId: 421614,
+        owner: CREATOR,
+      }),
+    ).resolves.toMatchObject({
+      items: [
+        {
+          outcomeId: 1n,
+          balance: 5_000_000n,
+          marketState: 1,
+          winningOutcome: 0n,
+        },
+      ],
     });
   });
 

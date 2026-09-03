@@ -2129,7 +2129,16 @@ export function PositionsPage({
           vault: market.address,
           outcomeId: BigInt(outcomeId),
           balance,
+          marketState: market.marketState,
+          winningOutcome: BigInt(market.winningOutcome),
         }));
+  const currentMarketPositions =
+    market === null || account === null
+      ? []
+      : account.positions.filter(
+          ({ outcomeId }) =>
+            market.marketState !== 1 || outcomeId === market.winningOutcome,
+        );
   return (
     <>
       <Panel
@@ -2159,7 +2168,7 @@ export function PositionsPage({
           />
         ) : (
           <div className="position-grid">
-            {account.positions.map(({ balance, outcomeId }) => (
+            {currentMarketPositions.map(({ balance, outcomeId }) => (
               <div key={outcomeId}>
                 <small>结果 {outcomeId + 1}</small>
                 <strong>{formatShareUnits(balance)}</strong>

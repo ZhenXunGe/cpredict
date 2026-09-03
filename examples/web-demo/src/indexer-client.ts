@@ -52,6 +52,8 @@ export interface IndexedPosition {
   balance: bigint;
   updatedBlock: bigint;
   confirmationStatus: "provisional" | "confirmed";
+  marketState: number | null;
+  winningOutcome: bigint | null;
 }
 
 export interface IndexerSyncStatus {
@@ -339,6 +341,14 @@ function parsePosition(value: unknown): IndexedPosition {
     balance: bigint(item.balance, "balance"),
     updatedBlock: bigint(item.updatedBlock, "updatedBlock"),
     confirmationStatus: confirmation(item.confirmationStatus),
+    marketState:
+      item.marketState === undefined
+        ? null
+        : nullableInteger(item.marketState, "marketState", 0, 3),
+    winningOutcome:
+      item.winningOutcome === undefined
+        ? null
+        : nullableBigint(item.winningOutcome, "winningOutcome"),
   };
 }
 

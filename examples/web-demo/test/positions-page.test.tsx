@@ -4,8 +4,11 @@ import { PositionsPage } from "../src/App.js";
 import {
   WalletPositionsView,
   indexerCaughtUp,
+  isActiveHolding,
+  mergeWalletPositions,
   type WalletPositionsState,
 } from "../src/WalletIndexerPanels.js";
+import type { IndexedPosition } from "../src/indexer-client.js";
 import type { AccountSnapshot, MarketSnapshot } from "../src/protocol.js";
 import type { ConnectedWallet } from "../src/wallet.js";
 
@@ -77,6 +80,121 @@ describe("positions page synchronization", () => {
       indexerCaughtUp({ ...status, indexedBlock: 304_503_619n }, 304_503_619n),
     ).toBe(true);
   });
+
+  it("hides resolved losing shares from holdings while keeping the unclaimed winner", () => {
+    const html = renderToStaticMarkup(
+      <PositionsPage
+        market={market({ marketState: 1, winningOutcome: 0 })}
+        account={account([2_000_000n, 5_000_000n])}
+        wallet={{ address: OWNER } as unknown as ConnectedWallet}
+        indexerEnabled
+        indexerBasePath="/indexer"
+        chainId={421614}
+        targetBlock={304_503_618n}
+        onOpenMarket={() => {}}
+      />,
+    );
+    expect(html).toContain(">2 份<");
+    expect(html).not.toContain(">5 份<");
+    expect(html).toContain("结果 1");
+    expect(html).not.toContain("结果 2");
+  });
+
+  it("keeps voided shares visible until they are refunded", () => {
+    const html = renderToStaticMarkup(
+      <PositionsPage
+        market={market({ marketState: 2, winningOutcome: 0 })}
+        account={account([2_000_000n, 5_000_000n])}
+        wallet={{ address: OWNER } as unknown as ConnectedWallet}
+        indexerEnabled
+        indexerBasePath="/indexer"
+        chainId={421614}
+        targetBlock={304_503_618n}
+        onOpenMarket={() => {}}
+      />,
+    );
+    expect(html).toContain(">2 份<");
+    expect(html).toContain(">5 份<");
+    expect(html).toContain("结果 2");
+  });
+});
+
+describe("active holdings", () => {
+  it("treats resolved losing outcomes as inactive once the winner is known", () => {
+    expect(
+      isActiveHolding({
+        balance: 5_000_000n,
+        outcomeId: 1,
+        marketState: 1,
+        winningOutcome: 0,
+      }),
+    ).toBe(false);
+    expect(
+      isActiveHolding({
+        balance: 2_000_000n,
+        outcomeId: 0,
+        marketState: 1,
+        winningOutcome: 0,
+      }),
+    ).toBe(true);
+    expect(
+      isActiveHolding({
+        balance: 5_000_000n,
+        outcomeId: 1,
+        marketState: 2,
+        winningOutcome: 0,
+      }),
+    ).toBe(true);
+  });
+
+  it("drops resolved losing indexer balances after overlaying the live market", () => {
+    const items = mergeWalletPositions(
+      [
+        indexedPosition({ outcomeId: 0n, balance: 2_000_000n }),
+        indexedPosition({
+          outcomeId: 1n,
+          balance: 5_000_000n,
+          marketState: 1,
+          winningOutcome: 0n,
+        }),
+      ],
+      [
+        {
+          vault: MARKET,
+          outcomeId: 0n,
+          balance: 2_000_000n,
+          marketState: 1,
+          winningOutcome: 0n,
+        },
+        {
+          vault: MARKET,
+          outcomeId: 1n,
+          balance: 5_000_000n,
+          marketState: 1,
+          winningOutcome: 0n,
+        },
+      ],
+    );
+    expect(items).toEqual([
+      expect.objectContaining({ outcomeId: 0n, balance: 2_000_000n }),
+    ]);
+  });
+
+  it("hides resolved losing indexer positions without a live overlay", () => {
+    expect(
+      mergeWalletPositions(
+        [
+          indexedPosition({
+            outcomeId: 1n,
+            balance: 5_000_000n,
+            marketState: 1,
+            winningOutcome: 0n,
+          }),
+        ],
+        [],
+      ),
+    ).toEqual([]);
+  });
 });
 
 function renderPositions(
@@ -109,7 +227,23 @@ function account(positions: bigint[]): AccountSnapshot {
   };
 }
 
-function market(): MarketSnapshot {
+function indexedPosition(
+  overrides: Partial<IndexedPosition> = {},
+): IndexedPosition {
+  return {
+    vault: MARKET,
+    owner: OWNER,
+    outcomeId: 0n,
+    balance: 1n,
+    updatedBlock: 1n,
+    confirmationStatus: "confirmed",
+    marketState: 0,
+    winningOutcome: null,
+    ...overrides,
+  };
+}
+
+function market(overrides: Partial<MarketSnapshot> = {}): MarketSnapshot {
   return {
     address: MARKET,
     observedAt: 1_900_000_000n,
@@ -132,5 +266,6 @@ function market(): MarketSnapshot {
     resolutionDeadline: 1_900_001_900n,
     permit2Enabled: true,
     earlyBirdEnabled: false,
+    ...overrides,
   };
 }
