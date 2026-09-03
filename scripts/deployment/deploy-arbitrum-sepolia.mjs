@@ -649,7 +649,7 @@ async function runLocalGates(config, logRoot) {
   }
 }
 
-function forgeEnvironment(config, extra = {}) {
+export function forgeEnvironment(config, extra = {}) {
   return {
     ...process.env,
     ...config.env,
@@ -666,6 +666,8 @@ function forgeEnvironment(config, extra = {}) {
     ...extra,
     // The selected CLI profile owns this flag; an env file cannot silently switch tokens.
     CPREDICT_SANDBOX_TOKEN_ENABLED: config.profile === "sandbox" ? "true" : "false",
+    // The selected CLI profile owns the Timelock policy; an env file cannot weaken formal deployments.
+    CPREDICT_DEPLOYMENT_PROFILE: config.profile,
   };
 }
 

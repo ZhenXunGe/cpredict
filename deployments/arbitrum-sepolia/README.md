@@ -66,13 +66,14 @@ boundary and additionally deploys `Cpredict Test USD (ctUSD)`, an unrestricted-m
 that is hard-locked to chainId `421614`. Both profiles can derive the fingerprint inside one command
 for a Web Demo, but neither output may be labelled `FINALIZED_VERIFIED`.
 
-For the public Web Demo sandbox requested here, use one profile consistently for every command:
+For the public Web Demo sandbox requested here, use one profile consistently for every command. Sandbox
+deployments use a zero-delay Timelock; use `all --wait-for-timelock` to deploy and finalize in one
+command (the ready check returns immediately). `debug` has the same zero-delay policy; only `formal`
+retains the one-hour Timelock delay.
 
 ```sh
 npm run deploy:arbitrum-sepolia -- preflight --profile sandbox
-npm run deploy:arbitrum-sepolia -- deploy --profile sandbox
-# after the one-hour Timelock
-npm run deploy:arbitrum-sepolia -- finalize --profile sandbox
+npm run deploy:arbitrum-sepolia -- all --profile sandbox --yes --wait-for-timelock
 npm run deploy:sync -- candidate --pending deployments/arbitrum-sepolia/pending.json
 ```
 

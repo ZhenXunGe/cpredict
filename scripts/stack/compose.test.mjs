@@ -179,6 +179,10 @@ test("Compose never carries browser-prefixed or embedded secret values", () => {
   assert.doesNotMatch(withoutImageDigests, /(?:0x)?[0-9a-fA-F]{64}/);
   assert.doesNotMatch(source, /postgresql:\/\/[^:$"{]+:[^$"{]+@/);
   assert.match(source, /\$\{ARBITRUM_SEPOLIA_RPC_URL:\?/);
+  assert.equal(
+    compose.services.indexer.environment.CPREDICT_INDEXER_RPC_URL,
+    "${CPREDICT_INDEXER_RPC_URL:-${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}}",
+  );
 });
 
 test("Compose injects the orchestrator source revision into every application build", () => {

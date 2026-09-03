@@ -18,8 +18,8 @@ import { FixedPriceMarketplaceV1 } from "../src/marketplace/FixedPriceMarketplac
 import { SponsorshipPaymasterV1 } from "../src/paymaster/SponsorshipPaymasterV1.sol";
 import { CpredictSandboxToken } from "../src/testnet/CpredictSandboxToken.sol";
 
-/// @notice Deploys V1 and schedules the one-time factory wiring through the 1-hour timelock.
-/// @dev Run only on Arbitrum Sepolia (421614). Finalize with FinalizeBootstrap after the delay.
+/// @notice Deploys V1 and schedules the one-time factory wiring through the Timelock.
+/// @dev Sandbox and debug deployments use a zero delay; formal retains the 1-hour delay.
 contract DeployArbitrumSepolia is Script {
     uint256 internal constant ARBITRUM_SEPOLIA_CHAIN_ID = 421_614;
     uint256 internal constant TIMELOCK_DELAY = 1 hours;
@@ -79,7 +79,7 @@ contract DeployArbitrumSepolia is Script {
             return deployed;
         }
 
-        _scheduleBootstrap(deployed, actualFactoryFingerprint);
+        _scheduleBootstrap(deployed, inputs, actualFactoryFingerprint);
         vm.stopBroadcast();
 
         // A dry-run must never leave an address file that could be mistaken for broadcast evidence.
@@ -88,7 +88,7 @@ contract DeployArbitrumSepolia is Script {
         }
         console2.log("Timelock", address(deployed.timelock));
         console2.log("Factory", address(deployed.factory));
-        console2.log("Bootstrap execute after", block.timestamp + TIMELOCK_DELAY);
+        console2.log("Bootstrap execute after", block.timestamp + _timelockDelay(inputs));
     }
 
     function _loadDeploymentInputs(uint256 deployerKey)
@@ -131,8 +131,9 @@ contract DeployArbitrumSepolia is Script {
             deployed.sandboxToken = new CpredictSandboxToken();
             paymentToken = address(deployed.sandboxToken);
         }
-        deployed.timelock =
-            new TimelockController(TIMELOCK_DELAY, proposers, executors, inputs.deployer);
+        deployed.timelock = new TimelockController(
+            _timelockDelay(inputs), proposers, executors, inputs.deployer
+        );
         address governance = address(deployed.timelock);
         deployed.config = new ProtocolConfigV1(governance, paymentToken, inputs.treasury);
         deployed.emergency = new EmergencyControllerV1(governance, inputs.emergencySafe);
@@ -165,7 +166,11 @@ contract DeployArbitrumSepolia is Script {
         return deployed.factory.dependencyFingerprintFor(address(deployed.marketplace));
     }
 
-    function _scheduleBootstrap(Deployment memory deployed, bytes32 actualFactoryFingerprint)
+    function _scheduleBootstrap(
+        Deployment memory deployed,
+        DeploymentInputs memory inputs,
+        bytes32 actualFactoryFingerprint
+    )
         internal
     {
         bytes32 expectedFactoryFingerprint =
@@ -176,8 +181,16 @@ contract DeployArbitrumSepolia is Script {
         );
         (address[] memory targets, uint256[] memory values, bytes[] memory payloads) =
             _bootstrapBatch(deployed, expectedFactoryFingerprint);
-        deployed.timelock
-            .scheduleBatch(targets, values, payloads, bytes32(0), BOOTSTRAP_SALT, TIMELOCK_DELAY);
+        deployed.timelock.scheduleBatch(
+            targets, values, payloads, bytes32(0), BOOTSTRAP_SALT, _timelockDelay(inputs)
+        );
+    }
+
+    function _timelockDelay(DeploymentInputs memory inputs) internal view returns (uint256) {
+        if (inputs.sandboxTokenEnabled) return 0;
+        return keccak256(bytes(vm.envString("CPREDICT_DEPLOYMENT_PROFILE"))) == keccak256("debug")
+            ? 0
+            : TIMELOCK_DELAY;
     }
 
     /// @dev Isolated only to keep the deployment script compilable in Foundry's unoptimized,
