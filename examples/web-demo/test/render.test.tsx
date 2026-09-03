@@ -827,6 +827,7 @@ describe("web demo application shell", () => {
         client={{} as CpredictClient}
         publicClient={null}
         execute={async () => null}
+        bondEscrow="0x00000000000000000000000000000000000000B1"
         evidenceUploader={undefined}
         indexerEnabled={false}
         indexerBasePath="/indexer"
@@ -842,6 +843,9 @@ describe("web demo application shell", () => {
     expect(html).toContain("处理中…");
     expect(html).not.toContain(">领取胜出款<");
     expect(html).toContain("当前 Vault 0x000000…001001");
+    expect(html).toContain("释放押金");
+    expect(html).toContain("领取押金");
+    expect(html).toContain("只在超时弃盘且该盘有本金时罚没");
   });
 
   it("shows named winning outcomes and blocks resolve after the creator window", () => {
@@ -878,6 +882,7 @@ describe("web demo application shell", () => {
         client={{} as CpredictClient}
         publicClient={null}
         execute={async () => null}
+        bondEscrow="0x00000000000000000000000000000000000000B1"
         evidenceUploader={undefined}
         indexerEnabled={false}
         indexerBasePath="/indexer"
@@ -902,6 +907,58 @@ describe("web demo application shell", () => {
     expect(html).toContain("本金退还给所有人");
     expect(html).toContain("不要填写数字编号");
     expect(html).not.toMatch(/获胜结果\s*<input/);
+    expect(html).toContain(">释放押金<");
+    expect(html).toContain(">领取押金<");
+    expect(html).toContain("只在超时弃盘且该盘有本金时罚没");
+  });
+
+  it("disables bond release and claim when BondEscrow is unknown", () => {
+    const market: MarketSnapshot = {
+      address: "0x0000000000000000000000000000000000001001",
+      observedAt: 1_900_000_200n,
+      creator: "0x000000000000000000000000000000000000c001",
+      creatorTreasury: "0x000000000000000000000000000000000000c002",
+      rulesHash: `0x${"11".repeat(32)}`,
+      outcomeCount: 2,
+      createdAt: 1_899_999_000n,
+      closeAt: 1_900_000_000n,
+      earlyBirdStart: 1_899_999_500n,
+      featureFlags: 0n,
+      perUserPrimaryCap: 10_000_000n,
+      marketPrimaryCap: 20_000_000n,
+      minimumPrimaryUnits: 1_000_000n,
+      minimumC2CUnits: 1_000_000n,
+      creatorBond: 10_000_000n,
+      marketState: 1,
+      winningOutcome: 0,
+      totalPrincipal: 2_000_000n,
+      resolutionDeadline: 1_900_000_900n,
+      permit2Enabled: true,
+      earlyBirdEnabled: false,
+    };
+    const html = renderToStaticMarkup(
+      <SettlementPage
+        writeReady
+        busy={false}
+        market={market}
+        marketAddress={market.address}
+        wallet={{ address: market.creator } as ConnectedWallet}
+        client={{} as CpredictClient}
+        publicClient={null}
+        execute={async () => null}
+        bondEscrow={null}
+        evidenceUploader={undefined}
+        indexerEnabled={false}
+        indexerBasePath="/indexer"
+        metadataBasePath={null}
+        chainId={421614}
+        refreshVersion={0}
+        marketRules={null}
+        onSelectMarket={async () => {}}
+      />,
+    );
+    expect(html).toMatch(/<button disabled[^>]*>释放押金<\/button>/);
+    expect(html).toContain("只在超时弃盘且该盘有本金时罚没");
   });
 
   it("uses the live payment-token balance on the market page", () => {
