@@ -91,13 +91,10 @@ export class CpredictClient {
     amount: bigint,
   ): Promise<TransactionResult> {
     if (amount < 0n) throw new RangeError("approval amount cannot be negative");
-    return this.execute(
-      "token-approval",
-      token,
-      erc20Abi,
-      "approve",
-      [spender, amount],
-    );
+    return this.execute("token-approval", token, erc20Abi, "approve", [
+      spender,
+      amount,
+    ]);
   }
 
   async setMarketplaceApproval(
@@ -402,6 +399,19 @@ export class CpredictClient {
     );
   }
 
+  async claimBond(bondEscrow: Address): Promise<TransactionResult> {
+    return this.execute("claim", bondEscrow, bondEscrowAbi, "claim", []);
+  }
+
+  async claimBondFor(
+    bondEscrow: Address,
+    creator: Address,
+  ): Promise<TransactionResult> {
+    return this.execute("claim", bondEscrow, bondEscrowAbi, "claimFor", [
+      creator,
+    ]);
+  }
+
   async syncExposure(
     exposureGuard: Address,
     market: Address,
@@ -472,7 +482,11 @@ export class CpredictClient {
     if (receipt.status !== "success")
       throw new Error(`transaction reverted: ${hash}`);
     return {
-      result: { hash, blockNumber: receipt.blockNumber, gasUsed: receipt.gasUsed },
+      result: {
+        hash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed,
+      },
       logs: receipt.logs,
     };
   }

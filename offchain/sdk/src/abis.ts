@@ -492,6 +492,20 @@ export const bondEscrowAbi = [
     inputs: [{ name: "market", type: "address" }],
     outputs: [{ name: "amount", type: "uint256" }],
   },
+  {
+    type: "function",
+    name: "claim",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [{ name: "amount", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "claimFor",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "creator", type: "address" }],
+    outputs: [{ name: "amount", type: "uint256" }],
+  },
 ] as const;
 
 export const exposureGuardAbi = [
