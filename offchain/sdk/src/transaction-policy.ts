@@ -17,7 +17,10 @@ export const gasLimitByOperation = {
   "market-update": 350_000n,
   "primary-buy": 300_000n,
   "primary-buy-permit2": 370_000n,
-  "market-resolve": 350_000n,
+  // Arbitrum's estimate includes network overhead for settlement writes
+  // (payout storage + optional FeeVault rake transfer). Observed resolve
+  // estimates sit just above 350k; keep room for the policy's 20% send buffer.
+  "market-resolve": 450_000n,
   "market-void": 300_000n,
   // Arbitrum's estimate includes network overhead beyond the Solidity gas gate.
   // Keep enough room for the policy's 20% send buffer without weakening the
@@ -41,9 +44,7 @@ const MAX_PRIORITY_FEE_PER_GAS = 100_000_000n; // 0.1 gwei
 const MAX_TRANSACTION_FEE = 10_000_000_000_000_000n; // 0.01 ETH
 
 export type GasPolicyErrorCode =
-  | "base-fee-unavailable"
-  | "gas-above-limit"
-  | "fee-above-limit";
+  "base-fee-unavailable" | "gas-above-limit" | "fee-above-limit";
 
 /** Raised before wallet interaction when a transaction cannot be bounded safely. */
 export class GasPolicyError extends Error {

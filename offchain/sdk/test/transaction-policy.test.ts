@@ -42,12 +42,11 @@ describe("browser transaction gas policy", () => {
     const wallet = walletClient();
 
     await expect(
-      sendTransactionWithGasPolicy(
-        publicClient(),
-        wallet,
-        "primary-buy",
-        { account, to, data: "0x1234" },
-      ),
+      sendTransactionWithGasPolicy(publicClient(), wallet, "primary-buy", {
+        account,
+        to,
+        data: "0x1234",
+      }),
     ).resolves.toBe(hash);
 
     expect(wallet.sendTransaction).toHaveBeenCalledWith(
@@ -65,15 +64,31 @@ describe("browser transaction gas policy", () => {
       estimateGas: vi.fn(async () => 232_563n),
     });
 
-    await sendTransactionWithGasPolicy(
-      rpc,
-      wallet,
-      "listing-create",
-      { account, to, data: "0x1234" },
-    );
+    await sendTransactionWithGasPolicy(rpc, wallet, "listing-create", {
+      account,
+      to,
+      data: "0x1234",
+    });
 
     expect(wallet.sendTransaction).toHaveBeenCalledWith(
       expect.objectContaining({ gas: 279_076n }),
+    );
+  });
+
+  it("allows the observed Arbitrum resolve estimate with bounded headroom", async () => {
+    const wallet = walletClient();
+    const rpc = publicClient({
+      estimateGas: vi.fn(async () => 353_629n),
+    });
+
+    await sendTransactionWithGasPolicy(rpc, wallet, "market-resolve", {
+      account,
+      to,
+      data: "0x1234",
+    });
+
+    expect(wallet.sendTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ gas: 424_355n }),
     );
   });
 
@@ -83,12 +98,11 @@ describe("browser transaction gas policy", () => {
       estimateGas: vi.fn(async () => 394_064_967_394_918n),
     });
 
-    await sendTransactionWithGasPolicy(
-      rpc,
-      wallet,
-      "market-create-full",
-      { account, to, data: "0x1234" },
-    );
+    await sendTransactionWithGasPolicy(rpc, wallet, "market-create-full", {
+      account,
+      to,
+      data: "0x1234",
+    });
 
     expect(wallet.sendTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
