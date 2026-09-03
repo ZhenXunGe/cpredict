@@ -2447,7 +2447,7 @@ export function SettlementPage({
       {queue}
       <Panel
         title="结算证据与终局"
-        subtitle={`当前 Vault ${short(market.address)} · 规范 UTF-8 → SHA-256 → 确定性 CID`}
+        subtitle={`当前 Vault ${short(market.address)} · 证据可选，结算不依赖上传`}
       >
         <div className="embedded-example">
           {writeReady ? (
