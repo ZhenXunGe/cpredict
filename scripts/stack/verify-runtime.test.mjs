@@ -6,6 +6,7 @@ import {
   verifyHostConfig,
   verifyHttpRuntime,
   verifyImageRevision,
+  verifyDeploymentRuntime,
 } from "./verify-runtime.mjs";
 
 function row(Service, overrides = {}) {
@@ -147,6 +148,63 @@ test("runtime verifier requires every application image to carry the exact sourc
     ).status,
     "FAIL",
   );
+});
+
+test("runtime verifier rejects stale deployment Factory values and web runtime mounts", () => {
+  const configuration = {
+    publicEnv: {
+      CPREDICT_INDEXER_FACTORY_ADDRESS:
+        "0x00000000000000000000000000000000000000F1",
+    },
+    runtimeRoot: "/workspace/runtime/arbitrum-sepolia/current",
+  };
+  assert.equal(
+    verifyDeploymentRuntime(
+      "metadata",
+      {
+        Config: {
+          Env: [
+            "CPREDICT_METADATA_FACTORY_ADDRESS=0x00000000000000000000000000000000000000F1",
+          ],
+        },
+      },
+      configuration,
+    )[0].status,
+    "PASS",
+  );
+  assert.equal(
+    verifyDeploymentRuntime(
+      "indexer",
+      {
+        Config: {
+          Env: [
+            "CPREDICT_INDEXER_FACTORY_ADDRESS=0x00000000000000000000000000000000000000F2",
+          ],
+        },
+      },
+      configuration,
+    )[0].status,
+    "FAIL",
+  );
+  const webChecks = verifyDeploymentRuntime(
+    "web-demo",
+    {
+      Mounts: [
+        {
+          Destination: "/usr/share/nginx/html/runtime-config.json",
+          Source: "/workspace/runtime/arbitrum-sepolia/old/web-demo/runtime-config.json",
+          RW: false,
+        },
+        {
+          Destination: "/usr/share/nginx/html/deployment",
+          Source: "/workspace/runtime/arbitrum-sepolia/old/web-demo/deployment",
+          RW: false,
+        },
+      ],
+    },
+    configuration,
+  );
+  assert.deepEqual(webChecks.map((check) => check.status), ["FAIL", "FAIL"]);
 });
 
 test("runtime HTTP verification binds readiness, headers, config, RPC chain and method denial", async () => {

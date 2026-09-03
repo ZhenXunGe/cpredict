@@ -1618,11 +1618,11 @@
     },
     {
       "path": "scripts/stack/verify-runtime.mjs",
-      "sha256": "b41d919bc0bc9d2bce935ef42384c3d1760e30fec3f5ced5cf95f2fc71aebef8"
+      "sha256": "414cc56f2ea842eb44a8c83fb5d7b56ea26806803f484879492569ed73920574"
     },
     {
       "path": "scripts/stack/verify-runtime.test.mjs",
-      "sha256": "651f63844c856181d884351b9df96c3be0039602abde692deeed7535aa9018b8"
+      "sha256": "8f188de1c4212df4c2775aa4f9c8955c19f44a1a1b71ea8b5102c99682dd43ad"
     },
     {
       "path": "scripts/test-all.sh",
