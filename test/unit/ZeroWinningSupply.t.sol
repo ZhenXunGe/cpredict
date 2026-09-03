@@ -29,14 +29,16 @@ contract ZeroWinningSupplyTest is ProtocolTestBase {
         assertEq(uint8(market.voidReason()), uint8(ProtocolTypes.VoidReason.NONE));
         _buy(market, ALICE, 0, 20e6);
         _buy(market, BOB, 1, 10e6);
+        uint64 listingExpiresAt = uint64(market.resolutionDeadline());
+        uint64 fillDeadline = uint64(market.closeAt());
         vm.prank(ALICE);
         market.setApprovalForAll(address(marketplace), true);
         vm.prank(ALICE);
         bytes32 listing = marketplace.createListing(
-            address(market), 0, 12e6, 900_000, uint64(market.resolutionDeadline())
+            address(market), 0, 12e6, 900_000, listingExpiresAt
         );
         vm.prank(CAROL);
-        marketplace.fillListing(listing, 7e6, 7e6, 7e6, uint64(market.closeAt()));
+        marketplace.fillListing(listing, 7e6, 7e6, 7e6, fillDeadline);
 
         vm.warp(market.closeAt());
         bytes32 evidence = keccak256("creator-selected-empty-outcome");
