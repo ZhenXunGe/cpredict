@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 60757,
+      "astId": 64451,
       "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
       "label": "sellerNonce",
       "offset": 0,
@@ -9,15 +9,15 @@
       "type": "t_mapping(t_address,t_uint256)"
     },
     {
-      "astId": 60762,
+      "astId": 64456,
       "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
       "label": "listings",
       "offset": 0,
       "slot": "1",
-      "type": "t_mapping(t_bytes32,t_struct(Listing)60727_storage)"
+      "type": "t_mapping(t_bytes32,t_struct(Listing)64421_storage)"
     },
     {
-      "astId": 60764,
+      "astId": 64458,
       "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
       "label": "_expectedReceipt",
       "offset": 0,
@@ -48,20 +48,20 @@
       "numberOfBytes": "32",
       "value": "t_uint256"
     },
-    "t_mapping(t_bytes32,t_struct(Listing)60727_storage)": {
+    "t_mapping(t_bytes32,t_struct(Listing)64421_storage)": {
       "encoding": "mapping",
       "key": "t_bytes32",
       "label": "mapping(bytes32 => struct FixedPriceMarketplaceV1.Listing)",
       "numberOfBytes": "32",
-      "value": "t_struct(Listing)60727_storage"
+      "value": "t_struct(Listing)64421_storage"
     },
-    "t_struct(Listing)60727_storage": {
+    "t_struct(Listing)64421_storage": {
       "encoding": "inplace",
       "label": "struct FixedPriceMarketplaceV1.Listing",
       "numberOfBytes": "128",
       "members": [
         {
-          "astId": 60714,
+          "astId": 64408,
           "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
           "label": "vault",
           "offset": 0,
@@ -69,7 +69,7 @@
           "type": "t_address"
         },
         {
-          "astId": 60716,
+          "astId": 64410,
           "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
           "label": "seller",
           "offset": 0,
@@ -77,7 +77,7 @@
           "type": "t_address"
         },
         {
-          "astId": 60718,
+          "astId": 64412,
           "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
           "label": "remainingUnits",
           "offset": 0,
@@ -85,7 +85,7 @@
           "type": "t_uint128"
         },
         {
-          "astId": 60720,
+          "astId": 64414,
           "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
           "label": "unitPrice",
           "offset": 16,
@@ -93,7 +93,7 @@
           "type": "t_uint128"
         },
         {
-          "astId": 60722,
+          "astId": 64416,
           "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
           "label": "expiresAt",
           "offset": 0,
@@ -101,7 +101,7 @@
           "type": "t_uint64"
         },
         {
-          "astId": 60724,
+          "astId": 64418,
           "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
           "label": "outcomeId",
           "offset": 8,
@@ -109,7 +109,7 @@
           "type": "t_uint8"
         },
         {
-          "astId": 60726,
+          "astId": 64420,
           "contract": "src/marketplace/FixedPriceMarketplaceV1.sol:FixedPriceMarketplaceV1",
           "label": "active",
           "offset": 9,

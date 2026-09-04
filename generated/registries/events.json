@@ -1166,8 +1166,8 @@
   {
     "contract": "CloneMarketVaultV1",
     "name": "MarketInitialized",
-    "signature": "MarketInitialized(address,address,uint8,uint8,uint64,uint64,uint128,uint128)",
-    "selector": "0xceb266feee4d19aa4d598018167bc98ee9cbec37dcfbab456631dc871443ba79",
+    "signature": "MarketInitialized(address,address,uint8,uint8,uint64,uint64,uint64,uint64,uint64,uint128,uint128)",
+    "selector": "0x631d1e425c542a0ab6438449debbcf8c548fd7253d3c940784b39a55151d9529",
     "inputs": [
       {
         "name": "market",
@@ -1194,7 +1194,25 @@
         "internalType": "uint8"
       },
       {
+        "name": "createdAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
         "name": "closeAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "eventStartsAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "outcomeDeadlineAt",
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"
@@ -1222,8 +1240,8 @@
   {
     "contract": "FullMarketVaultV1",
     "name": "MarketInitialized",
-    "signature": "MarketInitialized(address,address,uint8,uint8,uint64,uint64,uint128,uint128)",
-    "selector": "0xceb266feee4d19aa4d598018167bc98ee9cbec37dcfbab456631dc871443ba79",
+    "signature": "MarketInitialized(address,address,uint8,uint8,uint64,uint64,uint64,uint64,uint64,uint128,uint128)",
+    "selector": "0x631d1e425c542a0ab6438449debbcf8c548fd7253d3c940784b39a55151d9529",
     "inputs": [
       {
         "name": "market",
@@ -1250,7 +1268,25 @@
         "internalType": "uint8"
       },
       {
+        "name": "createdAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
         "name": "closeAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "eventStartsAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "outcomeDeadlineAt",
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"
@@ -1278,8 +1314,8 @@
   {
     "contract": "CloneMarketVaultV1",
     "name": "MarketMetadataUpdated",
-    "signature": "MarketMetadataUpdated(bytes32,string,bytes32,string,uint64,uint64,address,uint256)",
-    "selector": "0x1a58fa99974faff6ed577dae420cfac247f741b6a2b5133dae15936c88634810",
+    "signature": "MarketMetadataUpdated(bytes32,string,bytes32,string,uint64,uint64,uint64,address,uint256)",
+    "selector": "0x26a635029b7797d7440e850d66b8c3bf4a6ed3527bc9493d18e3474dea9df401",
     "inputs": [
       {
         "name": "rulesHash",
@@ -1312,7 +1348,13 @@
         "internalType": "uint64"
       },
       {
-        "name": "earlyBirdStart",
+        "name": "eventStartsAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "outcomeDeadlineAt",
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"
@@ -1334,8 +1376,8 @@
   {
     "contract": "FullMarketVaultV1",
     "name": "MarketMetadataUpdated",
-    "signature": "MarketMetadataUpdated(bytes32,string,bytes32,string,uint64,uint64,address,uint256)",
-    "selector": "0x1a58fa99974faff6ed577dae420cfac247f741b6a2b5133dae15936c88634810",
+    "signature": "MarketMetadataUpdated(bytes32,string,bytes32,string,uint64,uint64,uint64,address,uint256)",
+    "selector": "0x26a635029b7797d7440e850d66b8c3bf4a6ed3527bc9493d18e3474dea9df401",
     "inputs": [
       {
         "name": "rulesHash",
@@ -1368,7 +1410,13 @@
         "internalType": "uint64"
       },
       {
-        "name": "earlyBirdStart",
+        "name": "eventStartsAt",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "outcomeDeadlineAt",
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"
