@@ -8,11 +8,16 @@ import {
   marketplaceAbi,
 } from "../src/abis.js";
 
+interface AbiParameter {
+  type: string;
+  components?: readonly AbiParameter[];
+}
+
 interface AbiFunction {
   type: "function";
   name: string;
-  inputs: readonly { type: string }[];
-  outputs: readonly { type: string }[];
+  inputs: readonly AbiParameter[];
+  outputs: readonly AbiParameter[];
 }
 
 interface AbiError {
@@ -123,9 +128,15 @@ function expectMissingFunctions(
 }
 
 function signature(item: AbiFunction): string {
-  const inputs = item.inputs.map((input) => input.type).join(",");
-  const outputs = item.outputs.map((output) => output.type).join(",");
+  const inputs = item.inputs.map(parameterType).join(",");
+  const outputs = item.outputs.map(parameterType).join(",");
   return `${item.name}(${inputs}):(${outputs})`;
+}
+
+function parameterType(input: AbiParameter): string {
+  if (!input.type.startsWith("tuple")) return input.type;
+  if (!input.components) throw new Error("ABI tuple is missing components");
+  return `(${input.components.map(parameterType).join(",")})${input.type.slice(5)}`;
 }
 
 function expectMissingEvents(

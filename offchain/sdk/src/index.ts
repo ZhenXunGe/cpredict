@@ -5,6 +5,7 @@ export * from "./errors.js";
 export * from "./evidence.js";
 export * from "./market-rules.js";
 export * from "./market-state.js";
+export * from "./market-times.js";
 export * from "./metadata.js";
 export * from "./permit2.js";
 export * from "./permit2-relay.js";

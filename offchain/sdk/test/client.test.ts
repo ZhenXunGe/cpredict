@@ -12,7 +12,7 @@ import {
 } from "viem";
 import { describe, expect, it, vi } from "vitest";
 import { marketplaceAbi } from "../src/abis.js";
-import { CpredictClient } from "../src/client.js";
+import { BondSubmissionUnknownError, CpredictClient } from "../src/client.js";
 import { ZERO_EVIDENCE_HASH } from "../src/evidence.js";
 
 const vault = "0x00000000000000000000000000000000000000B1";
@@ -284,5 +284,89 @@ describe("CpredictClient transaction discipline", () => {
         args: [],
       }),
     );
+  });
+
+  it("reports a bond submission hash before receipt failure without sending twice", async () => {
+    const order: string[] = [];
+    const publicClient = {
+      ...gasRpc(),
+      simulateContract: vi.fn(async () => ({})),
+      waitForTransactionReceipt: vi.fn(async () => {
+        order.push("receipt");
+        throw new Error("RPC timeout");
+      }),
+    } as unknown as PublicClient<Transport, Chain>;
+    const walletClient = {
+      chain: mainnet,
+      sendTransaction: vi.fn(async () => hash),
+    } as unknown as WalletClient<Transport, Chain, Account>;
+    const client = new CpredictClient(
+      publicClient,
+      walletClient,
+      privateKeyToAccount(generatePrivateKey()),
+    );
+    await expect(
+      client.claimBondFor(marketplace, seller, (submitted) => {
+        expect(submitted).toBe(hash);
+        order.push("hash");
+      }),
+    ).rejects.toThrow("RPC timeout");
+    expect(order).toEqual(["hash", "receipt"]);
+    expect(walletClient.sendTransaction).toHaveBeenCalledOnce();
+  });
+
+  it("does not let a failing bond observer bypass receipt handling", async () => {
+    const publicClient = {
+      ...gasRpc(),
+      simulateContract: vi.fn(async () => ({})),
+      waitForTransactionReceipt: vi.fn(async () => ({
+        status: "success",
+        blockNumber: 10n,
+        gasUsed: 20n,
+      })),
+    } as unknown as PublicClient<Transport, Chain>;
+    const walletClient = {
+      chain: mainnet,
+      sendTransaction: vi.fn(async () => hash),
+    } as unknown as WalletClient<Transport, Chain, Account>;
+    const client = new CpredictClient(
+      publicClient,
+      walletClient,
+      privateKeyToAccount(generatePrivateKey()),
+    );
+    await expect(
+      client.settleBond(marketplace, vault, () => {
+        throw new Error("UI gone");
+      }),
+    ).resolves.toMatchObject({ hash });
+    expect(publicClient.waitForTransactionReceipt).toHaveBeenCalledOnce();
+  });
+
+  it("distinguishes an unknown wallet send from explicit user rejection", async () => {
+    const publicClient = {
+      ...gasRpc(),
+      simulateContract: vi.fn(async () => ({})),
+    } as unknown as PublicClient<Transport, Chain>;
+    const sendTransaction = vi.fn(async () => {
+      throw new Error("wallet response lost");
+    });
+    const client = new CpredictClient(
+      publicClient,
+      { chain: mainnet, sendTransaction } as unknown as WalletClient<
+        Transport,
+        Chain,
+        Account
+      >,
+      privateKeyToAccount(generatePrivateKey()),
+    );
+    await expect(
+      client.claimBondFor(marketplace, seller, () => {}),
+    ).rejects.toBeInstanceOf(BondSubmissionUnknownError);
+    const rejection = Object.assign(new Error("rejected"), { code: 4001 });
+    sendTransaction.mockRejectedValueOnce(rejection);
+    await expect(
+      client.claimBondFor(marketplace, seller, () => {}),
+    ).rejects.toBe(rejection);
+    expect(sendTransaction).toHaveBeenCalledTimes(2);
   });
 });

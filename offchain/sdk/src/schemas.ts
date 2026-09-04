@@ -71,25 +71,35 @@ export const fillListingWithPermit2InputSchema = fillListingInputSchema.extend({
 export const createMarketInputSchema = z.object({
   factory: addressSchema,
   userSalt: bytes32Schema,
-  params: z.object({
-    rulesHash: bytes32Schema,
-    metadataURI: z.string().max(512),
-    resolutionSourceHash: bytes32Schema,
-    resolutionSourceURI: z.string().max(512),
-    outcomeCount: z.number().int().min(2).max(32),
-    closeAt: positiveUint(64),
-    earlyBirdStart: uint(64),
-    creatorTreasury: addressSchema,
-    deploymentMode: z.union([z.literal(0), z.literal(1)]),
-    featureFlags: uint(256),
-    creatorRakeBps: z.number().int().min(0).max(10_000),
-    creatorC2CFeeBps: z.number().int().min(0).max(10_000),
-    perUserPrimaryCap: positiveUint(128),
-    marketPrimaryCap: positiveUint(128),
-    minimumPrimaryUnits: positiveUint(128),
-    minimumC2CUnits: positiveUint(128),
-    creatorBond: positiveUint(128),
-  }),
+  params: z
+    .strictObject({
+      rulesHash: bytes32Schema,
+      metadataURI: z.string().max(512),
+      resolutionSourceHash: bytes32Schema,
+      resolutionSourceURI: z.string().max(512),
+      outcomeCount: z.number().int().min(2).max(32),
+      closeAt: positiveUint(64),
+      eventStartsAt: uint(64),
+      outcomeDeadlineAt: positiveUint(64),
+      creatorTreasury: addressSchema,
+      deploymentMode: z.union([z.literal(0), z.literal(1)]),
+      featureFlags: uint(256),
+      creatorRakeBps: z.number().int().min(0).max(10_000),
+      creatorC2CFeeBps: z.number().int().min(0).max(10_000),
+      perUserPrimaryCap: positiveUint(128),
+      marketPrimaryCap: positiveUint(128),
+      minimumPrimaryUnits: positiveUint(128),
+      minimumC2CUnits: positiveUint(128),
+      creatorBond: positiveUint(128),
+    })
+    .refine(
+      (value) =>
+        value.outcomeDeadlineAt >= value.closeAt &&
+        (value.eventStartsAt === 0n ||
+          (value.eventStartsAt > value.closeAt &&
+            value.eventStartsAt <= value.outcomeDeadlineAt)),
+      { message: "invalid market event times", path: ["outcomeDeadlineAt"] },
+    ),
 });
 
 type AddressOutput<T, K extends keyof T> = Omit<T, K> & { [P in K]: Address };
