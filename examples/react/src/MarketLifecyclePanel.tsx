@@ -38,7 +38,7 @@ export function outcomeOptionLabel(
   return name === undefined || name === "" ? `结果 ${index + 1}` : name;
 }
 
-export function MarketLifecyclePanel(props: {
+type MarketLifecycleProps = {
   client: Pick<CpredictClient, "resolve" | "creatorVoid" | "voidAfterDeadline">;
   vault: Address;
   outcomeCount: number;
@@ -50,11 +50,31 @@ export function MarketLifecyclePanel(props: {
   resolutionDeadline?: bigint | undefined;
   observedAt?: bigint | undefined;
   marketState?: number | undefined;
-}) {
-  const [outcomeId, setOutcomeId] = useState("0");
+  marketQuestion?: string | null;
+  onTerminal?: () => void;
+};
+
+export function MarketLifecyclePanel(props: MarketLifecycleProps) {
+  return (
+    <MarketLifecycleForm
+      key={JSON.stringify([
+        props.vault.toLowerCase(),
+        props.creatorMode,
+        props.outcomeCount,
+        props.outcomeLabels,
+        props.marketQuestion,
+      ])}
+      {...props}
+    />
+  );
+}
+
+function MarketLifecycleForm(props: MarketLifecycleProps) {
+  const [outcomeId, setOutcomeId] = useState("");
   const [evidenceSourceUri, setEvidenceSourceUri] = useState("");
   const [evidenceSummary, setEvidenceSummary] = useState("");
   const [confirmed, setConfirmed] = useState(false);
+  const [voidConfirmed, setVoidConfirmed] = useState(false);
   const { state, run } = useTransactionAction();
   const blocked = state.pending || props.disabled === true;
   const phase = creatorSettlementPhase(props);
@@ -71,39 +91,51 @@ export function MarketLifecyclePanel(props: {
   const evidenceBlocked = evidenceBlockReason !== null;
   const hasEvidenceDraft =
     evidenceSourceUri.length !== 0 || evidenceSummary.length !== 0;
+  const selectedOutcome = outcomeId === "" ? null : Number(outcomeId);
+  const validOutcome =
+    selectedOutcome !== null &&
+    Number.isInteger(selectedOutcome) &&
+    selectedOutcome >= 0 &&
+    selectedOutcome < props.outcomeCount;
+  const selectedOutcomeLabel =
+    validOutcome && selectedOutcome !== null
+      ? outcomeOptionLabel(selectedOutcome, props.outcomeLabels)
+      : null;
 
   function resolve(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const outcome = BigInt(outcomeId);
     if (
+      !validOutcome ||
       !confirmed ||
       blocked ||
       evidenceBlocked ||
-      !resolveAllowed ||
-      outcome < 0n ||
-      outcome >= BigInt(props.outcomeCount)
+      !resolveAllowed
     )
       return;
-    void run(async () =>
-      props.client.resolve(
+    void run(async () => {
+      const result = await props.client.resolve(
         props.vault,
-        outcome,
+        BigInt(outcomeId),
         await evidenceHashForSettlement(
           { sourceUri: evidenceSourceUri, summary: evidenceSummary },
           props.uploadCanonicalEvidence,
         ),
-      ),
-    );
+      );
+      props.onTerminal?.();
+      return result;
+    });
   }
 
   async function creatorVoid() {
-    return props.client.creatorVoid(
+    const result = await props.client.creatorVoid(
       props.vault,
       await evidenceHashForSettlement(
         { sourceUri: evidenceSourceUri, summary: evidenceSummary },
         props.uploadCanonicalEvidence,
       ),
     );
+    props.onTerminal?.();
+    return result;
   }
 
   return (
@@ -120,13 +152,34 @@ export function MarketLifecyclePanel(props: {
       />
       {props.creatorMode ? (
         <form onSubmit={resolve} aria-busy={blocked}>
+          <dl className="settlement-confirmation">
+            <div>
+              <dt>当前市场</dt>
+              <dd>{props.marketQuestion ?? "请核对市场金库地址"}</dd>
+            </div>
+            <div>
+              <dt>市场金库</dt>
+              <dd className="mono">{props.vault}</dd>
+            </div>
+            <div>
+              <dt>即将结算的结果</dt>
+              <dd>{selectedOutcomeLabel ?? "尚未选择"}</dd>
+            </div>
+          </dl>
           <label>
             获胜结果
             <select
               value={outcomeId}
-              onChange={(event) => setOutcomeId(event.currentTarget.value)}
+              onChange={(event) => {
+                setOutcomeId(event.currentTarget.value);
+                setConfirmed(false);
+                setVoidConfirmed(false);
+              }}
               disabled={blocked || !resolveAllowed}
             >
+              <option value="" disabled>
+                请选择实际获胜结果
+              </option>
               {Array.from({ length: props.outcomeCount }, (_, index) => (
                 <option value={String(index)} key={index}>
                   {outcomeOptionLabel(index, props.outcomeLabels)}
@@ -182,30 +235,51 @@ export function MarketLifecyclePanel(props: {
               <p role="alert">{evidenceBlockReason}</p>
             )}
           </fieldset>
-          <label>
+          <label className="settlement-check">
             <input
               type="checkbox"
+              disabled={blocked || !validOutcome || !resolveAllowed}
               checked={confirmed}
               onChange={(event) => setConfirmed(event.currentTarget.checked)}
             />
-            我已核对锁定规则，并理解结算不可撤销。
+            {validOutcome
+              ? `我已核对上述市场和锁定规则，确认结果为「${selectedOutcomeLabel}」，并理解结算不可撤销。`
+              : "请先选择结果，再核对并确认结算。"}
           </label>
           <button
             disabled={
-              !confirmed || blocked || evidenceBlocked || !resolveAllowed
+              !validOutcome ||
+              !confirmed ||
+              blocked ||
+              evidenceBlocked ||
+              !resolveAllowed
             }
             type="submit"
           >
             {blocked ? "处理中…" : "结算"}
           </button>
+          <label className="settlement-check">
+            <input
+              type="checkbox"
+              checked={voidConfirmed}
+              disabled={blocked || !creatorVoidAllowed}
+              onChange={(event) =>
+                setVoidConfirmed(event.currentTarget.checked)
+              }
+            />
+            我确认作废上述市场，不指定赢家，按份额退还本金，并理解作废不可撤销。
+          </label>
           <button
             disabled={
-              !confirmed || blocked || evidenceBlocked || !creatorVoidAllowed
+              !voidConfirmed ||
+              blocked ||
+              evidenceBlocked ||
+              !creatorVoidAllowed
             }
             type="button"
             onClick={() => {
               if (
-                !confirmed ||
+                !voidConfirmed ||
                 blocked ||
                 evidenceBlocked ||
                 !creatorVoidAllowed
@@ -222,7 +296,11 @@ export function MarketLifecyclePanel(props: {
         disabled={blocked || !timeoutAllowed}
         type="button"
         onClick={() =>
-          void run(() => props.client.voidAfterDeadline(props.vault))
+          void run(async () => {
+            const result = await props.client.voidAfterDeadline(props.vault);
+            props.onTerminal?.();
+            return result;
+          })
         }
       >
         {blocked ? "处理中…" : "超时作废"}
@@ -242,7 +320,8 @@ function SettlementWindowStatus(props: {
   if (props.phase === "terminal") {
     return (
       <p role="status">
-        该市场已终局，不能再次结算或作废。正常结算或创建者作废后，请到下方释放并领取押金；仅超时弃盘且有参与者时押金罚没。
+        该市场已终局，不能再次结算或作废。正常结算或创建者作废后，请在「creator
+        押金退还」区域释放并领取押金；仅超时弃盘且有参与者时押金罚没。
       </p>
     );
   }

@@ -32,7 +32,11 @@ import {
 import type { MarketSnapshot } from "../src/protocol.js";
 import type { TrustReport } from "../src/trust.js";
 import type { LoadedRuntime } from "../src/config.js";
-import type { CpredictClient } from "../../../offchain/sdk/src/index.js";
+import {
+  encodeMarketRules,
+  type CpredictClient,
+  type MarketRules,
+} from "../../../offchain/sdk/src/index.js";
 import type { ConnectedWallet } from "../src/wallet.js";
 
 describe("web demo application shell", () => {
@@ -292,7 +296,7 @@ describe("web demo application shell", () => {
     expect(html).toContain("15 分钟 / 900 秒");
   });
 
-  it("prefills market duration and the accepted HTTP example source", () => {
+  it("shows explicit absolute times, unknown-event risk and the accepted HTTP example source", () => {
     const html = renderToStaticMarkup(
       <CreateMarketForm
         client={{} as CpredictClient}
@@ -316,10 +320,11 @@ describe("web demo application shell", () => {
         resolutionWindowSeconds={900}
       />,
     );
-    expect(html).toContain("市场期限（分钟，11–129600）");
-    expect(html).toContain('value="15"');
-    expect(html).toContain('min="11"');
-    expect(html).toContain("市场期限是购买截止时间，不是结算截止");
+    expect(html).toContain("时间条款（全部为 UTC 绝对时间）");
+    expect(html).toContain('type="datetime-local"');
+    expect(html).toContain("事件开始时间未知");
+    expect(html).toContain("结算超时 = 结果判断截止 +");
+    expect(html).toContain("creator 可在封盘后提前结算");
     expect(html).toContain("15 分钟");
     expect(html).toMatch(
       /id="market-source"[^>]*value="http:\/\/example\.com\/result"/,
@@ -388,7 +393,8 @@ describe("web demo application shell", () => {
       outcomeCount: 2,
       createdAt: 1_899_999_000n,
       closeAt: 1_900_001_000n,
-      earlyBirdStart: 1_899_999_500n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_001_000n,
       featureFlags: 0n,
       perUserPrimaryCap: 10_000_000n,
       marketPrimaryCap: 20_000_000n,
@@ -435,7 +441,8 @@ describe("web demo application shell", () => {
       outcomeCount: 2,
       createdAt: 1_899_999_000n,
       closeAt: 1_900_001_000n,
-      earlyBirdStart: 1_899_999_500n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_001_000n,
       featureFlags: 2n,
       perUserPrimaryCap: 10_000_000n,
       marketPrimaryCap: 20_000_000n,
@@ -485,7 +492,8 @@ describe("web demo application shell", () => {
       outcomeCount: 2,
       createdAt: 1_899_999_000n,
       closeAt: 1_900_000_000n,
-      earlyBirdStart: 1_899_999_500n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_000_000n,
       featureFlags: 0n,
       perUserPrimaryCap: 10_000_000n,
       marketPrimaryCap: 20_000_000n,
@@ -543,7 +551,8 @@ describe("web demo application shell", () => {
       outcomeCount: 2,
       createdAt: 1_899_999_000n,
       closeAt: 1_900_000_000n,
-      earlyBirdStart: 1_899_999_500n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_000_000n,
       featureFlags: 0n,
       perUserPrimaryCap: 10_000_000n,
       marketPrimaryCap: 20_000_000n,
@@ -564,10 +573,13 @@ describe("web demo application shell", () => {
         setMarketAddress={() => {}}
         market={market}
         marketRules={{
-          version: "cpredict-rules-v1",
+          version: "cpredict-rules-v2",
           question: "Will the verified public result be Yes?",
           outcomes: ["Yes", "No"],
-          closesAt: 1_900_000_000,
+          closeAt: 1_900_000_000,
+          eventStartsAt: null,
+          outcomeDeadlineAt: 1_900_000_000,
+          resolutionDeadlineAt: 1_900_000_000 + 86_400,
           resolutionSource: "https://example.com/result",
           resolutionCriteria:
             "Use the final result published by the cited source.",
@@ -651,6 +663,9 @@ describe("web demo application shell", () => {
         deploymentMode: 0,
         outcomeCount: 2,
         closeAt: 1_900_000_000n,
+        createdAt: 1_900_000_000n - 900n,
+        eventStartsAt: null,
+        outcomeDeadlineAt: 1_900_000_000n,
         resolutionWindow: 900n,
         rulesHash: `0x${"11".repeat(32)}`,
         marketPrimaryCap: 20_000_000n,
@@ -663,10 +678,13 @@ describe("web demo application shell", () => {
         confirmationStatus: "confirmed",
       },
       rules: {
-        version: "cpredict-rules-v1",
+        version: "cpredict-rules-v2",
         question: "Will the verified public result be Yes?",
         outcomes: ["Yes", "No"],
-        closesAt: 1_900_000_000,
+        closeAt: 1_900_000_000,
+        eventStartsAt: null,
+        outcomeDeadlineAt: 1_900_000_000,
+        resolutionDeadlineAt: 1_900_000_000 + 86_400,
         resolutionSource: "https://example.com/result",
         resolutionCriteria:
           "Use the final result published by the cited source.",
@@ -697,6 +715,9 @@ describe("web demo application shell", () => {
         deploymentMode: 0,
         outcomeCount: 2,
         closeAt: 1_900_000_000n,
+        createdAt: 1_900_000_000n - 900n,
+        eventStartsAt: null,
+        outcomeDeadlineAt: 1_900_000_000n,
         resolutionWindow: 900n,
         rulesHash: `0x${"11".repeat(32)}`,
         marketPrimaryCap: 20_000_000n,
@@ -709,10 +730,13 @@ describe("web demo application shell", () => {
         confirmationStatus: "confirmed",
       },
       rules: {
-        version: "cpredict-rules-v1",
+        version: "cpredict-rules-v2",
         question: "Will the verified public result be Yes?",
         outcomes: ["Yes", "No"],
-        closesAt: 1_900_000_000,
+        closeAt: 1_900_000_000,
+        eventStartsAt: null,
+        outcomeDeadlineAt: 1_900_000_000,
+        resolutionDeadlineAt: 1_900_000_000 + 86_400,
         resolutionSource: "https://example.com/result",
         resolutionCriteria:
           "Use the final result published by the cited source.",
@@ -741,6 +765,9 @@ describe("web demo application shell", () => {
         deploymentMode: 0,
         outcomeCount: 2,
         closeAt: 1_900_000_000n,
+        createdAt: 1_900_000_000n - 900n,
+        eventStartsAt: null,
+        outcomeDeadlineAt: 1_900_000_000n,
         resolutionWindow: 900n,
         rulesHash: `0x${"11".repeat(32)}`,
         marketPrimaryCap: 20_000_000n,
@@ -753,10 +780,13 @@ describe("web demo application shell", () => {
         confirmationStatus: "confirmed",
       },
       rules: {
-        version: "cpredict-rules-v1",
+        version: "cpredict-rules-v2",
         question: "Will the verified result be Yes?",
         outcomes: ["Yes", "No"],
-        closesAt: 1_900_000_000,
+        closeAt: 1_900_000_000,
+        eventStartsAt: null,
+        outcomeDeadlineAt: 1_900_000_000,
+        resolutionDeadlineAt: 1_900_000_000 + 86_400,
         resolutionSource: "https://example.com/result",
         resolutionCriteria:
           "Use the final result published by the cited source.",
@@ -810,7 +840,8 @@ describe("web demo application shell", () => {
       outcomeCount: 2,
       createdAt: 1_899_999_000n,
       closeAt: 1_900_000_000n,
-      earlyBirdStart: 1_899_999_500n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_000_000n,
       featureFlags: 0n,
       perUserPrimaryCap: 10_000_000n,
       marketPrimaryCap: 20_000_000n,
@@ -857,16 +888,29 @@ describe("web demo application shell", () => {
   });
 
   it("shows named winning outcomes and blocks resolve after the creator window", () => {
+    const rules: MarketRules = {
+      version: "cpredict-rules-v2",
+      question: "王者荣耀这局谁赢？",
+      outcomes: ["王者赢", "对手赢"],
+      closeAt: 1_900_000_000,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_000_000,
+      resolutionDeadlineAt: 1_900_000_900,
+      resolutionSource: "https://example.invalid/result",
+      resolutionCriteria: "按公开赛果进行结算。",
+      cancellationPolicy: "窗口内无结果则作废",
+    };
     const market: MarketSnapshot = {
       address: "0x0000000000000000000000000000000000001001",
       observedAt: 1_900_000_900n,
       creator: "0x000000000000000000000000000000000000c001",
       creatorTreasury: "0x000000000000000000000000000000000000c002",
-      rulesHash: `0x${"11".repeat(32)}`,
+      rulesHash: encodeMarketRules(rules).rulesHash,
       outcomeCount: 2,
       createdAt: 1_899_999_000n,
       closeAt: 1_900_000_000n,
-      earlyBirdStart: 1_899_999_500n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_000_000n,
       featureFlags: 0n,
       perUserPrimaryCap: 10_000_000n,
       marketPrimaryCap: 20_000_000n,
@@ -898,15 +942,7 @@ describe("web demo application shell", () => {
         metadataBasePath={null}
         chainId={421614}
         refreshVersion={0}
-        marketRules={{
-          version: "cpredict-rules-v1",
-          question: "王者荣耀这局谁赢？",
-          outcomes: ["王者赢", "对手赢"],
-          closesAt: 1_900_000_000,
-          resolutionSource: "https://example.invalid/result",
-          resolutionCriteria: "按公开赛果进行结算。",
-          cancellationPolicy: "窗口内无结果则作废",
-        }}
+        marketRules={rules}
         onSelectMarket={async () => {}}
       />,
     );
@@ -931,7 +967,8 @@ describe("web demo application shell", () => {
       outcomeCount: 2,
       createdAt: 1_899_999_000n,
       closeAt: 1_900_000_000n,
-      earlyBirdStart: 1_899_999_500n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_000_000n,
       featureFlags: 0n,
       perUserPrimaryCap: 10_000_000n,
       marketPrimaryCap: 20_000_000n,
@@ -981,7 +1018,8 @@ describe("web demo application shell", () => {
       outcomeCount: 2,
       createdAt: 1_899_999_000n,
       closeAt: 1_900_000_000n,
-      earlyBirdStart: 1_899_999_500n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_000_000n,
       featureFlags: 0n,
       perUserPrimaryCap: 10_000_000n,
       marketPrimaryCap: 20_000_000n,
@@ -1025,7 +1063,8 @@ describe("web demo application shell", () => {
     );
     expect(html).toContain("9 ctUSD");
     expect(html).not.toContain(">1 ctUSD<");
-    expect(html).toContain("结算截止");
+    expect(html).toContain("结算超时");
+    expect(html).toContain("结果判断截止");
   });
 
   it("labels a voided market with the terminal state instead of pending settlement", () => {
@@ -1038,7 +1077,8 @@ describe("web demo application shell", () => {
       outcomeCount: 2,
       createdAt: 1_899_999_000n,
       closeAt: 1_900_000_000n,
-      earlyBirdStart: 1_899_999_500n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_900_000_000n,
       featureFlags: 0n,
       perUserPrimaryCap: 10_000_000n,
       marketPrimaryCap: 20_000_000n,

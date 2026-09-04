@@ -14,7 +14,8 @@ const vaultReadAbi = parseAbi([
   "function outcomeCount() view returns (uint8)",
   "function createdAt() view returns (uint64)",
   "function closeAt() view returns (uint64)",
-  "function earlyBirdStart() view returns (uint64)",
+  "function eventStartsAt() view returns (uint64)",
+  "function outcomeDeadlineAt() view returns (uint64)",
   "function featureFlags() view returns (uint256)",
   "function perUserPrimaryCap() view returns (uint128)",
   "function marketPrimaryCap() view returns (uint128)",
@@ -69,7 +70,8 @@ export interface MarketSnapshot {
   outcomeCount: number;
   createdAt: bigint;
   closeAt: bigint;
-  earlyBirdStart: bigint;
+  eventStartsAt: bigint | null;
+  outcomeDeadlineAt: bigint;
   featureFlags: bigint;
   perUserPrimaryCap: bigint;
   marketPrimaryCap: bigint;
@@ -134,7 +136,6 @@ export async function readMarket(
       "outcomeCount",
       "createdAt",
       "closeAt",
-      "earlyBirdStart",
       "featureFlags",
       "perUserPrimaryCap",
       "marketPrimaryCap",
@@ -148,13 +149,15 @@ export async function readMarket(
       "permit2Enabled",
       "earlyBirdEnabled",
       "voidReason",
+      "eventStartsAt",
+      "outcomeDeadlineAt",
     ].map((functionName) => ({
       address,
       abi: vaultReadAbi,
       functionName,
     })) as never,
   });
-  assertMarketState(Number(values[13]), Number(values[19]));
+  assertMarketState(Number(values[12]), Number(values[18]));
   return {
     address,
     observedAt: block.timestamp,
@@ -164,20 +167,21 @@ export async function readMarket(
     outcomeCount: Number(values[3]),
     createdAt: values[4] as bigint,
     closeAt: values[5] as bigint,
-    earlyBirdStart: values[6] as bigint,
-    featureFlags: values[7] as bigint,
-    perUserPrimaryCap: values[8] as bigint,
-    marketPrimaryCap: values[9] as bigint,
-    minimumPrimaryUnits: values[10] as bigint,
-    minimumC2CUnits: values[11] as bigint,
-    creatorBond: values[12] as bigint,
-    marketState: Number(values[13]),
-    voidReason: Number(values[19]),
-    winningOutcome: Number(values[14]),
-    totalPrincipal: values[15] as bigint,
-    resolutionDeadline: values[16] as bigint,
-    permit2Enabled: values[17] as boolean,
-    earlyBirdEnabled: values[18] as boolean,
+    eventStartsAt: values[19] === 0n ? null : (values[19] as bigint),
+    outcomeDeadlineAt: values[20] as bigint,
+    featureFlags: values[6] as bigint,
+    perUserPrimaryCap: values[7] as bigint,
+    marketPrimaryCap: values[8] as bigint,
+    minimumPrimaryUnits: values[9] as bigint,
+    minimumC2CUnits: values[10] as bigint,
+    creatorBond: values[11] as bigint,
+    marketState: Number(values[12]),
+    voidReason: Number(values[18]),
+    winningOutcome: Number(values[13]),
+    totalPrincipal: values[14] as bigint,
+    resolutionDeadline: values[15] as bigint,
+    permit2Enabled: values[16] as boolean,
+    earlyBirdEnabled: values[17] as boolean,
   };
 }
 

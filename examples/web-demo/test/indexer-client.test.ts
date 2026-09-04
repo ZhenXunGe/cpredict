@@ -29,6 +29,9 @@ describe("same-origin indexer client", () => {
             deploymentMode: 0,
             outcomeCount: 2,
             closeAt: "1893456000",
+            createdAt: "1893455000",
+            eventStartsAt: null,
+            outcomeDeadlineAt: "1893457000",
             resolutionWindow: "900",
             rulesHash: `0x${"11".repeat(32)}`,
             marketPrimaryCap: "20000000",
@@ -79,6 +82,9 @@ describe("same-origin indexer client", () => {
         deploymentMode: 0,
         outcomeCount: 2,
         closeAt: status === "resolved" ? "100" : "200",
+        createdAt: "1",
+        eventStartsAt: null,
+        outcomeDeadlineAt: "300",
         resolutionWindow: "900",
         rulesHash: `0x${"11".repeat(32)}`,
         marketPrimaryCap: "20000000",
@@ -239,12 +245,44 @@ describe("same-origin indexer client", () => {
     });
   });
 
+  it("rejects removed V1 position state values", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        json({
+          items: [
+            {
+              vault: MARKET,
+              owner: CREATOR,
+              outcomeId: "0",
+              balance: "1000000",
+              updatedBlock: "1",
+              confirmationStatus: "confirmed",
+              marketState: 3,
+              winningOutcome: null,
+            },
+          ],
+        }),
+      ),
+    );
+    await expect(
+      fetchWalletPositions({
+        basePath: "/indexer",
+        chainId: 421614,
+        owner: CREATOR,
+      }),
+    ).rejects.toThrow(/marketState/);
+  });
+
   it("accepts only self-hosted metadata whose content matches rulesHash", async () => {
     const rules: MarketRules = {
-      version: "cpredict-rules-v1",
+      version: "cpredict-rules-v2",
       question: "Will the public result be Yes at close?",
       outcomes: ["Yes", "No"],
-      closesAt: 1_893_456_000,
+      closeAt: 1_893_456_000,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_893_456_000,
+      resolutionDeadlineAt: 1_893_456_000 + 86_400,
       resolutionSource: "https://example.com/result",
       resolutionCriteria: "Use the final result shown by the public source.",
       cancellationPolicy: "Void when no unambiguous final result is published.",

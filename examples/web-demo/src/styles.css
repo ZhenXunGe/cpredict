@@ -515,6 +515,39 @@ textarea:focus {
   font-size: 10px;
 }
 
+.creator-bond-panel {
+  border-color: #92b8eb;
+}
+.creator-bond-panel .bond-state {
+  font-weight: 650;
+  line-height: 1.6;
+}
+.creator-bond-panel p {
+  line-height: 1.6;
+}
+.creator-bond-panel .bond-receipt {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.creator-bond-panel .mono {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.bond-amounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.bond-amounts dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.bond-amounts dd {
+  margin: 6px 0 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
 .inspector-rows {
   display: grid;
 }
@@ -1650,6 +1683,56 @@ textarea:focus {
   .bottom-nav small {
     font-size: 8px;
   }
+}
+
+.market-rules dd,
+.settlement-confirmation dd,
+.listing-seller,
+.marketplace-listing-summary dd {
+  overflow-wrap: anywhere;
+}
+.rules-content > div,
+.settlement-confirmation > div {
+  margin-block: 12px;
+}
+.rules-content dt,
+.settlement-confirmation dt {
+  font-weight: 600;
+}
+.rules-content dd,
+.settlement-confirmation dd {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+.folded-listings {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.folded-listings summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 32px;
+}
+.position-grid .position-claim-note {
+  display: block;
+  margin-block: 8px;
+}
+.embedded-example label.settlement-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.6;
+  font-size: 13px;
+}
+.embedded-example .settlement-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  flex: 0 0 18px;
+  margin: 2px 0 0;
+  padding: 0;
 }
 
 @media (prefers-reduced-motion: no-preference) {

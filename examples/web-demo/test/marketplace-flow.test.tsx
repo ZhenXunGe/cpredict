@@ -17,8 +17,9 @@ import {
   ListingsPanel,
 } from "../src/WalletIndexerPanels.js";
 import type { IndexedListing } from "../src/indexer-client.js";
-import type { AccountSnapshot, MarketSnapshot } from "../src/protocol.js";
+import type { AccountSnapshot } from "../src/protocol.js";
 import type { TrustReport } from "../src/trust.js";
+import { UX_MARKET, UX_RULES } from "./ux-fixtures.js";
 
 const VAULT = "0x0000000000000000000000000000000000001001";
 const MARKETPLACE = "0x0000000000000000000000000000000000002001";
@@ -42,6 +43,9 @@ const catalogEntry: CatalogEntry = {
     deploymentMode: 0,
     outcomeCount: 2,
     closeAt: 1_900_000_000n,
+    createdAt: 1_900_000_000n - 900n,
+    eventStartsAt: null,
+    outcomeDeadlineAt: 1_900_000_000n,
     resolutionWindow: 900n,
     rulesHash: `0x${"11".repeat(32)}`,
     marketPrimaryCap: 20_000_000n,
@@ -54,10 +58,13 @@ const catalogEntry: CatalogEntry = {
     confirmationStatus: "confirmed",
   },
   rules: {
-    version: "cpredict-rules-v1",
+    version: "cpredict-rules-v2",
     question: "这把游戏能胜利吗",
     outcomes: ["Yes", "No"],
-    closesAt: 1_900_000_000,
+    closeAt: 1_900_000_000,
+    eventStartsAt: null,
+    outcomeDeadlineAt: 1_900_000_000,
+    resolutionDeadlineAt: 1_900_000_000 + 86_400,
     resolutionSource: "https://example.com/result",
     resolutionCriteria: "Use the final result published by the cited source.",
     cancellationPolicy: "Void if no unambiguous result is published in time.",
@@ -110,13 +117,8 @@ describe("C2C listing selection flow", () => {
     const html = renderToStaticMarkup(
       <MarketplacePage
         writeReady
-        market={
-          {
-            address: VAULT,
-            observedAt: 1_899_999_000n,
-            closeAt: 1_900_000_000n,
-          } as unknown as MarketSnapshot
-        }
+        market={UX_MARKET}
+        marketRules={UX_RULES}
         account={
           {
             marketplaceAllowance: 0n,
@@ -171,6 +173,7 @@ describe("C2C listing selection flow", () => {
       <MarketplacePage
         writeReady={false}
         market={null}
+        marketRules={null}
         selectedMarketAddress={VAULT}
         marketBusy
         marketLoadError={null}
@@ -214,6 +217,7 @@ describe("C2C listing selection flow", () => {
       <MarketplacePage
         writeReady={false}
         market={null}
+        marketRules={null}
         selectedMarketAddress={VAULT}
         marketBusy
         marketLoadError={null}
@@ -260,10 +264,14 @@ describe("C2C listing selection flow", () => {
       />,
     );
     expect(beforeClose).toContain("1 笔高价挂单已折叠");
-    expect(beforeClose).toContain("池子直买更便宜");
+    expect(beforeClose).not.toContain("池子直买更便宜");
     expect(beforeClose).toContain("0.9 ctUSD");
     expect(beforeClose).toContain("1 ctUSD");
-    expect(beforeClose).not.toContain("1.2 ctUSD");
+    expect(beforeClose).toContain('<details class="folded-listings">');
+    expect(beforeClose.slice(beforeClose.indexOf("<details"))).toContain(
+      "1.2 ctUSD",
+    );
+    expect(beforeClose).not.toMatch(/<details[^>]*open/);
 
     const atClose = renderToStaticMarkup(
       <ActiveListingsCatalog
@@ -281,17 +289,12 @@ describe("C2C listing selection flow", () => {
     expect(atClose).toContain("1.2 ctUSD");
   });
 
-  it("blocks a stale selected high-price listing from filling before close but keeps cancellation", () => {
+  it("allows selected high-price listings before close without blocking fills or cancellation", () => {
     const html = renderToStaticMarkup(
       <MarketplacePage
         writeReady
-        market={
-          {
-            address: VAULT,
-            observedAt: 1_899_999_000n,
-            closeAt: 1_900_000_000n,
-          } as unknown as MarketSnapshot
-        }
+        market={UX_MARKET}
+        marketRules={UX_RULES}
         account={
           {
             marketplaceAllowance: 0n,
@@ -324,10 +327,10 @@ describe("C2C listing selection flow", () => {
       />,
     );
     const selectedSection = html.slice(html.indexOf("已选挂单"));
-    expect(selectedSection).toContain("该挂单已按封盘前规则折叠");
-    expect(selectedSection).toContain("池子直买更便宜");
+    expect(selectedSection).toContain("仍可按挂单价格购买");
+    expect(selectedSection).not.toContain("池子直买更便宜");
     expect(selectedSection).toContain(
-      '<button disabled="" type="button">精确授权 ctUSD 用于成交</button>',
+      '<button type="button">精确授权 ctUSD 用于成交</button>',
     );
     expect(selectedSection).toContain(
       '<button type="button">取消所选挂单</button>',
