@@ -71,6 +71,10 @@ runtime-config schema PASS
 避免 Creator/Trader 角色静默混淆。页面不读取 private key、seed、RPC secret、API key、cookie 或
 Paymaster signer；任何浏览器 runtime config 都视为公开数据。
 
+押金操作仅将公开的链/钱包/市场/creator/托管身份及操作类型、交易哈希、起始区块保存在本标签页
+`sessionStorage` 的专用白名单记录中，用于刷新后查询原回执；不恢复部署配置、钱包控制权或签名。
+不存储私钥、签名、授权、规则正文或错误原文。存储不可用时保留当前页操作和哈希提示，但不承诺刷新恢复。
+
 ## 4. 已接调用面
 
 | 页面       | 读                                                                   | 写                                                                            |
