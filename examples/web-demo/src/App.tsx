@@ -19,6 +19,7 @@ import {
   buildBuyPermit2TypedData,
   BUY_WITH_PERMIT2_SELECTOR,
   CpredictClient,
+  marketRulesMatchTimes,
   classifyProtocolError,
   createHttpPermit2BuyRelayer,
   type CreateMarketResult,
@@ -86,9 +87,16 @@ import {
   type MarketplaceListingSelection,
 } from "../../react/src/MarketplacePanel.js";
 import { MarketLifecyclePanel } from "../../react/src/MarketLifecyclePanel.js";
+import {
+  MarketRulesDisclosure,
+  RULES_UNAVAILABLE,
+  verifiedMarketRules,
+} from "./MarketRulesDisclosure.js";
 import { transactionDeadline } from "../../react/src/transactionTiming.js";
 import { authorizationRequired } from "../../react/src/authorizationFlow.js";
 import type { CanonicalEvidenceUploader } from "../../react/src/settlementEvidence.js";
+import { CreatorBondPanel } from "./CreatorBondPanel.js";
+import { refreshConfirmedTransaction } from "./confirmed-transaction.js";
 
 type Route =
   | "overview"
@@ -483,8 +491,13 @@ export default function App() {
             metadataBasePath: runtime.config.metadata.basePath,
             rulesHash: nextMarket.rulesHash,
           });
-          if (BigInt(rules.closesAt) !== nextMarket.closeAt)
-            throw new Error("规则中的截止时间与 Vault 不一致");
+          if (
+            !marketRulesMatchTimes(rules, {
+              ...nextMarket,
+              resolutionDeadlineAt: nextMarket.resolutionDeadline,
+            })
+          )
+            throw new Error("规则中的时间条款与 Vault 不一致");
           setSelectedMarketRules(rules);
         } catch {
           setSelectedMarketRules(null);
@@ -731,30 +744,40 @@ export default function App() {
           wallet: wallet.address,
           blockNumber: result.blockNumber,
         });
-      if (
-        publicClient !== null &&
-        wallet !== null &&
-        trust?.addresses !== null &&
-        trust?.addresses !== undefined
-      ) {
-        setPaymentTokenBalance(
-          await readPaymentTokenBalance(
-            publicClient,
-            wallet.address,
-            trust.addresses.usdc,
-          ),
-        );
-      }
-      if (market !== null) await loadMarketAddress(market.address);
       setSettlementRefreshVersion((version) => version + 1);
       setMarketplaceRefreshVersion((version) => version + 1);
+      const refreshed = await refreshConfirmedTransaction(result, async () => {
+        if (
+          publicClient !== null &&
+          wallet !== null &&
+          trust?.addresses != null
+        ) {
+          setPaymentTokenBalance(
+            await readPaymentTokenBalance(
+              publicClient,
+              wallet.address,
+              trust.addresses.usdc,
+            ),
+          );
+        }
+        if (market !== null) await loadMarketAddress(market.address);
+      });
+      if (refreshed.refreshError !== null) {
+        push(
+          setActivity,
+          "warning",
+          `${label}：交易已成功，页面刷新失败`,
+          "请刷新余额和市场状态，不要重复提交已成功的交易。",
+          result.hash,
+        );
+      }
       return result;
     } catch (error: unknown) {
       const classified = classifyProtocolError(error);
       push(
         setActivity,
         "error",
-        `${label}：${classified.kind === "gas-safety" ? "签名前已拦截" : "失败"}`,
+        `${label}：${classified.kind === "gas-safety" ? "签名前已拦截" : "未完成，请核对交易状态"}`,
         classified.message,
       );
       return null;
@@ -1073,6 +1096,7 @@ export default function App() {
               <MarketplacePage
                 writeReady={writeReady}
                 market={market}
+                marketRules={selectedMarketRules}
                 selectedMarketAddress={
                   isAddress(marketAddress)
                     ? getAddress(marketAddress)
@@ -1116,6 +1140,7 @@ export default function App() {
                 publicClient={publicClient}
                 execute={executeOperation}
                 bondEscrow={trust?.addresses?.contracts.bondEscrow ?? null}
+                paymentTokenSymbol={paymentTokenSymbol}
                 evidenceUploader={
                   runtime === null ? undefined : makeEvidenceUploader(runtime)
                 }
@@ -1505,6 +1530,10 @@ export function MarketPage(props: {
 }) {
   const displayState =
     props.market === null ? null : marketDisplayState(props.market);
+  const rules =
+    props.market === null
+      ? null
+      : verifiedMarketRules(props.market, props.marketRules);
   const selectedMarket = isAddress(props.marketAddress)
     ? getAddress(props.marketAddress)
     : (props.market?.address ?? null);
@@ -1630,9 +1659,14 @@ export function MarketPage(props: {
               </a>
             </div>
           )}
+          <MarketRulesDisclosure
+            market={props.market}
+            rules={props.marketRules}
+          />
           <BuyCard
             market={props.market}
-            outcomeLabels={props.marketRules?.outcomes ?? null}
+            outcomeLabels={rules?.outcomes ?? null}
+            purchaseBlockReason={rules === null ? RULES_UNAVAILABLE : null}
             account={props.account}
             client={props.client}
             publicClient={props.publicClient}
@@ -1653,11 +1687,23 @@ export function MarketPage(props: {
                 <dd>{props.market.outcomeCount}</dd>
               </div>
               <div>
-                <dt>截止时间</dt>
+                <dt>封盘时间</dt>
                 <dd>{formatTimestamp(props.market.closeAt)}</dd>
               </div>
               <div>
-                <dt>结算截止</dt>
+                <dt>事件开始</dt>
+                <dd>
+                  {props.market.eventStartsAt === null
+                    ? "未知，无法确认是否提前封盘"
+                    : formatTimestamp(props.market.eventStartsAt)}
+                </dd>
+              </div>
+              <div>
+                <dt>结果判断截止</dt>
+                <dd>{formatTimestamp(props.market.outcomeDeadlineAt)}</dd>
+              </div>
+              <div>
+                <dt>结算超时</dt>
                 <dd>{formatTimestamp(props.market.resolutionDeadline)}</dd>
               </div>
               {finalResult === null ? null : (
@@ -1735,6 +1781,7 @@ export function BuyCard({
   primaryBuyOpen,
   busy,
   execute,
+  purchaseBlockReason = null,
 }: {
   market: MarketSnapshot;
   outcomeLabels: readonly string[] | null;
@@ -1750,6 +1797,7 @@ export function BuyCard({
   primaryBuyOpen: boolean;
   busy: boolean;
   execute: ExecuteTransaction;
+  purchaseBlockReason?: string | null;
 }) {
   const [outcome, setOutcome] = useState("0");
   const [shares, setShares] = useState("1");
@@ -1758,7 +1806,8 @@ export function BuyCard({
   const [vaultAllowance, setVaultAllowance] = useState(
     account?.vaultAllowance ?? null,
   );
-  const primaryWriteReady = writeReady && primaryBuyOpen;
+  const primaryWriteReady =
+    writeReady && primaryBuyOpen && purchaseBlockReason === null;
 
   useEffect(
     () => setVaultAllowance(account?.vaultAllowance ?? null),
@@ -1779,6 +1828,7 @@ export function BuyCard({
   async function approveVault() {
     setFormError("");
     try {
+      if (purchaseBlockReason !== null) throw new Error(purchaseBlockReason);
       if (
         client === null ||
         trust?.addresses === null ||
@@ -1806,6 +1856,7 @@ export function BuyCard({
     event.preventDefault();
     setFormError("");
     try {
+      if (purchaseBlockReason !== null) throw new Error(purchaseBlockReason);
       if (!primaryBuyOpen) throw new Error("市场已截止，一级购买已关闭");
       if (
         client === null ||
@@ -1941,6 +1992,9 @@ export function BuyCard({
         </p>
       ) : null}
       <form className="buy-form" onSubmit={(event) => void submit(event)}>
+        {purchaseBlockReason === null ? null : (
+          <p role="alert">{purchaseBlockReason}</p>
+        )}
         <label>
           <span>购买结果</span>
           <select
@@ -2227,6 +2281,17 @@ export function PositionsPage({
               <div key={outcomeId}>
                 <small>结果 {outcomeId + 1}</small>
                 <strong>{formatShareUnits(balance)}</strong>
+                {market.marketState === 2 && balance > 0n ? (
+                  <>
+                    <span className="position-claim-note">本金待退款</span>
+                    <a
+                      className="button primary button-link"
+                      href={`#/settlement/${market.address}`}
+                    >
+                      去退还本金
+                    </a>
+                  </>
+                ) : null}
               </div>
             ))}
           </div>
@@ -2239,6 +2304,7 @@ export function PositionsPage({
 export function MarketplacePage({
   writeReady,
   market,
+  marketRules,
   selectedMarketAddress,
   marketBusy,
   marketLoadError,
@@ -2260,6 +2326,7 @@ export function MarketplacePage({
 }: {
   writeReady: boolean;
   market: MarketSnapshot | null;
+  marketRules: MarketRules | null;
   selectedMarketAddress: Address | null;
   marketBusy: boolean;
   marketLoadError: string | null;
@@ -2283,6 +2350,14 @@ export function MarketplacePage({
   ) => void;
 }) {
   const addresses = trust?.addresses;
+  const rules =
+    market === null ? null : verifiedMarketRules(market, marketRules);
+  const newExposureBlockReason =
+    market !== null && market.marketState !== 0
+      ? "市场已终局，不能新增挂单或成交；现有挂单仍可取消。"
+      : rules === null
+        ? RULES_UNAVAILABLE
+        : null;
   const selectedListingForMarket =
     market !== null &&
     selectedListing !== null &&
@@ -2319,6 +2394,17 @@ export function MarketplacePage({
           </p>
         )}
       </Panel>
+      {market === null ? null : (
+        <MarketRulesDisclosure market={market} rules={rules} />
+      )}
+      {market !== null &&
+      market.marketState === 0 &&
+      market.observedAt >= market.closeAt ? (
+        <p className="callout danger">
+          封盘后内幕转让风险：creator 或知情者可能已掌握结果。creator
+          本人交易会明确标记；其他地址不代表与 creator 无关联。
+        </p>
+      ) : null}
       <Panel
         title="活跃 C2C 挂单"
         subtitle="选择挂单后自动加载市场、价格和剩余数量"
@@ -2334,6 +2420,7 @@ export function MarketplacePage({
           targetBlock={targetBlock ?? null}
           marketObservedAt={market?.observedAt ?? null}
           marketCloseAt={market?.closeAt ?? null}
+          {...(market === null ? {} : { creator: market.creator })}
           onSelectListing={onSelectListing}
         />
       </Panel>
@@ -2354,13 +2441,17 @@ export function MarketplacePage({
         writeReady ? (
           <div className="embedded-example">
             <MarketplacePanel
+              key={`${chainId}:${market.address}:${wallet}`}
               client={client}
               paymentToken={addresses.usdc}
               paymentTokenSymbol={paymentTokenSymbol}
               vault={market.address}
+              creator={market.creator}
+              wallet={wallet}
               marketplace={addresses.contracts.marketplace}
               observedAt={market.observedAt}
               closeAt={market.closeAt}
+              newExposureBlockReason={newExposureBlockReason}
               paymentTokenAllowance={account?.marketplaceAllowance ?? null}
               shareEscrowApproved={account?.marketplaceApproved ?? null}
               selectedListing={selectedListingForMarket}
@@ -2420,6 +2511,7 @@ export function SettlementPage({
   publicClient,
   execute,
   bondEscrow,
+  paymentTokenSymbol = "USDC",
   evidenceUploader,
   indexerEnabled,
   indexerBasePath,
@@ -2438,6 +2530,7 @@ export function SettlementPage({
   publicClient: PublicClient | null;
   execute: ExecuteTransaction;
   bondEscrow: Address | null;
+  paymentTokenSymbol?: string;
   evidenceUploader: CanonicalEvidenceUploader | undefined;
   indexerEnabled: boolean;
   indexerBasePath: string;
@@ -2447,6 +2540,7 @@ export function SettlementPage({
   marketRules: MarketRules | null;
   onSelectMarket: (market: Address, rules: MarketRules | null) => Promise<void>;
 }) {
+  const [terminalRefresh, setTerminalRefresh] = useState(0);
   const selectedAddress = isAddress(marketAddress)
     ? getAddress(marketAddress)
     : (market?.address ?? null);
@@ -2512,8 +2606,23 @@ export function SettlementPage({
     );
   }
   const creator = market.creator.toLowerCase() === wallet.address.toLowerCase();
+  const settlementRules = verifiedMarketRules(market, marketRules);
   return (
     <>
+      <CreatorBondPanel
+        key={`${chainId}:${wallet.chainId}:${wallet.address}:${market.address}`}
+        market={market}
+        wallet={wallet.address}
+        escrow={bondEscrow}
+        chainId={chainId}
+        publicClient={publicClient}
+        client={client}
+        execute={execute}
+        writeReady={writeReady}
+        busy={busy}
+        refreshVersion={refreshVersion + terminalRefresh}
+        paymentTokenSymbol={paymentTokenSymbol}
+      />
       {queue}
       <Panel
         title="结算证据与终局"
@@ -2522,17 +2631,20 @@ export function SettlementPage({
         <div className="embedded-example">
           {writeReady ? (
             <MarketLifecyclePanel
+              key={`${chainId}:${wallet.address}:${market.address}:${market.rulesHash}`}
               client={client}
               vault={market.address}
               outcomeCount={market.outcomeCount}
               creatorMode={creator}
               disabled={busy}
               uploadCanonicalEvidence={evidenceUploader}
-              outcomeLabels={marketRules?.outcomes ?? null}
+              outcomeLabels={settlementRules?.outcomes ?? null}
+              marketQuestion={settlementRules?.question ?? null}
               closeAt={market.closeAt}
               resolutionDeadline={market.resolutionDeadline}
               observedAt={market.observedAt}
               marketState={market.marketState}
+              onTerminal={() => setTerminalRefresh((version) => version + 1)}
             />
           ) : (
             <Empty
@@ -2601,32 +2713,7 @@ export function SettlementPage({
               )
             }
           />
-          <SettlementActionButton
-            writeReady={writeReady && bondEscrow !== null}
-            busy={busy}
-            label="释放押金"
-            onClick={() => {
-              if (bondEscrow === null) return;
-              void execute("释放押金", () =>
-                client.settleBond(bondEscrow, market.address),
-              );
-            }}
-          />
-          <SettlementActionButton
-            writeReady={writeReady && bondEscrow !== null}
-            busy={busy}
-            label="领取押金"
-            onClick={() => {
-              if (bondEscrow === null) return;
-              void execute("领取押金", () =>
-                client.claimBondFor(bondEscrow, market.creator),
-              );
-            }}
-          />
         </div>
-        <p className="callout">
-          押金只在超时弃盘且该盘有本金时罚没，并随作废退款按本金比例分给参与者。正常结算或创建者手动作废后，先点「释放押金」把该盘押金记到创建者名下，再点「领取押金」打给创建者。领取会把该创建者已释放的全部押金一次性转出。
-        </p>
         <p className="callout danger">
           Demo 不暴露管理员调用，也不会替创建者自动选择结果。创建者
           终局必须人工复核锁定规则。

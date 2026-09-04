@@ -19,6 +19,9 @@ export interface MarketCatalogItem {
   deploymentMode: number;
   outcomeCount: number | null;
   closeAt: bigint | null;
+  createdAt: bigint | null;
+  eventStartsAt: bigint | null;
+  outcomeDeadlineAt: bigint | null;
   resolutionWindow: bigint | null;
   rulesHash: Hex | null;
   marketPrimaryCap: bigint | null;
@@ -303,6 +306,12 @@ function parseMarket(value: unknown): MarketCatalogItem {
     deploymentMode: integer(item.deploymentMode, "deploymentMode", 0, 1),
     outcomeCount,
     closeAt: nullableBigint(item.closeAt, "closeAt"),
+    createdAt: nullableBigint(item.createdAt, "createdAt"),
+    eventStartsAt: nullableBigint(item.eventStartsAt, "eventStartsAt"),
+    outcomeDeadlineAt: nullableBigint(
+      item.outcomeDeadlineAt,
+      "outcomeDeadlineAt",
+    ),
     resolutionWindow: nullableBigint(item.resolutionWindow, "resolutionWindow"),
     rulesHash: nullableBytes32(item.rulesHash, "rulesHash"),
     marketPrimaryCap: nullableBigint(item.marketPrimaryCap, "marketPrimaryCap"),
@@ -365,7 +374,7 @@ function parsePosition(value: unknown): IndexedPosition {
     marketState:
       item.marketState === undefined
         ? null
-        : nullableInteger(item.marketState, "marketState", 0, 3),
+        : nullableInteger(item.marketState, "marketState", 0, 2),
     winningOutcome:
       item.winningOutcome === undefined
         ? null

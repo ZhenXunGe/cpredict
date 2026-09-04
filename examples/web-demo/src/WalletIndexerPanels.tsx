@@ -211,6 +211,7 @@ export function ListingsPanel(props: {
   targetBlock?: bigint | null;
   marketObservedAt?: bigint | null;
   marketCloseAt?: bigint | null;
+  creator?: Address;
   onSelectListing: (listing: IndexedListing) => void;
 }) {
   const vault = props.vault ?? null;
@@ -260,6 +261,8 @@ export function ListingsPanel(props: {
         />
         {state.items.length === 0 ? null : (
           <ActiveListingsCatalog
+            key={vault}
+            {...(props.creator === undefined ? {} : { creator: props.creator })}
             items={state.items}
             paymentTokenSymbol={props.paymentTokenSymbol}
             selectedListingId={props.selectedListingId}
@@ -273,6 +276,8 @@ export function ListingsPanel(props: {
   }
   return (
     <ActiveListingsCatalog
+      key={vault}
+      {...(props.creator === undefined ? {} : { creator: props.creator })}
       items={state.items}
       paymentTokenSymbol={props.paymentTokenSymbol}
       selectedListingId={props.selectedListingId}
@@ -289,10 +294,11 @@ export function ActiveListingsCatalog(props: {
   selectedListingId: Hex | null;
   observedAt: bigint;
   closeAt: bigint;
+  creator?: Address;
   onSelectListing: (listing: IndexedListing) => void;
 }) {
   const visibleItems: IndexedListing[] = [];
-  let foldedCount = 0;
+  const foldedItems: IndexedListing[] = [];
   for (const item of props.items) {
     if (
       shouldFoldListingBeforeClose(
@@ -301,42 +307,48 @@ export function ActiveListingsCatalog(props: {
         props.closeAt,
       )
     ) {
-      foldedCount += 1;
+      foldedItems.push(item);
     } else {
       visibleItems.push(item);
     }
   }
 
-  if (visibleItems.length === 0) {
-    return foldedCount === 0 ? (
+  if (props.items.length === 0) {
+    return (
       <Notice title="暂无活跃挂单" detail="创建挂单后会直接显示在这里。" />
-    ) : (
-      <Notice
-        title={`${foldedCount} 笔高价挂单已折叠`}
-        detail={`封盘前一级池按 1 ${props.paymentTokenSymbol}/份供应，池子直买更便宜；封盘后这些挂单会恢复显示。`}
-      />
     );
   }
 
+  const cards = (items: readonly IndexedListing[]) => (
+    <div className="listing-catalog">
+      {items.map((item) => (
+        <ListingCard
+          key={item.listingId}
+          item={item}
+          {...(props.creator === undefined ? {} : { creator: props.creator })}
+          paymentTokenSymbol={props.paymentTokenSymbol}
+          selected={item.listingId === props.selectedListingId}
+          onSelect={props.onSelectListing}
+        />
+      ))}
+    </div>
+  );
+
   return (
     <>
-      {foldedCount === 0 ? null : (
-        <Notice
-          title={`${foldedCount} 笔高价挂单已折叠`}
-          detail={`封盘前一级池按 1 ${props.paymentTokenSymbol}/份供应，池子直买更便宜；封盘后这些挂单会恢复显示。`}
-        />
+      {cards(visibleItems)}
+      {foldedItems.length === 0 ? null : (
+        <details className="folded-listings">
+          <summary>
+            {foldedItems.length} 笔高价挂单已折叠 · 展开查看和购买
+          </summary>
+          <p>
+            这些挂单高于一级固定价 1 {props.paymentTokenSymbol}/份，仍可购买。
+            一级购买可能受上限或暂停等限制，请先核对对应市场的购买条件。
+          </p>
+          {cards(foldedItems)}
+        </details>
       )}
-      <div className="listing-catalog">
-        {visibleItems.map((item) => (
-          <ListingCard
-            key={item.listingId}
-            item={item}
-            paymentTokenSymbol={props.paymentTokenSymbol}
-            selected={item.listingId === props.selectedListingId}
-            onSelect={props.onSelectListing}
-          />
-        ))}
-      </div>
     </>
   );
 }
@@ -400,6 +412,7 @@ function PositionCard(props: {
   onOpenMarket: (market: Address) => void;
 }) {
   const claimableWinner = isClaimableWinningPosition(props.item);
+  const refundable = props.item.marketState === 2 && props.item.balance > 0n;
   const status =
     props.item.source === "live"
       ? `链上已确认${props.syncing ? " · 目录同步中" : ""}`
@@ -416,13 +429,16 @@ function PositionCard(props: {
       {claimableWinner ? (
         <span className="position-claim-note">胜出款待领取</span>
       ) : null}
+      {refundable ? (
+        <span className="position-claim-note">本金待退款</span>
+      ) : null}
       <span className="mono">{short(props.item.vault)}</span>
-      {claimableWinner ? (
+      {claimableWinner || refundable ? (
         <a
           className="button primary wide button-link"
           href={`#/settlement/${props.item.vault}`}
         >
-          去领取胜出款
+          {refundable ? "去退还本金" : "去领取胜出款"}
         </a>
       ) : (
         <button
@@ -708,6 +724,7 @@ function syncDetail(
 
 export function ListingCard(props: {
   item: IndexedListing;
+  creator?: Address;
   paymentTokenSymbol: string;
   selected: boolean;
   onSelect: (listing: IndexedListing) => void;
@@ -726,6 +743,11 @@ export function ListingCard(props: {
         {formatShares(props.item.remainingUnits)} 份 ×{" "}
         {formatPayment(props.item.unitPrice, props.paymentTokenSymbol)}
       </strong>
+      <span className="mono listing-seller">卖家 {props.item.seller}</span>
+      {props.creator !== undefined &&
+      props.item.seller.toLowerCase() === props.creator.toLowerCase() ? (
+        <span className="status-pill">creator 本人</span>
+      ) : null}
       <span className="mono">Vault {short(props.item.vault)}</span>
       <small className="mono">挂单 {short(props.item.listingId)}</small>
       <small>

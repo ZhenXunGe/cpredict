@@ -107,7 +107,7 @@ describe("positions page synchronization", () => {
   it("keeps voided shares visible until they are refunded", () => {
     const html = renderToStaticMarkup(
       <PositionsPage
-        market={market({ marketState: 2, winningOutcome: 0 })}
+        market={market({ marketState: 2, voidReason: 1, winningOutcome: 0 })}
         account={account([2_000_000n, 5_000_000n])}
         wallet={{ address: OWNER } as unknown as ConnectedWallet}
         indexerEnabled
@@ -120,6 +120,9 @@ describe("positions page synchronization", () => {
     expect(html).toContain(">2 份<");
     expect(html).toContain(">5 份<");
     expect(html).toContain("结果 2");
+    expect(html).toContain("本金待退款");
+    expect(html).toContain("去退还本金");
+    expect(html).toContain(`href="#/settlement/${MARKET}"`);
     expect(html).not.toContain("胜出款待领取");
     expect(html).not.toContain("去领取胜出款");
   });
@@ -286,7 +289,8 @@ function market(overrides: Partial<MarketSnapshot> = {}): MarketSnapshot {
     outcomeCount: 2,
     createdAt: 1_899_999_000n,
     closeAt: 1_900_001_000n,
-    earlyBirdStart: 1_899_999_500n,
+    eventStartsAt: null,
+    outcomeDeadlineAt: 1_900_001_000n,
     featureFlags: 0n,
     perUserPrimaryCap: 10_000_000n,
     marketPrimaryCap: 20_000_000n,

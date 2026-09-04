@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Address, PublicClient } from "viem";
-import type { MarketRules } from "../../../offchain/sdk/src/index.js";
+import {
+  marketRulesMatchTimes,
+  type MarketRules,
+} from "../../../offchain/sdk/src/index.js";
 import {
   fetchMarketCatalog,
   fetchMarketRules,
@@ -768,11 +771,12 @@ export function settlementAvailability(
   if (
     market.status !== "open" ||
     market.closeAt === null ||
+    market.outcomeDeadlineAt === null ||
     market.resolutionWindow === null ||
     observedAt < market.closeAt
   )
     return null;
-  const deadline = market.closeAt + market.resolutionWindow;
+  const deadline = market.outcomeDeadlineAt + market.resolutionWindow;
   if (observedAt >= deadline) return { kind: "timeout-ready", deadline };
   if (wallet !== null && market.creator.toLowerCase() === wallet.toLowerCase())
     return { kind: "creator-ready", deadline };
@@ -907,8 +911,14 @@ async function loadEntries(input: {
           ...(input.signal === undefined ? {} : { signal: input.signal }),
         });
         if (
-          market.closeAt !== null &&
-          BigInt(rules.closesAt) !== market.closeAt
+          !marketRulesMatchTimes(rules, {
+            ...market,
+            resolutionDeadlineAt:
+              market.outcomeDeadlineAt === null ||
+              market.resolutionWindow === null
+                ? null
+                : market.outcomeDeadlineAt + market.resolutionWindow,
+          })
         )
           return { market, rules: null };
         return {

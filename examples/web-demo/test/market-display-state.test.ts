@@ -59,6 +59,17 @@ describe("market display state", () => {
     expect(
       marketDisplayState({
         marketState: 2,
+        voidReason: 2,
+        observedAt: 99n,
+        closeAt: 100n,
+      }),
+    ).toEqual({
+      label: "零胜方份额作废",
+      primaryBuyOpen: false,
+    });
+    expect(
+      marketDisplayState({
+        marketState: 2,
         voidReason: 3,
         observedAt: 99n,
         closeAt: 100n,

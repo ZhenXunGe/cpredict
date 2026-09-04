@@ -80,7 +80,8 @@ describe("React protocol call examples", () => {
             resolutionSourceURI: "https://example.invalid/result",
             outcomeCount: 2,
             closeAt: 1_900_000_000n,
-            earlyBirdStart: 1_800_000_000n,
+            eventStartsAt: 0n,
+            outcomeDeadlineAt: 1_900_000_000n,
             creatorTreasury: address,
             deploymentMode: 0,
             featureFlags: 0n,
@@ -209,7 +210,7 @@ describe("React protocol call examples", () => {
     ).toBe("window-expired");
     expect(
       creatorSettlementPhase({
-        marketState: 3,
+        marketState: 2,
         observedAt: 150n,
         closeAt: 100n,
         resolutionDeadline: 200n,
@@ -343,44 +344,34 @@ describe("React protocol call examples", () => {
       active: true,
       observedAt: 1_800_000_000n,
     };
-    expect(
-      quoteFillFromChain(listing, address, 1_000_000n, 1_900_000_000n),
-    ).toBe(900_000n);
+    expect(quoteFillFromChain(listing, address, 1_000_000n)).toBe(900_000n);
     expect(() =>
-      quoteFillFromChain(
-        { ...listing, active: false },
-        address,
-        1_000_000n,
-        1_900_000_000n,
-      ),
+      quoteFillFromChain({ ...listing, active: false }, address, 1_000_000n),
     ).toThrow("已失效");
     expect(() =>
       quoteFillFromChain(
         { ...listing, observedAt: listing.expiresAt },
         address,
         1_000_000n,
-        1_900_000_000n,
       ),
     ).toThrow("已过期");
-    expect(() =>
-      quoteFillFromChain(listing, address, 3_000_000n, 1_900_000_000n),
-    ).toThrow("超过");
-    expect(() =>
-      quoteFillFromChain(
-        { ...listing, unitPrice: 1_200_000n },
-        address,
-        1_000_000n,
-        1_900_000_000n,
-      ),
-    ).toThrow("池子直买更便宜");
+    expect(() => quoteFillFromChain(listing, address, 3_000_000n)).toThrow(
+      "超过",
+    );
     expect(
       quoteFillFromChain(
         { ...listing, unitPrice: 1_200_000n },
         address,
         1_000_000n,
-        listing.observedAt,
       ),
     ).toBe(1_200_000n);
+    expect(() =>
+      quoteFillFromChain(
+        { ...listing, vault: "0x00000000000000000000000000000000000000b2" },
+        address,
+        1_000_000n,
+      ),
+    ).toThrow("不属于当前市场");
   });
 
   it("renders both bounded primary-payment authorization paths", () => {
