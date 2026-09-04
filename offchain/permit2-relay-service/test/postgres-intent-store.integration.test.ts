@@ -21,7 +21,10 @@ suite("PostgresPermit2RelayIntentStore integration", () => {
     const scoped = new URL(databaseUrl);
     scoped.searchParams.set("options", `-csearch_path=${schema}`);
     const migration = await readFile(
-      new URL("../../paymaster-service/migrations/002_permit2_relay_intents.sql", import.meta.url),
+      new URL(
+        "../../paymaster-service/migrations/002_permit2_relay_intents.sql",
+        import.meta.url,
+      ),
       "utf8",
     );
     const migrationSql = postgres(scoped.toString(), { max: 1 });
@@ -40,13 +43,17 @@ suite("PostgresPermit2RelayIntentStore integration", () => {
 
   it("atomically acquires once and preserves the submitted hash on replay", async () => {
     const input = reservationInput();
-    const attempts = await Promise.all([store.reserve(input), store.reserve(input)]);
+    const attempts = await Promise.all([
+      store.reserve(input),
+      store.reserve(input),
+    ]);
     expect(attempts.map((result) => result.kind).sort()).toEqual([
       "acquired",
       "pending",
     ]);
     const acquired = attempts.find((result) => result.kind === "acquired");
-    if (acquired?.kind !== "acquired") throw new Error("missing acquired intent");
+    if (acquired?.kind !== "acquired")
+      throw new Error("missing acquired intent");
     const hash = `0x${"77".repeat(32)}` as Hex;
     await acquired.markSubmitted(hash);
     await expect(store.find(input.intentId)).resolves.toEqual({
@@ -60,13 +67,20 @@ suite("PostgresPermit2RelayIntentStore integration", () => {
   });
 
   it("reserves each Permit2 owner nonce only once across different intent bodies", async () => {
-    const first = reservationInput();
+    // A distinct operation from the submitted intent in the preceding test.
+    const first = {
+      ...reservationInput(),
+      intentId: `0x${"33".repeat(32)}` as Hex,
+      permitNonce: 8n,
+    };
     const second = {
       ...first,
       intentId: `0x${"22".repeat(32)}` as Hex,
       vault: getAddress("0x4444444444444444444444444444444444444444"),
     };
-    await expect(store.reserve(first)).resolves.toMatchObject({ kind: "acquired" });
+    await expect(store.reserve(first)).resolves.toMatchObject({
+      kind: "acquired",
+    });
     await expect(store.reserve(second)).resolves.toEqual({ kind: "pending" });
     await expect(store.find(second.intentId)).resolves.toBeNull();
   });

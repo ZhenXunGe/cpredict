@@ -56,15 +56,17 @@ suite("PostgresMetadataStore integration", () => {
     });
     expect(publication.canonicalJson).toBe(encoded.canonicalJson);
     expect(publication.rules).toEqual(rules);
-    await expect(store.publish({
-      challengeId: challenge.challengeId,
-      signature: signature(1),
-      canonicalJson: encoded.canonicalJson,
-      rules,
-      metadataUri: publication.metadataUri,
-      resolutionSourceHash: hash(3),
-      now: 1_800_000_002,
-    })).rejects.toBeInstanceOf(ChallengeUnavailableError);
+    await expect(
+      store.publish({
+        challengeId: challenge.challengeId,
+        signature: signature(1),
+        canonicalJson: encoded.canonicalJson,
+        rules,
+        metadataUri: publication.metadataUri,
+        resolutionSourceHash: hash(3),
+        now: 1_800_000_002,
+      }),
+    ).rejects.toBeInstanceOf(ChallengeUnavailableError);
   });
 
   it("fails readiness without the migration and rejects exact-expiry use", async () => {
@@ -74,34 +76,44 @@ suite("PostgresMetadataStore integration", () => {
     url.searchParams.set("options", `-csearch_path=${missingSchema}`);
     const missingStore = new PostgresMetadataStore(url.toString());
     try {
-      await expect(missingStore.ready()).rejects.toThrow("metadata database migration is not applied");
+      await expect(missingStore.ready()).rejects.toThrow(
+        "metadata database migration is not applied",
+      );
     } finally {
       await missingStore.close();
       await admin.unsafe(`DROP SCHEMA ${missingSchema} CASCADE`);
     }
 
     const encoded = encodeMarketRules(rules);
-    const challenge = { ...challengeFor(encoded.rulesHash, 2), expiresAt: 1_800_000_300 };
+    const challenge = {
+      ...challengeFor(encoded.rulesHash, 2),
+      expiresAt: 1_800_000_300,
+    };
     await store.createChallenge(challenge);
-    await expect(store.publish({
-      challengeId: challenge.challengeId,
-      signature: signature(2),
-      canonicalJson: encoded.canonicalJson,
-      rules,
-      metadataUri: `https://metadata.example/v1/markets/${encoded.rulesHash}/outcomes/{id}.json`,
-      resolutionSourceHash: hash(3),
-      now: challenge.expiresAt,
-    })).rejects.toBeInstanceOf(ChallengeUnavailableError);
+    await expect(
+      store.publish({
+        challengeId: challenge.challengeId,
+        signature: signature(2),
+        canonicalJson: encoded.canonicalJson,
+        rules,
+        metadataUri: `https://metadata.example/v1/markets/${encoded.rulesHash}/outcomes/{id}.json`,
+        resolutionSourceHash: hash(3),
+        now: challenge.expiresAt,
+      }),
+    ).rejects.toBeInstanceOf(ChallengeUnavailableError);
   });
 });
 
 const factory = getAddress("0x000000000000000000000000000000000000f001");
 const creator = getAddress("0x000000000000000000000000000000000000c001");
 const rules: MarketRules = {
-  version: "cpredict-rules-v1",
+  version: "cpredict-rules-v2",
   question: "Will the published public result be Yes?",
   outcomes: ["Yes", "No"],
-  closesAt: 1_900_000_000,
+  closeAt: 1_900_000_000,
+  eventStartsAt: null,
+  outcomeDeadlineAt: 1_900_000_000,
+  resolutionDeadlineAt: 1_900_000_000 + 86_400,
   resolutionSource: "https://example.com/result",
   resolutionCriteria: "Use the final result published by the cited source.",
   cancellationPolicy: "Void if no unambiguous result is published in time.",

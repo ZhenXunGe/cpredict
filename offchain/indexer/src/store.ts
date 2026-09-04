@@ -43,12 +43,14 @@ export interface MarketView {
   deploymentMode: number;
   outcomeCount: number | null;
   closeAt: bigint | null;
+  createdAt: bigint | null;
+  eventStartsAt: bigint | null;
+  outcomeDeadlineAt: bigint | null;
   resolutionWindow: bigint | null;
   rulesHash: Hex | null;
   metadataUri: string | null;
   resolutionSourceHash: Hex | null;
   resolutionSourceUri: string | null;
-  earlyBirdStart: bigint | null;
   creatorTreasury: Address | null;
   featureFlags: bigint | null;
   marketPrimaryCap: bigint | null;
