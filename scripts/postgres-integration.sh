@@ -202,4 +202,14 @@ node "$repo_root/scripts/postgres-assert-vitest-report.mjs" \
   "$postgres_run_root/metadata-postgresql.json" \
   metadata-postgresql
 
-printf 'POSTGRES_GATE_TOTALS=14/14/0/0/0\n'
+TEST_DATABASE_URL="$test_database_url" "$repo_root/node_modules/.bin/vitest" run \
+  offchain/workers/test/postgres-state.integration.test.ts \
+  --maxWorkers=1 \
+  --reporter=verbose \
+  --reporter=json \
+  --outputFile.json="$postgres_run_root/worker-postgresql.json"
+node "$repo_root/scripts/postgres-assert-vitest-report.mjs" \
+  "$postgres_run_root/worker-postgresql.json" \
+  worker-postgresql
+
+printf 'POSTGRES_GATE_TOTALS=17/17/0/0/0\n'
