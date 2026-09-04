@@ -108,6 +108,8 @@ function validateTimeout(timeout, path, { zeroParticipant = false } = {}) {
     "market",
     "mode",
     "closeAt",
+    "outcomeDeadlineAt",
+    "resolutionWindow",
     "deadline",
     "voidReceipt",
     "slashedBond",
@@ -126,9 +128,18 @@ function validateTimeout(timeout, path, { zeroParticipant = false } = {}) {
   if (!["FULL", "CLONE"].includes(timeout.mode))
     throw new Error(`${path}.mode: must be FULL or CLONE`);
   assertInteger(timeout.closeAt, `${path}.closeAt`, { min: 1 });
+  assertInteger(timeout.outcomeDeadlineAt, `${path}.outcomeDeadlineAt`, {
+    min: timeout.closeAt,
+  });
+  assertInteger(timeout.resolutionWindow, `${path}.resolutionWindow`, {
+    min: 900,
+    max: 30 * 86_400,
+  });
   assertInteger(timeout.deadline, `${path}.deadline`, { min: 1 });
-  if (timeout.deadline !== timeout.closeAt + 86_400)
-    throw new Error(`${path}.deadline: must equal closeAt + 86400`);
+  if (timeout.deadline !== timeout.outcomeDeadlineAt + timeout.resolutionWindow)
+    throw new Error(
+      `${path}.deadline: must equal outcomeDeadlineAt + frozen resolutionWindow`,
+    );
   validateReceipt(timeout.voidReceipt, `${path}.voidReceipt`);
   if (timeout.voidReceipt.timestamp < timeout.deadline)
     throw new Error(
@@ -261,7 +272,11 @@ export function validateCanaryEvidence(evidence) {
     ],
     "canary",
   );
-  assertRuntimeEvidence(evidence, "cpredict.arbitrum-sepolia.canary.v1", "canary");
+  assertRuntimeEvidence(
+    evidence,
+    "cpredict.arbitrum-sepolia.canary.v1",
+    "canary",
+  );
   if (evidence.status !== "COMPLETE")
     throw new Error("canary.status: must equal COMPLETE");
   assertTimestamp(evidence.generatedAt, "canary.generatedAt");
@@ -387,7 +402,9 @@ async function main() {
       "usage: node scripts/deployment/validate-canary-evidence.mjs <canary-evidence.json>",
     );
   const result = validateCanaryEvidence(await readJson(path));
-  process.stdout.write(`PASS Arbitrum Sepolia canary evidence ${result.sha256}\n`);
+  process.stdout.write(
+    `PASS Arbitrum Sepolia canary evidence ${result.sha256}\n`,
+  );
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href)
