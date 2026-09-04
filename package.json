@@ -14,6 +14,7 @@
     "demo:build": "npm run demo:validators:check && vite build --config examples/web-demo/vite.config.ts",
     "demo:preview": "npm run demo:validators:check && vite preview --config examples/web-demo/vite.config.ts",
     "demo:test": "vitest run examples/web-demo/test",
+    "demo:test:browser": "playwright test --config examples/web-demo/test/browser/playwright.config.ts",
     "build:offchain": "tsc -p tsconfig.json",
     "start:paymaster-service": "node dist/offchain/paymaster-service/src/main.js",
     "start:permit2-relay-service": "node dist/offchain/permit2-relay-service/src/main.js",
@@ -93,6 +94,7 @@
     "@vitejs/plugin-react": "6.1.1",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
+    "playwright": "1.63.0-alpha-2026-08-31",
     "typescript": "7.0.2",
     "vite": "8.2.1",
     "vitest": "4.1.10"
