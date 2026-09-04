@@ -148,7 +148,8 @@ npm run canary:arbitrum-sepolia -- finish --manifest ... --adapter ...
 `deployments/arbitrum-sepolia/CANARY-ADAPTER.md`。Runner 在调用前原子写入 `STARTING/FINISHING`，锁定
 manifest、source manifest、adapter SHA、部署 identity 和三个账户。中断后只能调用 receipt/state 驱动的
 resume 方法，禁止盲发。Paymaster 不 ready 时在任何交易前写 `BLOCKED`；RPC 区块时间未达到
-`closeAt + 86400` 时拒绝 finish。完整输出仍须通过现有 canary validator。
+`outcomeDeadlineAt + resolutionWindow` 时拒绝 finish；adapter 必须报告实际冻结窗口和结果判断截止，
+不能套用封盘加 24 小时。完整输出仍须通过现有 canary validator。
 
 ## 7. 备份、恢复与故障演练
 
