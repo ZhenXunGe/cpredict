@@ -1,4 +1,5 @@
 import {
+  BaseError,
   type Abi,
   type Account,
   type Address,
@@ -40,6 +41,7 @@ import {
 import { normalizeEvidenceHash, ZERO_EVIDENCE_HASH } from "./evidence.js";
 import {
   sendTransactionWithGasPolicy,
+  GasPolicyError,
   type GasPolicyOperation,
 } from "./transaction-policy.js";
 
@@ -47,6 +49,16 @@ export interface TransactionResult {
   hash: `0x${string}`;
   blockNumber: bigint;
   gasUsed: bigint;
+}
+
+/** Submission transport failed without a hash; absence of a hash is not proof of no broadcast. */
+export class BondSubmissionUnknownError extends Error {
+  constructor(cause: unknown) {
+    super("钱包提交结果未知，未取得交易哈希；请核对钱包记录，不要重复提交。", {
+      cause,
+    });
+    this.name = "BondSubmissionUnknownError";
+  }
 }
 
 export interface CreateMarketResult extends TransactionResult {
@@ -136,6 +148,19 @@ export class CpredictClient {
     return { ...execution.result, market: created.args.market };
   }
 
+  async readCreationTiming(
+    factory: Address,
+  ): Promise<{ observedAt: bigint; resolutionWindow: bigint }> {
+    const block = await this.publicClient.getBlock({ blockTag: "latest" });
+    const resolutionWindow = await this.publicClient.readContract({
+      address: factory,
+      abi: marketFactoryAbi,
+      functionName: "resolutionWindow",
+      blockNumber: block.number,
+    });
+    return { observedAt: block.timestamp, resolutionWindow };
+  }
+
   async buy(input: BuyInput): Promise<TransactionResult> {
     const value = buyInputSchema.parse(input);
     return this.execute("primary-buy", value.vault, marketVaultAbi, "buy", [
@@ -175,7 +200,8 @@ export class CpredictClient {
       resolutionSourceHash: `0x${string}`;
       resolutionSourceURI: string;
       closeAt: bigint;
-      earlyBirdStart: bigint;
+      eventStartsAt: bigint;
+      outcomeDeadlineAt: bigint;
       creatorTreasury: Address;
       featureFlags: bigint;
     },
@@ -185,16 +211,7 @@ export class CpredictClient {
       vault,
       marketVaultAbi,
       "updateBeforeFirstBuy",
-      [
-        input.rulesHash,
-        input.metadataURI,
-        input.resolutionSourceHash,
-        input.resolutionSourceURI,
-        input.closeAt,
-        input.earlyBirdStart,
-        input.creatorTreasury,
-        input.featureFlags,
-      ],
+      [input],
     );
   }
 
@@ -389,6 +406,7 @@ export class CpredictClient {
   async settleBond(
     bondEscrow: Address,
     market: Address,
+    onSubmitted?: (hash: Hex) => void,
   ): Promise<TransactionResult> {
     return this.execute(
       "bond-settlement",
@@ -396,6 +414,7 @@ export class CpredictClient {
       bondEscrowAbi,
       "settleBond",
       [market],
+      onSubmitted,
     );
   }
 
@@ -406,10 +425,16 @@ export class CpredictClient {
   async claimBondFor(
     bondEscrow: Address,
     creator: Address,
+    onSubmitted?: (hash: Hex) => void,
   ): Promise<TransactionResult> {
-    return this.execute("claim", bondEscrow, bondEscrowAbi, "claimFor", [
-      creator,
-    ]);
+    return this.execute(
+      "claim",
+      bondEscrow,
+      bondEscrowAbi,
+      "claimFor",
+      [creator],
+      onSubmitted,
+    );
   }
 
   async syncExposure(
@@ -434,6 +459,7 @@ export class CpredictClient {
     abi: TAbi,
     functionName: TFunctionName,
     args: ContractFunctionArgs<TAbi, "nonpayable", TFunctionName>,
+    onSubmitted?: (hash: Hex) => void,
   ): Promise<TransactionResult> {
     const execution = await this.executeWithReceipt(
       operation,
@@ -441,6 +467,7 @@ export class CpredictClient {
       abi,
       functionName,
       args,
+      onSubmitted,
     );
     return execution.result;
   }
@@ -454,6 +481,7 @@ export class CpredictClient {
     abi: TAbi,
     functionName: TFunctionName,
     args: ContractFunctionArgs<TAbi, "nonpayable", TFunctionName>,
+    onSubmitted?: (hash: Hex) => void,
   ): Promise<{ result: TransactionResult; logs: Log[] }> {
     await this.publicClient.simulateContract({
       account: this.account,
@@ -474,7 +502,37 @@ export class CpredictClient {
         to: address,
         data,
       },
-    );
+    ).catch((cause: unknown) => {
+      const rejected =
+        cause instanceof BaseError
+          ? cause.walk(
+              (error) =>
+                typeof error === "object" &&
+                error !== null &&
+                "code" in error &&
+                error.code === 4001,
+            )
+          : cause;
+      const userRejected =
+        typeof rejected === "object" &&
+        rejected !== null &&
+        "code" in rejected &&
+        rejected.code === 4001;
+      if (
+        onSubmitted !== undefined &&
+        !(cause instanceof GasPolicyError) &&
+        !userRejected
+      ) {
+        throw new BondSubmissionUnknownError(cause);
+      }
+      throw cause;
+    });
+    // A UI observer can retain the submitted identity, but cannot change receipt handling.
+    try {
+      onSubmitted?.(hash);
+    } catch {
+      // Continue waiting for the actual transaction even if its UI observer failed.
+    }
     const receipt = await this.publicClient.waitForTransactionReceipt({
       hash,
       confirmations: 1,
