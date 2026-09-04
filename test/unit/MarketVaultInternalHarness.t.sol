@@ -15,7 +15,7 @@ contract MarketVaultInternalHarness is MarketVaultCoreV1 {
 
     function configureWeight(bool enabled, uint64 start, uint64 close) external {
         featureFlags = enabled ? ProtocolTypes.FEATURE_EARLY_BIRD : 0;
-        earlyBirdStart = start;
+        createdAt = start;
         closeAt = close;
     }
 
@@ -82,11 +82,27 @@ contract MarketVaultInternalHarnessTest is Test {
         harness.configureWeight(false, 100, 400);
         assertEq(harness.exposedEarlyBirdWeight(50), 0);
         harness.configureWeight(true, 100, 400);
-        assertEq(harness.exposedEarlyBirdWeight(99), 3);
+        assertEq(harness.exposedEarlyBirdWeight(99), 0);
         assertEq(harness.exposedEarlyBirdWeight(100), 3);
-        assertEq(harness.exposedEarlyBirdWeight(201), 2);
-        assertEq(harness.exposedEarlyBirdWeight(301), 1);
+        assertEq(harness.exposedEarlyBirdWeight(199), 3);
+        assertEq(harness.exposedEarlyBirdWeight(200), 2);
+        assertEq(harness.exposedEarlyBirdWeight(299), 2);
+        assertEq(harness.exposedEarlyBirdWeight(300), 1);
         assertEq(harness.exposedEarlyBirdWeight(400), 0);
+    }
+
+    function testFuzzEarlyBirdThirdsDoNotRoundTheDuration(uint64 rawDuration) public {
+        uint64 duration = uint64(bound(rawDuration, 5 minutes, 90 days));
+        uint64 start = 100;
+        harness.configureWeight(true, start, start + duration);
+        uint256 firstBoundary = start + (uint256(duration) + 2) / 3;
+        uint256 secondBoundary = start + (uint256(duration) * 2 + 2) / 3;
+        assertEq(harness.exposedEarlyBirdWeight(firstBoundary - 1), 3);
+        assertEq(harness.exposedEarlyBirdWeight(firstBoundary), 2);
+        assertEq(harness.exposedEarlyBirdWeight(secondBoundary - 1), 2);
+        assertEq(harness.exposedEarlyBirdWeight(secondBoundary), 1);
+        assertEq(harness.exposedEarlyBirdWeight(start + duration - 1), 1);
+        assertEq(harness.exposedEarlyBirdWeight(start + duration), 0);
     }
 
     function testRemainingPoolRejectsCorruptUnitsAndAssignsRemainderExactly() public {
@@ -128,15 +144,11 @@ contract MarketVaultInternalHarnessTest is Test {
         harness.exposedAssertCoverage();
         assertEq(harness.guardExposure(), 500);
 
-        harness.configureCoverage(
-            token, ProtocolTypes.MarketState.VOIDED, 0, 0, 0, 600, 100
-        );
+        harness.configureCoverage(token, ProtocolTypes.MarketState.VOIDED, 0, 0, 0, 600, 100);
         harness.exposedAssertCoverage();
         assertEq(harness.guardExposure(), 700);
 
-        harness.configureCoverage(
-            token, ProtocolTypes.MarketState.VOIDED, 0, 0, 0, 600, 500
-        );
+        harness.configureCoverage(token, ProtocolTypes.MarketState.VOIDED, 0, 0, 0, 600, 500);
         vm.expectPartialRevert(Insolvent.selector);
         harness.exposedAssertCoverage();
     }

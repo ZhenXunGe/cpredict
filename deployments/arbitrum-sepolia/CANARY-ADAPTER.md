@@ -22,3 +22,11 @@ block timestamp. Local Anvil adapters must not claim `ARBITRUM_SEPOLIA_RUNTIME`.
 
 This interface is intentionally external: the reviewed wallet/KMS implementation and access policy
 belong to the deployment environment, not the public repository.
+
+# Target time-model cutover
+
+Timeout seeds and canary evidence must include `closeAt`, `outcomeDeadlineAt`,
+`resolutionWindow` (the market's frozen value) and `deadline`.
+`deadline = outcomeDeadlineAt + resolutionWindow`; do not infer it from close or assume 24 hours.
+Read these values from the exact deployed market. Creator resolution remains available immediately
+after close, before the deadline. Old seed records cannot be used as target-version evidence.

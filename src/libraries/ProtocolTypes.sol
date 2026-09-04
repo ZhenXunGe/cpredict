@@ -41,7 +41,9 @@ library ProtocolTypes {
         string resolutionSourceURI;
         uint8 outcomeCount;
         uint64 closeAt;
-        uint64 earlyBirdStart;
+        // Zero represents an explicitly unknown event start; never a guessed timestamp.
+        uint64 eventStartsAt;
+        uint64 outcomeDeadlineAt;
         address creatorTreasury;
         DeploymentMode deploymentMode;
         uint256 featureFlags;
@@ -52,6 +54,18 @@ library ProtocolTypes {
         uint128 minimumPrimaryUnits;
         uint128 minimumC2CUnits;
         uint128 creatorBond;
+    }
+
+    struct MarketTerms {
+        bytes32 rulesHash;
+        string metadataURI;
+        bytes32 resolutionSourceHash;
+        string resolutionSourceURI;
+        uint64 closeAt;
+        uint64 eventStartsAt;
+        uint64 outcomeDeadlineAt;
+        address creatorTreasury;
+        uint256 featureFlags;
     }
 
     struct EconomicSnapshot {
@@ -80,7 +94,8 @@ library ProtocolTypes {
         uint8 outcomeCount;
         uint64 createdAt;
         uint64 closeAt;
-        uint64 earlyBirdStart;
+        uint64 eventStartsAt;
+        uint64 outcomeDeadlineAt;
         uint64 resolutionWindow;
         address creatorTreasury;
         DeploymentMode deploymentMode;
