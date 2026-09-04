@@ -38,6 +38,8 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@typescript/typescript-win32-x64@7.0.2:node_modules/@typescript/typescript-win32-x64
 - npm:detect-libc@2.1.2:node_modules/detect-libc
 - npm:expect-type@1.4.0:node_modules/expect-type
+- npm:playwright-core@1.63.0-alpha-2026-08-31:node_modules/playwright-core
+- npm:playwright@1.63.0-alpha-2026-08-31:node_modules/playwright
 - npm:prom-client@15.1.3:node_modules/prom-client
 - npm:typescript@7.0.2:node_modules/typescript
 

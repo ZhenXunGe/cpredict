@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 53436,
+      "astId": 57114,
       "contract": "src/core/EmergencyControllerV1.sol:EmergencyControllerV1",
       "label": "emergencySafe",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_address"
     },
     {
-      "astId": 53439,
+      "astId": 57117,
       "contract": "src/core/EmergencyControllerV1.sol:EmergencyControllerV1",
       "label": "epoch",
       "offset": 20,
@@ -17,7 +17,7 @@
       "type": "t_uint64"
     },
     {
-      "astId": 53441,
+      "astId": 57119,
       "contract": "src/core/EmergencyControllerV1.sol:EmergencyControllerV1",
       "label": "pauseExpiresAt",
       "offset": 0,
@@ -25,7 +25,7 @@
       "type": "t_uint64"
     },
     {
-      "astId": 53443,
+      "astId": 57121,
       "contract": "src/core/EmergencyControllerV1.sol:EmergencyControllerV1",
       "label": "pausedFlags",
       "offset": 0,
@@ -33,7 +33,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 53447,
+      "astId": 57125,
       "contract": "src/core/EmergencyControllerV1.sol:EmergencyControllerV1",
       "label": "epochUsed",
       "offset": 0,

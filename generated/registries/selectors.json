@@ -261,8 +261,8 @@
   },
   {
     "contract": "MarketFactoryV1",
-    "signature": "createMarket((bytes32,string,bytes32,string,uint8,uint64,uint64,address,uint8,uint256,uint16,uint16,uint128,uint128,uint128,uint128,uint128),bytes32)",
-    "selector": "0x16fd1c2b"
+    "signature": "createMarket((bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,address,uint8,uint256,uint16,uint16,uint128,uint128,uint128,uint128,uint128),bytes32)",
+    "selector": "0x03568f41"
   },
   {
     "contract": "ProtocolConfigV1",
@@ -416,16 +416,6 @@
   },
   {
     "contract": "CloneMarketVaultV1",
-    "signature": "earlyBirdStart()",
-    "selector": "0x803d33b9"
-  },
-  {
-    "contract": "FullMarketVaultV1",
-    "signature": "earlyBirdStart()",
-    "selector": "0x803d33b9"
-  },
-  {
-    "contract": "CloneMarketVaultV1",
     "signature": "economics()",
     "selector": "0x2e239d97"
   },
@@ -483,6 +473,16 @@
     "contract": "EmergencyControllerV1",
     "signature": "epochUsed(uint64)",
     "selector": "0xfa97d189"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "eventStartsAt()",
+    "selector": "0xeecfb46d"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "eventStartsAt()",
+    "selector": "0xeecfb46d"
   },
   {
     "contract": "CloneMarketVaultV1",
@@ -756,13 +756,13 @@
   },
   {
     "contract": "CloneMarketVaultV1",
-    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
-    "selector": "0xa71d63be"
+    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
+    "selector": "0x89ef4947"
   },
   {
     "contract": "FullMarketVaultV1",
-    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
-    "selector": "0xa71d63be"
+    "signature": "initialize((address,address,address,address,address,address,address,address,address,bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,uint64,uint64,address,uint8,uint256,uint128,uint128,uint128,uint128,uint128,(uint16,uint16,uint16,uint16,uint16,address)))",
+    "selector": "0x89ef4947"
   },
   {
     "contract": "CloneMarketVaultV1",
@@ -1008,6 +1008,16 @@
     "contract": "FullMarketVaultV1",
     "signature": "outcomeCount()",
     "selector": "0xd300cb31"
+  },
+  {
+    "contract": "CloneMarketVaultV1",
+    "signature": "outcomeDeadlineAt()",
+    "selector": "0x2c94c7be"
+  },
+  {
+    "contract": "FullMarketVaultV1",
+    "signature": "outcomeDeadlineAt()",
+    "selector": "0x2c94c7be"
   },
   {
     "contract": "EmergencyControllerV1",
@@ -1686,13 +1696,13 @@
   },
   {
     "contract": "CloneMarketVaultV1",
-    "signature": "updateBeforeFirstBuy(bytes32,string,bytes32,string,uint64,uint64,address,uint256)",
-    "selector": "0x28383d31"
+    "signature": "updateBeforeFirstBuy((bytes32,string,bytes32,string,uint64,uint64,uint64,address,uint256))",
+    "selector": "0xc84062d6"
   },
   {
     "contract": "FullMarketVaultV1",
-    "signature": "updateBeforeFirstBuy(bytes32,string,bytes32,string,uint64,uint64,address,uint256)",
-    "selector": "0x28383d31"
+    "signature": "updateBeforeFirstBuy((bytes32,string,bytes32,string,uint64,uint64,uint64,address,uint256))",
+    "selector": "0xc84062d6"
   },
   {
     "contract": "CloneMarketVaultV1",

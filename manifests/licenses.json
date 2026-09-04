@@ -1052,6 +1052,22 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:playwright-core@1.63.0-alpha-2026-08-31:node_modules/playwright-core",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/playwright-core\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:playwright@1.63.0-alpha-2026-08-31:node_modules/playwright",
+      "kind": "development",
+      "declared": "Apache-2.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/playwright\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
       "identity": "npm:postcss@8.5.26:node_modules/postcss",
       "kind": "development",
       "declared": "MIT",

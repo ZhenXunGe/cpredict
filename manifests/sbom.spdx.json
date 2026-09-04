@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "cpredict-protocol-sbom",
-  "documentNamespace": "https://cpredict.example.invalid/spdx/81429ce0573416e28c5ff60945ca8a8bc28bd0b5158157f4b09d229f2b8ca23d",
+  "documentNamespace": "https://cpredict.example.invalid/spdx/377e42c15647194f9aa8ce2da5e231f9239ee167fb2ddd466f3d6c8d29a50343",
   "creationInfo": {
     "created": "1970-01-01T00:00:00Z",
     "creators": [
@@ -2255,6 +2255,40 @@
       "comment": "Locked npm path node_modules/pino; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-61e75a8f8da7611064d0a141",
+      "name": "playwright-core",
+      "versionInfo": "1.63.0-alpha-2026-08-31",
+      "downloadLocation": "https://registry.npmjs.org/playwright-core/-/playwright-core-1.63.0-alpha-2026-08-31.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "d5e9342f2af5da1ea372cfd64dc36856dcd9910a7b0fff743ec32e056fd19ba87702c5806f3a6a8f481e32ff3ef13cf3afd092518be0f64ce7ad56483503175f"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/playwright-core; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-e9b8885b6a9b187051000150",
+      "name": "playwright",
+      "versionInfo": "1.63.0-alpha-2026-08-31",
+      "downloadLocation": "https://registry.npmjs.org/playwright/-/playwright-1.63.0-alpha-2026-08-31.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "dd702cbb39dfbbc8c1549e10c5d1af064b74f9bf19170bb0258c8e7e2230e598d43ab34b35184ac732f32eec9da2ede027d73a78cc15aa0cdd88ec21cb9e0acf"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "Apache-2.0",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/playwright; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-e6686dcc1e834a76c07f8b17",
       "name": "postcss",
       "versionInfo": "8.5.26",
@@ -3937,6 +3971,11 @@
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
     {
+      "spdxElementId": "SPDXRef-Package-61e75a8f8da7611064d0a141",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
       "spdxElementId": "SPDXRef-Package-644d04d75f1f27e4f59b97a2",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
@@ -4682,6 +4721,11 @@
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
     {
+      "spdxElementId": "SPDXRef-Package-e9b8885b6a9b187051000150",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
       "spdxElementId": "SPDXRef-Package-ec2b42ebe808b43f14828f2c",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
@@ -4747,7 +4791,7 @@
       "annotationDate": "1970-01-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: cpredict-sbom-generator-1",
-      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=6cec3388b58c75f084e905339db1bb5b637615a568e07b1d3264b8fe124698bc, package.json=36cd22aeb18863a1d696c76a6623c2f9a45c704683a531e7abee81fda2458604"
+      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=dd0b813010a8a4e4c81a6321deb2fd6d9462a7183c7c4ee468f0a9853f9fb6e3, package.json=fde348a747713f6948aba6e182aee88d9f9a854dbccb6cbc4cc8fe352176c1f8"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 53723,
+      "astId": 57401,
       "contract": "src/core/FeeVaultV1.sol:FeeVaultV1",
       "label": "factory",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_address"
     },
     {
-      "astId": 53725,
+      "astId": 57403,
       "contract": "src/core/FeeVaultV1.sol:FeeVaultV1",
       "label": "totalCredits",
       "offset": 0,
@@ -17,7 +17,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 53729,
+      "astId": 57407,
       "contract": "src/core/FeeVaultV1.sol:FeeVaultV1",
       "label": "authorizedAccruer",
       "offset": 0,
@@ -25,7 +25,7 @@
       "type": "t_mapping(t_address,t_bool)"
     },
     {
-      "astId": 53733,
+      "astId": 57411,
       "contract": "src/core/FeeVaultV1.sol:FeeVaultV1",
       "label": "creditOf",
       "offset": 0,

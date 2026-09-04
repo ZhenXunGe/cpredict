@@ -36,31 +36,31 @@
   },
   {
     "contract": "FullMarketDeployerV1",
-    "creationBytecodeSha256": "8d83f4ec98b2131902b58a709c87c5a63a40dbdc0fd85b96f50418069f3a609f",
-    "runtimeBytecodeSha256": "b0d8a01b21fa2bbd8216d30a0ed22df7e6faf17790aab7d5bb532eca86a948fc",
-    "creationBytes": 24385,
-    "runtimeBytes": 24232
+    "creationBytecodeSha256": "0126e657c95e7e22f59ef04aa73d8f6aa9945ea5915de364da5787159de5798f",
+    "runtimeBytecodeSha256": "e2835055bb6f140cd83e939a053d86c5940675cd2fa208d995de91120c5cfb7d",
+    "creationBytes": 24157,
+    "runtimeBytes": 24004
   },
   {
     "contract": "MarketFactoryV1",
-    "creationBytecodeSha256": "3fef49e0ff06ba3e64bf63f707797c37763cf2a710ec5bd8dc2dad58102fe0d7",
-    "runtimeBytecodeSha256": "dc3b639bb408431aedcaeecae1748631087f94e873c7d4af37529a2ed7aee4d9",
-    "creationBytes": 17349,
-    "runtimeBytes": 16074
+    "creationBytecodeSha256": "9205e413ee8c80cca3726fe764674cabb1798d169de2fb805a74c5792c1237bb",
+    "runtimeBytecodeSha256": "dd7f1bbc8ecb9e008ab6b6dc6064d77462b1e8b6b28b869a86bb06f7d647f68b",
+    "creationBytes": 17620,
+    "runtimeBytes": 16345
   },
   {
     "contract": "FullMarketVaultV1",
-    "creationBytecodeSha256": "53f430654771c59f6a67c16811558494b35888f32b6a089cce8bcd92924e2875",
-    "runtimeBytecodeSha256": "b79436a788e464d38f013ff2a94377e90f9bd96f9f3eba1227cb3ed327d766db",
-    "creationBytes": 23664,
-    "runtimeBytes": 23444
+    "creationBytecodeSha256": "65b9781c534707d05f6cfa43f8490e1efbb79fa88edcec79953e97710393fcdd",
+    "runtimeBytecodeSha256": "ad750d49a6ce2a76068995d29a703991ef0854ccb36bb085f28b524c3ee1688f",
+    "creationBytes": 23436,
+    "runtimeBytes": 23216
   },
   {
     "contract": "CloneMarketVaultV1",
-    "creationBytecodeSha256": "2b21a33eb344df975a5a958a8ff131c968c0582407ddad6ade36d9c6e699a224",
-    "runtimeBytecodeSha256": "b79436a788e464d38f013ff2a94377e90f9bd96f9f3eba1227cb3ed327d766db",
-    "creationBytes": 23677,
-    "runtimeBytes": 23444
+    "creationBytecodeSha256": "f44e341add6f90441d44c4e046f22c1f456fe9e97de14d7a5bdbe79b08139db8",
+    "runtimeBytecodeSha256": "ad750d49a6ce2a76068995d29a703991ef0854ccb36bb085f28b524c3ee1688f",
+    "creationBytes": 23449,
+    "runtimeBytes": 23216
   },
   {
     "contract": "FixedPriceMarketplaceV1",
