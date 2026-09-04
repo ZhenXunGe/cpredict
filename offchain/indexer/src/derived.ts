@@ -33,7 +33,10 @@ export type DerivedMutation =
       creator: Address;
       deploymentMode: number;
       outcomeCount: number;
+      createdAt: bigint;
       closeAt: bigint;
+      eventStartsAt: bigint | null;
+      outcomeDeadlineAt: bigint;
       resolutionWindow: bigint;
       marketPrimaryCap: bigint;
       creatorBond: bigint;
@@ -46,7 +49,8 @@ export type DerivedMutation =
       resolutionSourceHash: Hex;
       resolutionSourceUri: string;
       closeAt: bigint;
-      earlyBirdStart: bigint;
+      eventStartsAt: bigint | null;
+      outcomeDeadlineAt: bigint;
       creatorTreasury: Address;
       featureFlags: bigint;
     }
@@ -182,7 +186,13 @@ export function deriveMutations(
           creator: address(args.creator),
           deploymentMode: number(args.mode),
           outcomeCount: number(args.outcomeCount),
+          createdAt: bigint(args.createdAt),
           closeAt: bigint(args.closeAt),
+          eventStartsAt:
+            bigint(args.eventStartsAt) === 0n
+              ? null
+              : bigint(args.eventStartsAt),
+          outcomeDeadlineAt: bigint(args.outcomeDeadlineAt),
           resolutionWindow: bigint(args.resolutionWindow),
           marketPrimaryCap: bigint(args.marketPrimaryCap),
           creatorBond: bigint(args.creatorBond),
@@ -198,7 +208,11 @@ export function deriveMutations(
           resolutionSourceHash: hex(args.resolutionSourceHash),
           resolutionSourceUri: text(args.resolutionSourceURI),
           closeAt: bigint(args.closeAt),
-          earlyBirdStart: bigint(args.earlyBirdStart),
+          eventStartsAt:
+            bigint(args.eventStartsAt) === 0n
+              ? null
+              : bigint(args.eventStartsAt),
+          outcomeDeadlineAt: bigint(args.outcomeDeadlineAt),
           creatorTreasury: address(args.creatorTreasury),
           featureFlags: bigint(args.featureFlags),
         },

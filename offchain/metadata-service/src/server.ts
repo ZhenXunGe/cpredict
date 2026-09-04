@@ -18,10 +18,7 @@ import {
 } from "../../sdk/src/market-rules.js";
 import { buildMetadataTypedData } from "../../sdk/src/metadata.js";
 import type { MetadataServiceConfig } from "./config.js";
-import {
-  ChallengeUnavailableError,
-  type MetadataStore,
-} from "./types.js";
+import { ChallengeUnavailableError, type MetadataStore } from "./types.js";
 
 const bytes32Schema = z
   .string()
@@ -202,7 +199,19 @@ export async function createMetadataServer(
         attributes: [
           { trait_type: "Outcome", value: outcome },
           { trait_type: "Outcome ID", value: tokenId.toString() },
-          { trait_type: "Closes At", value: publication.rules.closesAt },
+          { trait_type: "Closes At", value: publication.rules.closeAt },
+          {
+            trait_type: "Event Starts At",
+            value: publication.rules.eventStartsAt ?? "unknown",
+          },
+          {
+            trait_type: "Outcome Deadline At",
+            value: publication.rules.outcomeDeadlineAt,
+          },
+          {
+            trait_type: "Resolution Deadline At",
+            value: publication.rules.resolutionDeadlineAt,
+          },
           { trait_type: "Rules Hash", value: publication.rulesHash },
         ],
       };
@@ -233,10 +242,7 @@ export async function createMetadataServer(
   return app;
 }
 
-function immutableJson(
-  reply: FastifyReply,
-  rulesHash: Hex,
-): void {
+function immutableJson(reply: FastifyReply, rulesHash: Hex): void {
   reply.header("content-type", "application/json; charset=utf-8");
   reply.header("cache-control", "public, max-age=31536000, immutable");
   reply.header("etag", `"${rulesHash}"`);

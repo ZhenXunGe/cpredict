@@ -397,6 +397,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
         markets: string | null;
         markets_evidence_hash: boolean;
         markets_rules_hash: boolean;
+        markets_time_fields: boolean;
         activities: string | null;
         activity_participants: string | null;
         markets_chain_created_idx: string | null;
@@ -423,6 +424,10 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
             AND table_name = 'markets'
             AND column_name = 'rules_hash'
         ) AS markets_rules_hash,
+        (SELECT count(*) = 3 FROM information_schema.columns
+          WHERE table_schema = current_schema() AND table_name = 'markets'
+            AND column_name IN ('created_at', 'event_starts_at', 'outcome_deadline_at')
+        ) AS markets_time_fields,
         to_regclass('activities')::text AS activities,
         to_regclass('activity_participants')::text AS activity_participants,
         to_regclass('markets_chain_created_idx')::text AS markets_chain_created_idx,
@@ -439,6 +444,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       row.chain_checkpoints === null ||
       row.markets === null ||
       !row.markets_evidence_hash ||
+      !row.markets_time_fields ||
       !row.markets_rules_hash ||
       row.activities === null ||
       row.activity_participants === null ||
@@ -497,7 +503,7 @@ async function insertRawEvent(db: Db, event: IndexedEvent): Promise<boolean> {
     ) VALUES (
       ${event.chainId}, ${event.blockNumber.toString()}, ${event.blockHash}, ${event.transactionHash},
       ${event.transactionIndex}, ${event.logIndex}, ${event.address},
-      ${JSON.stringify(event.topics)}, ${event.data}, ${event.confirmationStatus}
+      ${db.json([...event.topics])}, ${event.data}, ${event.confirmationStatus}
     ) ON CONFLICT (chain_id, transaction_hash, log_index) DO NOTHING
     RETURNING transaction_hash
   `;
@@ -544,18 +550,22 @@ async function applyMutation(
     case "market-initialized":
       await db`
         INSERT INTO markets (
-          chain_id, market, creator, deployment_mode, outcome_count, close_at, resolution_window,
+          chain_id, market, creator, deployment_mode, outcome_count, created_at, close_at, event_starts_at, outcome_deadline_at, resolution_window,
           market_primary_cap, creator_bond, state, created_block, updated_block,
           confirmation_status
         ) VALUES (
           ${event.chainId}, ${mutation.market}, ${mutation.creator}, ${mutation.deploymentMode},
-          ${mutation.outcomeCount}, ${mutation.closeAt.toString()}, ${mutation.resolutionWindow.toString()},
+          ${mutation.outcomeCount}, ${mutation.createdAt.toString()}, ${mutation.closeAt.toString()},
+          ${mutation.eventStartsAt?.toString() ?? null}, ${mutation.outcomeDeadlineAt.toString()}, ${mutation.resolutionWindow.toString()},
           ${mutation.marketPrimaryCap.toString()}, ${mutation.creatorBond.toString()}, 0,
           ${event.blockNumber.toString()}, ${event.blockNumber.toString()},
           ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, market) DO UPDATE SET
           outcome_count = EXCLUDED.outcome_count,
+          created_at = EXCLUDED.created_at,
           close_at = EXCLUDED.close_at,
+          event_starts_at = EXCLUDED.event_starts_at,
+          outcome_deadline_at = EXCLUDED.outcome_deadline_at,
           resolution_window = EXCLUDED.resolution_window,
           market_primary_cap = EXCLUDED.market_primary_cap,
           creator_bond = EXCLUDED.creator_bond,
@@ -571,7 +581,8 @@ async function applyMutation(
           resolution_source_hash = ${mutation.resolutionSourceHash},
           resolution_source_uri = ${mutation.resolutionSourceUri},
           close_at = ${mutation.closeAt.toString()},
-          early_bird_start = ${mutation.earlyBirdStart.toString()},
+          event_starts_at = ${mutation.eventStartsAt?.toString() ?? null},
+          outcome_deadline_at = ${mutation.outcomeDeadlineAt.toString()},
           creator_treasury = ${mutation.creatorTreasury},
           feature_flags = ${mutation.featureFlags.toString()},
           updated_block = ${event.blockNumber.toString()},
@@ -844,12 +855,14 @@ interface MarketRow {
   deployment_mode: number;
   outcome_count: number | null;
   close_at: string | null;
+  created_at: string | null;
+  event_starts_at: string | null;
+  outcome_deadline_at: string | null;
   resolution_window: string | null;
   rules_hash: Hex | null;
   metadata_uri: string | null;
   resolution_source_hash: Hex | null;
   resolution_source_uri: string | null;
-  early_bird_start: string | null;
   creator_treasury: Address | null;
   feature_flags: string | null;
   market_primary_cap: string | null;
@@ -948,6 +961,19 @@ function mapBlock(chainId: number, row: CanonicalBlockRow): CanonicalBlock {
 }
 
 function mapRawEvent(chainId: number, row: RawEventRow): IndexedEvent {
+  // Corrupt JSON must abort the rebuilding transaction, not turn known events
+  // into unknown topics and silently erase their projections.
+  if (
+    !Array.isArray(row.topics) ||
+    row.topics.length > 4 ||
+    !row.topics.every(
+      (topic) => typeof topic === "string" && /^0x[0-9a-fA-F]{64}$/.test(topic),
+    )
+  ) {
+    throw new Error(
+      "persisted event topics must be an array of bytes32 values",
+    );
+  }
   return {
     chainId,
     blockNumber: BigInt(row.block_number),
@@ -974,14 +1000,17 @@ function mapMarket(row: MarketRow): MarketView {
     deploymentMode: row.deployment_mode,
     outcomeCount: row.outcome_count,
     closeAt: row.close_at === null ? null : BigInt(row.close_at),
+    createdAt: row.created_at === null ? null : BigInt(row.created_at),
+    eventStartsAt:
+      row.event_starts_at === null ? null : BigInt(row.event_starts_at),
+    outcomeDeadlineAt:
+      row.outcome_deadline_at === null ? null : BigInt(row.outcome_deadline_at),
     resolutionWindow:
       row.resolution_window === null ? null : BigInt(row.resolution_window),
     rulesHash: row.rules_hash,
     metadataUri: row.metadata_uri,
     resolutionSourceHash: row.resolution_source_hash,
     resolutionSourceUri: row.resolution_source_uri,
-    earlyBirdStart:
-      row.early_bird_start === null ? null : BigInt(row.early_bird_start),
     creatorTreasury:
       row.creator_treasury === null ? null : getAddress(row.creator_treasury),
     featureFlags: row.feature_flags === null ? null : BigInt(row.feature_flags),

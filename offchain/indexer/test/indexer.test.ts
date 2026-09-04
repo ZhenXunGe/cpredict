@@ -31,10 +31,10 @@ const marketCreatedEvent = parseAbiItem(
   "event MarketCreated(address indexed market,address indexed creator,uint8 indexed deploymentMode,address implementation,bytes32 salt,bytes32 runtimeCodeHash,uint256 creatorNonce,uint256 creationFee,uint256 creatorBond)",
 );
 const marketInitializedEvent = parseAbiItem(
-  "event MarketInitialized(address indexed market,address indexed creator,uint8 indexed mode,uint8 outcomeCount,uint64 closeAt,uint64 resolutionWindow,uint128 marketPrimaryCap,uint128 creatorBond)",
+  "event MarketInitialized(address indexed market,address indexed creator,uint8 indexed mode,uint8 outcomeCount,uint64 createdAt,uint64 closeAt,uint64 eventStartsAt,uint64 outcomeDeadlineAt,uint64 resolutionWindow,uint128 marketPrimaryCap,uint128 creatorBond)",
 );
 const marketMetadataUpdatedEvent = parseAbiItem(
-  "event MarketMetadataUpdated(bytes32 indexed rulesHash,string metadataURI,bytes32 indexed resolutionSourceHash,string resolutionSourceURI,uint64 closeAt,uint64 earlyBirdStart,address indexed creatorTreasury,uint256 featureFlags)",
+  "event MarketMetadataUpdated(bytes32 indexed rulesHash,string metadataURI,bytes32 indexed resolutionSourceHash,string resolutionSourceURI,uint64 closeAt,uint64 eventStartsAt,uint64 outcomeDeadlineAt,address indexed creatorTreasury,uint256 featureFlags)",
 );
 const primaryPurchasedEvent = parseAbiItem(
   "event PrimaryPurchased(address indexed buyer,uint256 indexed outcomeId,uint256 desiredUnits,uint256 filledUnits,uint256 payment,uint8 earlyBirdWeight,uint256 cumulativeUserPrimary,uint256 totalPrincipal)",
@@ -96,6 +96,9 @@ describe("ChainIndexer canonical ingestion", () => {
     expect(await store.market(CHAIN_ID, MARKET_A)).toMatchObject({
       outcomeCount: 2,
       closeAt: 1_000n,
+      createdAt: 100n,
+      eventStartsAt: 1_001n,
+      outcomeDeadlineAt: 2_000n,
     });
   });
 
@@ -309,7 +312,6 @@ describe("ChainIndexer canonical ingestion", () => {
       metadataUri: "https://metadata.example/markets/{id}.json",
       resolutionSourceHash: sourceHash,
       resolutionSourceUri: "https://source.example/result",
-      earlyBirdStart: 900n,
       creatorTreasury: CREATOR,
       featureFlags: 3n,
       primaryFilledUnits: 7n,
@@ -366,7 +368,7 @@ describe("ChainIndexer canonical ingestion", () => {
     expect(second.nextCursor).toBeUndefined();
   });
 
-  it("materializes deterministic evidence for resolve, creator void, and timeout void", async () => {
+  it("materializes deterministic evidence for resolve and every void reason", async () => {
     const scenarios = [
       {
         terminal: marketResolvedLog(2n, MARKET_A, EVIDENCE_HASH),
@@ -378,6 +380,13 @@ describe("ChainIndexer canonical ingestion", () => {
         terminal: marketVoidedLog(2n, MARKET_A, 1, EVIDENCE_HASH),
         state: 2,
         voidReason: 1,
+        winningOutcome: null,
+        evidenceHash: EVIDENCE_HASH,
+      },
+      {
+        terminal: marketVoidedLog(2n, MARKET_A, 2, EVIDENCE_HASH),
+        state: 2,
+        voidReason: 2,
         winningOutcome: null,
         evidenceHash: EVIDENCE_HASH,
       },
@@ -564,10 +573,13 @@ function marketInitializedLog(blockNumber: bigint, market: Address): Log {
         { type: "uint8" },
         { type: "uint64" },
         { type: "uint64" },
+        { type: "uint64" },
+        { type: "uint64" },
+        { type: "uint64" },
         { type: "uint128" },
         { type: "uint128" },
       ],
-      [2, 1_000n, 86_400n, 500_000_000n, 10_000_000n],
+      [2, 100n, 1_000n, 1_001n, 2_000n, 86_400n, 500_000_000n, 10_000_000n],
     ),
   );
 }
@@ -597,13 +609,15 @@ function marketMetadataUpdatedLog(
         { type: "string" },
         { type: "uint64" },
         { type: "uint64" },
+        { type: "uint64" },
         { type: "uint256" },
       ],
       [
         "https://metadata.example/markets/{id}.json",
         "https://source.example/result",
         1_000n,
-        900n,
+        0n,
+        3_000n,
         3n,
       ],
     ),

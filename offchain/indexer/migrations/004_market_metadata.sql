@@ -3,7 +3,6 @@ ALTER TABLE markets ADD COLUMN IF NOT EXISTS rules_hash CHAR(66);
 ALTER TABLE markets ADD COLUMN IF NOT EXISTS metadata_uri TEXT;
 ALTER TABLE markets ADD COLUMN IF NOT EXISTS resolution_source_hash CHAR(66);
 ALTER TABLE markets ADD COLUMN IF NOT EXISTS resolution_source_uri TEXT;
-ALTER TABLE markets ADD COLUMN IF NOT EXISTS early_bird_start NUMERIC(78, 0);
 ALTER TABLE markets ADD COLUMN IF NOT EXISTS creator_treasury CHAR(42);
 ALTER TABLE markets ADD COLUMN IF NOT EXISTS feature_flags NUMERIC(78, 0);
 ALTER TABLE markets ADD COLUMN IF NOT EXISTS primary_filled_units NUMERIC(78, 0) NOT NULL DEFAULT 0;

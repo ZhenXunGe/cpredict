@@ -13,13 +13,18 @@ import { createMetadataServer } from "../src/server.js";
 const account = privateKeyToAccount(`0x${"11".repeat(32)}`);
 const factory = getAddress("0x00000000000000000000000000000000000000f1");
 const rules: MarketRules = {
-  version: "cpredict-rules-v1",
+  version: "cpredict-rules-v2",
   question: "Will the Cpredict test market pass?",
   outcomes: ["Yes", "No"],
-  closesAt: 1_900_000_000,
+  closeAt: 1_900_000_000,
+  eventStartsAt: null,
+  outcomeDeadlineAt: 1_900_000_000,
+  resolutionDeadlineAt: 1_900_000_000 + 86_400,
   resolutionSource: "https://example.invalid/public-result",
-  resolutionCriteria: "Resolve Yes only when the cited source explicitly says pass.",
-  cancellationPolicy: "Void when the cited source is unavailable after the resolution window.",
+  resolutionCriteria:
+    "Resolve Yes only when the cited source explicitly says pass.",
+  cancellationPolicy:
+    "Void when the cited source is unavailable after the resolution window.",
 };
 
 describe("wallet-authorized metadata service", () => {
@@ -47,7 +52,9 @@ describe("wallet-authorized metadata service", () => {
     const challenge = await store.challenge(challengeId);
     expect(challenge).toBeDefined();
     if (challenge === undefined) throw new Error("missing challenge");
-    const signature = await account.signTypedData(buildMetadataTypedData(challenge));
+    const signature = await account.signTypedData(
+      buildMetadataTypedData(challenge),
+    );
     const publication = await app.inject({
       method: "POST",
       url: "/v1/markets",
@@ -115,7 +122,9 @@ describe("wallet-authorized metadata service", () => {
     const challenge = await store.challenge(challengeId);
     if (challenge === undefined) throw new Error("missing challenge");
     const other = privateKeyToAccount(`0x${"22".repeat(32)}`);
-    const signature = await other.signTypedData(buildMetadataTypedData(challenge));
+    const signature = await other.signTypedData(
+      buildMetadataTypedData(challenge),
+    );
     const response = await app.inject({
       method: "POST",
       url: "/v1/markets",

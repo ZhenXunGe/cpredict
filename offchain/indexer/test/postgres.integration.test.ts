@@ -13,6 +13,7 @@ import {
 import { PostgresEventStore } from "../src/postgres-store.js";
 import type { CanonicalBlock, IndexedEvent } from "../src/store.js";
 import { evidenceUriFromHash } from "../../sdk/src/evidence.js";
+import { marketVaultAbi } from "../../sdk/src/abis.js";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const run = databaseUrl !== undefined;
@@ -97,7 +98,7 @@ suite("PostgresEventStore integration", () => {
     expect(await tableCount(verificationSql, "markets")).toBe(0);
   });
 
-  it("persists the terminal evidence hash and reconstructs its raw CID URI", async () => {
+  it("persists terminal evidence, time terms and every void reason across replay and rollback", async () => {
     const evidenceChainId = chainId + 1;
     const block1 = canonicalBlock(evidenceChainId, 1n, 11n, 0n);
     const block2 = canonicalBlock(evidenceChainId, 2n, 12n, 11n);
@@ -122,10 +123,86 @@ suite("PostgresEventStore integration", () => {
 
     expect(await store.market(evidenceChainId, MARKET)).toMatchObject({
       state: 1,
+      voidReason: 0,
       winningOutcome: 0n,
       evidenceHash,
       evidenceUri: evidenceUriFromHash(evidenceHash),
     });
+
+    for (const reason of [1, 2, 3]) {
+      const voidChainId = chainId + 10 + reason;
+      const first = canonicalBlock(voidChainId, 1n, 21n, 0n);
+      const terminal = canonicalBlock(voidChainId, 2n, 22n, 21n);
+      await store.applyBatch(
+        [
+          marketCreated(voidChainId, first),
+          marketTimesEvent(voidChainId, first, false),
+        ],
+        [first],
+        {
+          chainId: voidChainId,
+          blockNumber: 1n,
+          blockHash: first.blockHash,
+        },
+      );
+      const raw = await verificationSql<Array<{ topics: Hex[] }>>`
+        SELECT topics FROM chain_events WHERE chain_id = ${voidChainId} AND log_index = 0
+      `;
+      expect(raw[0]?.topics).toEqual(marketCreated(voidChainId, first).topics);
+      await expect(verificationSql`
+        UPDATE chain_events SET topics = ${verificationSql.json("[]")}
+        WHERE chain_id = ${voidChainId}
+      `).rejects.toThrow(/chain_events_topics_array/);
+      const checkpoint = {
+        chainId: voidChainId,
+        blockNumber: 2n,
+        blockHash: terminal.blockHash,
+      };
+      const events = [
+        marketTimesEvent(voidChainId, terminal, true),
+        marketVoided(voidChainId, terminal, reason, evidenceHash),
+      ];
+      await store.applyBatch(events, [terminal], checkpoint);
+      await store.applyBatch(events, [terminal], checkpoint);
+      expect(await store.market(voidChainId, MARKET)).toMatchObject({
+        state: 2,
+        voidReason: reason,
+        winningOutcome: null,
+        evidenceHash,
+        createdAt: 100n,
+        closeAt: 2_000n,
+        eventStartsAt: null,
+        outcomeDeadlineAt: 4_000n,
+        resolutionWindow: 900n,
+      });
+      const activity = await store.listActivity(voidChainId, CREATOR, {
+        limit: 10,
+      });
+      expect(
+        activity.items.filter((item) => item.kind.startsWith("market-voided")),
+      ).toEqual([
+        expect.objectContaining({
+          kind: [
+            "",
+            "market-voided-creator",
+            "market-voided-no-winning-supply",
+            "market-voided-timeout",
+          ][reason],
+        }),
+      ]);
+      await store.rollbackAfter(voidChainId, 1n);
+      expect(await store.market(voidChainId, MARKET)).toMatchObject({
+        state: 0,
+        voidReason: 0,
+        winningOutcome: null,
+        evidenceHash: null,
+        createdAt: 100n,
+        closeAt: 1_000n,
+        eventStartsAt: 1_001n,
+        outcomeDeadlineAt: 3_000n,
+        resolutionWindow: 900n,
+      });
+    }
   });
 
   it("atomically applies a transfer debit without violating the nonnegative balance constraint", async () => {
@@ -133,7 +210,16 @@ suite("PostgresEventStore integration", () => {
     const block1 = canonicalBlock(transferChainId, 1n, 21n, 0n);
     const block2 = canonicalBlock(transferChainId, 2n, 22n, 21n);
     await store.applyBatch(
-      [transferSingle(transferChainId, block1, 201n, ZERO, CREATOR, 1_000_000n)],
+      [
+        transferSingle(
+          transferChainId,
+          block1,
+          201n,
+          ZERO,
+          CREATOR,
+          1_000_000n,
+        ),
+      ],
       [block1],
       {
         chainId: transferChainId,
@@ -142,7 +228,16 @@ suite("PostgresEventStore integration", () => {
       },
     );
     await store.applyBatch(
-      [transferSingle(transferChainId, block2, 202n, CREATOR, RECIPIENT, 1_000_000n)],
+      [
+        transferSingle(
+          transferChainId,
+          block2,
+          202n,
+          CREATOR,
+          RECIPIENT,
+          1_000_000n,
+        ),
+      ],
       [block2],
       {
         chainId: transferChainId,
@@ -152,12 +247,18 @@ suite("PostgresEventStore integration", () => {
     );
 
     expect(
-      (await store.listPositions(transferChainId, CREATOR, { limit: 10 })).items,
+      (await store.listPositions(transferChainId, CREATOR, { limit: 10 }))
+        .items,
     ).toEqual([]);
     expect(
-      (await store.listPositions(transferChainId, RECIPIENT, { limit: 10 })).items,
+      (await store.listPositions(transferChainId, RECIPIENT, { limit: 10 }))
+        .items,
     ).toEqual([
-      expect.objectContaining({ owner: RECIPIENT, outcomeId: 0n, balance: 1_000_000n }),
+      expect.objectContaining({
+        owner: RECIPIENT,
+        outcomeId: 0n,
+        balance: 1_000_000n,
+      }),
     ]);
   });
 
@@ -212,6 +313,10 @@ suite("PostgresEventStore integration", () => {
       );
       await migrationSql.unsafe(activityCatalogMigration);
       await expect(legacyStore.ready()).resolves.toBeUndefined();
+      await migrationSql`ALTER TABLE markets DROP COLUMN outcome_deadline_at`;
+      await expect(legacyStore.ready()).rejects.toThrow(
+        "indexer database migration is not applied",
+      );
     } finally {
       await legacyStore.close();
       await migrationSql.end();
@@ -219,6 +324,56 @@ suite("PostgresEventStore integration", () => {
     }
   });
 });
+
+function marketTimesEvent(
+  chainId: number,
+  block: CanonicalBlock,
+  update: boolean,
+): IndexedEvent {
+  const name = update ? "MarketMetadataUpdated" : "MarketInitialized";
+  return {
+    ...marketCreated(chainId, block),
+    address: MARKET,
+    logIndex: 7,
+    transactionHash: hash(block.blockNumber * 100n + 7n),
+    topics: encodeEventTopics({
+      abi: marketVaultAbi,
+      eventName: name,
+      args: update
+        ? {
+            rulesHash: hash(31n),
+            resolutionSourceHash: hash(32n),
+            creatorTreasury: CREATOR,
+          }
+        : { market: MARKET, creator: CREATOR, mode: 0 },
+    }) as readonly Hex[],
+    data: update
+      ? encodeAbiParameters(
+          [
+            { type: "string" },
+            { type: "string" },
+            { type: "uint64" },
+            { type: "uint64" },
+            { type: "uint64" },
+            { type: "uint256" },
+          ],
+          ["ipfs://rules", "", 2_000n, 0n, 4_000n, 1n],
+        )
+      : encodeAbiParameters(
+          [
+            { type: "uint8" },
+            { type: "uint64" },
+            { type: "uint64" },
+            { type: "uint64" },
+            { type: "uint64" },
+            { type: "uint64" },
+            { type: "uint128" },
+            { type: "uint128" },
+          ],
+          [2, 100n, 1_000n, 1_001n, 3_000n, 900n, 20_000_000n, 10_000_000n],
+        ),
+  };
+}
 
 async function tableCount(
   sql: ReturnType<typeof postgres>,
@@ -325,6 +480,30 @@ function transferSingle(
       [{ type: "uint256" }, { type: "uint256" }],
       [0n, value],
     ),
+    confirmationStatus: "confirmed",
+  };
+}
+
+function marketVoided(
+  chainId: number,
+  block: CanonicalBlock,
+  reason: number,
+  evidenceHash: Hex,
+): IndexedEvent {
+  return {
+    chainId,
+    blockNumber: block.blockNumber,
+    blockHash: block.blockHash,
+    transactionHash: hash(102n),
+    transactionIndex: 0,
+    logIndex: 1,
+    address: MARKET,
+    topics: encodeEventTopics({
+      abi: marketVaultAbi,
+      eventName: "MarketVoided",
+      args: { reason, caller: CREATOR, evidenceHash },
+    }) as unknown as readonly Hex[],
+    data: encodeAbiParameters([{ type: "uint256" }], [100n]),
     confirmationStatus: "confirmed",
   };
 }
