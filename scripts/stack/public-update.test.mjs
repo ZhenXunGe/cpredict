@@ -60,7 +60,7 @@ test("publishing uses pinned host keys, an explicit identity, no shell or forwar
       validateUpdateConfig({ ...config, ...change }, "/repository"),
     );
 });
-test("rendered Compose escapes literal dollar values without modifying keys or other types", () => {
+test("raw Docker snapshot values are escaped once without modifying keys or other types", () => {
   const value = {
     environment: ["PASSWORD=a$word${literal}$$", "PLAIN=x"],
     n: 5,
