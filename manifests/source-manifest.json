@@ -82,7 +82,7 @@
     },
     {
       "path": "deploy/compose/nginx/default.conf.template",
-      "sha256": "a91fdb14a4cc3251af7980c1ff2657c6cf9623272403b20ae4cdfdc9b0c26fd2"
+      "sha256": "cc8bf84c966b263a1048bc9828ab1fe457717f7af9d908f4a299893ee952cd45"
     },
     {
       "path": "deploy/compose/nginx/public-site.conf.template",
@@ -106,7 +106,7 @@
     },
     {
       "path": "deploy/host/nginx/cpredict.conf.template",
-      "sha256": "8ee2c8974d803c0f5c184f38506d3ecb8e89d71085cccb57baa041b62ce212a6"
+      "sha256": "3ff56460e7e62eca78524832ca3b866c15337c9bd4fba3b40504fdbe15c79b52"
     },
     {
       "path": "deploy/host/nginx/public-site.conf.template",
@@ -210,7 +210,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "bccef5a64cd81ba52d4b615e8ba74367efccb12d7f98992ed97352645a2b2360"
+      "sha256": "c76d71a486a3ed7dbc3de532cdeefc57abc86bac3a1b259099218b7789284c5d"
     },
     {
       "path": "docs/zh/00-delivery-status.md",
