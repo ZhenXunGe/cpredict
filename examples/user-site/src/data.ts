@@ -1,3 +1,8 @@
+import { publicMarketState } from "../../../offchain/sdk/src/legacy-protocol.js";
+import {
+  legacyMarketRulesSchema,
+  encodeLegacyMarketRules,
+} from "../../../offchain/sdk/src/legacy-market-rules.js";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { erc20Abi, parseAbi, type Address } from "viem";
 import { z } from "zod";
@@ -65,6 +70,21 @@ export function useRules(market: Market | undefined) {
     enabled: !!market?.rulesHash,
     queryFn: async ({ signal }) => {
       if (!market?.rulesHash) throw new AppError("rules_unverified");
+      if (api.environment.deployment.protocolVersion === "legacy-v1") {
+        const rules = await api.request(
+          `/v1/markets/${market.rulesHash}/rules.json`,
+          legacyMarketRulesSchema,
+          { service: "metadata", signal },
+        );
+        if (
+          encodeLegacyMarketRules(rules).rulesHash.toLowerCase() !==
+            market.rulesHash.toLowerCase() ||
+          market.closeAt === null ||
+          BigInt(rules.closesAt) !== BigInt(market.closeAt)
+        )
+          throw new AppError("rules_unverified", 409);
+        return rules;
+      }
       const rules = await api.request(
         `/v1/markets/${market.rulesHash}/rules.json`,
         marketRulesSchema,
@@ -165,7 +185,9 @@ export function useMarketLive(market: Address) {
       ] = await Promise.all([
         client.readContract({ ...base, functionName: "economics" }),
         client.readContract({ ...base, functionName: "marketState" }),
-        client.readContract({ ...base, functionName: "voidReason" }),
+        api.environment.deployment.protocolVersion === "legacy-v1"
+          ? Promise.resolve(0)
+          : client.readContract({ ...base, functionName: "voidReason" }),
         client.readContract({ ...base, functionName: "winningOutcome" }),
         client.readContract({ ...base, functionName: "closeAt" }),
         client.readContract({ ...base, functionName: "resolutionDeadline" }),
@@ -175,8 +197,11 @@ export function useMarketLive(market: Address) {
       ]);
       return {
         economics,
-        state,
-        voidReason,
+        ...publicMarketState(
+          api.environment.deployment.protocolVersion,
+          state,
+          voidReason,
+        ),
         winningOutcome,
         closeAt,
         resolutionDeadline,

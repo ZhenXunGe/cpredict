@@ -1,3 +1,4 @@
+import type { ProtocolVersion } from "../../sdk/src/legacy-protocol.js";
 import postgres, { type Sql, type TransactionSql } from "postgres";
 import { getAddress, type Address, type Hex } from "viem";
 import {
@@ -40,9 +41,14 @@ type Db = Sql | TransactionSql;
 /** PostgreSQL event store with canonical-block lineage and transactionally rebuilt projections. */
 export class PostgresEventStore implements EventStore, IndexerQueryStore {
   private readonly sql: Sql;
+  private readonly protocol: ProtocolVersion;
   readonly financial: PostgresFinancialLedger | undefined;
 
-  constructor(connectionString: string, maximumConnections = 10, environment?: Environment) {
+  constructor(
+    connectionString: string,
+    maximumConnections = 10,
+    environment?: Environment,
+  ) {
     if (
       !connectionString.startsWith("postgres://") &&
       !connectionString.startsWith("postgresql://")
@@ -63,7 +69,10 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       prepare: true,
       onnotice: () => undefined,
     });
-    this.financial = environment ? new PostgresFinancialLedger(this.sql, environment) : undefined;
+    this.protocol = environment?.deployment.protocolVersion ?? "time-v2";
+    this.financial = environment
+      ? new PostgresFinancialLedger(this.sql, environment)
+      : undefined;
   }
 
   async checkpoint(chainId: number): Promise<ChainCheckpoint | undefined> {
@@ -111,10 +120,13 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
         await insertCanonicalBlock(transaction, block);
       for (const event of events) {
         const inserted = await insertRawEvent(transaction, event);
-        if (inserted) await applyProjection(transaction, event);
+        if (inserted) await applyProjection(transaction, event, this.protocol);
       }
       if (this.financial) {
-        await this.projectFinancialTransactions(transaction, events.map(e => e.transactionHash));
+        await this.projectFinancialTransactions(
+          transaction,
+          events.map((e) => e.transactionHash),
+        );
         await this.financial.project(transaction, [], blocks, checkpoint);
       }
       const checkpointBlocks = await transaction<Array<{ block_hash: Hex }>>`
@@ -161,8 +173,13 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
         ORDER BY block_number, transaction_index, log_index
       `;
       for (const row of retained)
-        await applyProjection(transaction, mapRawEvent(chainId, row));
-      if (this.financial) await this.financial.rollback(transaction, blockNumber);
+        await applyProjection(
+          transaction,
+          mapRawEvent(chainId, row, this.protocol),
+          this.protocol,
+        );
+      if (this.financial)
+        await this.financial.rollback(transaction, blockNumber);
 
       if (blockNumber !== undefined) {
         const blocks = await transaction<Array<{ block_hash: Hex }>>`
@@ -468,68 +485,136 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     ) {
       throw new Error("indexer database migration is not applied");
     }
-    const fees = await this.sql<{count: number}[]>`SELECT count(*)::int AS count FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='fills' AND column_name IN ('seller_proceeds','platform_fee','creator_fee')`;
-    if (fees[0]?.count !== 3) throw new Error("financial fill migration 006 is not applied");
+    const fees = await this.sql<
+      { count: number }[]
+    >`SELECT count(*)::int AS count FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='fills' AND column_name IN ('seller_proceeds','platform_fee','creator_fee')`;
+    if (fees[0]?.count !== 3)
+      throw new Error("financial fill migration 006 is not applied");
     if (this.financial) await this.financial.ready();
   }
 
-  private async projectFinancialTransactions(db: TransactionSql, hashes: readonly Hex[]): Promise<void> {
+  private async projectFinancialTransactions(
+    db: TransactionSql,
+    hashes: readonly Hex[],
+  ): Promise<void> {
     if (!this.financial || hashes.length === 0) return;
     const chainId = this.financial.environment.deployment.chainId;
     const unique = [...new Set(hashes)];
-    const rows = await db<RawEventRow[]>`SELECT block_number,block_hash,transaction_hash,transaction_index,log_index,contract_address,topics,data,confirmation_status FROM chain_events WHERE chain_id=${chainId} AND transaction_hash IN ${db(unique)} ORDER BY block_number,transaction_index,log_index`;
-    const numbers = [...new Set(rows.map(r=>r.block_number))];
+    const rows = await db<
+      RawEventRow[]
+    >`SELECT block_number,block_hash,transaction_hash,transaction_index,log_index,contract_address,topics,data,confirmation_status FROM chain_events WHERE chain_id=${chainId} AND transaction_hash IN ${db(unique)} ORDER BY block_number,transaction_index,log_index`;
+    const numbers = [...new Set(rows.map((r) => r.block_number))];
     if (!numbers.length) return;
-    const blockRows = await db<CanonicalBlockRow[]>`SELECT block_number,block_hash,parent_hash,block_timestamp,confirmation_status FROM canonical_blocks WHERE chain_id=${chainId} AND block_number IN ${db(numbers)} ORDER BY block_number`;
+    const blockRows = await db<
+      CanonicalBlockRow[]
+    >`SELECT block_number,block_hash,parent_hash,block_timestamp,confirmation_status FROM canonical_blocks WHERE chain_id=${chainId} AND block_number IN ${db(numbers)} ORDER BY block_number`;
     await db`DELETE FROM ledger_facts WHERE chain_id=${chainId} AND transaction_hash IN ${db(unique)}`;
-    await this.financial.project(db,rows.map(r=>mapRawEvent(chainId,r)),blockRows.map(r=>mapBlock(chainId,r)));
+    await this.financial.project(
+      db,
+      rows.map((r) => mapRawEvent(chainId, r, this.protocol)),
+      blockRows.map((r) => mapBlock(chainId, r)),
+    );
   }
 
   /** Add only logs from an explicitly scoped backfill, without advancing the realtime checkpoint. */
-  async applyFinancialBackfill(events: readonly IndexedEvent[], expectedBlocks: readonly CanonicalBlock[]): Promise<void> {
+  async applyFinancialBackfill(
+    events: readonly IndexedEvent[],
+    expectedBlocks: readonly CanonicalBlock[],
+  ): Promise<void> {
     if (!this.financial) throw new Error("financial ledger is not configured");
-    await this.sql.begin(async db => {
+    await this.sql.begin(async (db) => {
       for (const block of expectedBlocks) {
-        const stored=await db<{block_hash: Hex}[]>`SELECT block_hash FROM canonical_blocks WHERE chain_id=${block.chainId} AND block_number=${block.blockNumber.toString()}`;
-        if (stored[0]?.block_hash!==block.blockHash) throw new Error("backfill canonical block mismatch");
+        const stored = await db<
+          { block_hash: Hex }[]
+        >`SELECT block_hash FROM canonical_blocks WHERE chain_id=${block.chainId} AND block_number=${block.blockNumber.toString()}`;
+        if (stored[0]?.block_hash !== block.blockHash)
+          throw new Error("backfill canonical block mismatch");
       }
       for (const event of events) {
-        if (!expectedBlocks.some(b=>b.chainId===event.chainId && b.blockNumber===event.blockNumber && b.blockHash===event.blockHash)) throw new Error("backfill log block is not verified");
-        if (await insertRawEvent(db,event)) await applyProjection(db,event);
+        if (
+          !expectedBlocks.some(
+            (b) =>
+              b.chainId === event.chainId &&
+              b.blockNumber === event.blockNumber &&
+              b.blockHash === event.blockHash,
+          )
+        )
+          throw new Error("backfill log block is not verified");
+        if (await insertRawEvent(db, event))
+          await applyProjection(db, event, this.protocol);
       }
-      await this.projectFinancialTransactions(db,events.map(e=>e.transactionHash));
+      await this.projectFinancialTransactions(
+        db,
+        events.map((e) => e.transactionHash),
+      );
     });
   }
 
   /** Rebuild the shadow facts in bounded block ranges. Raw event coverage is never upgraded by replay alone. */
   async replayFinancial(from: bigint, to: bigint): Promise<void> {
-    if (!this.financial || from>to || from<BigInt(this.financial.environment.deployment.deploymentBlock)) throw new RangeError("invalid financial replay scope");
-    const chainId=this.financial.environment.deployment.chainId;
-    await this.sql.begin(async db => {
-      const epochs=await db<{epoch:string}[]>`UPDATE ledger_environment SET epoch=epoch+1,status='shadow' WHERE singleton RETURNING epoch`;
+    if (
+      !this.financial ||
+      from > to ||
+      from < BigInt(this.financial.environment.deployment.deploymentBlock)
+    )
+      throw new RangeError("invalid financial replay scope");
+    const chainId = this.financial.environment.deployment.chainId;
+    await this.sql.begin(async (db) => {
+      const epochs = await db<
+        { epoch: string }[]
+      >`UPDATE ledger_environment SET epoch=epoch+1,status='shadow' WHERE singleton RETURNING epoch`;
       await db`INSERT INTO ledger_corrections(epoch,from_block,reason) VALUES(${epochs[0]!.epoch},${from.toString()},'projection_replay')`;
-      for(let block=from;block<=to;block+=500n) {
-        const end=block+499n<to?block+499n:to;
-        const hashes=await db<{transaction_hash:Hex}[]>`SELECT DISTINCT transaction_hash FROM chain_events WHERE chain_id=${chainId} AND block_number BETWEEN ${block.toString()} AND ${end.toString()}`;
-        await this.projectFinancialTransactions(db,hashes.map(r=>r.transaction_hash));
+      for (let block = from; block <= to; block += 500n) {
+        const end = block + 499n < to ? block + 499n : to;
+        const hashes = await db<
+          { transaction_hash: Hex }[]
+        >`SELECT DISTINCT transaction_hash FROM chain_events WHERE chain_id=${chainId} AND block_number BETWEEN ${block.toString()} AND ${end.toString()}`;
+        await this.projectFinancialTransactions(
+          db,
+          hashes.map((r) => r.transaction_hash),
+        );
       }
     });
   }
 
   async backfillFinancialAccounts(client: PublicClient): Promise<void> {
     if (!this.financial) return;
-    const chainId=this.financial.environment.deployment.chainId,checkpoint=await this.checkpoint(chainId);
-    if(!checkpoint) return;
-    const range=await this.financial.accountBackfillRange(checkpoint.blockNumber);
-    if(!range) return;
-    const rows=await this.sql<CanonicalBlockRow[]>`SELECT block_number,block_hash,parent_hash,block_timestamp,confirmation_status FROM canonical_blocks WHERE chain_id=${chainId} AND block_number BETWEEN ${range.from.toString()} AND ${range.to.toString()} ORDER BY block_number`;
-    if(BigInt(rows.length)!==range.to-range.from+1n) throw new Error("account backfill requires missing canonical history to be restored first");
-    const blocks=rows.map(r=>mapBlock(chainId,r)),end=blocks.at(-1)!;
-    const canonical=await client.getBlock({blockNumber:range.to});
-    if(canonical.hash!==end.blockHash) throw new Error("account backfill canonical range changed");
-    const logs=await scopedAccountLogs(client,this.financial.environment.deployment.paymentToken,range.accounts,range.from,range.to);
-    await this.applyFinancialBackfill(logs.map(log=>normalizeLog(chainId,log,"confirmed")),blocks);
-    await this.financial.accountScanned(range.accounts,range.from,range.to,end.blockHash);
+    const chainId = this.financial.environment.deployment.chainId,
+      checkpoint = await this.checkpoint(chainId);
+    if (!checkpoint) return;
+    const range = await this.financial.accountBackfillRange(
+      checkpoint.blockNumber,
+    );
+    if (!range) return;
+    const rows = await this.sql<
+      CanonicalBlockRow[]
+    >`SELECT block_number,block_hash,parent_hash,block_timestamp,confirmation_status FROM canonical_blocks WHERE chain_id=${chainId} AND block_number BETWEEN ${range.from.toString()} AND ${range.to.toString()} ORDER BY block_number`;
+    if (BigInt(rows.length) !== range.to - range.from + 1n)
+      throw new Error(
+        "account backfill requires missing canonical history to be restored first",
+      );
+    const blocks = rows.map((r) => mapBlock(chainId, r)),
+      end = blocks.at(-1)!;
+    const canonical = await client.getBlock({ blockNumber: range.to });
+    if (canonical.hash !== end.blockHash)
+      throw new Error("account backfill canonical range changed");
+    const logs = await scopedAccountLogs(
+      client,
+      this.financial.environment.deployment.paymentToken,
+      range.accounts,
+      range.from,
+      range.to,
+    );
+    await this.applyFinancialBackfill(
+      logs.map((log) => normalizeLog(chainId, log, "confirmed")),
+      blocks,
+    );
+    await this.financial.accountScanned(
+      range.accounts,
+      range.from,
+      range.to,
+      end.blockHash,
+    );
   }
 
   async close(): Promise<void> {
@@ -584,15 +669,20 @@ async function insertRawEvent(db: Db, event: IndexedEvent): Promise<boolean> {
   return rows.length === 1;
 }
 
-async function applyProjection(db: Db, event: IndexedEvent): Promise<void> {
-  for (const mutation of deriveMutations(event))
-    await applyMutation(db, event, mutation);
+async function applyProjection(
+  db: Db,
+  event: IndexedEvent,
+  protocol: ProtocolVersion,
+): Promise<void> {
+  for (const mutation of deriveMutations(event, protocol))
+    await applyMutation(db, event, mutation, protocol);
 }
 
 async function applyMutation(
   db: Db,
   event: IndexedEvent,
   mutation: DerivedMutation,
+  protocol: ProtocolVersion,
 ): Promise<void> {
   switch (mutation.kind) {
     case "market-created":
@@ -606,11 +696,11 @@ async function applyMutation(
       `;
       await db`
         INSERT INTO markets (
-          chain_id, market, creator, deployment_mode, creator_bond, state,
+          chain_id, market, creator, deployment_mode, creator_bond, protocol_version, state,
           created_block, updated_block, confirmation_status
         ) VALUES (
           ${event.chainId}, ${mutation.market}, ${mutation.creator}, ${mutation.deploymentMode},
-          ${mutation.creatorBond.toString()}, 0, ${event.blockNumber.toString()},
+          ${mutation.creatorBond.toString()}, ${protocol}, 0, ${event.blockNumber.toString()},
           ${event.blockNumber.toString()}, ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, market) DO NOTHING
       `;
@@ -625,13 +715,13 @@ async function applyMutation(
       await db`
         INSERT INTO markets (
           chain_id, market, creator, deployment_mode, outcome_count, created_at, close_at, event_starts_at, outcome_deadline_at, resolution_window,
-          market_primary_cap, creator_bond, state, created_block, updated_block,
+          market_primary_cap, creator_bond, protocol_version, state, created_block, updated_block,
           confirmation_status
         ) VALUES (
           ${event.chainId}, ${mutation.market}, ${mutation.creator}, ${mutation.deploymentMode},
-          ${mutation.outcomeCount}, ${mutation.createdAt.toString()}, ${mutation.closeAt.toString()},
-          ${mutation.eventStartsAt?.toString() ?? null}, ${mutation.outcomeDeadlineAt.toString()}, ${mutation.resolutionWindow.toString()},
-          ${mutation.marketPrimaryCap.toString()}, ${mutation.creatorBond.toString()}, 0,
+          ${mutation.outcomeCount}, ${mutation.createdAt?.toString() ?? null}, ${mutation.closeAt.toString()},
+          ${mutation.eventStartsAt?.toString() ?? null}, ${mutation.outcomeDeadlineAt?.toString() ?? null}, ${mutation.resolutionWindow.toString()},
+          ${mutation.marketPrimaryCap.toString()}, ${mutation.creatorBond.toString()}, ${protocol}, 0,
           ${event.blockNumber.toString()}, ${event.blockNumber.toString()},
           ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, market) DO UPDATE SET
@@ -656,7 +746,8 @@ async function applyMutation(
           resolution_source_uri = ${mutation.resolutionSourceUri},
           close_at = ${mutation.closeAt.toString()},
           event_starts_at = ${mutation.eventStartsAt?.toString() ?? null},
-          outcome_deadline_at = ${mutation.outcomeDeadlineAt.toString()},
+          outcome_deadline_at = ${mutation.outcomeDeadlineAt?.toString() ?? null},
+          early_bird_start = ${mutation.earlyBirdStart?.toString() ?? null},
           creator_treasury = ${mutation.creatorTreasury},
           feature_flags = ${mutation.featureFlags.toString()},
           updated_block = ${event.blockNumber.toString()},
@@ -923,6 +1014,8 @@ interface RawEventRow {
 }
 
 export interface MarketRow {
+  protocol_version?: ProtocolVersion;
+  early_bird_start?: string | null;
   chain_id: string;
   market: Address;
   creator: Address;
@@ -1037,20 +1130,35 @@ function mapBlock(chainId: number, row: CanonicalBlockRow): CanonicalBlock {
   };
 }
 
-function mapRawEvent(chainId: number, row: RawEventRow): IndexedEvent {
-  // Corrupt JSON must abort the rebuilding transaction, not turn known events
-  // into unknown topics and silently erase their projections.
+export function persistedTopics(
+  value: unknown,
+  protocol: ProtocolVersion = "time-v2",
+): readonly Hex[] {
+  // The original deployment stored JSON arrays as JSON strings. Decode once in
+  // the explicit legacy profile while retaining the original database bytes.
+  const topics: unknown =
+    protocol === "legacy-v1" && typeof value === "string"
+      ? JSON.parse(value)
+      : value;
   if (
-    !Array.isArray(row.topics) ||
-    row.topics.length > 4 ||
-    !row.topics.every(
+    !Array.isArray(topics) ||
+    topics.length > 4 ||
+    !topics.every(
       (topic) => typeof topic === "string" && /^0x[0-9a-fA-F]{64}$/.test(topic),
     )
-  ) {
+  )
     throw new Error(
       "persisted event topics must be an array of bytes32 values",
     );
-  }
+  return topics;
+}
+
+function mapRawEvent(
+  chainId: number,
+  row: RawEventRow,
+  protocol: ProtocolVersion = "time-v2",
+): IndexedEvent {
+  const topics = persistedTopics(row.topics, protocol);
   return {
     chainId,
     blockNumber: BigInt(row.block_number),
@@ -1059,7 +1167,7 @@ function mapRawEvent(chainId: number, row: RawEventRow): IndexedEvent {
     transactionIndex: row.transaction_index,
     logIndex: row.log_index,
     address: getAddress(row.contract_address),
-    topics: row.topics,
+    topics,
     data: row.data,
     confirmationStatus: row.confirmation_status,
   };
@@ -1071,6 +1179,13 @@ export function mapMarket(row: MarketRow): MarketView {
       ? null
       : normalizeEvidenceHash(row.evidence_hash);
   return {
+    ...(row.protocol_version ? { protocolVersion: row.protocol_version } : {}),
+    ...(row.early_bird_start !== undefined
+      ? {
+          earlyBirdStart:
+            row.early_bird_start === null ? null : BigInt(row.early_bird_start),
+        }
+      : {}),
     chainId: Number(row.chain_id),
     market: getAddress(row.market),
     creator: getAddress(row.creator),
@@ -1137,7 +1252,8 @@ function mapFill(row: FillRow): FillView {
     seller: getAddress(row.seller),
     filledUnits: BigInt(row.filled_units),
     gross: BigInt(row.gross),
-    sellerProceeds: row.seller_proceeds == null ? null : BigInt(row.seller_proceeds),
+    sellerProceeds:
+      row.seller_proceeds == null ? null : BigInt(row.seller_proceeds),
     platformFee: row.platform_fee == null ? null : BigInt(row.platform_fee),
     creatorFee: row.creator_fee == null ? null : BigInt(row.creator_fee),
     blockNumber: BigInt(row.block_number),

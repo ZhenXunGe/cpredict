@@ -1,3 +1,9 @@
+import {
+  legacyMarketRulesSchema,
+  encodeLegacyMarketRules,
+} from "../../sdk/src/legacy-market-rules.js";
+import type { PublishedMarketRules } from "../../sdk/src/published-market-rules.js";
+import { publicMarketState } from "../../sdk/src/legacy-protocol.js";
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import {
@@ -111,7 +117,10 @@ export async function publicCatalog(
         const state =
           q.status === undefined
             ? db``
-            : db`AND m.state=${{ open: 0, resolved: 1, voided: 2 }[q.status]}`;
+            : q.status === "voided" &&
+                ledger.environment.deployment.protocolVersion === "legacy-v1"
+              ? db`AND m.state IN (2,3)`
+              : db`AND m.state=${{ open: 0, resolved: 1, voided: 2 }[q.status]}`;
         const owner = q.owner
           ? db`AND (lower(m.creator)=${q.owner.toLowerCase()} OR lower(m.market) IN (SELECT market FROM ledger_facts WHERE owner=${q.owner.toLowerCase()} OR counterparty=${q.owner.toLowerCase()}))`
           : db``;
@@ -127,7 +136,15 @@ export async function publicCatalog(
         if (rows.length > 5000)
           throw new AppError("catalog_capacity_exceeded", 503);
         items = rows.map((row) =>
-          jsonSafe({ ...mapMarket(row), question: row.question }),
+          jsonSafe({
+            ...mapMarket(row),
+            ...publicMarketState(
+              ledger.environment.deployment.protocolVersion,
+              row.state,
+              row.void_reason,
+            ),
+            question: row.question,
+          }),
         );
         metadataPending = Number(
           (
@@ -187,30 +204,46 @@ export async function refreshPublicMetadata(
   for (let start = 0; start < rows.length; start += 4)
     await Promise.all(
       rows.slice(start, start + 4).map(async (row) => {
-        let rules: z.infer<typeof marketRulesSchema> | null = null;
+        let rules: PublishedMarketRules | null = null;
         try {
-          const m = mapMarket(row),
-            parsed = marketRulesSchema.parse(
+          const m = mapMarket(row);
+          if (ledger.environment.deployment.protocolVersion === "legacy-v1") {
+            const parsed = legacyMarketRulesSchema.parse(
               await fetchJson(
                 `${baseUrl.replace(/\/$/, "")}/v1/markets/${m.rulesHash}/rules.json`,
                 { signal: AbortSignal.timeout(4000) },
                 32768,
               ),
             );
-          if (
-            encodeMarketRules(parsed).rulesHash.toLowerCase() ===
-              m.rulesHash?.toLowerCase() &&
-            marketRulesMatchTimes(parsed, {
-              closeAt: m.closeAt,
-              eventStartsAt: m.eventStartsAt,
-              outcomeDeadlineAt: m.outcomeDeadlineAt,
-              resolutionDeadlineAt:
-                m.outcomeDeadlineAt === null || m.resolutionWindow === null
-                  ? null
-                  : m.outcomeDeadlineAt + m.resolutionWindow,
-            })
-          )
-            rules = parsed;
+            if (
+              encodeLegacyMarketRules(parsed).rulesHash.toLowerCase() ===
+                m.rulesHash?.toLowerCase() &&
+              BigInt(parsed.closesAt) === m.closeAt
+            )
+              rules = parsed;
+          } else {
+            const parsed = marketRulesSchema.parse(
+              await fetchJson(
+                `${baseUrl.replace(/\/$/, "")}/v1/markets/${m.rulesHash}/rules.json`,
+                { signal: AbortSignal.timeout(4000) },
+                32768,
+              ),
+            );
+            if (
+              encodeMarketRules(parsed).rulesHash.toLowerCase() ===
+                m.rulesHash?.toLowerCase() &&
+              marketRulesMatchTimes(parsed, {
+                closeAt: m.closeAt,
+                eventStartsAt: m.eventStartsAt,
+                outcomeDeadlineAt: m.outcomeDeadlineAt,
+                resolutionDeadlineAt:
+                  m.outcomeDeadlineAt === null || m.resolutionWindow === null
+                    ? null
+                    : m.outcomeDeadlineAt + m.resolutionWindow,
+              })
+            )
+              rules = parsed;
+          }
         } catch {
           /* An unavailable or invalid rule is explicitly excluded from title search. */
         }

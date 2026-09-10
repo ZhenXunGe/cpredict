@@ -136,6 +136,7 @@ try {
     "004_market_metadata.sql",
     "005_activity_catalog.sql",
     "006_financial_facts.sql",
+      "007_legacy_deployment.sql",
   ])
     await sql.unsafe(
       await readFile(

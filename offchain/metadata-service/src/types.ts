@@ -1,5 +1,5 @@
 import type { Address, Hex } from "viem";
-import type { MarketRules } from "../../sdk/src/market-rules.js";
+import type { PublishedMarketRules } from "../../sdk/src/published-market-rules.js";
 
 export interface MetadataChallenge {
   challengeId: Hex;
@@ -18,7 +18,7 @@ export interface MarketPublication {
   creator: Address;
   rulesHash: Hex;
   canonicalJson: string;
-  rules: MarketRules;
+  rules: PublishedMarketRules;
   metadataUri: string;
   resolutionSourceHash: Hex;
   resolutionSourceUri: string;
@@ -33,7 +33,7 @@ export interface MetadataStore {
     challengeId: Hex;
     signature: Hex;
     canonicalJson: string;
-    rules: MarketRules;
+    rules: PublishedMarketRules;
     metadataUri: string;
     resolutionSourceHash: Hex;
     now: number;

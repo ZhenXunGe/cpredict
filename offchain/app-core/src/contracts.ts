@@ -45,6 +45,7 @@ export const servicePath = z.string().regex(/^\/[a-zA-Z0-9/_-]*$/);
 
 export const deploymentSchema = z.strictObject({
   id,
+  protocolVersion: z.enum(["legacy-v1", "time-v2"]).optional(),
   manifestHash: hash,
   sourceCommit: z.string().regex(/^[\da-f]{40}$/),
   chainId: z.literal(421614),

@@ -37,6 +37,8 @@ export interface IndexerSyncStatus {
 }
 
 export interface MarketView {
+  protocolVersion?: "legacy-v1" | "time-v2";
+  earlyBirdStart?: bigint | null;
   chainId: number;
   market: Address;
   creator: Address;
@@ -263,6 +265,7 @@ export function marketStatus(state: number): MarketStatus {
     case 1:
       return "resolved";
     case 2:
+    case 3:
       return "voided";
     default:
       throw new RangeError(`unknown market state ${state}`);

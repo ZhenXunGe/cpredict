@@ -14,9 +14,9 @@ import {
 } from "viem";
 import { z } from "zod";
 import {
-  encodeMarketRules,
-  marketRulesSchema,
-} from "../../sdk/src/market-rules.js";
+  encodePublishedMarketRules,
+  publishedMarketRulesSchema,
+} from "../../sdk/src/published-market-rules.js";
 import { buildMetadataTypedData } from "../../sdk/src/metadata.js";
 import type { MetadataServiceConfig } from "./config.js";
 import { ChallengeUnavailableError, type MetadataStore } from "./types.js";
@@ -62,7 +62,9 @@ export async function createMetadataServer(
     requestTimeout: 5_000,
     connectionTimeout: 5_000,
     maxRequestsPerSocket: 100,
-    trustProxy: options.config.trustedProxies?.length ? options.config.trustedProxies : false,
+    trustProxy: options.config.trustedProxies?.length
+      ? options.config.trustedProxies
+      : false,
   });
   await app.register(helmet, {
     contentSecurityPolicy: {
@@ -131,7 +133,7 @@ export async function createMetadataServer(
         .object({
           challengeId: bytes32Schema,
           signature: signatureSchema,
-          rules: marketRulesSchema,
+          rules: publishedMarketRulesSchema,
         })
         .strict()
         .parse(request.body);
@@ -144,7 +146,7 @@ export async function createMetadataServer(
       ) {
         return reply.code(409).send({ error: "challenge unavailable" });
       }
-      const encoded = encodeMarketRules(body.rules);
+      const encoded = encodePublishedMarketRules(body.rules);
       if (encoded.rulesHash.toLowerCase() !== challenge.rulesHash.toLowerCase())
         return reply.code(400).send({ error: "rules do not match challenge" });
       const typedData = buildMetadataTypedData(challenge);
@@ -159,20 +161,25 @@ export async function createMetadataServer(
             signature: body.signature,
           });
         } catch {
-          return reply.code(503).send({ error: "signature verification unavailable" });
+          return reply
+            .code(503)
+            .send({ error: "signature verification unavailable" });
         }
       } else {
         // Backwards-compatible EOA-only mode for existing deployments.
         try {
-          valid = getAddress(await recoverTypedDataAddress({
-            ...typedData, signature: body.signature,
-          })) === challenge.creator;
+          valid =
+            getAddress(
+              await recoverTypedDataAddress({
+                ...typedData,
+                signature: body.signature,
+              }),
+            ) === challenge.creator;
         } catch {
           valid = false;
         }
       }
-      if (!valid)
-        return reply.code(401).send({ error: "invalid signature" });
+      if (!valid) return reply.code(401).send({ error: "invalid signature" });
       const metadataUri = `${options.config.publicBaseUrl}/v1/markets/${challenge.rulesHash}/outcomes/{id}.json`;
       const resolutionSourceHash = keccak256(
         toBytes(body.rules.resolutionSource),
@@ -224,19 +231,23 @@ export async function createMetadataServer(
         attributes: [
           { trait_type: "Outcome", value: outcome },
           { trait_type: "Outcome ID", value: tokenId.toString() },
-          { trait_type: "Closes At", value: publication.rules.closeAt },
-          {
-            trait_type: "Event Starts At",
-            value: publication.rules.eventStartsAt ?? "unknown",
-          },
-          {
-            trait_type: "Outcome Deadline At",
-            value: publication.rules.outcomeDeadlineAt,
-          },
-          {
-            trait_type: "Resolution Deadline At",
-            value: publication.rules.resolutionDeadlineAt,
-          },
+          ...(publication.rules.version === "cpredict-rules-v1"
+            ? [{ trait_type: "Closes At", value: publication.rules.closesAt }]
+            : [
+                { trait_type: "Closes At", value: publication.rules.closeAt },
+                {
+                  trait_type: "Event Starts At",
+                  value: publication.rules.eventStartsAt ?? "unknown",
+                },
+                {
+                  trait_type: "Outcome Deadline At",
+                  value: publication.rules.outcomeDeadlineAt,
+                },
+                {
+                  trait_type: "Resolution Deadline At",
+                  value: publication.rules.resolutionDeadlineAt,
+                },
+              ]),
           { trait_type: "Rules Hash", value: publication.rulesHash },
         ],
       };

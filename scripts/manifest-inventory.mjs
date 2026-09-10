@@ -30,6 +30,7 @@ const explicitInventory = [
   ".env.compose.example",
   "compose.yaml",
   "compose.public-site.yaml",
+  "compose.public-site.legacy.yaml",
   "compose.usdc.yaml",
   "deploy/compose/Dockerfile.offchain",
   "deploy/compose/Dockerfile.demo",

@@ -444,6 +444,21 @@ export function CreateMarketPage() {
       setBusy(false);
     }
   };
+  if (api.environment.deployment.protocolVersion === "legacy-v1")
+    return (
+      <section className="stack">
+        <PageTitle
+          title="创建测试市场"
+          description="当前 ctUSD 部署使用原有市场规则。"
+        />
+        <Notice>
+          请前往现有测试入口创建市场。创建后的市场会显示在本站，原有资产和结算入口继续保留。
+        </Notice>
+        <a className="button button-primary" href={api.environment.legacyUrl}>
+          前往 ctUSD 测试入口
+        </a>
+      </section>
+    );
   return (
     <>
       <PageTitle

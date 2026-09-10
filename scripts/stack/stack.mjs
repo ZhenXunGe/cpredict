@@ -26,10 +26,20 @@ if (command === "help" || !allowed.has(command)) {
     const extra = await loadPublicSiteStack(configuration, { usdc });
     Object.assign(configuration.environment, extra.environment);
     Object.assign(configuration.secret, extra.secretsForRedaction);
-    const version = spawnSync("docker", ["compose", "version", "--short"], { encoding: "utf8" });
+    const version = spawnSync("docker", ["compose", "version", "--short"], {
+      encoding: "utf8",
+    });
     if (version.error) throw version.error;
     const match = /^v?(\d+)\.(\d+)\./.exec(version.stdout.trim());
-    if (version.status !== 0 || !match || Number(match[1]) < 2 || (Number(match[1]) === 2 && Number(match[2]) < 30)) throw new Error("Public-site stack requires Docker Compose >= 2.30 for literal provider env values");
+    if (
+      version.status !== 0 ||
+      !match ||
+      Number(match[1]) < 2 ||
+      (Number(match[1]) === 2 && Number(match[2]) < 30)
+    )
+      throw new Error(
+        "Public-site stack requires Docker Compose >= 2.30 for literal provider env values",
+      );
   }
   const sourceRevision = readSourceRevision({ root: ROOT });
   const compose = [
@@ -44,6 +54,8 @@ if (command === "help" || !allowed.has(command)) {
     resolve(ROOT, "compose.yaml"),
   ];
   if (publicSite) compose.push("-f", resolve(ROOT, "compose.public-site.yaml"));
+  if (publicSite && configuration.environment.CPREDICT_STACK_LEGACY_DEMO_DIR)
+    compose.push("-f", resolve(ROOT, "compose.public-site.legacy.yaml"));
   if (usdc) compose.push("-f", resolve(ROOT, "compose.usdc.yaml"));
   if (sponsorship) compose.push("--profile", "sponsorship");
   if (relay) compose.push("--profile", "relay");
@@ -69,8 +81,12 @@ if (command === "help" || !allowed.has(command)) {
   });
   if (result.error !== undefined) throw result.error;
   if (captureLogs) {
-    process.stdout.write(redactStackLogs(result.stdout ?? "", configuration.secret));
-    process.stderr.write(redactStackLogs(result.stderr ?? "", configuration.secret));
+    process.stdout.write(
+      redactStackLogs(result.stdout ?? "", configuration.secret),
+    );
+    process.stderr.write(
+      redactStackLogs(result.stderr ?? "", configuration.secret),
+    );
   }
   process.exitCode = result.status ?? 1;
 }

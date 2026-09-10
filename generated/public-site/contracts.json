@@ -54,6 +54,13 @@
                     "type": "string",
                     "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
                   },
+                  "protocolVersion": {
+                    "type": "string",
+                    "enum": [
+                      "legacy-v1",
+                      "time-v2"
+                    ]
+                  },
                   "manifestHash": {
                     "type": "string",
                     "pattern": "^0x[\\da-fA-F]{64}$"
@@ -270,6 +277,13 @@
               "type": "string",
               "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
             },
+            "protocolVersion": {
+              "type": "string",
+              "enum": [
+                "legacy-v1",
+                "time-v2"
+              ]
+            },
             "manifestHash": {
               "type": "string",
               "pattern": "^0x[\\da-fA-F]{64}$"
@@ -479,6 +493,13 @@
                 "id": {
                   "type": "string",
                   "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+                },
+                "protocolVersion": {
+                  "type": "string",
+                  "enum": [
+                    "legacy-v1",
+                    "time-v2"
+                  ]
                 },
                 "manifestHash": {
                   "type": "string",
