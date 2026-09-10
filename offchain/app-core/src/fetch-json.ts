@@ -16,6 +16,13 @@ export async function fetchJson(
   } catch {
     throw new AppError("upstream_unavailable", 503);
   }
+  return readJsonResponse(response, maximumBytes);
+}
+
+export async function readJsonResponse(
+  response: Response,
+  maximumBytes = 1_048_576,
+): Promise<unknown> {
   if (!response.ok || !response.body)
     throw new AppError("upstream_rejected", 503);
   const reader = response.body.getReader();

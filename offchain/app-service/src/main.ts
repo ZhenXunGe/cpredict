@@ -12,12 +12,20 @@ import { PostgresApplicationStore } from "./postgres-store.js";
 import { OperationRecovery } from "./recovery.js";
 import { createApplicationServer } from "./server.js";
 import { PostgresReports } from "./reports.js";
+import { ApplicationMetrics } from "./metrics.js";
+import { ZeroDevManagementReader } from "./provider-management.js";
 
 export async function startApplicationService(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): Promise<() => Promise<void>> {
   const config = await loadServiceConfig(env),
     runtime = config.runtime;
+  const metrics = new ApplicationMetrics();
+  const management = config.management
+    ? new ZeroDevManagementReader(config.management, (ok) =>
+        metrics.observeDependency("management", ok),
+      )
+    : undefined;
   const client = createPublicClient({
     chain: arbitrumSepolia,
     transport: http(config.rpcUrl, { timeout: 8_000, retryCount: 0 }),
@@ -38,10 +46,14 @@ export async function startApplicationService(
     },
   };
   const bundler = config.bundlerUrl
-    ? new ProviderRpc(config.bundlerUrl)
+    ? new ProviderRpc(config.bundlerUrl, (ok) =>
+        metrics.observeDependency("bundler", ok),
+      )
     : unavailable;
   const paymaster = config.paymasterUrl
-    ? new ProviderRpc(config.paymasterUrl)
+    ? new ProviderRpc(config.paymasterUrl, (ok) =>
+        metrics.observeDependency("paymaster", ok),
+      )
     : unavailable;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let stopped = false;
@@ -73,16 +85,39 @@ export async function startApplicationService(
         config.privySecret,
       ),
       gateway: new AuthenticatedAAGateway(operations, bundler, paymaster),
-      chainRpc: new ProviderRpc(config.rpcUrl),
+      chainRpc: new ProviderRpc(config.rpcUrl, (ok) =>
+        metrics.observeDependency("chain", ok),
+      ),
       reports,
+      metrics,
+      ...(management ? { management } : {}),
     });
     await app.listen({ host: config.host, port: config.port });
+    management?.start();
+    const observe = async () => {
+      const [sample, head] = await Promise.allSettled([
+        reports.monitor(),
+        client.getBlockNumber(),
+      ]);
+      metrics.observeDependency("database", sample.status === "fulfilled");
+      metrics.observeDependency("chain", head.status === "fulfilled");
+      if (sample.status === "fulfilled")
+        metrics.observeState(
+          sample.value,
+          head.status === "fulfilled" ? head.value : null,
+        );
+    };
     const tick = async () => {
-      try {
-        await recovery.tick();
-      } catch {
-        app.log.warn("operation reconciliation unavailable");
-      }
+      await Promise.all([
+        recovery
+          .tick(() => stopped)
+          .then((result) => metrics.recoveryResults(result))
+          .catch(() => {
+            metrics.failure("recovery_query_unavailable");
+            app.log.warn("operation reconciliation unavailable");
+          }),
+        observe(),
+      ]);
       if (!stopped) {
         timer = setTimeout(() => {
           activeTick = tick();
@@ -94,12 +129,14 @@ export async function startApplicationService(
     return async () => {
       stopped = true;
       if (timer) clearTimeout(timer);
+      await management?.stop();
       await app.close();
       await activeTick;
       await reports.close();
       await store.close();
     };
   } catch (error) {
+    await management?.stop();
     await reports.close();
     await store.close();
     throw error;

@@ -139,13 +139,19 @@ export class OperationRecovery {
       )
     ).record.operation;
   }
-  async tick(): Promise<void> {
+  async tick(shouldStop: () => boolean = () => false): Promise<{ attempted: number; failed: number }> {
+    let attempted = 0, failed = 0;
+    const started = performance.now();
     for (const item of await this.store.pending(50)) {
+      if (shouldStop() || performance.now() - started >= 10_000) break;
+      attempted += 1;
       try {
         await this.refresh(item.operation);
       } catch {
+        failed += 1;
         /* Preserve known state and retry queries on the next bounded pass. */
       }
     }
+    return { attempted, failed };
   }
 }

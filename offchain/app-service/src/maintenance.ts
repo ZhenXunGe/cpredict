@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { chmod, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { parseArgs } from "node:util";
@@ -55,10 +55,11 @@ const migrationPaths = [
     "006_financial_facts.sql",
   ].map((n) => `offchain/indexer/migrations/${n}`),
   "offchain/app-service/migrations/001_application.sql",
+  "offchain/app-service/migrations/002_operational_queries.sql",
 ];
 async function run() {
   if (command === "validate-site") {
-    const paths = z.array(z.string()).min(2).max(8).parse(positionals.slice(1)),
+    const paths = z.array(z.string()).min(1).max(8).parse(positionals.slice(1)),
       configs = await Promise.all(
         paths.map(async (p) => appRuntimeSchema.parse(await readJson(p))),
       );
@@ -72,7 +73,7 @@ async function run() {
       .filter((v): v is string => !!v);
     if (new Set(projects).size !== projects.length)
       throw new AppError("provider_projects_must_be_separate");
-    if (values.output)
+    if (values.output) {
       await writeFile(
         resolve(values.output),
         JSON.stringify(
@@ -84,8 +85,12 @@ async function run() {
           null,
           2,
         ) + "\n",
-        { flag: "wx", mode: 0o600 },
+        // This contains only the public environment fields and must be readable
+        // by the unprivileged static server when bind-mounted from the host.
+        { flag: "wx", mode: 0o644 },
       );
+      await chmod(resolve(values.output), 0o644);
+    }
     console.log(
       "Environment schemas and cross-environment separation validated. Provider dashboards and deployments still require verification.",
     );

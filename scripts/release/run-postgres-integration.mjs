@@ -27,15 +27,32 @@ export const POSTGRES_INTEGRATION_INVENTORY = Object.freeze([
 export const POSTGRES_INTEGRATION_FILES = Object.freeze(
   POSTGRES_INTEGRATION_INVENTORY.map((entry) => entry.path),
 );
-const EXPECTED_TESTS = POSTGRES_INTEGRATION_INVENTORY.reduce(
-  (total, entry) => total + entry.tests,
-  0,
-);
+export const PUBLIC_SITE_POSTGRES_INVENTORY = Object.freeze([
+  ...POSTGRES_INTEGRATION_INVENTORY,
+  Object.freeze({
+    path: "offchain/app-service/test/postgres.integration.test.ts",
+    tests: 7,
+  }),
+  Object.freeze({
+    path: "offchain/indexer/test/financial-postgres.integration.test.ts",
+    tests: 6,
+  }),
+  Object.freeze({
+    path: "offchain/indexer/test/reports-postgres.integration.test.ts",
+    tests: 5,
+  }),
+]);
 
 export function validatePostgresIntegrationResult(
   report,
   root = process.cwd(),
+  inventory = POSTGRES_INTEGRATION_INVENTORY,
 ) {
+  const EXPECTED_TESTS = inventory.reduce(
+    (total, entry) => total + entry.tests,
+    0,
+  );
+  const files = inventory.map((entry) => entry.path);
   assertObject(report, "Vitest JSON report");
   assert(
     report.success === true,
@@ -66,13 +83,11 @@ export function validatePostgresIntegrationResult(
     "PostgreSQL integration testResults must be an array",
   );
   assert(
-    report.testResults.length === POSTGRES_INTEGRATION_FILES.length,
-    `PostgreSQL integration must execute exactly ${POSTGRES_INTEGRATION_FILES.length} test files`,
+    report.testResults.length === files.length,
+    `PostgreSQL integration must execute exactly ${files.length} test files`,
   );
 
-  const expected = POSTGRES_INTEGRATION_FILES.map((path) =>
-    resolve(root, path),
-  ).sort();
+  const expected = files.map((path) => resolve(root, path)).sort();
   const actual = report.testResults
     .map((result) => resolve(result.name))
     .sort();
@@ -89,15 +104,15 @@ export function validatePostgresIntegrationResult(
       Array.isArray(result.assertionResults),
       `missing assertionResults for ${result.name}`,
     );
-    const inventory = POSTGRES_INTEGRATION_INVENTORY.find(
+    const entry = inventory.find(
       (entry) => resolve(root, entry.path) === resolve(result.name),
     );
     assert(
-      inventory !== undefined,
+      entry !== undefined,
       `unexpected PostgreSQL integration file: ${result.name}`,
     );
     assert(
-      result.assertionResults.length === inventory.tests,
+      result.assertionResults.length === entry.tests,
       `unexpected test count in ${result.name}`,
     );
     assert(
@@ -108,7 +123,7 @@ export function validatePostgresIntegrationResult(
     );
   }
   return {
-    files: POSTGRES_INTEGRATION_FILES.length,
+    files: files.length,
     tests: EXPECTED_TESTS,
     passed: EXPECTED_TESTS,
     skipped: 0,
@@ -118,6 +133,7 @@ export function validatePostgresIntegrationResult(
 export function runPostgresIntegration(
   root = process.cwd(),
   environment = process.env,
+  inventory = POSTGRES_INTEGRATION_INVENTORY,
 ) {
   const databaseUrl = environment.TEST_DATABASE_URL;
   if (
@@ -131,7 +147,12 @@ export function runPostgresIntegration(
   const vitest = resolve(root, "node_modules/.bin/vitest");
   const result = spawnSync(
     vitest,
-    ["run", ...POSTGRES_INTEGRATION_FILES, "--reporter=json", "--maxWorkers=1"],
+    [
+      "run",
+      ...inventory.map((entry) => entry.path),
+      "--reporter=json",
+      "--maxWorkers=1",
+    ],
     {
       cwd: root,
       encoding: "utf8",
@@ -154,7 +175,7 @@ export function runPostgresIntegration(
       `PostgreSQL integration emitted invalid JSON: ${error.message}`,
     );
   }
-  return validatePostgresIntegrationResult(report, root);
+  return validatePostgresIntegrationResult(report, root, inventory);
 }
 
 function redact(value) {
@@ -178,7 +199,13 @@ const isMain =
   pathToFileURL(resolve(process.argv[1])).href === import.meta.url;
 if (isMain) {
   try {
-    const result = runPostgresIntegration();
+    const result = runPostgresIntegration(
+      process.cwd(),
+      process.env,
+      process.argv.includes("--public-site")
+        ? PUBLIC_SITE_POSTGRES_INVENTORY
+        : POSTGRES_INTEGRATION_INVENTORY,
+    );
     console.log(
       `PostgreSQL integration gate passed: ${result.files} files, ${result.tests} tests, ` +
         `${result.passed} passed, ${result.skipped} skipped`,

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { buildBackupManifest } from "./backup.mjs";
+import { backupColumnsSql, backupDatabaseInventory, buildBackupManifest, buildSnapshotSql, createStackBackup } from "./backup.mjs";
 import { compareSnapshots, snapshotTables, validateBackupFiles } from "./restore-drill.mjs";
 
 const sha = "a".repeat(64);
@@ -44,4 +44,42 @@ test("backup file validation rejects traversal and tampering", async () => {
   await assert.doesNotReject(validateBackupFiles(root, manifest));
   manifest.dumps.indexer.file = "../indexer.dump";
   await assert.rejects(validateBackupFiles(root, manifest), /unsafe/);
+});
+
+test("v2 backup covers all five databases and actual application tables", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "cpredict-backup-v2-"));
+  t.after(() => rm(root, { recursive: true }));
+  await writeFile(join(root, "package-manifest.json"), JSON.stringify({ sourceManifestSha256: sha, deploymentIdentity: "proof", inputSha256: sha }));
+  const columns = { app_operations: ["id", "record"], chain_events: ["chain_id", "data"] };
+  const snapshot = { rows: { app_operations: "1", chain_events: "2" }, columns, contentSha256: { app_operations: sha, chain_events: sha } };
+  const databases = [];
+  const result = await createStackBackup({
+    outputRoot: root,
+    usdc: true,
+    configuration: { runtimeRoot: root, environment: {}, secret: { CPREDICT_STACK_BACKUP_PASSWORD: "test" }, secretPath: join(root, "test.env"), publicPath: join(root, "public.env") },
+    run: async (_command, args) => ({ code: 0, stderr: "", stdout: args.includes("--version") ? "postgres (PostgreSQL) 17.10" : JSON.stringify(args.includes(backupColumnsSql) ? columns : snapshot) }),
+    stream: async (_command, args, { outputPath }) => {
+      databases.push(args.find((arg) => arg.startsWith("--dbname=")));
+      await writeFile(outputPath, "test archive bytes");
+    },
+  });
+  assert.equal(result.manifest.schemaVersion, "cpredict.stack-backup.v2");
+  assert.equal(databases.length, 5);
+  assert.ok(databases.includes("--dbname=cpredict_usdc_indexer"));
+  assert.deepEqual(result.manifest.snapshots["usdc-indexer"], snapshot);
+  assert.ok(result.manifest.migrations.some((m) => m.path.endsWith("app-service/migrations/001_application.sql")));
+  await assert.doesNotReject(validateBackupFiles(result.directory, result.manifest));
+  assert.match(await readFile(join(result.directory, "SHA256SUMS"), "utf8"), /usdc-indexer.dump/);
+  delete result.manifest.dumps["usdc-metadata"];
+  await assert.rejects(validateBackupFiles(result.directory, result.manifest), /inventory/);
+});
+
+test("restore comparison catches content and operation changes even with unchanged row counts", () => {
+  const before = { indexer: { rows: { app_operations: "1" }, contentSha256: { app_operations: sha } } };
+  const after = structuredClone(before);
+  after.indexer.contentSha256.app_operations = "b".repeat(64);
+  assert.throws(() => compareSnapshots(before, after), /changed during restore/);
+  assert.equal(backupDatabaseInventory().length, 3);
+  assert.throws(() => buildSnapshotSql("indexer", ["app_operations;DROP DATABASE postgres"]), /unsafe/);
+  assert.throws(() => buildSnapshotSql("indexer", ["app_operations"], { fingerprints: true, columns: { app_operations: ["id');SELECT"] } }), /unsafe/);
 });

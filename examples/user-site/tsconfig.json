@@ -6,7 +6,7 @@
     "moduleResolution": "Bundler",
     "declaration": false,
     "noEmit": true,
-    "skipLibCheck": true,
+    "skipLibCheck": false,
     "types": ["vite/client"]
   },
   "include": [

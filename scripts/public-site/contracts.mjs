@@ -24,6 +24,8 @@ const schemas = {
   OpsReport: reports.opsReportSchema,
   Telemetry: reports.telemetrySchema,
   Feedback: reports.feedbackSchema,
+  FeedbackQuery: reports.feedbackQuerySchema,
+  FeedbackPage: reports.feedbackPageSchema,
   Market: catalog.marketSchema,
   Listing: catalog.listingSchema,
 };

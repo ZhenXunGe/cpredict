@@ -8,23 +8,13 @@ import { fileURLToPath } from "node:url";
 import { loadStackConfiguration } from "./config.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const INDEXER_TABLES = [
-  "canonical_blocks", "chain_events", "chain_checkpoints", "registered_markets",
-  "markets", "listings", "fills", "positions", "claims", "activities",
-  "activity_participants",
-];
-const PAYMASTER_TABLES = [
-  "sponsor_budget_global_usage", "sponsor_budget_user_usage", "sponsor_budget_leases",
-  "permit2_relay_intents",
-];
-const METADATA_TABLES = ["metadata_challenges", "market_publications"];
-
 export async function createStackBackup({
   outputRoot = resolve(ROOT, "runtime/arbitrum-sepolia/backups"),
   configuration,
   run = spawnCapture,
   stream = spawnToFile,
   generatedAt = new Date().toISOString(),
+  usdc = false,
 } = {}) {
   const config = configuration ?? await loadStackConfiguration();
   const id = generatedAt.replaceAll(/[:.]/g, "-");
@@ -33,11 +23,13 @@ export async function createStackBackup({
   const base = composeBase(config);
   const env = { ...process.env, ...config.environment, PGPASSWORD: config.secret.CPREDICT_STACK_BACKUP_PASSWORD };
   const dumps = {};
-  for (const [name, database] of [
-    ["indexer", "cpredict_indexer"],
-    ["paymaster", "cpredict_paymaster"],
-    ["metadata", "cpredict_metadata"],
-  ]) {
+  const snapshots = {};
+  for (const { name, database, kind } of backupDatabaseInventory({ usdc })) {
+    const columns = await discoverBackupColumns(run, base, env, database);
+    const tables = Object.keys(columns).sort();
+    // Stop writers for the development upgrade. Refuse evidence if data moved
+    // while dumping; never present a live, inconsistent snapshot as verified.
+    const before = await databaseSnapshot(run, base, env, database, tables, kind, columns);
     const path = resolve(directory, `${name}.dump`);
     await stream("docker", [
       ...base, "exec", "-T", "-e", "PGPASSWORD", "postgres", "pg_dump",
@@ -45,12 +37,10 @@ export async function createStackBackup({
       "--compress=9", "--no-owner", "--no-privileges",
     ], { cwd: ROOT, env, outputPath: path });
     dumps[name] = await fileRecord(path);
+    const after = await databaseSnapshot(run, base, env, database, tables, kind, columns);
+    if (JSON.stringify(before) !== JSON.stringify(after)) throw new Error(`${database} changed during backup; stop its writers before retrying`);
+    snapshots[name] = before;
   }
-  const snapshots = {
-    indexer: await databaseSnapshot(run, base, env, "cpredict_indexer", INDEXER_TABLES, "indexer"),
-    paymaster: await databaseSnapshot(run, base, env, "cpredict_paymaster", PAYMASTER_TABLES, "paymaster"),
-    metadata: await databaseSnapshot(run, base, env, "cpredict_metadata", METADATA_TABLES, "metadata"),
-  };
   const packageManifestPath = resolve(config.runtimeRoot, "package-manifest.json");
   const packageManifest = JSON.parse(await readFile(packageManifestPath, "utf8"));
   const migrations = await migrationInventory();
@@ -70,19 +60,17 @@ export async function createStackBackup({
   await atomicJson(manifestPath, manifest);
   await writeFile(resolve(directory, "SHA256SUMS"), checksumText({
     "backup-manifest.json": await sha256File(manifestPath),
-    "indexer.dump": dumps.indexer.sha256,
-    "paymaster.dump": dumps.paymaster.sha256,
-    "metadata.dump": dumps.metadata.sha256,
+    ...Object.fromEntries(Object.values(dumps).map((dump) => [dump.file, dump.sha256])),
   }), { mode: 0o600 });
   return { directory, manifest };
 }
 
 export function buildBackupManifest({ generatedAt, packageManifest, postgresVersion, dumps, migrations, snapshots }) {
-  for (const key of ["indexer", "paymaster", "metadata"])
+  for (const { name: key } of backupDatabaseInventory({ usdc: "usdc-indexer" in dumps || "usdc-metadata" in dumps }))
     if (!/^[0-9a-f]{64}$/.test(dumps[key]?.sha256 ?? "") || dumps[key].bytes <= 0)
       throw new Error(`${key} dump record is invalid`);
   return {
-    schemaVersion: "cpredict.stack-backup.v1",
+    schemaVersion: "cpredict.stack-backup.v2",
     evidenceClass: "LOCAL_STACK_BACKUP",
     chainId: 421614,
     generatedAt,
@@ -96,8 +84,37 @@ export function buildBackupManifest({ generatedAt, packageManifest, postgresVers
   };
 }
 
-async function databaseSnapshot(run, base, env, database, tables, kind) {
-  const sql = buildSnapshotSql(kind, tables);
+export function backupDatabaseInventory({ usdc = false } = {}) {
+  return [
+    { name: "indexer", database: "cpredict_indexer", kind: "indexer" },
+    { name: "paymaster", database: "cpredict_paymaster", kind: "paymaster" },
+    { name: "metadata", database: "cpredict_metadata", kind: "metadata" },
+    ...(usdc ? [
+      { name: "usdc-indexer", database: "cpredict_usdc_indexer", kind: "indexer" },
+      { name: "usdc-metadata", database: "cpredict_usdc_metadata", kind: "metadata" },
+    ] : []),
+  ];
+}
+
+async function discoverBackupColumns(run, base, env, database) {
+  const result = await run("docker", [...base, "exec", "-T", "-e", "PGPASSWORD", "postgres", "psql",
+    "--username=cpredict_backup", `--dbname=${database}`, "-XAt", "-v", "ON_ERROR_STOP=1", "-c",
+    backupColumnsSql,
+  ], { cwd: ROOT, env });
+  ensureSuccess(result, `${database} table inventory`);
+  const columns = JSON.parse(result.stdout.trim());
+  validateColumns(columns);
+  return columns;
+}
+
+export const backupColumnsSql = "SELECT COALESCE(json_object_agg(table_name,cols ORDER BY table_name),'{}'::json)::text FROM (SELECT table_name,json_agg(column_name ORDER BY ordinal_position) cols FROM information_schema.columns WHERE table_schema='public' GROUP BY table_name) grouped";
+function validateColumns(columns) {
+  if (!columns || typeof columns !== "object" || Array.isArray(columns) || !Object.keys(columns).length) throw new Error("invalid snapshot column inventory");
+  for (const [name, cols] of Object.entries(columns)) if (!/^[a-z][a-z0-9_]*$/.test(name) || !Array.isArray(cols) || !cols.length || cols.some((col) => !/^[a-z][a-z0-9_]*$/.test(col))) throw new Error("unsafe snapshot column inventory");
+}
+
+async function databaseSnapshot(run, base, env, database, tables, kind, columns) {
+  const sql = buildSnapshotSql(kind, tables, { fingerprints: true, columns });
   const result = await run("docker", [
     ...base, "exec", "-T", "-e", "PGPASSWORD", "postgres", "psql",
     "--username=cpredict_backup", `--dbname=${database}`, "--tuples-only", "--no-align",
@@ -105,15 +122,23 @@ async function databaseSnapshot(run, base, env, database, tables, kind) {
   ], { cwd: ROOT, env });
   ensureSuccess(result, `${database} snapshot`);
   const parsed = JSON.parse(result.stdout.trim());
-  if (Object.keys(parsed).sort().join(",") !== [...tables].sort().join(","))
+  if (Object.keys(parsed.rows ?? {}).sort().join(",") !== [...tables].sort().join(","))
     throw new Error(`${database} snapshot table inventory mismatch`);
   return parsed;
 }
 
-export function buildSnapshotSql(kind, tables) {
+export function buildSnapshotSql(kind, tables, { fingerprints = false, columns } = {}) {
+  if (!tables.length || tables.some((table) => !/^[a-z][a-z0-9_]*$/.test(table))) throw new Error("unsafe snapshot table inventory");
   const rows = tables.map((table) => `'${table}', (SELECT count(*)::text FROM ${table})`).join(",");
+  if (columns) {
+    validateColumns(columns);
+    if (Object.keys(columns).sort().join(",") !== [...tables].sort().join(",")) throw new Error("snapshot table and column inventory differ");
+  }
+  const row = (table) => columns ? `to_jsonb((SELECT r FROM (SELECT ${columns[table].map((col) => `t."${col}"`).join(",")}) r))` : "to_jsonb(t)";
+  const contents = fingerprints ? `${columns ? `'columns', '${JSON.stringify(columns)}'::json,` : ""}'contentSha256', json_build_object(${tables.map((table) => `'${table}', (SELECT encode(sha256(convert_to(COALESCE(string_agg(h,'' ORDER BY h),''),'UTF8')),'hex') FROM (SELECT encode(sha256(convert_to(${row(table)}::text,'UTF8')),'hex') AS h FROM "${table}" t) hashes)`).join(",")}),` : "";
   if (kind === "indexer") return `
     SELECT json_build_object(
+      ${contents}
       'rows', json_build_object(${rows}),
       'marketStates', COALESCE((SELECT json_object_agg(state::text, count::text) FROM (SELECT state, count(*) FROM markets GROUP BY state ORDER BY state) grouped), '{}'::json),
       'listingProjection', json_build_object(
@@ -127,6 +152,7 @@ export function buildSnapshotSql(kind, tables) {
     )::text;`;
   if (kind === "paymaster") return `
     SELECT json_build_object(
+      ${contents}
       'rows', json_build_object(${rows}),
       'budgetTotals', json_build_object(
         'globalReserved', (SELECT COALESCE(sum(reserved_cost), 0)::text FROM sponsor_budget_global_usage),
@@ -142,6 +168,7 @@ export function buildSnapshotSql(kind, tables) {
     )::text;`;
   if (kind === "metadata") return `
     SELECT json_build_object(
+      ${contents}
       'rows', json_build_object(${rows}),
       'publicationTotals', json_build_object(
         'published', (SELECT count(*)::text FROM market_publications),
@@ -160,6 +187,8 @@ async function migrationInventory() {
     "offchain/paymaster-service/migrations/001_sponsor_budget.sql",
     "offchain/paymaster-service/migrations/002_permit2_relay_intents.sql",
     "offchain/metadata-service/migrations/001_metadata.sql",
+    "offchain/app-service/migrations/001_application.sql",
+    "offchain/app-service/migrations/002_operational_queries.sql",
   ];
   return Promise.all(files.map(async (path) => ({ path, sha256: await sha256File(resolve(ROOT, path)) })));
 }
@@ -229,7 +258,7 @@ async function sha256File(path) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  createStackBackup().then(({ directory }) => process.stdout.write(`BACKUP ${directory}\n`)).catch((error) => {
+  createStackBackup({ usdc: process.argv.includes("--usdc") }).then(({ directory }) => process.stdout.write(`BACKUP ${directory}\n`)).catch((error) => {
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 1;
   });

@@ -2,6 +2,7 @@ import { access, readFile, realpath, stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import { getAddress, isAddress, zeroAddress } from "viem";
 import { parseEnvText } from "../deployment/deploy-arbitrum-sepolia.mjs";
+import { PUBLIC_SITE_SECRET_KEYS } from "./public-site-config.mjs";
 
 const ROOT = resolve(import.meta.dirname, "../..");
 const SECRET_KEYS = new Set([
@@ -16,12 +17,14 @@ const SECRET_KEYS = new Set([
   "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
   "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH",
   "CPREDICT_RELAY_EXPECTED_SENDER",
+  ...PUBLIC_SITE_SECRET_KEYS,
 ]);
 const REQUIRED_SECRET_KEYS = [...SECRET_KEYS].filter(
   (key) => ![
     "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
     "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH",
     "CPREDICT_RELAY_EXPECTED_SENDER",
+    ...PUBLIC_SITE_SECRET_KEYS,
   ].includes(key),
 );
 const REQUIRED_PUBLIC_KEYS = [

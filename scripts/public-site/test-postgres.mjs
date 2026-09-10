@@ -4,7 +4,11 @@ import { mkdtemp, readFile, writeFile, rm, mkdir } from "node:fs/promises";
 import { createServer } from "node:net";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runPostgresIntegration } from "../release/run-postgres-integration.mjs";
+import {
+  runPostgresIntegration,
+  PUBLIC_SITE_POSTGRES_INVENTORY,
+} from "../release/run-postgres-integration.mjs";
+import { verifyInPlaceUpgrade } from "../stack/in-place-upgrade-proof.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const pg = resolve(root, ".tools/postgresql-17.10/bin");
@@ -79,6 +83,14 @@ try {
   await mkdir(resolve(root, "reports/generated/public-site"), {
     recursive: true,
   });
+  const upgrade = await verifyInPlaceUpgrade({ root, pg, directory, port });
+  await writeFile(
+    resolve(root, "reports/generated/public-site/in-place-upgrade.json"),
+    `${JSON.stringify(upgrade, null, 2)}\n`,
+  );
+  process.stdout.write(
+    `In-place database upgrade/restore: ${upgrade.checks.length} checks passed in the owned local cluster.\n`,
+  );
   const reportPath = resolve(
     root,
     "reports/generated/public-site/postgres.json",
@@ -104,25 +116,29 @@ try {
     !report.success ||
     report.numPendingTests !== 0 ||
     report.numTodoTests !== 0 ||
-    report.numTotalTests !== 21 ||
-    report.numPassedTests !== 21
+    report.numTotalTests !== 22 ||
+    report.numPassedTests !== 22
   )
     throw new Error(
-      "public-site PostgreSQL tests must all execute and pass (21 expected)",
+      "public-site PostgreSQL tests must all execute and pass (22 expected)",
     );
   process.stdout.write(
     `Public-site PostgreSQL: ${report.numPassedTests}/${report.numTotalTests} passed, no skipped tests.\n`,
   );
-  const legacy = runPostgresIntegration(root, {
-    ...process.env,
-    TEST_DATABASE_URL: `postgresql://cpredict_test@127.0.0.1:${port}/postgres?sslmode=disable`,
-  });
+  const all = runPostgresIntegration(
+    root,
+    {
+      ...process.env,
+      TEST_DATABASE_URL: `postgresql://cpredict_test@127.0.0.1:${port}/postgres?sslmode=disable`,
+    },
+    PUBLIC_SITE_POSTGRES_INVENTORY,
+  );
   await writeFile(
-    resolve(root, "reports/generated/public-site/legacy-postgres.json"),
-    `${JSON.stringify(legacy, null, 2)}\n`,
+    resolve(root, "reports/generated/public-site/all-postgres.json"),
+    `${JSON.stringify(all, null, 2)}\n`,
   );
   process.stdout.write(
-    `Existing PostgreSQL gate: ${legacy.passed}/${legacy.tests} passed, ${legacy.skipped} skipped (4 indexer cases overlap).\n`,
+    `CI PostgreSQL gate (all public and legacy cases): ${all.passed}/${all.tests} passed, ${all.skipped} skipped.\n`,
   );
 } finally {
   if (started)

@@ -22,7 +22,11 @@ import type { PublicClient } from "viem";
 
 export interface IndexerApiOptions {
   trustedProxies?: string[];
-  financial?: {ledger:PostgresFinancialLedger;client:PublicClient;confirmations:bigint};
+  financial?: {
+    ledger: PostgresFinancialLedger;
+    client: PublicClient;
+    confirmations: bigint;
+  };
   readiness?: (() => Promise<void>) | undefined;
   syncStatus?: ((chainId: number) => Promise<IndexerSyncStatus>) | undefined;
   registry?: Registry | undefined;
@@ -84,11 +88,6 @@ export function createIndexerApi(
   });
   if (options.maxConnections !== undefined)
     app.server.maxConnections = options.maxConnections;
-  if(options.financial) app.addHook("preValidation",async request=>{
-    if(!request.url.startsWith("/v1/") && !request.url.startsWith("/v2/")) return;
-    const env=options.financial!.ledger.environment;
-    z.object({environment:z.literal(env.id),deploymentId:z.literal(env.deployment.id),chainId:z.coerce.number().refine(v=>v===env.deployment.chainId).optional()}).parse(request.query);
-  });
   const connections = new Gauge({
     name: "cpredict_indexer_http_connections",
     help: "Currently open HTTP server connections",
@@ -191,7 +190,6 @@ export function createIndexerApi(
       : reply.send(jsonMarketV1(market));
   });
   app.get("/v2/markets", async (request, reply) => {
-    if(options.financial) return publicCatalog(options.financial.ledger,"markets",request.query);
     const query = z
       .object({
         chainId: chainIdSchema,
@@ -215,7 +213,6 @@ export function createIndexerApi(
   });
   app.get("/v2/activity/:owner", async (request, reply) => {
     const params = z.object({ owner: addressSchema }).parse(request.params);
-    if(options.financial) return financialActivity(options.financial.ledger,params.owner,request.query);
     const query = z
       .object({
         chainId: chainIdSchema,
@@ -228,9 +225,7 @@ export function createIndexerApi(
     );
   });
 
-  if(options.financial) registerFinancialApi(app,options.financial.ledger,options.financial.client,options.financial.confirmations);
   app.get("/v1/listings", async (request, reply) => {
-    if(options.financial) return publicCatalog(options.financial.ledger,"listings",request.query);
     const query = z
       .object({
         chainId: chainIdSchema,
@@ -283,11 +278,61 @@ export function createIndexerApi(
     );
   });
 
+  const financial = options.financial;
+  if (financial) {
+    app.register(
+      async (publicApi) => {
+        const env = financial.ledger.environment;
+        // Encapsulation keeps legacy callers independent of the public-site binding.
+        publicApi.addHook("preValidation", async (request) => {
+          z.object({
+            environment: z.literal(env.id),
+            deploymentId: z.literal(env.deployment.id),
+            chainId: chainIdSchema
+              .refine((value) => value === env.deployment.chainId)
+              .optional(),
+          }).parse(request.query);
+        });
+        publicApi.get("/v2/markets", async (request) =>
+          publicCatalog(financial.ledger, "markets", request.query),
+        );
+        publicApi.get("/v2/markets/:market", async (request, reply) => {
+          const { market: address } = z
+            .object({ market: addressSchema })
+            .parse(request.params);
+          const market = await store.market(env.deployment.chainId, address);
+          return market === undefined
+            ? reply.code(404).send({ error: "market not found" })
+            : reply.send(jsonMarketV2(market));
+        });
+        publicApi.get("/v1/listings", async (request) =>
+          publicCatalog(financial.ledger, "listings", request.query),
+        );
+        publicApi.get("/v2/activity/:owner", async (request) => {
+          const { owner } = z
+            .object({ owner: addressSchema })
+            .parse(request.params);
+          return financialActivity(financial.ledger, owner, request.query);
+        });
+        registerFinancialApi(
+          publicApi,
+          financial.ledger,
+          financial.client,
+          financial.confirmations,
+        );
+      },
+      { prefix: "/public" },
+    );
+  }
+
   app.setNotFoundHandler(async (_request, reply) =>
     reply.code(404).send({ error: "not found" }),
   );
   app.setErrorHandler(async (error, _request, reply) => {
-    if(error instanceof AppError) return reply.code(error.status).send({error:{code:error.code,message:error.message}});
+    if (error instanceof AppError)
+      return reply
+        .code(error.status)
+        .send({ error: { code: error.code, message: error.message } });
     if (
       error instanceof z.ZodError ||
       error instanceof SyntaxError ||

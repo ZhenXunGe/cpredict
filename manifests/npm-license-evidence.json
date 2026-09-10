@@ -3,6 +3,20 @@
   "legalConclusion": false,
   "entries": [
     {
+      "path": "node_modules/@lit-labs/ssr-dom-shim",
+      "name": "@lit-labs/ssr-dom-shim",
+      "version": "1.6.0",
+      "integrity": "sha512-VHb0ALPMTlgKjM6yIxxoQNnpKyUKLD04VzeQdsiXkMqkvYlAHxq9glGLmgbb889/1GsohSOAjvQYoiBppXFqrQ==",
+      "lockDeclaration": "BSD-3-Clause",
+      "declared": "BSD-3-Clause",
+      "evidence": "manifests/npm-licenses/45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1.txt",
+      "sha256": "45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1",
+      "sourceFile": "https://raw.githubusercontent.com/lit/lit/20afabd3c5bfd49fdcdf1b8518e05c7f99a46db6/LICENSE",
+      "registrySource": "https://registry.npmjs.org/%40lit-labs%2Fssr-dom-shim/1.6.0",
+      "gitHead": "20afabd3c5bfd49fdcdf1b8518e05c7f99a46db6",
+      "status": "declared-in-source"
+    },
+    {
       "path": "node_modules/@metamask/eth-json-rpc-provider",
       "name": "@metamask/eth-json-rpc-provider",
       "version": "1.0.1",
@@ -351,6 +365,34 @@
       "status": "custom-license-review-required"
     },
     {
+      "path": "node_modules/@safe-global/safe-apps-provider",
+      "name": "@safe-global/safe-apps-provider",
+      "version": "0.18.6",
+      "integrity": "sha512-4LhMmjPWlIO8TTDC2AwLk44XKXaK6hfBTWyljDm0HQ6TWlOEijVWNrt2s3OCVMSxlXAcEzYfqyu1daHZooTC2Q==",
+      "lockDeclaration": "MIT",
+      "declared": "MIT",
+      "evidence": "manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt",
+      "sha256": "d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41",
+      "sourceFile": "https://raw.githubusercontent.com/safe-global/safe-apps-sdk/f09826c484ada43e377ad77db82e4a4173aa3b1e/LICENSE.md",
+      "registrySource": "https://registry.npmjs.org/%40safe-global%2Fsafe-apps-provider/0.18.6",
+      "gitHead": "f09826c484ada43e377ad77db82e4a4173aa3b1e",
+      "status": "declared-in-source"
+    },
+    {
+      "path": "node_modules/@safe-global/safe-apps-sdk",
+      "name": "@safe-global/safe-apps-sdk",
+      "version": "9.1.0",
+      "integrity": "sha512-N5p/ulfnnA2Pi2M3YeWjULeWbjo7ei22JwU/IXnhoHzKq3pYCN6ynL9mJBOlvDVv892EgLPCWCOwQk/uBT2v0Q==",
+      "lockDeclaration": "MIT",
+      "declared": "MIT",
+      "evidence": "manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt",
+      "sha256": "d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41",
+      "sourceFile": "https://raw.githubusercontent.com/safe-global/safe-apps-sdk/5f9ef7072e32670a71e35d390cfdeb5fc504efcf/LICENSE.md",
+      "registrySource": "https://registry.npmjs.org/%40safe-global%2Fsafe-apps-sdk/9.1.0",
+      "gitHead": "5f9ef7072e32670a71e35d390cfdeb5fc504efcf",
+      "status": "declared-in-source"
+    },
+    {
       "path": "node_modules/@walletconnect/core",
       "name": "@walletconnect/core",
       "version": "2.22.4",
@@ -421,6 +463,42 @@
       "sha256": "1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc",
       "sourceFile": "node_modules/@walletconnect/utils/LICENSE.md",
       "status": "custom-license-review-required"
+    },
+    {
+      "path": "node_modules/eyes",
+      "name": "eyes",
+      "version": "0.1.8",
+      "integrity": "sha512-GipyPsXO1anza0AOZdy69Im7hGFCNB7Y/NGjDlZGJ3GJJLtwNSb2vrzYrTYJRrRloVx7pl+bhUaTB8yiccPvFQ==",
+      "lockDeclaration": null,
+      "declared": "MIT",
+      "evidence": "manifests/npm-licenses/e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93.txt",
+      "sha256": "e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93",
+      "sourceFile": "node_modules/eyes/LICENSE",
+      "status": "declared-in-package"
+    },
+    {
+      "path": "node_modules/jsonify",
+      "name": "jsonify",
+      "version": "0.0.1",
+      "integrity": "sha512-2/Ki0GcmuqSrgFyelQq9M05y7PS0mEwuIzrf3f1fPqkVDVRvZrPZtVSMHxdgo8Aq0sxAOb/cr2aqqA3LeWHVPg==",
+      "lockDeclaration": "Public Domain",
+      "declared": "LicenseRef-Npm-041cdeeed354af419daf",
+      "evidence": "manifests/npm-licenses/041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be.txt",
+      "sha256": "041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be",
+      "sourceFile": "node_modules/jsonify/package.json",
+      "status": "custom-license-review-required"
+    },
+    {
+      "path": "node_modules/text-encoding-utf-8",
+      "name": "text-encoding-utf-8",
+      "version": "1.0.2",
+      "integrity": "sha512-8bw4MY9WjdsD2aMtO0OzOCY3pXGYNx2d2FfHRVUKkiCPDWjKuOlhLVASS+pD7VkLTVjW268LYJHwsnPFlBpbAg==",
+      "lockDeclaration": null,
+      "declared": "Unlicense",
+      "evidence": "manifests/npm-licenses/caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec.txt",
+      "sha256": "caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec",
+      "sourceFile": "node_modules/text-encoding-utf-8/LICENSE.md",
+      "status": "declared-in-package"
     },
     {
       "path": "node_modules/xmlhttprequest-ssl",

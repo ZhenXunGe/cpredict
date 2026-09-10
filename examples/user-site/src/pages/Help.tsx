@@ -21,6 +21,7 @@ export function HelpPage() {
         description="了解资产归属、钱包恢复与测试站的边界。"
       />
       <div className="stack">
+        <a href="/third-party/index.html">第三方软件声明与许可</a>
         <section className="surface">
           <AccountGate />
           {session.account && (

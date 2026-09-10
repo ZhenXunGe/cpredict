@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { address, hash, id, signedAmount, uint } from "./contracts.js";
 import { snapshotSchema } from "./ledger-contracts.js";
+import { managementStatusSchema } from "./provider-contracts.js";
 export const leaderboardPeriodSchema = z
   .strictObject({
     id,
@@ -89,6 +90,32 @@ export const feedbackSchema = z.strictObject({
       "feedback must not contain keys, tokens or executable signatures",
     ),
 });
+export const feedbackQuerySchema = z.strictObject({
+  limit: z.coerce.number().int().min(1).max(100).default(30),
+  cursor: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]+$/)
+    .max(2048)
+    .optional(),
+  id: z.string().uuid().optional(),
+  operationId: z.string().uuid().optional(),
+});
+export const feedbackPageSchema = z.strictObject({
+  environment: id,
+  deploymentId: id,
+  snapshotAt: z.string().datetime(),
+  items: z.array(
+    z.strictObject({
+      id: z.string().uuid(),
+      accountId: z.string().uuid().nullable(),
+      operationId: z.string().uuid().nullable(),
+      message: z.string(),
+      receivedAt: z.string().datetime(),
+    }),
+  ),
+  nextCursor: z.string().nullable(),
+});
+export type FeedbackPage = z.infer<typeof feedbackPageSchema>;
 export const opsReportSchema = z.object({
   environment: z.string(),
   deploymentId: z.string(),
@@ -99,6 +126,7 @@ export const opsReportSchema = z.object({
     bounds: z.literal("[start,end)"),
   }),
   generatedAt: z.string(),
+  providerManagement: managementStatusSchema.nullable().default(null),
   data: z.object({
     indexedBlock: uint.nullable(),
     indexedTimestamp: uint.nullable(),

@@ -118,6 +118,7 @@ const ACCEPTED_LICENSE_EXPRESSIONS = new Set([
   "CC-BY-SA-4.0",
   "GPL-3.0-only",
   "ISC",
+  "LGPL-3.0-only",
   "MIT",
   "MIT OR Apache-2.0",
   "MPL-2.0",

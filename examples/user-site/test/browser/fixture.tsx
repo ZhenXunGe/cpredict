@@ -42,6 +42,7 @@ import {
   FeedbackPage,
 } from "../../src/pages/Reports.js";
 import "../../src/site.css";
+import { reportFixture } from "./report-fixture.js";
 
 const now = Math.floor(Date.now() / 1000),
   close = now + 86400;
@@ -110,6 +111,7 @@ const accounts = [
   },
 ];
 class FixtureApi extends SiteApi {
+  admin = new URLSearchParams(location.search).get("admin") === "1";
   rulesFail = false;
   slow = false;
   pending = false;
@@ -122,8 +124,12 @@ class FixtureApi extends SiteApi {
       p = url.pathname;
     if (this.slow) await new Promise((r) => setTimeout(r, 600));
     let result: unknown;
-    if (p === "/v1/telemetry" || p === "/v1/feedback")
-      result = { accepted: true };
+    if (p === "/v1/feedback")
+      result = {
+        accepted: true,
+        id: z.object({ id: z.string().uuid() }).parse(_options.body).id,
+      };
+    else if (p === "/v1/telemetry") result = { accepted: true };
     else if (p === "/v2/sync-status")
       result = {
         chainHead: "102",
@@ -223,8 +229,35 @@ class FixtureApi extends SiteApi {
         nextCursor: null,
         status: "awaiting-roster",
       };
-    else if (p === "/v1/ops/reports") throw new AppError("ops_forbidden", 403);
-    else throw new AppError("fixture_does_not_submit", 403);
+    else if (p === "/v1/ops/reports") {
+      if (!this.admin) throw new AppError("ops_forbidden", 403);
+      result = reportFixture(
+        url.searchParams.get("start")!,
+        url.searchParams.get("end")!,
+      );
+    } else if (p === "/v1/ops/feedback") {
+      if (!this.admin) throw new AppError("ops_forbidden", 403);
+      const second = Boolean(url.searchParams.get("cursor")),
+        id = url.searchParams.get("id");
+      const record = {
+        id: second
+          ? "30000000-0000-4000-8000-000000000002"
+          : "30000000-0000-4000-8000-000000000001",
+        accountId: appAccount.id,
+        operationId: operation.id,
+        message: second
+          ? "第二条测试反馈：领取完成后余额等待同步。"
+          : "第一条测试反馈：<script>浏览器必须按文本显示</script>",
+        receivedAt: "2026-09-10T03:00:00.000Z",
+      };
+      result = {
+        environment: env.id,
+        deploymentId: env.deployment.id,
+        snapshotAt: "2026-09-10T04:00:00.000Z",
+        items: !id || id === record.id ? [record] : [],
+        nextCursor: second || id ? null : "fixture-cursor",
+      };
+    } else throw new AppError("fixture_does_not_submit", 403);
     return schema.parse(result);
   }
   override publicClient(): PublicClient {

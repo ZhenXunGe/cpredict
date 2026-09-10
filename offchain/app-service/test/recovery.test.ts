@@ -121,6 +121,8 @@ describe("operation recovery without replay", () => {
       finality: "application-confirmed",
     });
     s.rpc.getTransactionReceipt.mockRejectedValue(new Error("RPC offline"));
+    const paused = await s.recovery.tick(() => true);
+    expect(paused).toEqual({ attempted: 0, failed: 0 });
     await s.recovery.tick();
     expect((await s.store.operation(s.current.id))?.operation.state).toBe(
       "confirmed",
