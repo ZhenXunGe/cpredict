@@ -278,6 +278,9 @@ export async function execute({ root, config, mode }) {
     );
     base.push("-f", path);
   }
+  // Compose config already escapes literal dollar signs for reuse as input.
+  // Only raw Docker inspect snapshots need escapeCompose; escaping this model
+  // again changes the environment seen by candidate containers.
   const desired = JSON.parse(
     await docker([...base, "config", "--format", "json"], {
       env,
@@ -454,7 +457,7 @@ export async function execute({ root, config, mode }) {
       );
     }
     const candidateFile = resolve(directory, "candidate.compose.json");
-    await privateJson(candidateFile, escapeCompose(desired));
+    await privateJson(candidateFile, desired);
     await composeFile(candidateFile, ["build", ...SERVICES], {
       timeout: 1800000,
       label: "Candidate service image build",
@@ -473,7 +476,7 @@ export async function execute({ root, config, mode }) {
       desired.services[service].image = image.Id;
       delete desired.services[service].build;
     }
-    await privateJson(candidateFile, escapeCompose(desired));
+    await privateJson(candidateFile, desired);
     const candidate = await prepareAssets(
       journal.images["web-demo"],
       sourceCommit,

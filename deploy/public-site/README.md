@@ -29,6 +29,14 @@ volume, service health, public HTML, redirects, protected paths and auth respons
 are checked before recording success. A repeated successful revision verifies
 the current public state without restarting services.
 
+Candidate Compose files preserve the already escaped output of `docker compose
+config --format json`. Raw Docker inspect snapshots used for rollback are escaped
+once separately. These inputs must not share a second escaping pass: Compose
+[already escapes dollar signs when rendering configuration](https://github.com/docker/compose/blob/v2.32.4/cmd/compose/config.go#L154-L156).
+Validate both paths against Docker Engine using literal `$`, `${...}`, repeated
+dollar signs, quotes and newlines; a successful Compose syntax check alone does
+not prove that the container environment retains its original values.
+
 Failures after stopping writers restore their previous running image IDs and
 configuration, verify the old public page and asset hashes, and restore the
 publisher's release marker. This does **not** restore a database backup over new
