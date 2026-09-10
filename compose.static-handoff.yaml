@@ -1,0 +1,9 @@
+services:
+  web-demo:
+    volumes:
+      - type: bind
+        source: ./runtime/public-site/static-handoff
+        target: /usr/share/nginx/html/_static-handoff
+        read_only: true
+        bind:
+          create_host_path: false

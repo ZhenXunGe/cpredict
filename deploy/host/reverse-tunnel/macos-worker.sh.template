@@ -25,9 +25,11 @@ IFS= read -r autossh_bin < "$autossh_path_file"
 [[ "$autossh_bin" == /* && -x "$autossh_bin" ]] || { echo "autossh path is invalid"; exit 78; }
 [[ -r "$key_path" && -r "$known_hosts_path" ]] || { echo "key or known_hosts is missing"; exit 78; }
 
+# The public-site gateway keeps /readyz container-local. Test the gateway's
+# liveness here so a healthy public-site upgrade can restart the tunnel.
 if ! /usr/bin/curl --fail --silent --show-error --max-time 5 \
-  http://127.0.0.1:@@LOCAL_PORT@@/readyz >/dev/null; then
-  echo "local Cpredict readiness failed on 127.0.0.1:@@LOCAL_PORT@@"
+  http://127.0.0.1:@@LOCAL_PORT@@/healthz >/dev/null; then
+  echo "local Cpredict gateway health failed on 127.0.0.1:@@LOCAL_PORT@@"
   exit 69
 fi
 

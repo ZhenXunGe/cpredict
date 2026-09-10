@@ -97,10 +97,10 @@ launch_loaded() {
 }
 start_launch_agent() {
   if launch_loaded; then
-    /bin/launchctl kickstart -k "gui/$uid/$label"
-  else
-    /bin/launchctl bootstrap "gui/$uid" "$plist_path"
+    # Reload the plist as well as the worker, including its scheduling policy.
+    /bin/launchctl bootout "gui/$uid/$label"
   fi
+  /bin/launchctl bootstrap "gui/$uid" "$plist_path"
 }
 validate_admin_identity() {
   local admin_user="$1" admin_key="$2" key_mode
@@ -138,7 +138,7 @@ deploy_cloud_command() {
     [[ -x "$command" ]] || die "$command is required"
   done
   /usr/bin/curl --fail --silent --show-error --max-time 5 \
-    http://127.0.0.1:@@LOCAL_PORT@@/readyz >/dev/null \
+    http://127.0.0.1:@@LOCAL_PORT@@/healthz >/dev/null \
     || die "local Cpredict readiness failed; start and verify Compose before upload"
 
   local -a install_args=(--defer-start)
@@ -283,12 +283,13 @@ verify_command() {
   verify_host_key
   launch_loaded || die "launchd agent is not loaded"
   /usr/bin/curl --fail --silent --show-error --max-time 5 \
-    http://127.0.0.1:@@LOCAL_PORT@@/readyz >/dev/null \
-    || die "local Cpredict readiness failed"
+    http://127.0.0.1:@@LOCAL_PORT@@/healthz >/dev/null \
+    || die "local Cpredict gateway health failed"
   local status
   status="$(/usr/bin/curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
     --max-time 10 "https://$public_host/readyz")"
-  [[ "$status" == 401 ]] || die "public edge must return 401 without credentials; got $status"
+  [[ "$status" == 401 || "$status" == 404 ]] \
+    || die "public readiness must remain private (401 or 404); got $status"
   echo "LOCAL REVERSE TUNNEL VERIFY PASS"
   echo "Run sudo cpredict-tunnel-cloud verify on the cloud host to prove the live tunnel upstream."
 }

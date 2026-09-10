@@ -149,6 +149,18 @@ npm run site:maintain -- publish-period --config /secure/ctusd.runtime.json --en
 
 `npm run stack:proxy:render -- --public-site --host <目标域名> --mode domain --email <ACME联系邮箱>` 只生成主机配置与安装脚本，不执行发布。主机代理转发到原 loopback 网关，新用户站位于根路径，`demo:build:embedded` 的产物位于 `/demo/`，静态资源 base 为 `/demo/`。原 `/runtime-config.json`、`/deployment/`、`/indexer/`、`/metadata/`、`/rpc` 和 relay 路径保留。新应用路由转发 Privy Bearer，页面与 OAuth 不受旧 Basic Auth 拦截；旧 Demo 独立部署时仍可使用原代理模式。`deploy/public-site/nginx.conf.template` 是直接托管静态文件的备选模板，需同时安装嵌入式 Demo 和旧配置，不再跳转旧首页。模板不声称完成供应商 CSP 或真实 HTTPS 验收。
 
+若反向 SSH 隧道传输静态模块时超时，先比较源站的完整 GET 与云端隧道 GET，检查重传、拥塞窗口和 macOS 隧道任务的后台调度。不要只用 HEAD 或增加代理超时判断修复成功。可以从正在运行的网关导出公开静态资产，供云端运营核验后本地托管：
+
+```sh
+node scripts/stack/export-public-static-assets.mjs --container cpredict-web-demo-1
+```
+
+该命令直接复制当前容器的 `assets/` 和 `demo/assets/`，不重建镜像，拒绝链接和非普通文件，排除源码映射，检查归档成员，并输出文件数、原始与压缩大小、SHA256 和逐文件清单。归档中不包含首页、配置或 API 数据。输出位于 `runtime/public-site/static-handoff/`，属于有意公开的静态文件，权限为目录 755、文件 644；运行密钥和运行配置仍为 600，不能放入此目录。
+
+将 `compose.static-handoff.yaml` 作为现有已核验 Compose 配置的最后一个覆盖文件，仅给网关增加只读挂载；保留当前镜像和其他服务。临时下载路径为 `/_static-handoff/<归档名>`，可从云端现有 `http://127.0.0.1:4177` 隧道读取。先完整下载并核对 SHA256，再核对归档路径没有越界、链接及源码映射；云端是否启用本地 `/assets/` 和 `/demo/assets/` 由负责云端配置的任务处理，页面、运行配置与 API 继续使用原代理。切勿在一次传输过程中重启隧道。交接完成后可撤掉临时挂载，并与云端资产回退保持协调。
+
+启用云端静态托管后，每次更新页面或网关前，先同步同一次构建的静态资源并核对逐文件摘要，再原子切换云端资源目录。保留上一版本的带哈希文件，供缓存页面和已打开的浏览器继续加载；同时保留旧镜像、资源目录、代理配置和回退命令，回退页面时同步核对其引用的资源仍可用。
+
 模板应包含在 nginx 的 http 上下文；渲染只替换 `${UPPERCASE_VARIABLE}`，保留 `$uri`、`$remote_addr`、`$scheme`、`$host` 等 nginx 变量。应用/公开索引器运行文件的 `trustedProxies` 与规则服务的 `CPREDICT_METADATA_TRUSTED_PROXIES` 只填写实际反向代理的精确 IP；默认均不信任转发头。模板覆盖客户端传入的 X-Forwarded-For，后端端口须仅供代理和内部服务访问。实际代理拓扑确认后才启用，避免所有访问者共享代理 IP 限额或信任伪造 IP。
 
 监控至少包括：服务 `/healthz`/内部 `/readyz`、数据库备份与恢复、已索引/确认/安全高度、未知操作积压、RPC/Privy/ZeroDev 错误、代付拒绝、业务预留与供应商实际预算。现有指标和 `/v1/ops/reports` 可接到现有监控；不新建外部通知系统。容量与报警阈值由实际测试流量和预算确定，不能用本地空库健康检查代替容量验收。

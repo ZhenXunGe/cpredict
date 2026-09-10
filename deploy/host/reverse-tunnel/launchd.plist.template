@@ -15,9 +15,7 @@
   <key>ThrottleInterval</key>
   <integer>10</integer>
   <key>ProcessType</key>
-  <string>Background</string>
-  <key>LowPriorityIO</key>
-  <true/>
+  <string>Interactive</string>
   <key>StandardOutPath</key>
   <string>/dev/null</string>
   <key>StandardErrorPath</key>
