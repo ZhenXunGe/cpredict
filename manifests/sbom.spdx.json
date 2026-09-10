@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "cpredict-protocol-sbom",
-  "documentNamespace": "https://cpredict.example.invalid/spdx/4051d0b0d0b2e4e225717722c5eb904e5f01736e6bb60fc1e13ba47371234be5",
+  "documentNamespace": "https://cpredict.example.invalid/spdx/732018c1c5e4826cc183a6c225de7a5fcfd8f36cabb84d1b6e675436ab5456b2",
   "creationInfo": {
     "created": "1970-01-01T00:00:00Z",
     "creators": [
@@ -45,6 +45,57 @@
       "comment": "Locked npm path node_modules/@adraffy/ens-normalize; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-625a541998885fd5dcd3588e",
+      "name": "@babel/helper-string-parser",
+      "versionInfo": "8.0.0",
+      "downloadLocation": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-8.0.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "ea62609851452083bcdafbe82edf57b510bbfd39335dfb6cd6dfd2a515f82074b3320aa83d80967ac56ed6e7543d45a2a0013fd9f706e96b88f33ae4135830ae"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@babel/helper-string-parser; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-e019c949eec7c2b0e82c0aaa",
+      "name": "@babel/helper-validator-identifier",
+      "versionInfo": "8.0.4",
+      "downloadLocation": "https://registry.npmjs.org/@babel/helper-validator-identifier/-/helper-validator-identifier-8.0.4.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "e3015a88b7746d5a38708a135c8df3288d37f0d21613f72bde3bc18de8ce55857157f9bc2ed6afd544a21b31b57e64b92764618043a05cd34ae3a7113e746cae"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@babel/helper-validator-identifier; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-64679360deb531aa205ea406",
+      "name": "@babel/parser",
+      "versionInfo": "8.0.4",
+      "downloadLocation": "https://registry.npmjs.org/@babel/parser/-/parser-8.0.4.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "b2ba69b6c02411b6cd202feaf274fba3e9ba0907bc08951357fb7b31873d3675a581856d1ce6fb247e92a2bc4c84dd24b9126356a5db282946eb149b3edcf3fa"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@babel/parser; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-3de0deef16f6b126ce0f25e4",
       "name": "@babel/runtime",
       "versionInfo": "7.29.7",
@@ -60,6 +111,23 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/@babel/runtime; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-5dfa50c88ad22152140488a2",
+      "name": "@babel/types",
+      "versionInfo": "8.0.4",
+      "downloadLocation": "https://registry.npmjs.org/@babel/types/-/types-8.0.4.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "798f989f7742a931a6ca2ab641153aea503914bf25aaaaaf79c1edd1f177b8738d21aed3a18b1a0a2595f2538aa80b3445bd928e2c6228544e9e09ee94fb6dda"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@babel/types; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-78d3bd73122181d29a6c8397",
@@ -16560,6 +16628,11 @@
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
     {
+      "spdxElementId": "SPDXRef-Package-5dfa50c88ad22152140488a2",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
       "spdxElementId": "SPDXRef-Package-5f28a2e2b4e1569f94d20877",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
@@ -16576,6 +16649,16 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-61e75a8f8da7611064d0a141",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-625a541998885fd5dcd3588e",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-64679360deb531aa205ea406",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
@@ -20825,6 +20908,11 @@
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
     {
+      "spdxElementId": "SPDXRef-Package-e019c949eec7c2b0e82c0aaa",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
       "spdxElementId": "SPDXRef-Package-e12bab5320c71af6b157b848",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
@@ -20965,7 +21053,7 @@
       "annotationDate": "1970-01-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: cpredict-sbom-generator-1",
-      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/npm-license-evidence.json=757c2f1b76443b1431f05fd4348439f653cb67bfd1b790bb0a86a37a1364bb4d, manifests/npm-licenses/041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be.txt=041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be, manifests/npm-licenses/0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357.txt=0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357, manifests/npm-licenses/1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc.txt=1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc, manifests/npm-licenses/45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1.txt=45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1, manifests/npm-licenses/6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd.txt=6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd, manifests/npm-licenses/8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb.txt=8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb, manifests/npm-licenses/a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214.txt=a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214, manifests/npm-licenses/c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a.txt=c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a, manifests/npm-licenses/caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec.txt=caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec, manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt=d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41, manifests/npm-licenses/e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93.txt=e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=b9f3aef21dbe4e2859dadf1a3b12f9880b45e6c72ad7119d52565d90bf9895fe, package.json=a3a3a5918982b8e27476e29ecfdd5ddcc380c74a5bf48377562e65de38ed9b9c"
+      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/npm-license-evidence.json=757c2f1b76443b1431f05fd4348439f653cb67bfd1b790bb0a86a37a1364bb4d, manifests/npm-licenses/041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be.txt=041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be, manifests/npm-licenses/0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357.txt=0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357, manifests/npm-licenses/1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc.txt=1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc, manifests/npm-licenses/45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1.txt=45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1, manifests/npm-licenses/6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd.txt=6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd, manifests/npm-licenses/8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb.txt=8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb, manifests/npm-licenses/a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214.txt=a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214, manifests/npm-licenses/c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a.txt=c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a, manifests/npm-licenses/caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec.txt=caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec, manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt=d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41, manifests/npm-licenses/e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93.txt=e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=df09be13b20914c471d4fbbba72684cf010eda809534730fffa5cb6295348c7b, package.json=55136ff7eaf425e9108607c55eeba0c5576c60e339cc9eb850af9270fc730371"
     }
   ]
 }

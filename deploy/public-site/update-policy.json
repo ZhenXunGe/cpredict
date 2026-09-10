@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "compatibleMigrations": {
+    "offchain/indexer/migrations/001_indexer.sql": "33b6ec107e439c747bc418d6d19d89b480c6fdd651b8923037eff41920bd8976",
+    "offchain/indexer/migrations/002_settlement_evidence.sql": "f7ec65a60a59321093dda64130f5419b4ac087c437d63ebc1a43f683e34db174",
+    "offchain/indexer/migrations/003_read_api_indexes.sql": "881207676165623bac8a87db64d1410240aa5aeee4adff636289096f7b2719c2",
+    "offchain/indexer/migrations/004_market_metadata.sql": "6bf6a0c8364b99375755b5122e2429c4e15ef9ff4a05f9e934e6ea6d86f4ac04",
+    "offchain/indexer/migrations/005_activity_catalog.sql": "1faf44daa13a39a46b80c3caab1777923f7ce5c48dd205770c9d6859800a5353",
+    "offchain/indexer/migrations/006_financial_facts.sql": "d400a8ecf2f2742ab59c4964d98bdf481f13105a93fb61c166a6be76df34e281",
+    "offchain/indexer/migrations/007_legacy_deployment.sql": "6ba0ed20d84f1baf5b6aae1e34817511541eb3edb69bada2a399b7770c496b15",
+    "offchain/paymaster-service/migrations/001_sponsor_budget.sql": "ee1bdced5f7bc795b8fc0387dcf7699e538632af688cd22e2269c342b7cce1e2",
+    "offchain/paymaster-service/migrations/002_permit2_relay_intents.sql": "33cd8d5549e93395d6a4d5b09dc51b97fcd68daee9e0943bcec2c572408affe0",
+    "offchain/metadata-service/migrations/001_metadata.sql": "7d322251d2f4d3e630d3aee566933fdc28de568254b4f41fd20da06e4daf53ba",
+    "offchain/app-service/migrations/001_application.sql": "1711ccbc3450f3e71b0fd223ed33c85839088fa1731971b18c1a8f8c5b98e07c",
+    "offchain/app-service/migrations/002_operational_queries.sql": "b6cc36d028d61609e473644ae3cc55da8f912502055526b7febb6d8c0956cb24",
+    "offchain/app-service/migrations/003_usdc_deposits.sql": "36e4164520a3158dca4817995350df1cbd42500a855bf146d2e9a5a915283883"
+  },
+  "projectionInputs": [
+    "offchain/indexer/src/derived.ts",
+    "offchain/indexer/src/financial-facts.ts",
+    "offchain/indexer/src/financial-store.ts",
+    "offchain/indexer/src/postgres-store.ts",
+    "offchain/indexer/src/indexer.ts",
+    "offchain/app-core/src/pnl.ts"
+  ]
+}

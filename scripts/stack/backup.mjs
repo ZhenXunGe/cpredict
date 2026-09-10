@@ -2,7 +2,7 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rename, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadStackConfiguration } from "./config.mjs";
@@ -16,6 +16,7 @@ export async function createStackBackup({
   stream = spawnToFile,
   generatedAt = new Date().toISOString(),
   usdc = false,
+  databaseNames,
 } = {}) {
   const config = configuration ?? await loadStackConfiguration();
   const id = generatedAt.replaceAll(/[:.]/g, "-");
@@ -32,7 +33,7 @@ export async function createStackBackup({
   };
   const dumps = {};
   const snapshots = {};
-  for (const { name, database, kind } of backupDatabaseInventory({ usdc })) {
+  for (const { name, database, kind } of backupDatabaseInventory({ usdc, names: databaseNames })) {
     const columns = await discoverBackupColumns(run, base, env, database);
     const tables = Object.keys(columns).sort();
     // Stop writers for the development upgrade. Refuse evidence if data moved
@@ -63,6 +64,7 @@ export async function createStackBackup({
     dumps,
     migrations,
     snapshots,
+    databaseNames,
   });
   const manifestPath = resolve(directory, "backup-manifest.json");
   await atomicJson(manifestPath, manifest);
@@ -73,12 +75,12 @@ export async function createStackBackup({
   return { directory, manifest };
 }
 
-export function buildBackupManifest({ generatedAt, packageManifest, postgresVersion, dumps, migrations, snapshots }) {
-  for (const { name: key } of backupDatabaseInventory({ usdc: "usdc-indexer" in dumps || "usdc-metadata" in dumps }))
+export function buildBackupManifest({ generatedAt, packageManifest, postgresVersion, dumps, migrations, snapshots, databaseNames }) {
+  for (const { name: key } of backupDatabaseInventory({ usdc: "usdc-indexer" in dumps || "usdc-metadata" in dumps, names: databaseNames }))
     if (!/^[0-9a-f]{64}$/.test(dumps[key]?.sha256 ?? "") || dumps[key].bytes <= 0)
       throw new Error(`${key} dump record is invalid`);
   return {
-    schemaVersion: "cpredict.stack-backup.v2",
+    schemaVersion: databaseNames ? "cpredict.stack-backup.v3" : "cpredict.stack-backup.v2",
     evidenceClass: "LOCAL_STACK_BACKUP",
     chainId: 421614,
     generatedAt,
@@ -89,11 +91,12 @@ export function buildBackupManifest({ generatedAt, packageManifest, postgresVers
     dumps,
     migrations,
     snapshots,
+    ...(databaseNames ? { databaseNames } : {}),
   };
 }
 
-export function backupDatabaseInventory({ usdc = false } = {}) {
-  return [
+export function backupDatabaseInventory({ usdc = false, names } = {}) {
+  const inventory = [
     { name: "indexer", database: "cpredict_indexer", kind: "indexer" },
     { name: "paymaster", database: "cpredict_paymaster", kind: "paymaster" },
     { name: "metadata", database: "cpredict_metadata", kind: "metadata" },
@@ -102,6 +105,10 @@ export function backupDatabaseInventory({ usdc = false } = {}) {
       { name: "usdc-metadata", database: "cpredict_usdc_metadata", kind: "metadata" },
     ] : []),
   ];
+  if (names === undefined) return inventory;
+  if (!Array.isArray(names) || !names.length || new Set(names).size !== names.length ||
+    !names.every((name) => inventory.some((item) => item.name === name))) throw new Error("Invalid backup database inventory");
+  return inventory.filter((item) => names.includes(item.name));
 }
 
 async function discoverBackupColumns(run, base, env, database) {
@@ -188,17 +195,10 @@ export function buildSnapshotSql(kind, tables, { fingerprints = false, columns }
 }
 
 async function migrationInventory() {
-  const files = [
-    ...["001_indexer.sql", "002_settlement_evidence.sql", "003_read_api_indexes.sql", "004_market_metadata.sql", "005_activity_catalog.sql", "006_financial_facts.sql", "007_legacy_deployment.sql"].map(
-      (name) => `offchain/indexer/migrations/${name}`,
-    ),
-    "offchain/paymaster-service/migrations/001_sponsor_budget.sql",
-    "offchain/paymaster-service/migrations/002_permit2_relay_intents.sql",
-    "offchain/metadata-service/migrations/001_metadata.sql",
-    "offchain/app-service/migrations/001_application.sql",
-    "offchain/app-service/migrations/002_operational_queries.sql",
-    "offchain/app-service/migrations/003_usdc_deposits.sql",
-  ];
+  const files = [];
+  for (const directory of ["offchain/indexer/migrations", "offchain/paymaster-service/migrations",
+    "offchain/metadata-service/migrations", "offchain/app-service/migrations"])
+    for (const name of (await readdir(resolve(ROOT, directory))).sort()) if (/^\d{3}_[a-z0-9_]+\.sql$/.test(name)) files.push(`${directory}/${name}`);
   return Promise.all(files.map(async (path) => ({ path, sha256: await sha256File(resolve(ROOT, path)) })));
 }
 

@@ -101,6 +101,30 @@ test("standalone backup resolves the source revision before its first Compose qu
   assert.equal(revision, readSourceRevision());
 });
 
+test("scoped backup dumps only the selected database and keeps an explicit restore inventory", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "cpredict-scoped-backup-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(join(root, "package-manifest.json"), JSON.stringify({ sourceManifestSha256: sha, deploymentIdentity: "proof", inputSha256: sha }));
+  const dumped = [], columns = { market_publications: ["id"] };
+  const result = await createStackBackup({
+    outputRoot: root, databaseNames: ["metadata"],
+    configuration: { runtimeRoot: root, environment: { CPREDICT_IMAGE_REVISION: "b".repeat(40) },
+      secret: { CPREDICT_STACK_BACKUP_PASSWORD: "fixture" }, secretPath: join(root, "secret.env"), publicPath: join(root, "public.env") },
+    run: async (_command, args) => ({ code: 0, stderr: "", stdout: args.includes("--version") ? "postgres 17.10" :
+      JSON.stringify(args.includes(backupColumnsSql) ? columns : { rows: { market_publications: "1" }, columns }) }),
+    stream: async (_command, args, options) => { dumped.push(args.find((a) => a.startsWith("--dbname="))); await writeFile(options.outputPath, "archive fixture"); },
+  });
+  assert.deepEqual(dumped, ["--dbname=cpredict_metadata"]);
+  assert.equal(result.manifest.schemaVersion, "cpredict.stack-backup.v3");
+  assert.deepEqual(result.manifest.databaseNames, ["metadata"]);
+  assert.deepEqual(Object.keys(result.manifest.dumps), ["metadata"]);
+  await assert.doesNotReject(validateBackupFiles(result.directory, result.manifest));
+  result.manifest.databaseNames.push("indexer");
+  await assert.rejects(validateBackupFiles(result.directory, result.manifest), /inventory/);
+  assert.throws(() => backupDatabaseInventory({ names: [] }), /inventory/);
+  assert.throws(() => backupDatabaseInventory({ names: ["metadata", "metadata"] }), /inventory/);
+});
+
 test("restore comparison catches content and operation changes even with unchanged row counts", () => {
   const before = { indexer: { rows: { app_operations: "1" }, contentSha256: { app_operations: sha } } };
   const after = structuredClone(before);

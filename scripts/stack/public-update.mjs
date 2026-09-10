@@ -37,13 +37,13 @@ const privateJson = async (path, value) => {
 
 const root = resolve(import.meta.dirname, "../..");
 const mode = process.argv[2] ?? "update";
-const modes = ["update", "check", "recover", "rollback"];
+const modes = ["update", "plan", "check", "recover", "rollback"];
 let owned = false,
   lock;
 try {
   ensure(
     modes.includes(mode) && process.argv.length <= 3,
-    "Usage: npm run stack:update:public -- [update|check|recover|rollback]",
+    "Usage: npm run stack:update:public -- [update|plan|check|recover|rollback]",
   );
   const path = resolve(root, "runtime/public-site/update.json");
   const info = await lstat(path);

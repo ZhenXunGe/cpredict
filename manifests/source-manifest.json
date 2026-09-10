@@ -94,7 +94,7 @@
     },
     {
       "path": "deploy/compose/postgres/run-migrations.sh",
-      "sha256": "da2c7983bb0e4fe385adc83c349300329dbd1b29437b8a19e6328d840a314630"
+      "sha256": "ea581186da32aa5e08b09159211efde50d0d21c282444890fa965dcfed5ffa68"
     },
     {
       "path": "deploy/host/bootstrap-node.sh",
@@ -150,7 +150,7 @@
     },
     {
       "path": "deploy/public-site/README.md",
-      "sha256": "9f11008db32153f0703c4ab859e7cf61a7be97dfb6b1ff53ba6294c2053e2c5e"
+      "sha256": "c4a69189ffa0654f6d277d19d3124202baf9cde4298e6f0bb67c119195024702"
     },
     {
       "path": "deploy/public-site/ctusd.runtime.example.json",
@@ -159,6 +159,10 @@
     {
       "path": "deploy/public-site/nginx.conf.template",
       "sha256": "637b4a85ee349fc799b565d2637ae24aad73a9bcb48cce2e3bb99157a7c4cb12"
+    },
+    {
+      "path": "deploy/public-site/update-policy.json",
+      "sha256": "c6e5ec383a09e8ecff87e73535e6f0906b7005ad92b3d57dad28df98acd013cd"
     },
     {
       "path": "deploy/public-site/update.example.json",
@@ -218,7 +222,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "64da25af5616fc7c385e339ef560ef9cf77c51e12807fa2614ae58232290dc6e"
+      "sha256": "7c4e36522af1fdf02f7da7fc0936a15b722b907750434afb97d6c0ba0bffd209"
     },
     {
       "path": "docs/usdc-gasless-deposit.md",
@@ -626,7 +630,7 @@
     },
     {
       "path": "manifests/licenses.json",
-      "sha256": "98ce16db5440e5c3d16cf3703b1f765c452fd6486ea74c034f05928069042332"
+      "sha256": "a4398973364d2c6ae12f0a544095598084a7699a16e55e4fb0eec78a0ba45c90"
     },
     {
       "path": "manifests/load-tools.lock",
@@ -722,7 +726,7 @@
     },
     {
       "path": "manifests/sbom.spdx.json",
-      "sha256": "5cd40e9cf8e3dce4025207fbbd4e28cc287d1af7e13138c7a83a51b41bd97e8c"
+      "sha256": "a1879f81cb997fd3a832faa8db2b17d7a5ec4314c3c6779c1ceb244fd28cd45c"
     },
     {
       "path": "manifests/sdk-declaration-patches.json",
@@ -742,7 +746,7 @@
     },
     {
       "path": "manifests/third-party-notices.md",
-      "sha256": "069f31d4b637b5a4899fac2b60152b0c16c79502d360c38e4572f8cd9d6c8235"
+      "sha256": "11a431b25366a09afeabf90ef917010f2707af2ed9f38be0ca2e0f27b7d3662b"
     },
     {
       "path": "monitoring/README.md",
@@ -1502,11 +1506,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "b9f3aef21dbe4e2859dadf1a3b12f9880b45e6c72ad7119d52565d90bf9895fe"
+      "sha256": "df09be13b20914c471d4fbbba72684cf010eda809534730fffa5cb6295348c7b"
     },
     {
       "path": "package.json",
-      "sha256": "a3a3a5918982b8e27476e29ecfdd5ddcc380c74a5bf48377562e65de38ed9b9c"
+      "sha256": "55136ff7eaf425e9108607c55eeba0c5576c60e339cc9eb850af9270fc730371"
     },
     {
       "path": "patches/@privy-io+react-auth++@privy-io+js-sdk-core+0.73.0.patch",
@@ -2034,11 +2038,11 @@
     },
     {
       "path": "scripts/stack/backup-restore.test.mjs",
-      "sha256": "a783f003aadf87bbbdd4d7f68f3ce830cf6b5d75fd4f61dca068eb4f40dc65ce"
+      "sha256": "99d6ef14e6f03c7d9a8a0ad20f9ab09763c1d2de16e3bbc73ba1f852ce7523d0"
     },
     {
       "path": "scripts/stack/backup.mjs",
-      "sha256": "0dfc7331fb53fbbef8ce844f03ecd7272da38aa7aab0b8d44fc3eacedebefae6"
+      "sha256": "4070cb4a250a0e7a37fe7056ba382a083b04738fab69da305036c3d79380d65a"
     },
     {
       "path": "scripts/stack/cloud-publisher.py",
@@ -2121,12 +2125,24 @@
       "sha256": "950ee24df988cbab7b54424514e98beea0158783ba2026603251611855ec3c1b"
     },
     {
+      "path": "scripts/stack/public-update-plan.mjs",
+      "sha256": "a7b4c068fa10f24cb252ba052d0fc9b9f7e82fd5ee69d2a65737d8c7c40efcc1"
+    },
+    {
       "path": "scripts/stack/public-update-runner.mjs",
-      "sha256": "6c0cbc9c51d0c9e6edbdf6306c7b64233b5d3ee3bd2cf280277e80361011b401"
+      "sha256": "f8a245cf86af9a89865a93a264f359acd79f802603fc6b839f8f8d0ed3257deb"
+    },
+    {
+      "path": "scripts/stack/public-update-runtime.mjs",
+      "sha256": "e64884f6544feb0a397800e6dc17ce85269050c534edf7e7ba369e6447ae038b"
+    },
+    {
+      "path": "scripts/stack/public-update-selective.test.mjs",
+      "sha256": "40b07e584c1fca2dd0a71b0c62628d6b7a021bb1a0687ef601f2658841dd73e5"
     },
     {
       "path": "scripts/stack/public-update.mjs",
-      "sha256": "386a2bd389a71cb4ba1e27f25f2afda61e0429988633a56ddcdd863f3c8b4ed8"
+      "sha256": "506d8a5246ce3f9680fd02415ed2ee9acff7288285b62ebe2ae2642d1872491d"
     },
     {
       "path": "scripts/stack/public-update.test.mjs",
@@ -2166,7 +2182,7 @@
     },
     {
       "path": "scripts/stack/restore-drill.mjs",
-      "sha256": "972220ef9a4615e9a64c61b8302abf8efed6f496113eb4fcbc86c45ffb64da5a"
+      "sha256": "fd286a59a092fd01a73ddfee937b30a492b9d2f292dc36e0c21cb4a1e2f3162c"
     },
     {
       "path": "scripts/stack/scan-site-bundle.mjs",
