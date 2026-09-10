@@ -2034,11 +2034,11 @@
     },
     {
       "path": "scripts/stack/backup-restore.test.mjs",
-      "sha256": "af5413d326e1aa20af93b1f916b2789af13bb4ab412e1d2f326d59289f9bf174"
+      "sha256": "a783f003aadf87bbbdd4d7f68f3ce830cf6b5d75fd4f61dca068eb4f40dc65ce"
     },
     {
       "path": "scripts/stack/backup.mjs",
-      "sha256": "e65b0aac810e9ba59c1ea6883e6007af1afb92de9e7280b1aac92a0d7448ef01"
+      "sha256": "0dfc7331fb53fbbef8ce844f03ecd7272da38aa7aab0b8d44fc3eacedebefae6"
     },
     {
       "path": "scripts/stack/cloud-publisher.py",
@@ -2122,7 +2122,7 @@
     },
     {
       "path": "scripts/stack/public-update-runner.mjs",
-      "sha256": "857a6ff0130e3e6b716cce6a2b94e0ede88e36097f5bf058800ff476ea24f18e"
+      "sha256": "1480520f334a5fd7bd9d877a359d2a43960facdd7ae54f3c6bf8acf14a2f09f8"
     },
     {
       "path": "scripts/stack/public-update.mjs",
