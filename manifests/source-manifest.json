@@ -150,7 +150,7 @@
     },
     {
       "path": "deploy/public-site/README.md",
-      "sha256": "7eeaf2786435eff3856c7d966f6333d5922fd49975bf51cbc79e2d0353daf2b8"
+      "sha256": "9fb20ba7015d16dbf96e52a037ac1e819c64a5f82eed2ab872aeb688623c3fa3"
     },
     {
       "path": "deploy/public-site/ctusd.runtime.example.json",
@@ -2118,7 +2118,7 @@
     },
     {
       "path": "scripts/stack/public-update-core.mjs",
-      "sha256": "fe6913c3a9b084252b944bf3f9cde8f8da35a1287a32bac7e0b651ddc0d0c64b"
+      "sha256": "3b52f66f7a3d04c8edfce00b7ba618ab41b895febbbce15fa7a601daf29cc603"
     },
     {
       "path": "scripts/stack/public-update-runner.mjs",
@@ -2130,7 +2130,7 @@
     },
     {
       "path": "scripts/stack/public-update.test.mjs",
-      "sha256": "27cd7788d6124a48f63fe4afa9676779b6826f227a71eefb15b25d19457c50af"
+      "sha256": "69781c89ed0102d8ab65c80c2ba26f680a78d4a80c81d7e16173a6ace63c1454"
     },
     {
       "path": "scripts/stack/redact.mjs",

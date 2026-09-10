@@ -36,6 +36,9 @@ once separately. These inputs must not share a second escaping pass: Compose
 Validate both paths against Docker Engine using literal `$`, `${...}`, repeated
 dollar signs, quotes and newlines; a successful Compose syntax check alone does
 not prove that the container environment retains its original values.
+Rollback also retains explicit IPv4/IPv6 and link-local addresses from each
+container's `IPAMConfig`, including the gateway address used by trusted-proxy
+settings. Dynamically assigned container addresses remain dynamic.
 
 Failures after stopping writers restore their previous running image IDs and
 configuration, verify the old public page and asset hashes, and restore the

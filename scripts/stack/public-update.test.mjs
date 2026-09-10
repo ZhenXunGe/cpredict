@@ -113,13 +113,35 @@ test("rollback comes from running image IDs, preserves runtime isolation, never 
         RW: false,
       },
     ],
-    NetworkSettings: { Networks: { cpredict_app: { Aliases: [name] } } },
+    NetworkSettings: {
+      Networks: {
+        cpredict_app: {
+          Aliases: [name],
+          IPAddress: `172.25.0.${i + 2}`,
+          GlobalIPv6Address: `2001:db8::${i + 2}`,
+          IPAMConfig: name === "web-demo" ? {
+            IPv4Address: "172.25.0.5",
+            IPv6Address: "2001:db8::5",
+            LinkLocalIPs: ["169.254.2.5"],
+          } : null,
+        },
+      },
+    },
   }));
   const snapshot = rollbackCompose(containers);
   assert.deepEqual(Object.keys(snapshot.services), names);
   assert.equal(snapshot.services["web-demo"].image, "sha256:3");
   assert.equal(snapshot.services["web-demo"].ports[0].host_ip, "127.0.0.1");
   assert.equal(snapshot.networks.cpredict_app.external, true);
+  assert.deepEqual(snapshot.services["web-demo"].networks.cpredict_app, {
+    aliases: ["web-demo"],
+    ipv4_address: "172.25.0.5",
+    ipv6_address: "2001:db8::5",
+    link_local_ips: ["169.254.2.5"],
+  });
+  assert.deepEqual(snapshot.services.indexer.networks.cpredict_app, {
+    aliases: ["indexer"],
+  });
   assert.equal(snapshot.services.indexer.healthcheck.interval, "10000000000ns");
   containers[0].State.Health.Status = "unhealthy";
   assert.throws(() => rollbackCompose(containers), /not healthy/);

@@ -170,7 +170,7 @@ export async function publisher(config, command, input) {
     }),
   );
 }
-// Compose performs interpolation even on rendered JSON; preserve literal provider values.
+// Raw Docker inspect values need escaping before they become Compose input.
 export function escapeCompose(value) {
   if (typeof value === "string") return value.replaceAll("$", () => "$$");
   if (Array.isArray(value)) return value.map(escapeCompose);
@@ -200,6 +200,15 @@ export function rollbackCompose(containers) {
           (a) => a !== c.Id.slice(0, 12) && a !== c.Name.slice(1),
         ),
       };
+      // Preserve explicitly requested addresses, not Docker's current dynamic
+      // assignment. The gateway's trusted-proxy configuration relies on this.
+      const ipam = network.IPAMConfig;
+      if (ipam?.IPv4Address)
+        networks[name].ipv4_address = ipam.IPv4Address;
+      if (ipam?.IPv6Address)
+        networks[name].ipv6_address = ipam.IPv6Address;
+      if (ipam?.LinkLocalIPs?.length)
+        networks[name].link_local_ips = [...ipam.LinkLocalIPs];
     }
     const volumes = c.Mounts.filter((m) => m.Type !== "tmpfs").map((m) => {
       ensure(
