@@ -34,6 +34,16 @@ export async function readNpmLicenseEvidence(root, lock, inputs) {
     const source = await readFile(join(root, e.evidence));
     if (createHash("sha256").update(source).digest("hex") !== e.sha256)
       throw new Error(`npm license evidence checksum mismatch: ${e.path}`);
+    if (
+      e.status === "declared-in-source" &&
+      (!/^[a-f0-9]{40}$/.test(e.gitHead ?? "") ||
+        !new RegExp(
+          `^https://raw\\.githubusercontent\\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/${e.gitHead}/`,
+        ).test(e.sourceFile ?? "") ||
+        e.registrySource !==
+          `https://registry.npmjs.org/${encodeURIComponent(e.name)}/${e.version}`)
+    )
+      throw new Error(`unpinned official source license: ${e.path}`);
     inputs.set(e.evidence, source);
     if (e.declared.startsWith("LicenseRef-")) {
       if (
@@ -47,7 +57,15 @@ export async function readNpmLicenseEvidence(root, lock, inputs) {
         name: "Locked npm package custom license",
         comment: `${e.evidence}; SHA-256 ${e.sha256}. Distribution terms require separate review.`,
       });
-    } else if (!["MIT", "Apache-2.0", "NOASSERTION"].includes(e.declared))
+    } else if (
+      ![
+        "MIT",
+        "Apache-2.0",
+        "BSD-3-Clause",
+        "Unlicense",
+        "NOASSERTION",
+      ].includes(e.declared)
+    )
       throw new Error(
         `unsupported supplemental license declaration: ${e.path}`,
       );

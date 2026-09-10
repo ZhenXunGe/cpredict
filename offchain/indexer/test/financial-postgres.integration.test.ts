@@ -1,6 +1,20 @@
 import { readFile } from "node:fs/promises";
 import postgres from "postgres";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { createPublicClient, http } from "viem";
+import { createIndexerApi } from "../src/api.js";
+import {
+  fetchMarketCatalog,
+  fetchWalletActivity,
+  fetchListings,
+} from "../../../examples/web-demo/src/indexer-client.js";
+import { SiteApi } from "../../../examples/user-site/src/api.js";
+import {
+  listingSchema,
+  marketSchema,
+  page,
+} from "../../app-core/src/catalog-contracts.js";
+import { factsPageSchema } from "../../app-core/src/ledger-contracts.js";
 import { env } from "../../app-core/test/fixtures.js";
 import { PostgresEventStore } from "../src/postgres-store.js";
 import { block, createMarket, purchase, trader } from "./financial-fixtures.js";
@@ -71,6 +85,112 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
       await sql`SELECT fact FROM ledger_facts ORDER BY block_number,transaction_index,log_index,fact_index`;
     expect(after).toEqual(before);
     expect((await store.financial!.snapshot()).epoch).toBe("3");
+  });
+  it("serves both real clients in one process without changing legacy contracts or public binding", async () => {
+    const app = createIndexerApi(store, {
+      financial: {
+        ledger: store.financial!,
+        client: createPublicClient({ transport: http("http://127.0.0.1:1") }),
+        confirmations: 3n,
+      },
+    });
+    const basePath = await app.listen({ host: "127.0.0.1", port: 0 });
+    vi.stubGlobal("window", { location: { origin: basePath } });
+    vi.stubGlobal("location", { origin: basePath });
+    try {
+      const site = new SiteApi({
+        ...env,
+        services: { ...env.services, indexer: `${basePath}/public` },
+      });
+      const oldInput = {
+        basePath: "/",
+        chainId: env.deployment.chainId,
+        limit: 1,
+      };
+      const legacyMarkets = await fetchMarketCatalog(oldInput);
+      const publicMarkets = await site.request(
+        "/v2/markets?limit=1",
+        page(marketSchema),
+        { service: "indexer" },
+      );
+      expect(legacyMarkets.items[0]!.market).toBe(
+        publicMarkets.items[0]!.market,
+      );
+      expect(legacyMarkets.items[0]!.status).toBe("open");
+      expect(publicMarkets.snapshot!.blockNumber).toBe("3");
+      expect((await fetchListings(oldInput)).items).toEqual([]);
+      expect(
+        (
+          await site.request("/v1/listings", page(listingSchema), {
+            service: "indexer",
+          })
+        ).items,
+      ).toEqual([]);
+      const oldHistory = await fetchWalletActivity({
+        ...oldInput,
+        owner: trader,
+      });
+      const first = await site.request(
+        `/v2/activity/${trader}?limit=1`,
+        factsPageSchema,
+        { service: "indexer" },
+      );
+      expect(oldHistory.items[0]!.kind).toBe("primary-purchased");
+      expect(oldHistory.items[0]!.amount).toBe(100n);
+      expect(first.items).toHaveLength(1);
+      expect(first.snapshot.blockNumber).toBe("3");
+      if (first.nextCursor) {
+        const next = await site.request(
+          `/v2/activity/${trader}?limit=1&cursor=${encodeURIComponent(first.nextCursor)}`,
+          factsPageSchema,
+          { service: "indexer" },
+        );
+        expect(next.items[0]!.id).not.toBe(first.items[0]!.id);
+      }
+      for (const path of [
+        "/v2/markets",
+        `/v2/markets/${A(101)}`,
+        "/v1/listings",
+        `/v2/activity/${trader}`,
+        `/v2/pnl/${trader}`,
+        "/v2/sync-status",
+      ]) {
+        for (const query of [
+          "",
+          `environment=wrong&deploymentId=${env.deployment.id}`,
+          `environment=${env.id}&deploymentId=wrong`,
+          `environment=${env.id}&deploymentId=${env.deployment.id}&chainId=1`,
+        ]) {
+          expect((await app.inject(`/public${path}?${query}`)).statusCode).toBe(
+            400,
+          );
+        }
+      }
+      expect(
+        (
+          await app.inject(
+            `/v2/pnl/${trader}?chainId=${env.deployment.chainId}`,
+          )
+        ).statusCode,
+      ).toBe(404);
+      expect(
+        (
+          await app.inject(
+            `/v1/listings?chainId=${env.deployment.chainId}&cursor=100001`,
+          )
+        ).statusCode,
+      ).toBe(400);
+      expect(
+        (
+          await site.request(`/v2/markets/${A(101)}`, marketSchema, {
+            service: "indexer",
+          })
+        ).market,
+      ).toBe(A(101));
+    } finally {
+      vi.unstubAllGlobals();
+      await app.close();
+    }
   });
   it("binds pagination to filters and invalidates old snapshots after a reorg", async () => {
     await store.applyBatch(purchase(4), [block(4)], block(4));

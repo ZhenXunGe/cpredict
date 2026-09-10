@@ -69,6 +69,7 @@ describe("provider runtime environment binding", () => {
     expect(loaded.bundlerUrl).toBe(loaded.paymasterUrl);
     expect(loaded.runtime.environment.walletConnectProjectId).toBeUndefined();
     expect(loaded.runtime.sponsor?.providerHardLimitUsd).toBeNull();
+    expect(loaded.management).toBeNull();
   });
   it("rejects the other project's endpoint and the wrong chain before connecting", async () => {
     for (const wrong of [
@@ -89,5 +90,28 @@ describe("provider runtime environment binding", () => {
         CPREDICT_APP_CONFIG_FILE: join(directory, "no-policy.json"),
       }),
     ).rejects.toThrow("explicit hard-cap");
+  });
+  it("requires both server-only management credentials and binds reads to the existing environment project", async () => {
+    const management = {
+      CPREDICT_APP_ZERODEV_MANAGEMENT_API_KEY: "fixture-only-management-key",
+      CPREDICT_APP_ZERODEV_TEAM_ID: "fixture-team",
+    };
+    const loaded = await loadServiceConfig({ ...variables(), ...management });
+    expect(loaded.management).toMatchObject({
+      projectId: project,
+      chainId: 421614,
+      teamId: "fixture-team",
+    });
+    expect(loaded.runtime).not.toHaveProperty("management");
+    for (const partial of [
+      {
+        CPREDICT_APP_ZERODEV_MANAGEMENT_API_KEY:
+          management.CPREDICT_APP_ZERODEV_MANAGEMENT_API_KEY,
+      },
+      { CPREDICT_APP_ZERODEV_TEAM_ID: management.CPREDICT_APP_ZERODEV_TEAM_ID },
+    ])
+      await expect(
+        loadServiceConfig({ ...variables(), ...partial }),
+      ).rejects.toThrow("configured together");
   });
 });

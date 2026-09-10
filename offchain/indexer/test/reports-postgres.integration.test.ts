@@ -217,6 +217,19 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
         "did:privy:test",
       ),
     ).rejects.toMatchObject({ code: "feedback_idempotency_conflict" });
+    const second = { id: randomUUID(), message: "另一条反馈，用于验证稳定分页与编号查询。" };
+    await reports.feedback(second, "did:privy:test");
+    await sql`UPDATE app_feedback SET received_at='2026-09-09T00:00:00.000123Z' WHERE id IN (${input.id},${second.id})`;
+    const page = await reports.feedbackPage({ limit: 1 });
+    expect(page.items).toHaveLength(1);
+    expect(page.nextCursor).not.toBeNull();
+    expect(page.items[0]).not.toHaveProperty("subject");
+    const next = await reports.feedbackPage({ limit: 1, cursor: page.nextCursor! });
+    expect(next.snapshotAt).toBe(page.snapshotAt);
+    expect(new Set([...page.items, ...next.items].map((f) => f.id))).toEqual(new Set([input.id, second.id]));
+    await expect(reports.feedbackPage({ limit: 1, id: input.id, cursor: page.nextCursor! })).rejects.toMatchObject({ code: "invalid_cursor" });
+    const exact = await reports.feedbackPage({ limit: 30, id: input.id });
+    expect(exact.items.map((f) => f.id)).toEqual([input.id]);
   });
   it("reports the same weekly reservation and carry-over used for admission", async () => {
     const cap = {
@@ -297,6 +310,9 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
           },
         ],
       });
+      const monitor = await withBudget.monitor(new Date("2026-09-09T01:00:00.000Z"));
+      expect(monitor.budget).toEqual(r.weeklyBudget!.lanes.map(({ lane, reservedWei, remainingWei }) => ({ lane, reservedWei, remainingWei })));
+      expect(monitor.pending).toBeGreaterThanOrEqual(monitor.unknown);
       expect(r.budgets.find((b) => b.lane === "exposure")!.reservedWei).toBe(
         "0",
       );

@@ -16,14 +16,23 @@ Authoritative wire validation is `offchain/app-core/src/contracts.ts`. Every raw
 | /v2/activity/:owner, /v2/entitlements/:owner, /v2/pnl/:owner | Deployment-bound, cursor/filter/snapshot validation | Public confirmed facts, explicit completeness and unknown reasons; stale snapshot => 409 |
 | /v2/leaderboards | Published period, frozen market roster, common canonical block | Versioned test-only complete-cost realized PnL, ties, creator exclusions, corrections |
 | /v1/ops/reports | Server admin allowlist | Readonly event-time aggregate; no user-fund action |
+| GET /v1/ops/feedback | Server admin allowlist | Environment-bound snapshot cursor; filters by feedback or operation ID, immutable original text, no login subject returned |
 
 Errors use `{error:{code,message,operationId?}}`; display stable user copy by code with a generic fallback. SDK/RPC exception bodies are never stored or returned as financial truth. Unconfigured services fail closed. User-facing calls use query cancellation and keys that include full environment/deployment/account identity.
+
+`ops/reports.providerManagement` is null without paired server-only management credentials. Otherwise it reports the fixed ZeroDev project/chain/source, per-endpoint last attempt and successful collection times, requested and retained data windows, classified read errors and 15-minute staleness. Collection runs every five minutes and retains the last successful response in memory on failure. Raw management payloads and credentials have no public route. `mappingStatus` remains `awaiting-real-response-contract`; transport success cannot mark spend known or sponsorship policy verified. Monetary/policy mapping awaits sanitized real responses and the required positive/negative policy checks.
+
+## Shared indexer routes
+
+The existing indexer process and database serve both clients. Legacy `/v1/*` and `/v2/*` retain their chain-only requests, response fields and pagination, even when financial projection is enabled. The public site uses the `/public` namespace: `/public/v2/markets`, `/public/v2/markets/:market`, `/public/v1/listings`, and the activity, entitlements, PnL, leaderboard and sync routes above with `/public` prepended. Every public query requires the matching environment and deployment; a supplied chain must also match. Binding validation is scoped to that namespace. Public pagination is bound to filters and the retained projection snapshot.
+
+Public runtime indexer bases end in `/indexer/public`; the old `/indexer/` proxy and Demo configuration keep their original base. These paths share ingestion and queries, not a second indexer deployment.
 
 ## Browser compilation and provider declarations
 
 The user site has its own browser TypeScript/Vite build (`npm run site:check` / `site:build`). Application and imported shared TypeScript remain strict, including exact optional fields and unchecked indexes. `check:offchain` retains NodeNext and full declaration checking for services, the SDK and the legacy Demo; the new browser project is checked separately.
 
-Privy React 3.40.0 publishes declarations referencing missing internal names and optional cross-chain types. The inspected official 3.20.0 tarball contains the same declaration-generation defect, so a downgrade does not resolve it and is not installed. The browser project uses `skipLibCheck` for third-party declaration files only, without replacing Privy APIs with local ambient declarations. `site:check:dependencies` explicitly exposes this upstream limitation; it is not a passing gate. Wallet/provider runtime acceptance remains mandatory. This is an implementation-time compatibility finding, not evidence that provider flows have passed.
+Privy React 3.40.0 and three pinned transitive packages publish incomplete declarations. The user-approved declaration-only repairs are documented in `patches/README.md` and hash-bound by `manifests/sdk-declaration-patches.json`; no SDK runtime file changes. Missing type dependencies are pinned from the official package manifests. Both browser and server builds explicitly apply verified patches after `npm ci --ignore-scripts`. The browser now has `skipLibCheck: false`; `site:check:dependencies` is a required passing gate. Wallet/provider runtime acceptance remains mandatory and separate from declaration compatibility.
 
 ## UI specification
 

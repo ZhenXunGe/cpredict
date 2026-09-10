@@ -188,6 +188,7 @@
       "build": {
         "context": ".",
         "dockerfile": "deploy/compose/Dockerfile.demo",
+        "target": "demo",
         "args": {"CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"}
       },
       "restart": "unless-stopped",

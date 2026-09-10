@@ -1,5 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
+import { parseMetadataServiceUrl } from "../../app-core/src/service-url.js";
+import {
+  managementConfigSchema,
+  type ManagementConfig,
+} from "./provider-management.js";
 import {
   environmentSchema,
   positive,
@@ -98,6 +103,7 @@ export interface ServiceConfig {
   privySecret: string;
   bundlerUrl: string | undefined;
   paymasterUrl: string | undefined;
+  management: ManagementConfig | null;
 }
 export async function loadServiceConfig(
   env: Readonly<Record<string, string | undefined>>,
@@ -152,7 +158,26 @@ export async function loadServiceConfig(
         );
     }
   }
+  const managementKey = env.CPREDICT_APP_ZERODEV_MANAGEMENT_API_KEY;
+  const teamId = env.CPREDICT_APP_ZERODEV_TEAM_ID;
+  if (Boolean(managementKey) !== Boolean(teamId))
+    throw new Error(
+      "ZeroDev management API key and team ID must be configured together",
+    );
+  if (managementKey && !runtime.sponsor)
+    throw new Error(
+      "ZeroDev management requires the registered environment project configuration",
+    );
+  const management = managementKey
+    ? managementConfigSchema.parse({
+        apiKey: managementKey,
+        teamId,
+        projectId: runtime.sponsor?.projectId,
+        chainId: runtime.environment.deployment.chainId,
+      })
+    : null;
   return {
+    management,
     runtime,
     databaseUrl,
     host: z
@@ -165,7 +190,12 @@ export async function loadServiceConfig(
       .max(65535)
       .parse(env.CPREDICT_APP_PORT ?? "8795"),
     rpcUrl: secureUrl.parse(required("CPREDICT_APP_RPC_URL")),
-    metadataUrl: secureUrl.parse(required("CPREDICT_APP_METADATA_URL")),
+    metadataUrl: parseMetadataServiceUrl(
+      required("CPREDICT_APP_METADATA_URL"),
+      z
+        .enum(["true", "false"])
+        .parse(env.CPREDICT_APP_CONTAINER_MODE ?? "false") === "true",
+    ),
     privySecret: required("CPREDICT_APP_PRIVY_SECRET"),
     bundlerUrl,
     paymasterUrl,

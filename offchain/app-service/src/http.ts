@@ -6,20 +6,28 @@ export interface RpcTransport {
   request(method: string, params: readonly unknown[]): Promise<unknown>;
 }
 export class ProviderRpc implements RpcTransport {
-  constructor(private readonly url: string) {}
+  constructor(private readonly url: string, private readonly observed?: (available: boolean) => void) {}
   async request(method: string, params: readonly unknown[]): Promise<unknown> {
-    const data = await fetchJson(this.url, {
+    let data: unknown;
+    try {
+    data = await fetchJson(this.url, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
     });
+    } catch (error) { this.observed?.(false); throw error; }
     if (
       !data ||
       typeof data !== "object" ||
-      !("result" in data) ||
-      "error" in data
-    )
+      (!("result" in data) && !("error" in data))
+    ) {
+      this.observed?.(false);
       throw new AppError("provider_rejected", 503);
+    }
+    // A protocol error (for example a rejected simulation) is still a reachable
+    // provider. Business rejection counters are separate from availability.
+    this.observed?.(true);
+    if ("error" in data) throw new AppError("provider_rejected", 503);
     return data.result;
   }
 }

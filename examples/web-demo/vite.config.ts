@@ -87,6 +87,7 @@ export default defineConfig(({ mode }) => {
   );
   return {
     root: import.meta.dirname,
+    base: mode === "embedded" ? "/demo/" : "/",
     publicDir: resolve(import.meta.dirname, "public"),
     plugins: [
       react(),
@@ -116,7 +117,10 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
     },
     build: {
-      outDir: resolve(repositoryRoot, "dist/web-demo"),
+      outDir: resolve(
+        repositoryRoot,
+        mode === "embedded" ? "dist/web-demo-embedded" : "dist/web-demo",
+      ),
       emptyOutDir: true,
       sourcemap: false,
       target: "es2022",

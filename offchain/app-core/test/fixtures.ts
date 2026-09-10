@@ -35,7 +35,7 @@ export const env = environmentSchema.parse({
   },
   services: {
     app: "/ctusd/app",
-    indexer: "/ctusd/indexer",
+    indexer: "/ctusd/indexer/public",
     metadata: "/ctusd/metadata",
     rpc: "/ctusd/app/v1/rpc",
   },

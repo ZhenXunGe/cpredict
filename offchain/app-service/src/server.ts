@@ -19,9 +19,12 @@ import { readRpc } from "./read-rpc.js";
 import type { OperationRecovery } from "./recovery.js";
 import {
   feedbackSchema,
+  feedbackQuerySchema,
   telemetrySchema,
 } from "../../app-core/src/report-contracts.js";
 import type { ReportingStore } from "./reports.js";
+import { ApplicationMetrics } from "./metrics.js";
+import type { ZeroDevManagementReader } from "./provider-management.js";
 
 export async function createApplicationServer(options: {
   operations: OperationService;
@@ -30,6 +33,8 @@ export async function createApplicationServer(options: {
   recovery: OperationRecovery;
   chainRpc: RpcTransport;
   reports?: ReportingStore;
+  metrics?: ApplicationMetrics;
+  management?: ZeroDevManagementReader;
 }) {
   const { operations: service } = options,
     env = service.runtime.environment;
@@ -45,6 +50,8 @@ export async function createApplicationServer(options: {
       ? service.runtime.trustedProxies
       : false,
   });
+  const metrics = options.metrics ?? new ApplicationMetrics();
+  metrics.attach(app);
   await app.register(helmet, {
     contentSecurityPolicy: {
       directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
@@ -70,7 +77,17 @@ export async function createApplicationServer(options: {
     const header = r.headers.authorization;
     if (!header || !header.startsWith("Bearer ") || header.length > 16_384)
       throw new AppError("unauthorized", 401);
-    return options.auth.verify(header.slice(7));
+    try {
+      const identity = await options.auth.verify(header.slice(7));
+      metrics.observeDependency("privy", true);
+      return identity;
+    } catch (error) {
+      // Invalid credentials are an authentication rejection, not evidence that
+      // the Privy service itself is unavailable.
+      if (!(error instanceof AppError) || error.status >= 500)
+        metrics.observeDependency("privy", false);
+      throw error;
+    }
   };
   const ownedId = (r: FastifyRequest) =>
     z.object({ id: z.string().uuid() }).parse(r.params).id;
@@ -138,7 +155,19 @@ export async function createApplicationServer(options: {
     } catch {
       report.services.rpc = "unavailable";
     }
-    return report;
+    return {
+      ...report,
+      providerManagement: options.management?.status() ?? null,
+    };
+  });
+  app.get("/v1/ops/feedback", async (request) => {
+    const identity = await authenticate(request);
+    if (!service.runtime.adminSubjects.includes(identity.subject))
+      throw new AppError("forbidden", 403);
+    if (!options.reports) throw new AppError("reporting_unavailable", 503);
+    return options.reports.feedbackPage(
+      feedbackQuerySchema.parse(request.query),
+    );
   });
   app.get("/healthz", async () => ({ status: "ok" }));
   app.get("/readyz", async () => {
@@ -266,6 +295,7 @@ export async function createApplicationServer(options: {
         error instanceof AppError
           ? error
           : new AppError("provider_request_rejected", 503);
+      metrics.failure(e.code);
       await options.reports?.serviceEvent(e.code).catch(() => undefined);
       return {
         jsonrpc: "2.0",
@@ -281,7 +311,11 @@ export async function createApplicationServer(options: {
   app.post(
     "/v1/sponsorship/policy",
     { config: { rateLimit: { max: 1200, timeWindow: "1 minute" } } },
-    async (request) => options.gateway.policy(request.body),
+    async (request) => {
+      const result = await options.gateway.policy(request.body);
+      metrics.policyDecision(result.proceed);
+      return result;
+    },
   );
   app.post("/v1/rpc", async (request) => {
     const rpc = rpcRequestSchema
@@ -300,6 +334,7 @@ export async function createApplicationServer(options: {
         : error instanceof z.ZodError
           ? new AppError("invalid_request")
           : new AppError("service_unavailable", 503);
+    metrics.failure(e.code);
     await options.reports?.serviceEvent(e.code).catch(() => undefined);
     return reply.code(e.status).send({
       error: {

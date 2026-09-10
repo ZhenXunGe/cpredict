@@ -23,6 +23,8 @@ import {
   PageTitle,
 } from "../ui.js";
 import { dateText } from "../data.js";
+import { FeedbackInbox } from "./FeedbackInbox.js";
+import { ProviderStatus } from "./ProviderStatus.js";
 export function LeaderboardPage() {
   const { api, account } = useSession(),
     [period, setPeriod] = useState("");
@@ -404,8 +406,8 @@ export function OpsPage() {
               ；供应商实际花费：未知。
             </p>
             <Notice tone="warning">
-              此服务只能读取本地配置，不能证明供应商控制台费用硬上限、AND
-              策略与错误关闭已正确启用。公开启用前须保留供应商验证记录。
+              此处上限来自本地配置。供应商费用硬上限、AND
+              策略与错误关闭是否生效仍需真实验证记录。
             </Notice>
             {r.gas.providerBillingStatus === "unavailable" ? (
               <p>未导入供应商账单。</p>
@@ -435,6 +437,7 @@ export function OpsPage() {
               </ul>
             </details>
           </section>
+          <ProviderStatus status={r.providerManagement} />
           <details>
             <summary>统计口径</summary>
             <ul>
@@ -445,6 +448,7 @@ export function OpsPage() {
           </details>
         </div>
       )}
+      <FeedbackInbox />
     </>
   );
 }

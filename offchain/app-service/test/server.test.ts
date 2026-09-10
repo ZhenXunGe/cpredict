@@ -47,6 +47,13 @@ async function setup(trusted = false) {
     }),
     telemetry: vi.fn(async () => {}),
     feedback: vi.fn(async () => {}),
+    feedbackPage: vi.fn(async () => ({
+      environment: env.id,
+      deploymentId: env.deployment.id,
+      snapshotAt: new Date().toISOString(),
+      items: [],
+      nextCursor: null,
+    })),
     serviceEvent: vi.fn(async () => {}),
   } satisfies ReportingStore;
   const server = await createApplicationServer({
@@ -114,6 +121,58 @@ describe("private application routes and public telemetry boundaries", () => {
         ).json().error.code,
       ).toBe("fixture_report_reached");
       expect(reports.report).toHaveBeenCalledOnce();
+    } finally {
+      await server.close();
+    }
+  });
+  it("keeps feedback text behind the same server-side read-only administrator check", async () => {
+    const { server, reports } = await setup();
+    try {
+      expect((await server.inject("/v1/ops/feedback")).statusCode).toBe(401);
+      expect(
+        (
+          await server.inject({
+            url: "/v1/ops/feedback",
+            headers: { authorization: "Bearer owner" },
+          })
+        ).statusCode,
+      ).toBe(403);
+      expect(reports.feedbackPage).not.toHaveBeenCalled();
+      expect(
+        (
+          await server.inject({
+            url: "/v1/ops/feedback?limit=10",
+            headers: { authorization: "Bearer admin" },
+          })
+        ).statusCode,
+      ).toBe(200);
+      expect(reports.feedbackPage).toHaveBeenCalledWith({ limit: 10 });
+    } finally {
+      await server.close();
+    }
+  });
+  it("counts actual request routes and policy rejection without leaking identities into metrics", async () => {
+    const { server } = await setup();
+    try {
+      await server.inject({
+        url: `/v1/operations/${operation.id}`,
+        headers: { authorization: "Bearer owner" },
+      });
+      await server.inject({
+        method: "POST",
+        url: "/v1/sponsorship/policy",
+        payload: {},
+      });
+      const metrics = await server.inject("/metrics");
+      expect(metrics.statusCode).toBe(200);
+      expect(metrics.body).toContain('route="/v1/operations/:id"');
+      expect(metrics.body).toContain(
+        'cpredict_app_policy_total{decision="denied"} 1',
+      );
+      expect(metrics.body).not.toContain(operation.id);
+      expect(metrics.body).not.toContain(appAccount.address);
+      expect(metrics.body).not.toContain("Bearer owner");
+      expect(metrics.body).not.toMatch(/^cpredict_app_operations_pending /m);
     } finally {
       await server.close();
     }

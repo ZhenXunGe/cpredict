@@ -26,7 +26,7 @@
     },
     "services": {
       "app": "/usdc/app",
-      "indexer": "/usdc/indexer",
+      "indexer": "/usdc/indexer/public",
       "metadata": "/usdc/metadata",
       "rpc": "/usdc/app/v1/rpc"
     },

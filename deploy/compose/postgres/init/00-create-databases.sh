@@ -1,6 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${1:-}" == usdc ]]; then
+  for name in CPREDICT_STACK_USDC_INDEXER_PASSWORD CPREDICT_STACK_USDC_METADATA_PASSWORD; do
+    value="${!name:-}"
+    [[ "$value" =~ ^[A-Za-z0-9_-]{24,128}$ ]] || { printf '%s\n' "$name must be 24-128 URL-safe characters" >&2; exit 1; }
+  done
+  psql --set=ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<'SQL'
+\getenv indexer_password CPREDICT_STACK_USDC_INDEXER_PASSWORD
+\getenv metadata_password CPREDICT_STACK_USDC_METADATA_PASSWORD
+SELECT format('CREATE ROLE cpredict_usdc_indexer LOGIN PASSWORD %L', :'indexer_password')
+WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'cpredict_usdc_indexer') \gexec
+SELECT format('CREATE ROLE cpredict_usdc_metadata LOGIN PASSWORD %L', :'metadata_password')
+WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'cpredict_usdc_metadata') \gexec
+SELECT format('ALTER ROLE cpredict_usdc_indexer LOGIN PASSWORD %L', :'indexer_password') \gexec
+SELECT format('ALTER ROLE cpredict_usdc_metadata LOGIN PASSWORD %L', :'metadata_password') \gexec
+SELECT 'CREATE DATABASE cpredict_usdc_indexer OWNER cpredict_migrator'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'cpredict_usdc_indexer') \gexec
+SELECT 'CREATE DATABASE cpredict_usdc_metadata OWNER cpredict_migrator'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'cpredict_usdc_metadata') \gexec
+REVOKE CONNECT ON DATABASE cpredict_usdc_indexer, cpredict_usdc_metadata FROM PUBLIC;
+SQL
+  exit 0
+fi
+[[ -z "${1:-}" ]] || { printf '%s\n' 'usage: bootstrap-cpredict-databases [usdc]' >&2; exit 2; }
+
 for name in CPREDICT_STACK_MIGRATOR_PASSWORD CPREDICT_STACK_INDEXER_PASSWORD CPREDICT_STACK_PAYMASTER_PASSWORD CPREDICT_STACK_METADATA_PASSWORD CPREDICT_STACK_BACKUP_PASSWORD; do
   value="${!name:-}"
   [[ "$value" =~ ^[A-Za-z0-9_-]{24,128}$ ]] || {
@@ -36,4 +60,5 @@ SELECT 'CREATE DATABASE cpredict_paymaster OWNER cpredict_migrator'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'cpredict_paymaster') \gexec
 SELECT 'CREATE DATABASE cpredict_metadata OWNER cpredict_migrator'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'cpredict_metadata') \gexec
+REVOKE CONNECT ON DATABASE cpredict_indexer, cpredict_paymaster, cpredict_metadata FROM PUBLIC;
 SQL

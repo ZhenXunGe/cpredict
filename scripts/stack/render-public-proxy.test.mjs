@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -183,4 +184,29 @@ test("proxy argument parser rejects missing, duplicate and unknown inputs", () =
     () => parseProxyArgs(["--host", "a.com", "--host", "b.com"]),
     /duplicate/,
   );
+});
+
+test("public-site edge keeps PC login Bearer tokens scoped and private readiness unavailable", async () => {
+  const boundary = await mkdtemp(join(tmpdir(), "cpredict-site-proxy-"));
+  try {
+    const args = parseProxyArgs(["--host", "test.example.com", "--public-site", "--mode", "domain", "--email", "ops@example.com"]);
+    const result = await renderPublicProxy({ ...args, output: boundary }, { outputBoundary: boundary });
+    const config = await readFile(join(result.output, "cpredict.conf"), "utf8");
+    assert.match(config, /auth_basic off/);
+    assert.doesNotMatch(config, /htpasswd|default-src 'self'|Cross-Origin-Opener-Policy "same-origin"/);
+    assert.equal((config.match(/Authorization \$http_authorization/g) ?? []).length, 1);
+    assert.match(config, /location ~ \^\/\(ctusd\|usdc\)\/app\/[\s\S]*?Authorization \$http_authorization/);
+    assert.match(config, /metrics\|readyz.*return 404/);
+    assert.match(config, /X-Forwarded-For \$remote_addr/);
+    assert.match(config, /same-origin-allow-popups/);
+    const script = join(result.output, "issue-certificate.sh");
+    const install = await readFile(script, "utf8");
+    assert.doesNotMatch(install, /htpasswd|expected authenticated edge/);
+    assert.match(install, /status" != 404/);
+    assert.match(install, /site-config.json/);
+    const syntax = spawnSync("bash", ["-n", script], { encoding: "utf8" });
+    assert.equal(syntax.status, 0, syntax.stderr);
+    assert.throws(() => parseProxyArgs(["--public-site", "--public-site"]), /duplicate/);
+    assert.throws(() => validateProxyInput({ ...args, publicSite: "true" }), /boolean/);
+  } finally { await rm(boundary, { recursive: true }); }
 });

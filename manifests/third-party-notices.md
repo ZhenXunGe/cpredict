@@ -4,6 +4,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 
 ## (Apache-2.0 AND MIT)
 
+- npm:@metamask/abi-utils@3.0.0:node_modules/@metamask/abi-utils
 - npm:multiformats@9.9.0:node_modules/multiformats
 
 ## (MIT AND BSD-3-Clause)
@@ -13,6 +14,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 ## (MIT OR Apache-2.0)
 
 - npm:@paulmillr/qr@0.2.1:node_modules/@paulmillr/qr
+- npm:JSONStream@1.3.5:node_modules/JSONStream
 
 ## 0BSD
 
@@ -96,11 +98,13 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@wallet-standard/features@1.1.1:node_modules/@wallet-standard/features
 - npm:@wallet-standard/wallet@1.1.0:node_modules/@wallet-standard/wallet
 - npm:axios-retry@4.5.0:node_modules/axios-retry
+- npm:borsh@0.7.0:node_modules/borsh
 - npm:canonicalize@2.1.0:node_modules/canonicalize
 - npm:cbw-sdk@3.9.3:node_modules/cbw-sdk
 - npm:crc-32@1.2.2:node_modules/crc-32
 - npm:detect-libc@2.1.2:node_modules/detect-libc
 - npm:expect-type@1.4.0:node_modules/expect-type
+- npm:find-yarn-workspace-root@2.0.0:node_modules/find-yarn-workspace-root
 - npm:idb-keyval@6.2.1:node_modules/idb-keyval
 - npm:playwright-core@1.63.0-alpha-2026-08-31:node_modules/playwright-core
 - npm:playwright@1.63.0-alpha-2026-08-31:node_modules/playwright
@@ -114,6 +118,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 
 ## BSD-2-Clause
 
+- npm:@yarnpkg/lockfile@1.1.0:node_modules/@yarnpkg/lockfile
 - npm:webidl-conversions@3.0.1:node_modules/webidl-conversions
 
 ## BSD-3-Clause
@@ -156,6 +161,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 
 ## ISC
 
+- npm:@metamask/eth-sig-util@8.2.0:node_modules/@metamask/eth-sig-util
 - npm:@metamask/json-rpc-engine@7.3.3:node_modules/@metamask/eth-json-rpc-provider/node_modules/@metamask/json-rpc-engine
 - npm:@metamask/json-rpc-engine@8.0.2:node_modules/@metamask/json-rpc-engine
 - npm:@metamask/json-rpc-middleware-stream@7.0.2:node_modules/@metamask/json-rpc-middleware-stream
@@ -181,9 +187,12 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:extension-port-stream@3.0.0:node_modules/extension-port-stream
 - npm:fastq@1.20.1:node_modules/fastq
 - npm:get-caller-file@2.0.5:node_modules/get-caller-file
+- npm:graceful-fs@4.2.11:node_modules/graceful-fs
 - npm:inherits@2.0.4:node_modules/inherits
+- npm:isexe@2.0.0:node_modules/isexe
 - npm:json-rpc-engine@6.1.0:node_modules/json-rpc-engine
 - npm:json-rpc-random-id@1.0.1:node_modules/json-rpc-random-id
+- npm:json-stringify-safe@5.0.1:node_modules/json-stringify-safe
 - npm:lucide-react@0.554.0:node_modules/@privy-io/react-auth/node_modules/lucide-react
 - npm:lucide-react@1.43.0:node_modules/lucide-react
 - npm:obj-multiplex@1.0.0:node_modules/obj-multiplex
@@ -196,9 +205,19 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:siginfo@2.0.0:node_modules/siginfo
 - npm:split2@4.2.0:node_modules/split2
 - npm:which-module@2.0.1:node_modules/which-module
+- npm:which@2.0.2:node_modules/which
 - npm:wrappy@1.0.2:node_modules/wrappy
 - npm:y18n@4.0.3:node_modules/y18n
+- npm:yaml@2.9.0:node_modules/yaml
 - npm:yargs-parser@18.1.3:node_modules/yargs-parser
+
+## LGPL-3.0-only
+
+- npm:rpc-websockets@9.3.9:node_modules/rpc-websockets
+
+## LicenseRef-Npm-041cdeeed354af419daf
+
+- npm:jsonify@0.0.1:node_modules/jsonify
 
 ## LicenseRef-Npm-1cb6f8cfe21f54ab1105
 
@@ -294,6 +313,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@noble/curves@1.9.7:node_modules/@reown/appkit-controllers/node_modules/@noble/curves
 - npm:@noble/curves@1.9.7:node_modules/@reown/appkit-utils/node_modules/@noble/curves
 - npm:@noble/curves@1.9.7:node_modules/@reown/appkit/node_modules/@noble/curves
+- npm:@noble/curves@1.9.7:node_modules/@solana/web3.js/node_modules/@noble/curves
 - npm:@noble/curves@1.9.7:node_modules/@walletconnect/utils/node_modules/@noble/curves
 - npm:@noble/curves@1.9.7:node_modules/eciesjs/node_modules/@noble/curves
 - npm:@noble/hashes@1.3.3:node_modules/@metamask/scure-bip39/node_modules/@noble/hashes
@@ -341,6 +361,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@safe-global/safe-apps-provider@0.18.6:node_modules/@safe-global/safe-apps-provider
 - npm:@safe-global/safe-apps-sdk@9.1.0:node_modules/@safe-global/safe-apps-sdk
 - npm:@safe-global/safe-gateway-typescript-sdk@3.23.1:node_modules/@safe-global/safe-gateway-typescript-sdk
+- npm:@scure/base@1.1.9:node_modules/@metamask/eth-sig-util/node_modules/@scure/base
 - npm:@scure/base@1.1.9:node_modules/@metamask/scure-bip39/node_modules/@scure/base
 - npm:@scure/base@1.1.9:node_modules/ethereum-cryptography/node_modules/@scure/base
 - npm:@scure/base@1.2.6:node_modules/@scure/base
@@ -349,6 +370,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@scure/bip39@1.3.0:node_modules/ethereum-cryptography/node_modules/@scure/bip39
 - npm:@scure/bip39@1.6.0:node_modules/@scure/bip39
 - npm:@simplewebauthn/browser@13.3.0:node_modules/@simplewebauthn/browser
+- npm:@simplewebauthn/types@9.0.1:node_modules/@simplewebauthn/types
 - npm:@socket.io/component-emitter@3.1.2:node_modules/@socket.io/component-emitter
 - npm:@solana/accounts@3.0.3:node_modules/@solana/accounts
 - npm:@solana/accounts@5.5.1:node_modules/@coinbase/cdp-sdk/node_modules/@solana/accounts
@@ -359,12 +381,15 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@solana/assertions@3.0.3:node_modules/@solana/assertions
 - npm:@solana/assertions@5.5.1:node_modules/@coinbase/cdp-sdk/node_modules/@solana/assertions
 - npm:@solana/assertions@5.5.1:node_modules/x402/node_modules/@solana/assertions
+- npm:@solana/buffer-layout@4.0.1:node_modules/@solana/buffer-layout
+- npm:@solana/codecs-core@2.3.0:node_modules/@solana/web3.js/node_modules/@solana/codecs-core
 - npm:@solana/codecs-core@3.0.3:node_modules/@solana/codecs-core
 - npm:@solana/codecs-core@5.5.1:node_modules/@coinbase/cdp-sdk/node_modules/@solana/codecs-core
 - npm:@solana/codecs-core@5.5.1:node_modules/x402/node_modules/@solana/codecs-core
 - npm:@solana/codecs-data-structures@3.0.3:node_modules/@solana/codecs-data-structures
 - npm:@solana/codecs-data-structures@5.5.1:node_modules/@coinbase/cdp-sdk/node_modules/@solana/codecs-data-structures
 - npm:@solana/codecs-data-structures@5.5.1:node_modules/x402/node_modules/@solana/codecs-data-structures
+- npm:@solana/codecs-numbers@2.3.0:node_modules/@solana/web3.js/node_modules/@solana/codecs-numbers
 - npm:@solana/codecs-numbers@3.0.3:node_modules/@solana/codecs-numbers
 - npm:@solana/codecs-numbers@5.5.1:node_modules/@coinbase/cdp-sdk/node_modules/@solana/codecs-numbers
 - npm:@solana/codecs-numbers@5.5.1:node_modules/x402/node_modules/@solana/codecs-numbers
@@ -374,6 +399,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@solana/codecs@3.0.3:node_modules/@solana/codecs
 - npm:@solana/codecs@5.5.1:node_modules/@coinbase/cdp-sdk/node_modules/@solana/codecs
 - npm:@solana/codecs@5.5.1:node_modules/x402/node_modules/@solana/codecs
+- npm:@solana/errors@2.3.0:node_modules/@solana/web3.js/node_modules/@solana/errors
 - npm:@solana/errors@3.0.3:node_modules/@solana/errors
 - npm:@solana/errors@5.5.1:node_modules/@coinbase/cdp-sdk/node_modules/@solana/errors
 - npm:@solana/errors@5.5.1:node_modules/x402/node_modules/@solana/errors
@@ -465,6 +491,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@solana/transactions@3.0.3:node_modules/@solana/transactions
 - npm:@solana/transactions@5.5.1:node_modules/@coinbase/cdp-sdk/node_modules/@solana/transactions
 - npm:@solana/transactions@5.5.1:node_modules/x402/node_modules/@solana/transactions
+- npm:@solana/web3.js@1.98.4:node_modules/@solana/web3.js
 - npm:@standard-schema/spec@1.1.0:node_modules/@standard-schema/spec
 - npm:@stripe/crypto@1.1.3:node_modules/@stripe/crypto
 - npm:@stripe/stripe-js@1.54.2:node_modules/@stripe/stripe-js
@@ -473,15 +500,20 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@tanstack/react-virtual@3.14.11:node_modules/@tanstack/react-virtual
 - npm:@tanstack/virtual-core@3.17.9:node_modules/@tanstack/virtual-core
 - npm:@types/chai@5.2.3:node_modules/@types/chai
+- npm:@types/connect@3.4.38:node_modules/@types/connect
 - npm:@types/debug@4.1.13:node_modules/@types/debug
 - npm:@types/deep-eql@4.0.2:node_modules/@types/deep-eql
 - npm:@types/estree@1.0.9:node_modules/@types/estree
+- npm:@types/js-cookie@3.0.6:node_modules/@types/js-cookie
 - npm:@types/lodash@4.17.25:node_modules/@types/lodash
 - npm:@types/ms@2.1.0:node_modules/@types/ms
+- npm:@types/node@12.20.55:node_modules/@solana/web3.js/node_modules/@types/node
 - npm:@types/node@22.20.1:node_modules/@types/node
 - npm:@types/react-dom@19.2.4:node_modules/@types/react-dom
 - npm:@types/react@19.2.18:node_modules/@types/react
 - npm:@types/trusted-types@2.0.7:node_modules/@types/trusted-types
+- npm:@types/uuid@10.0.0:node_modules/@types/uuid
+- npm:@types/ws@7.4.7:node_modules/@solana/web3.js/node_modules/@types/ws
 - npm:@types/ws@8.18.1:node_modules/@types/ws
 - npm:@vitejs/plugin-react@6.1.1:node_modules/@vitejs/plugin-react
 - npm:@vitest/expect@4.1.11:node_modules/@vitest/expect
@@ -523,6 +555,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:abort-controller@3.0.0:node_modules/abort-controller
 - npm:abstract-logging@2.0.1:node_modules/abstract-logging
 - npm:agent-base@6.0.2:node_modules/agent-base
+- npm:agentkeepalive@4.6.0:node_modules/agentkeepalive
 - npm:ajv-formats@3.0.1:node_modules/ajv-formats
 - npm:ajv@8.20.0:node_modules/ajv
 - npm:ansi-regex@5.0.1:node_modules/ansi-regex
@@ -535,6 +568,8 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:available-typed-arrays@1.0.7:node_modules/available-typed-arrays
 - npm:avvio@9.3.0:node_modules/avvio
 - npm:axios@1.18.0:node_modules/axios
+- npm:base-x@3.0.11:node_modules/@solana/web3.js/node_modules/base-x
+- npm:base-x@3.0.11:node_modules/borsh/node_modules/base-x
 - npm:base-x@5.0.1:node_modules/base-x
 - npm:base64-js@1.5.1:node_modules/base64-js
 - npm:big.js@6.2.2:node_modules/big.js
@@ -542,6 +577,9 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:blakejs@1.2.1:node_modules/blakejs
 - npm:bn.js@5.2.5:node_modules/bn.js
 - npm:bowser@2.14.1:node_modules/bowser
+- npm:braces@3.0.3:node_modules/braces
+- npm:bs58@4.0.1:node_modules/@solana/web3.js/node_modules/bs58
+- npm:bs58@4.0.1:node_modules/borsh/node_modules/bs58
 - npm:bs58@6.0.0:node_modules/bs58
 - npm:buffer@6.0.3:node_modules/buffer
 - npm:bufferutil@4.1.0:node_modules/bufferutil
@@ -551,8 +589,10 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:camelcase@5.3.1:node_modules/camelcase
 - npm:camelize@1.0.1:node_modules/camelize
 - npm:chai@6.2.2:node_modules/chai
+- npm:chalk@4.1.2:node_modules/patch-package/node_modules/chalk
 - npm:chalk@5.6.2:node_modules/chalk
 - npm:chokidar@5.0.0:node_modules/chokidar
+- npm:ci-info@3.9.0:node_modules/ci-info
 - npm:clsx@1.2.1:node_modules/clsx
 - npm:clsx@2.1.1:node_modules/react-aria/node_modules/clsx
 - npm:color-convert@2.0.1:node_modules/color-convert
@@ -561,12 +601,14 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:combined-stream@1.0.8:node_modules/combined-stream
 - npm:commander@14.0.0:node_modules/@solana/errors/node_modules/commander
 - npm:commander@14.0.2:node_modules/commander
+- npm:commander@2.20.3:node_modules/@solana/web3.js/node_modules/jayson/node_modules/commander
 - npm:convert-source-map@2.0.0:node_modules/convert-source-map
 - npm:cookie-es@1.2.3:node_modules/cookie-es
 - npm:cookie@1.1.1:node_modules/cookie
 - npm:core-util-is@1.0.3:node_modules/core-util-is
 - npm:cross-fetch@3.2.0:node_modules/cross-fetch
 - npm:cross-fetch@4.1.0:node_modules/@metamask/sdk/node_modules/cross-fetch
+- npm:cross-spawn@7.0.6:node_modules/cross-spawn
 - npm:crossws@0.3.5:node_modules/crossws
 - npm:css-to-react-native@3.2.0:node_modules/css-to-react-native
 - npm:csstype@3.2.3:node_modules/csstype
@@ -581,6 +623,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:decamelize@1.2.0:node_modules/decamelize
 - npm:define-data-property@1.1.4:node_modules/define-data-property
 - npm:defu@6.1.7:node_modules/defu
+- npm:delay@5.0.0:node_modules/delay
 - npm:delayed-stream@1.0.0:node_modules/delayed-stream
 - npm:dequal@2.0.3:node_modules/dequal
 - npm:destr@2.0.5:node_modules/destr
@@ -601,6 +644,8 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:es-object-atoms@1.1.2:node_modules/es-object-atoms
 - npm:es-set-tostringtag@2.1.0:node_modules/es-set-tostringtag
 - npm:es-toolkit@1.39.3:node_modules/es-toolkit
+- npm:es6-promise@4.2.8:node_modules/es6-promise
+- npm:es6-promisify@5.0.0:node_modules/es6-promisify
 - npm:estree-walker@3.0.3:node_modules/estree-walker
 - npm:eth-block-tracker@7.1.0:node_modules/eth-block-tracker
 - npm:eth-rpc-errors@4.0.3:node_modules/eth-rpc-errors
@@ -609,6 +654,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:eventemitter2@6.4.9:node_modules/eventemitter2
 - npm:eventemitter3@5.0.1:node_modules/eventemitter3
 - npm:events@3.3.0:node_modules/events
+- npm:eyes@0.1.8:node_modules/eyes
 - npm:fast-copy@3.1.0:node_modules/fast-copy
 - npm:fast-decode-uri-component@1.0.1:node_modules/fast-decode-uri-component
 - npm:fast-deep-equal@3.1.3:node_modules/fast-deep-equal
@@ -617,15 +663,18 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:fast-querystring@1.1.2:node_modules/fast-querystring
 - npm:fast-redact@3.5.0:node_modules/fast-redact
 - npm:fast-safe-stringify@2.1.1:node_modules/fast-safe-stringify
+- npm:fast-stable-stringify@1.0.0:node_modules/fast-stable-stringify
 - npm:fastify-plugin@6.0.0:node_modules/fastify-plugin
 - npm:fastify@5.12.3:node_modules/fastify
 - npm:fdir@6.5.0:node_modules/fdir
 - npm:fetch-retry@6.0.0:node_modules/fetch-retry
+- npm:fill-range@7.1.1:node_modules/fill-range
 - npm:find-my-way@9.7.0:node_modules/find-my-way
 - npm:find-up@4.1.0:node_modules/find-up
 - npm:follow-redirects@1.16.0:node_modules/follow-redirects
 - npm:for-each@0.3.5:node_modules/for-each
 - npm:form-data@4.0.6:node_modules/form-data
+- npm:fs-extra@10.1.0:node_modules/fs-extra
 - npm:fsevents@2.3.3:node_modules/fsevents
 - npm:function-bind@1.1.2:node_modules/function-bind
 - npm:generator-function@2.0.1:node_modules/generator-function
@@ -634,6 +683,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:get-proto@1.0.1:node_modules/get-proto
 - npm:gopd@1.2.0:node_modules/gopd
 - npm:h3@1.15.11:node_modules/h3
+- npm:has-flag@4.0.0:node_modules/has-flag
 - npm:has-property-descriptors@1.0.2:node_modules/has-property-descriptors
 - npm:has-symbols@1.1.0:node_modules/has-symbols
 - npm:has-tostringtag@1.0.2:node_modules/has-tostringtag
@@ -642,35 +692,46 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:help-me@5.0.0:node_modules/help-me
 - npm:hono@4.13.7:node_modules/hono
 - npm:https-proxy-agent@5.0.1:node_modules/https-proxy-agent
+- npm:humanize-ms@1.2.1:node_modules/humanize-ms
 - npm:ip-address@10.4.0:node_modules/ip-address
 - npm:ipaddr.js@2.5.0:node_modules/ipaddr.js
 - npm:iron-webcrypto@1.2.1:node_modules/iron-webcrypto
 - npm:is-arguments@1.2.0:node_modules/is-arguments
 - npm:is-buffer@1.1.6:node_modules/is-buffer
 - npm:is-callable@1.2.7:node_modules/is-callable
+- npm:is-docker@2.2.1:node_modules/is-docker
 - npm:is-fullwidth-code-point@3.0.0:node_modules/is-fullwidth-code-point
 - npm:is-generator-function@1.1.2:node_modules/is-generator-function
+- npm:is-number@7.0.0:node_modules/is-number
 - npm:is-regex@1.2.1:node_modules/is-regex
 - npm:is-retry-allowed@2.2.0:node_modules/is-retry-allowed
 - npm:is-stream@2.0.1:node_modules/is-stream
 - npm:is-typed-array@1.1.15:node_modules/is-typed-array
+- npm:is-wsl@2.2.0:node_modules/is-wsl
 - npm:isarray@1.0.0:node_modules/obj-multiplex/node_modules/isarray
 - npm:isarray@2.0.5:node_modules/isarray
+- npm:isomorphic-ws@4.0.1:node_modules/isomorphic-ws
 - npm:isows@1.0.7:node_modules/isows
+- npm:jayson@4.1.3:node_modules/@solana/web3.js/node_modules/jayson
 - npm:jose@4.15.9:node_modules/@privy-io/react-auth/node_modules/jose
 - npm:jose@6.2.12:node_modules/jose
 - npm:joycon@3.1.1:node_modules/joycon
 - npm:js-cookie@3.0.8:node_modules/js-cookie
 - npm:json-schema-ref-resolver@3.0.0:node_modules/json-schema-ref-resolver
 - npm:json-schema-traverse@1.0.0:node_modules/json-schema-traverse
+- npm:json-stable-stringify@1.3.0:node_modules/json-stable-stringify
+- npm:jsonfile@6.2.1:node_modules/jsonfile
+- npm:jsonparse@1.3.1:node_modules/jsonparse
 - npm:keccak@3.0.4:node_modules/keccak
 - npm:keyvaluestorage-interface@1.0.0:node_modules/keyvaluestorage-interface
+- npm:klaw-sync@6.0.0:node_modules/klaw-sync
 - npm:libphonenumber-js@1.13.12:node_modules/libphonenumber-js
 - npm:locate-path@5.0.0:node_modules/locate-path
 - npm:lodash@4.18.1:node_modules/lodash
 - npm:magic-string@0.30.21:node_modules/magic-string
 - npm:math-intrinsics@1.1.0:node_modules/math-intrinsics
 - npm:micro-ftch@0.3.1:node_modules/micro-ftch
+- npm:micromatch@4.0.8:node_modules/micromatch
 - npm:mime-db@1.52.0:node_modules/mime-db
 - npm:mime-types@2.1.35:node_modules/mime-types
 - npm:minimist@1.2.8:node_modules/minimist
@@ -686,6 +747,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:node-gyp-build@4.8.4:node_modules/node-gyp-build
 - npm:node-mock-http@1.0.5:node_modules/node-mock-http
 - npm:normalize-path@3.0.0:node_modules/normalize-path
+- npm:object-keys@1.1.1:node_modules/object-keys
 - npm:obug@2.1.4:node_modules/obug
 - npm:ofetch@1.5.1:node_modules/ofetch
 - npm:on-exit-leak-free@0.2.0:node_modules/@reown/appkit-controllers/node_modules/on-exit-leak-free
@@ -693,6 +755,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:on-exit-leak-free@0.2.0:node_modules/@reown/appkit-wallet/node_modules/on-exit-leak-free
 - npm:on-exit-leak-free@0.2.0:node_modules/@reown/appkit/node_modules/on-exit-leak-free
 - npm:on-exit-leak-free@2.1.2:node_modules/on-exit-leak-free
+- npm:open@7.4.2:node_modules/open
 - npm:openapi-fetch@0.13.8:node_modules/openapi-fetch
 - npm:openapi-typescript-helpers@0.0.15:node_modules/openapi-typescript-helpers
 - npm:ox@0.14.32:node_modules/viem/node_modules/ox
@@ -709,9 +772,12 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:p-limit@2.3.0:node_modules/p-limit
 - npm:p-locate@4.1.0:node_modules/p-locate
 - npm:p-try@2.2.0:node_modules/p-try
+- npm:patch-package@8.0.1:node_modules/patch-package
 - npm:path-exists@4.0.0:node_modules/path-exists
+- npm:path-key@3.1.1:node_modules/path-key
 - npm:pathe@2.0.3:node_modules/pathe
 - npm:picomatch@2.3.2:node_modules/anymatch/node_modules/picomatch
+- npm:picomatch@2.3.2:node_modules/micromatch/node_modules/picomatch
 - npm:picomatch@4.0.5:node_modules/picomatch
 - npm:pify@3.0.0:node_modules/pify
 - npm:pify@5.0.0:node_modules/eth-json-rpc-filters/node_modules/pify
@@ -795,6 +861,9 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:secure-password-utilities@0.2.1:node_modules/secure-password-utilities
 - npm:set-cookie-parser@2.7.2:node_modules/set-cookie-parser
 - npm:set-function-length@1.2.2:node_modules/set-function-length
+- npm:shebang-command@2.0.0:node_modules/shebang-command
+- npm:shebang-regex@3.0.0:node_modules/shebang-regex
+- npm:slash@2.0.0:node_modules/slash
 - npm:slow-redact@0.3.2:node_modules/slow-redact
 - npm:socket.io-client@4.8.3:node_modules/socket.io-client
 - npm:socket.io-parser@4.2.7:node_modules/socket.io-parser
@@ -816,6 +885,8 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:stylis@4.3.6:node_modules/styled-components/node_modules/stylis
 - npm:stylis@4.4.0:node_modules/stylis
 - npm:superstruct@1.0.4:node_modules/superstruct
+- npm:superstruct@2.0.2:node_modules/@solana/web3.js/node_modules/superstruct
+- npm:supports-color@7.2.0:node_modules/supports-color
 - npm:tabbable@6.5.0:node_modules/tabbable
 - npm:tdigest@0.1.2:node_modules/tdigest
 - npm:thread-stream@0.15.2:node_modules/@reown/appkit-controllers/node_modules/thread-stream
@@ -824,12 +895,15 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:thread-stream@0.15.2:node_modules/@reown/appkit/node_modules/thread-stream
 - npm:thread-stream@3.2.0:node_modules/@walletconnect/logger/node_modules/thread-stream
 - npm:thread-stream@4.2.0:node_modules/thread-stream
+- npm:through@2.3.8:node_modules/through
 - npm:tinybench@2.9.0:node_modules/tinybench
 - npm:tinycolor2@1.6.0:node_modules/tinycolor2
 - npm:tinyexec@1.3.0:node_modules/tinyexec
 - npm:tinyglobby@0.2.17:node_modules/tinyglobby
 - npm:tinyrainbow@3.1.1:node_modules/tinyrainbow
+- npm:tmp@0.2.7:node_modules/tmp
 - npm:to-buffer@1.2.2:node_modules/to-buffer
+- npm:to-regex-range@5.0.1:node_modules/to-regex-range
 - npm:toad-cache@3.7.4:node_modules/toad-cache
 - npm:tr46@0.0.3:node_modules/tr46
 - npm:typed-array-buffer@1.0.3:node_modules/typed-array-buffer
@@ -841,15 +915,19 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:undici-types@7.29.1:node_modules/@coinbase/cdp-sdk/node_modules/undici-types
 - npm:undici-types@7.29.1:node_modules/@solana/rpc-transport-http/node_modules/undici-types
 - npm:undici-types@7.29.1:node_modules/x402/node_modules/undici-types
+- npm:undici@7.29.1:node_modules/undici
+- npm:universalify@2.0.1:node_modules/universalify
 - npm:unstorage@1.17.5:node_modules/unstorage
 - npm:use-callback-ref@1.3.3:node_modules/use-callback-ref
 - npm:use-sidecar@1.1.3:node_modules/use-sidecar
 - npm:use-sync-external-store@1.4.0:node_modules/wagmi/node_modules/use-sync-external-store
 - npm:use-sync-external-store@1.6.0:node_modules/use-sync-external-store
 - npm:utf-8-validate@5.0.10:node_modules/utf-8-validate
+- npm:utf-8-validate@6.0.6:node_modules/rpc-websockets/node_modules/utf-8-validate
 - npm:util-deprecate@1.0.2:node_modules/util-deprecate
 - npm:util@0.12.5:node_modules/util
 - npm:uuid@11.1.1:node_modules/uuid
+- npm:uuid@14.0.2:node_modules/rpc-websockets/node_modules/uuid
 - npm:valtio@2.1.7:node_modules/valtio
 - npm:viem@2.36.0:node_modules/@reown/appkit-controllers/node_modules/@walletconnect/utils/node_modules/viem
 - npm:viem@2.36.0:node_modules/@reown/appkit-utils/node_modules/@walletconnect/utils/node_modules/viem
@@ -864,6 +942,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:which-typed-array@1.1.22:node_modules/which-typed-array
 - npm:why-is-node-running@2.3.0:node_modules/why-is-node-running
 - npm:wrap-ansi@6.2.0:node_modules/wrap-ansi
+- npm:ws@7.5.13:node_modules/@solana/web3.js/node_modules/ws
 - npm:ws@7.5.13:node_modules/@walletconnect/jsonrpc-ws-connection/node_modules/ws
 - npm:ws@8.21.0:node_modules/ws
 - npm:xmlhttprequest-ssl@2.1.2:node_modules/xmlhttprequest-ssl
@@ -944,5 +1023,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 ## Unlicense
 
 - npm:postgres@3.4.9:node_modules/postgres
+- npm:text-encoding-utf-8@1.0.2:node_modules/text-encoding-utf-8
+- npm:tweetnacl@1.0.3:node_modules/tweetnacl
 
 See `manifests/licenses.json` for provenance and actual Solidity source scope details.
