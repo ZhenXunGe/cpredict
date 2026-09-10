@@ -1,0 +1,110 @@
+# Public site edge for the existing loopback Compose gateway. Rendering this
+# file does not install it or authorize replacement of an existing host.
+map $http_upgrade $cpredict_connection_upgrade {
+  default upgrade;
+  '' close;
+}
+limit_req_zone $binary_remote_addr zone=cpredict_rpc:10m rate=10r/s;
+limit_req_zone $binary_remote_addr zone=cpredict_read_api:10m rate=30r/s;
+limit_req_zone $binary_remote_addr zone=cpredict_app_api:10m rate=10r/s;
+limit_conn_zone $binary_remote_addr zone=cpredict_per_ip:10m;
+
+server {
+  listen 80;
+  listen [::]:80;
+  server_name @@PUBLIC_HOST@@;
+  server_tokens off;
+  location ^~ /.well-known/acme-challenge/ {
+    root /var/www/cpredict-acme;
+    default_type text/plain;
+    try_files $uri =404;
+  }
+  location / { return 308 https://@@PUBLIC_HOST@@$request_uri; }
+}
+
+server {
+  listen 443 ssl http2;
+  listen [::]:443 ssl http2;
+  server_name @@PUBLIC_HOST@@;
+  server_tokens off;
+  ssl_certificate /etc/letsencrypt/live/@@CERT_NAME@@/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/@@CERT_NAME@@/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_session_tickets off;
+  ssl_session_cache shared:cpredict_tls:10m;
+  ssl_session_timeout 1d;
+
+  auth_basic off;
+  limit_conn cpredict_per_ip 50;
+  limit_conn_status 429;
+  limit_req_status 429;
+  client_max_body_size 128k;
+  # Provider-specific CSP restrictions require PC wallet/OAuth acceptance.
+  add_header Content-Security-Policy "base-uri 'self'; object-src 'none'; frame-ancestors 'none'" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-Frame-Options "DENY" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header Cross-Origin-Opener-Policy "same-origin-allow-popups" always;
+  add_header Strict-Transport-Security "max-age=86400" always;
+
+  # Only the authenticated app routes receive the Privy Bearer token.
+  proxy_set_header Authorization "";
+  proxy_set_header Host $host;
+  proxy_set_header X-Real-IP $remote_addr;
+  proxy_set_header X-Forwarded-For $remote_addr;
+  proxy_set_header X-Forwarded-Proto https;
+  proxy_http_version 1.1;
+  proxy_connect_timeout 5s;
+  proxy_read_timeout 30s;
+  proxy_send_timeout 30s;
+
+  location ~ ^/(?:ctusd/|usdc/)?(?:app/|indexer/|metadata/)?(?:metrics|readyz)(?:/|$) { return 404; }
+  location ~ ^/(?:runtime|\.env|\.git)(?:/|$|\.) { return 404; }
+  location ~ ^/(ctusd|usdc)/app/ {
+    limit_except GET HEAD POST { deny all; }
+    limit_req zone=cpredict_app_api burst=30 nodelay;
+    proxy_set_header Authorization $http_authorization;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_pass http://127.0.0.1:4177;
+  }
+  location ~ ^/(?:(?:ctusd|usdc)/)?indexer/ {
+    limit_except GET HEAD { deny all; }
+    limit_req zone=cpredict_read_api burst=60 nodelay;
+    proxy_set_header Authorization "";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto https;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $cpredict_connection_upgrade;
+    proxy_read_timeout 75s;
+    proxy_buffering off;
+    proxy_pass http://127.0.0.1:4177;
+  }
+  location ~ ^/(?:(?:ctusd|usdc)/)?metadata/ {
+    limit_except GET HEAD POST { deny all; }
+    limit_req zone=cpredict_read_api burst=60 nodelay;
+    client_max_body_size 32k;
+    proxy_pass http://127.0.0.1:4177;
+  }
+  location = /rpc {
+    limit_except POST { deny all; }
+    client_max_body_size 64k;
+    limit_req zone=cpredict_rpc burst=30 nodelay;
+    proxy_read_timeout 15s;
+    proxy_pass http://127.0.0.1:4177;
+  }
+  location /relay/ {
+    limit_except POST { deny all; }
+    limit_req zone=cpredict_app_api burst=30 nodelay;
+    proxy_pass http://127.0.0.1:4177;
+  }
+  # The internal gateway serves root/deep links, /demo/, recovery, immutable
+  # deployment/metadata paths and no-store runtime configuration together.
+  location / {
+    limit_except GET HEAD { deny all; }
+    proxy_pass http://127.0.0.1:4177;
+  }
+}

@@ -1,4 +1,6 @@
 import { pathToFileURL } from "node:url";
+import { createPublicClient, http } from "viem";
+import { arbitrumSepolia } from "viem/chains";
 import { parseMetadataServiceConfig } from "./config.js";
 import { PostgresMetadataStore } from "./postgres-store.js";
 import { createMetadataServer } from "./server.js";
@@ -11,7 +13,11 @@ export async function startMetadataService(
     config.databaseUrl,
     config.databasePoolSize,
   );
-  const app = await createMetadataServer({ config, store });
+  const signatureClient = config.rpcUrl === undefined ? undefined : createPublicClient({
+    chain: arbitrumSepolia,
+    transport: http(config.rpcUrl, { timeout: 4_000, retryCount: 0 }),
+  });
+  const app = await createMetadataServer({ config, store, signatureClient });
   try {
     await store.ready();
     await app.listen({ host: config.host, port: config.port });

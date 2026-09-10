@@ -109,6 +109,12 @@ jobs:
       - run: npm run test:gate-parsers
       - run: npm run scan:secrets
       - run: npm run check:offchain
+      - name: Public site strict dependencies and fixed SDK patches
+        run: |
+          npm run site:check:dependencies
+          npm run site:test:patches
+          npm run site:test:dependencies
+          npm run site:test:entrypoints
       - name: Web Demo build and bundle secret scan
         run: |
           npm run demo:test
@@ -117,12 +123,16 @@ jobs:
       - name: Compose static config and image builds
         run: |
           docker compose -f compose.yaml config --no-interpolate --quiet
+          docker compose -f compose.yaml -f compose.public-site.yaml -f compose.usdc.yaml config --no-interpolate --quiet
           docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.offchain --target indexer --tag cpredict-indexer:ci .
           docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.offchain --target paymaster --tag cpredict-paymaster:ci .
           docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.offchain --target permit2-relay --tag cpredict-permit2-relay:ci .
           docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.offchain --target metadata --tag cpredict-metadata:ci .
-          docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.demo --tag cpredict-web-demo:ci .
-          for image in cpredict-indexer:ci cpredict-paymaster:ci cpredict-permit2-relay:ci cpredict-metadata:ci cpredict-web-demo:ci; do
+          docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.offchain --target app-service --tag cpredict-app-service:ci .
+          docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.demo --target demo --tag cpredict-web-demo:ci .
+          docker build --build-arg "CPREDICT_IMAGE_REVISION=$GITHUB_SHA" --file deploy/compose/Dockerfile.demo --target public-site --tag cpredict-public-site:ci .
+          node scripts/stack/entrypoint-smoke.mjs --docker
+          for image in cpredict-indexer:ci cpredict-paymaster:ci cpredict-permit2-relay:ci cpredict-metadata:ci cpredict-app-service:ci cpredict-web-demo:ci cpredict-public-site:ci; do
             test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")" = "$GITHUB_SHA"
           done
       - name: Scan container images for fixable high-severity vulnerabilities
@@ -133,6 +143,16 @@ jobs:
       - name: Full offchain tests with PostgreSQL available
         run: npm run test:offchain -- --maxWorkers=1
       - name: PostgreSQL integration zero-skip gate
-        run: npm run test:postgres
+        run: npm run test:postgres -- --public-site
+      - name: Public site browser fixtures and built entries
+        run: npm run site:test:browser
+      - name: Preserve public site browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: public-site-browser
+          path: |
+            reports/generated/public-site/browser-regression.json
+            reports/generated/public-site/browser-results
       - run: npm run check:artifacts
       - run: npm audit --omit=dev --audit-level=high

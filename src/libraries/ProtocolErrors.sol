@@ -34,7 +34,6 @@ error PaymentAboveMaximum(uint256 payment, uint256 maximum);
 error ExposureCapExceeded(uint256 requested, uint256 available);
 error Insolvent(uint256 balance, uint256 liabilities);
 error InexactTokenTransfer(uint256 expected, uint256 received);
-error WinningOutcomeHasNoSupply(uint256 outcomeId);
 error NothingToClaim();
 error AlreadySettled();
 error InvariantViolation(bytes32 invariantId);

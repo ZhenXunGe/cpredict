@@ -5,6 +5,7 @@ import {
   type Hex,
   type PublicClient,
 } from "viem";
+import { assertMarketState } from "../../../offchain/sdk/src/market-state.js";
 
 const vaultReadAbi = parseAbi([
   "function creator() view returns (address)",
@@ -13,7 +14,8 @@ const vaultReadAbi = parseAbi([
   "function outcomeCount() view returns (uint8)",
   "function createdAt() view returns (uint64)",
   "function closeAt() view returns (uint64)",
-  "function earlyBirdStart() view returns (uint64)",
+  "function eventStartsAt() view returns (uint64)",
+  "function outcomeDeadlineAt() view returns (uint64)",
   "function featureFlags() view returns (uint256)",
   "function perUserPrimaryCap() view returns (uint128)",
   "function marketPrimaryCap() view returns (uint128)",
@@ -21,6 +23,7 @@ const vaultReadAbi = parseAbi([
   "function minimumC2CUnits() view returns (uint128)",
   "function creatorBond() view returns (uint128)",
   "function marketState() view returns (uint8)",
+  "function voidReason() view returns (uint8)",
   "function winningOutcome() view returns (uint8)",
   "function totalPrincipal() view returns (uint256)",
   "function resolutionDeadline() view returns (uint256)",
@@ -67,7 +70,8 @@ export interface MarketSnapshot {
   outcomeCount: number;
   createdAt: bigint;
   closeAt: bigint;
-  earlyBirdStart: bigint;
+  eventStartsAt: bigint | null;
+  outcomeDeadlineAt: bigint;
   featureFlags: bigint;
   perUserPrimaryCap: bigint;
   marketPrimaryCap: bigint;
@@ -75,6 +79,7 @@ export interface MarketSnapshot {
   minimumC2CUnits: bigint;
   creatorBond: bigint;
   marketState: number;
+  voidReason: number;
   winningOutcome: number;
   totalPrincipal: bigint;
   resolutionDeadline: bigint;
@@ -131,7 +136,6 @@ export async function readMarket(
       "outcomeCount",
       "createdAt",
       "closeAt",
-      "earlyBirdStart",
       "featureFlags",
       "perUserPrimaryCap",
       "marketPrimaryCap",
@@ -144,12 +148,16 @@ export async function readMarket(
       "resolutionDeadline",
       "permit2Enabled",
       "earlyBirdEnabled",
+      "voidReason",
+      "eventStartsAt",
+      "outcomeDeadlineAt",
     ].map((functionName) => ({
       address,
       abi: vaultReadAbi,
       functionName,
     })) as never,
   });
+  assertMarketState(Number(values[12]), Number(values[18]));
   return {
     address,
     observedAt: block.timestamp,
@@ -159,19 +167,21 @@ export async function readMarket(
     outcomeCount: Number(values[3]),
     createdAt: values[4] as bigint,
     closeAt: values[5] as bigint,
-    earlyBirdStart: values[6] as bigint,
-    featureFlags: values[7] as bigint,
-    perUserPrimaryCap: values[8] as bigint,
-    marketPrimaryCap: values[9] as bigint,
-    minimumPrimaryUnits: values[10] as bigint,
-    minimumC2CUnits: values[11] as bigint,
-    creatorBond: values[12] as bigint,
-    marketState: Number(values[13]),
-    winningOutcome: Number(values[14]),
-    totalPrincipal: values[15] as bigint,
-    resolutionDeadline: values[16] as bigint,
-    permit2Enabled: values[17] as boolean,
-    earlyBirdEnabled: values[18] as boolean,
+    eventStartsAt: values[19] === 0n ? null : (values[19] as bigint),
+    outcomeDeadlineAt: values[20] as bigint,
+    featureFlags: values[6] as bigint,
+    perUserPrimaryCap: values[7] as bigint,
+    marketPrimaryCap: values[8] as bigint,
+    minimumPrimaryUnits: values[9] as bigint,
+    minimumC2CUnits: values[10] as bigint,
+    creatorBond: values[11] as bigint,
+    marketState: Number(values[12]),
+    voidReason: Number(values[18]),
+    winningOutcome: Number(values[13]),
+    totalPrincipal: values[14] as bigint,
+    resolutionDeadline: values[15] as bigint,
+    permit2Enabled: values[16] as boolean,
+    earlyBirdEnabled: values[17] as boolean,
   };
 }
 
@@ -411,36 +421,70 @@ export function formatShareUnits(value: bigint): string {
   return `${formatUnits(value, 6)} 份`;
 }
 
-export const MARKET_STATE_LABELS = [
-  "OPEN",
-  "RESOLVED",
-  "VOIDED_CREATOR",
-  "VOIDED_TIMEOUT",
-] as const;
+export const MARKET_STATE_LABELS = ["OPEN", "RESOLVED", "VOIDED"] as const;
 
 export const MARKET_CLOSED_PENDING_RESOLUTION_LABEL = "已截止，待结算";
 
 const MARKET_STATE_ZH: Record<(typeof MARKET_STATE_LABELS)[number], string> = {
   OPEN: "进行中",
   RESOLVED: "已结算",
-  VOIDED_CREATOR: "创建者作废",
-  VOIDED_TIMEOUT: "超时作废",
+  VOIDED: "已作废",
 };
+
+export function voidReasonLabel(reason: number | undefined): string {
+  switch (reason) {
+    case 1:
+      return "创建者作废";
+    case 2:
+      return "零胜方份额作废";
+    case 3:
+      return "超时作废";
+    default:
+      return "作废原因未知";
+  }
+}
 
 export interface MarketDisplayState {
   label: string;
   primaryBuyOpen: boolean;
 }
 
+export function outcomeDisplayLabel(
+  outcomeId: number | bigint,
+  labels: readonly string[] | null | undefined,
+): string {
+  const index = Number(outcomeId);
+  const name = Number.isSafeInteger(index)
+    ? labels?.[index]?.trim()
+    : undefined;
+  if (name !== undefined && name !== "") return name;
+  return `结果 ${(BigInt(outcomeId) + 1n).toString()}`;
+}
+
+export function marketFinalResultLabel(
+  market: Pick<MarketSnapshot, "marketState" | "winningOutcome">,
+  labels: readonly string[] | null | undefined,
+): string | null {
+  if (market.marketState === 0) return null;
+  if (market.marketState !== 1) return "无获胜结果（已作废）";
+  return outcomeDisplayLabel(market.winningOutcome, labels);
+}
+
 export function marketDisplayState(
   market: Pick<MarketSnapshot, "marketState" | "closeAt" | "observedAt"> & {
     resolutionDeadline?: bigint;
+    voidReason?: number;
   },
 ): MarketDisplayState {
   if (market.marketState !== 0) {
     const code = MARKET_STATE_LABELS[market.marketState];
     return {
-      label: code === undefined ? "未知" : MARKET_STATE_ZH[code],
+      label:
+        code === "VOIDED"
+          ? voidReasonLabel(market.voidReason)
+          : code === undefined
+            ? "未知"
+            : MARKET_STATE_ZH[code],
       primaryBuyOpen: false,
     };
   }

@@ -303,7 +303,12 @@
             "internalType": "uint64"
           },
           {
-            "name": "earlyBirdStart",
+            "name": "eventStartsAt",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "outcomeDeadlineAt",
             "type": "uint64",
             "internalType": "uint64"
           },

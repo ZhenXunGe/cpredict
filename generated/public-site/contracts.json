@@ -1,0 +1,5058 @@
+{
+  "schemaVersion": 1,
+  "note": "Generated from Zod. Cross-field, cryptographic, ownership and admission refinements are also enforced by runtime code.",
+  "schemas": {
+    "SiteConfig": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "number",
+          "const": 1
+        },
+        "defaultEnvironment": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "environments": {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "asset": {
+                "type": "string",
+                "enum": [
+                  "ctUSD",
+                  "USDC"
+                ]
+              },
+              "decimals": {
+                "type": "number",
+                "const": 6
+              },
+              "deployment": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+                  },
+                  "manifestHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "sourceCommit": {
+                    "type": "string",
+                    "pattern": "^[\\da-f]{40}$"
+                  },
+                  "chainId": {
+                    "type": "number",
+                    "const": 421614
+                  },
+                  "deploymentBlock": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "factory": {
+                    "type": "string"
+                  },
+                  "marketplace": {
+                    "type": "string"
+                  },
+                  "bondEscrow": {
+                    "type": "string"
+                  },
+                  "feeVault": {
+                    "type": "string"
+                  },
+                  "paymentToken": {
+                    "type": "string"
+                  },
+                  "protocolTreasury": {
+                    "type": "string"
+                  },
+                  "runtimeCodeHashes": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-f]{40}$"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "manifestHash",
+                  "sourceCommit",
+                  "chainId",
+                  "deploymentBlock",
+                  "factory",
+                  "marketplace",
+                  "bondEscrow",
+                  "feeVault",
+                  "paymentToken",
+                  "protocolTreasury",
+                  "runtimeCodeHashes"
+                ],
+                "additionalProperties": false
+              },
+              "account": {
+                "type": "object",
+                "properties": {
+                  "kernelVersion": {
+                    "type": "string",
+                    "const": "0.3.1"
+                  },
+                  "entryPointVersion": {
+                    "type": "string",
+                    "const": "0.7"
+                  },
+                  "index": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "derivationVersion": {
+                    "type": "number",
+                    "const": 1
+                  }
+                },
+                "required": [
+                  "kernelVersion",
+                  "entryPointVersion",
+                  "index",
+                  "derivationVersion"
+                ],
+                "additionalProperties": false
+              },
+              "services": {
+                "type": "object",
+                "properties": {
+                  "app": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  },
+                  "indexer": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  },
+                  "metadata": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  },
+                  "rpc": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  }
+                },
+                "required": [
+                  "app",
+                  "indexer",
+                  "metadata",
+                  "rpc"
+                ],
+                "additionalProperties": false
+              },
+              "privyAppId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "walletConnectProjectId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "explorerUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "legacyUrl": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "features": {
+                "type": "object",
+                "properties": {
+                  "newExposure": {
+                    "type": "boolean"
+                  },
+                  "faucet": {
+                    "type": "boolean"
+                  },
+                  "leaderboard": {
+                    "type": "boolean"
+                  },
+                  "sponsorship": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "newExposure",
+                  "faucet",
+                  "leaderboard",
+                  "sponsorship"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "asset",
+              "decimals",
+              "deployment",
+              "account",
+              "services",
+              "privyAppId",
+              "explorerUrl",
+              "legacyUrl",
+              "features"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "version",
+        "defaultEnvironment",
+        "environments"
+      ],
+      "additionalProperties": false
+    },
+    "Environment": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "asset": {
+          "type": "string",
+          "enum": [
+            "ctUSD",
+            "USDC"
+          ]
+        },
+        "decimals": {
+          "type": "number",
+          "const": 6
+        },
+        "deployment": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+            },
+            "manifestHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "sourceCommit": {
+              "type": "string",
+              "pattern": "^[\\da-f]{40}$"
+            },
+            "chainId": {
+              "type": "number",
+              "const": 421614
+            },
+            "deploymentBlock": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "factory": {
+              "type": "string"
+            },
+            "marketplace": {
+              "type": "string"
+            },
+            "bondEscrow": {
+              "type": "string"
+            },
+            "feeVault": {
+              "type": "string"
+            },
+            "paymentToken": {
+              "type": "string"
+            },
+            "protocolTreasury": {
+              "type": "string"
+            },
+            "runtimeCodeHashes": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string",
+                "pattern": "^0x[\\da-f]{40}$"
+              },
+              "additionalProperties": {
+                "type": "string",
+                "pattern": "^0x[\\da-fA-F]{64}$"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "manifestHash",
+            "sourceCommit",
+            "chainId",
+            "deploymentBlock",
+            "factory",
+            "marketplace",
+            "bondEscrow",
+            "feeVault",
+            "paymentToken",
+            "protocolTreasury",
+            "runtimeCodeHashes"
+          ],
+          "additionalProperties": false
+        },
+        "account": {
+          "type": "object",
+          "properties": {
+            "kernelVersion": {
+              "type": "string",
+              "const": "0.3.1"
+            },
+            "entryPointVersion": {
+              "type": "string",
+              "const": "0.7"
+            },
+            "index": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "derivationVersion": {
+              "type": "number",
+              "const": 1
+            }
+          },
+          "required": [
+            "kernelVersion",
+            "entryPointVersion",
+            "index",
+            "derivationVersion"
+          ],
+          "additionalProperties": false
+        },
+        "services": {
+          "type": "object",
+          "properties": {
+            "app": {
+              "type": "string",
+              "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+            },
+            "indexer": {
+              "type": "string",
+              "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+            },
+            "metadata": {
+              "type": "string",
+              "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+            },
+            "rpc": {
+              "type": "string",
+              "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+            }
+          },
+          "required": [
+            "app",
+            "indexer",
+            "metadata",
+            "rpc"
+          ],
+          "additionalProperties": false
+        },
+        "privyAppId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "walletConnectProjectId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "explorerUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "legacyUrl": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "features": {
+          "type": "object",
+          "properties": {
+            "newExposure": {
+              "type": "boolean"
+            },
+            "faucet": {
+              "type": "boolean"
+            },
+            "leaderboard": {
+              "type": "boolean"
+            },
+            "sponsorship": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "newExposure",
+            "faucet",
+            "leaderboard",
+            "sponsorship"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "asset",
+        "decimals",
+        "deployment",
+        "account",
+        "services",
+        "privyAppId",
+        "explorerUrl",
+        "legacyUrl",
+        "features"
+      ],
+      "additionalProperties": false
+    },
+    "AppRuntime": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "asset": {
+              "type": "string",
+              "enum": [
+                "ctUSD",
+                "USDC"
+              ]
+            },
+            "decimals": {
+              "type": "number",
+              "const": 6
+            },
+            "deployment": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+                },
+                "manifestHash": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                },
+                "sourceCommit": {
+                  "type": "string",
+                  "pattern": "^[\\da-f]{40}$"
+                },
+                "chainId": {
+                  "type": "number",
+                  "const": 421614
+                },
+                "deploymentBlock": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "factory": {
+                  "type": "string"
+                },
+                "marketplace": {
+                  "type": "string"
+                },
+                "bondEscrow": {
+                  "type": "string"
+                },
+                "feeVault": {
+                  "type": "string"
+                },
+                "paymentToken": {
+                  "type": "string"
+                },
+                "protocolTreasury": {
+                  "type": "string"
+                },
+                "runtimeCodeHashes": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-f]{40}$"
+                  },
+                  "additionalProperties": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "manifestHash",
+                "sourceCommit",
+                "chainId",
+                "deploymentBlock",
+                "factory",
+                "marketplace",
+                "bondEscrow",
+                "feeVault",
+                "paymentToken",
+                "protocolTreasury",
+                "runtimeCodeHashes"
+              ],
+              "additionalProperties": false
+            },
+            "account": {
+              "type": "object",
+              "properties": {
+                "kernelVersion": {
+                  "type": "string",
+                  "const": "0.3.1"
+                },
+                "entryPointVersion": {
+                  "type": "string",
+                  "const": "0.7"
+                },
+                "index": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "derivationVersion": {
+                  "type": "number",
+                  "const": 1
+                }
+              },
+              "required": [
+                "kernelVersion",
+                "entryPointVersion",
+                "index",
+                "derivationVersion"
+              ],
+              "additionalProperties": false
+            },
+            "services": {
+              "type": "object",
+              "properties": {
+                "app": {
+                  "type": "string",
+                  "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                },
+                "indexer": {
+                  "type": "string",
+                  "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                },
+                "metadata": {
+                  "type": "string",
+                  "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                },
+                "rpc": {
+                  "type": "string",
+                  "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                }
+              },
+              "required": [
+                "app",
+                "indexer",
+                "metadata",
+                "rpc"
+              ],
+              "additionalProperties": false
+            },
+            "privyAppId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "walletConnectProjectId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "explorerUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "legacyUrl": {
+              "type": "string",
+              "maxLength": 512
+            },
+            "features": {
+              "type": "object",
+              "properties": {
+                "newExposure": {
+                  "type": "boolean"
+                },
+                "faucet": {
+                  "type": "boolean"
+                },
+                "leaderboard": {
+                  "type": "boolean"
+                },
+                "sponsorship": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "newExposure",
+                "faucet",
+                "leaderboard",
+                "sponsorship"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "id",
+            "label",
+            "asset",
+            "decimals",
+            "deployment",
+            "account",
+            "services",
+            "privyAppId",
+            "explorerUrl",
+            "legacyUrl",
+            "features"
+          ],
+          "additionalProperties": false
+        },
+        "sponsor": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "projectId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "providerHardLimitUsd": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\d+(\\.\\d{1,2})?$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "providerHardLimitWei": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "providerHardLimitPeriodSeconds": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "policyOperator": {
+                  "type": "string",
+                  "const": "and"
+                },
+                "passOnError": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "maxCostPerOperation": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "validitySeconds": {
+                  "type": "integer",
+                  "minimum": 60,
+                  "maximum": 300
+                },
+                "exposure": {
+                  "type": "object",
+                  "properties": {
+                    "projectWei": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "accountWei": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "subjectWei": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "projectOperations": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "accountOperations": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "subjectOperations": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "projectWei",
+                    "accountWei",
+                    "subjectWei",
+                    "projectOperations",
+                    "accountOperations",
+                    "subjectOperations"
+                  ],
+                  "additionalProperties": false
+                },
+                "exit": {
+                  "type": "object",
+                  "properties": {
+                    "projectWei": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "accountWei": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "subjectWei": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "projectOperations": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "accountOperations": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "subjectOperations": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "required": [
+                    "projectWei",
+                    "accountWei",
+                    "subjectWei",
+                    "projectOperations",
+                    "accountOperations",
+                    "subjectOperations"
+                  ],
+                  "additionalProperties": false
+                },
+                "methodDailyOperations": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000
+                },
+                "weekly": {
+                  "type": "object",
+                  "properties": {
+                    "window": {
+                      "type": "string",
+                      "const": "shanghai-monday"
+                    },
+                    "projectWei": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "exitReserveWei": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    }
+                  },
+                  "required": [
+                    "window",
+                    "projectWei",
+                    "exitReserveWei"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "projectId",
+                "policyOperator",
+                "passOnError",
+                "maxCostPerOperation",
+                "validitySeconds",
+                "exposure",
+                "exit",
+                "methodDailyOperations",
+                "weekly"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "allowedOrigins": {
+          "minItems": 1,
+          "maxItems": 20,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "adminSubjects": {
+          "maxItems": 100,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 160,
+            "pattern": "^did:privy:.*"
+          }
+        },
+        "trustedProxies": {
+          "default": [],
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "ipv4",
+                "pattern": "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$"
+              },
+              {
+                "type": "string",
+                "format": "ipv6",
+                "pattern": "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$"
+              }
+            ]
+          }
+        },
+        "confirmations": {
+          "default": 2,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "minimumOperationBlock": {
+          "default": "0",
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        }
+      },
+      "required": [
+        "environment",
+        "sponsor",
+        "allowedOrigins",
+        "adminSubjects"
+      ],
+      "additionalProperties": false
+    },
+    "Account": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "environment": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "deploymentId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "controller": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "walletKind": {
+          "type": "string",
+          "enum": [
+            "embedded",
+            "external"
+          ]
+        },
+        "kernelVersion": {
+          "type": "string",
+          "const": "0.3.1"
+        },
+        "entryPointVersion": {
+          "type": "string",
+          "const": "0.7"
+        },
+        "index": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "derivationVersion": {
+          "type": "number",
+          "const": 1
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        }
+      },
+      "required": [
+        "id",
+        "environment",
+        "deploymentId",
+        "controller",
+        "address",
+        "walletKind",
+        "kernelVersion",
+        "entryPointVersion",
+        "index",
+        "derivationVersion",
+        "createdAt"
+      ],
+      "additionalProperties": false
+    },
+    "RegisterOperation": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "deploymentId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "accountId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "intent": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "faucet"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "buy"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "outcomeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "minUnits": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxPayment": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "deadline": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "outcomeId",
+                "units",
+                "minUnits",
+                "maxPayment",
+                "deadline"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "create-market"
+                },
+                "params": {
+                  "type": "object",
+                  "properties": {
+                    "rulesHash": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    },
+                    "metadataURI": {
+                      "type": "string",
+                      "maxLength": 512,
+                      "format": "uri"
+                    },
+                    "resolutionSourceHash": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    },
+                    "resolutionSourceURI": {
+                      "type": "string",
+                      "maxLength": 512,
+                      "format": "uri"
+                    },
+                    "outcomeCount": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 32
+                    },
+                    "closeAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "eventStartsAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "outcomeDeadlineAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "creatorTreasury": {
+                      "type": "string"
+                    },
+                    "deploymentMode": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "const": 0
+                        },
+                        {
+                          "type": "number",
+                          "const": 1
+                        }
+                      ]
+                    },
+                    "featureFlags": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "creatorRakeBps": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "creatorC2CFeeBps": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "perUserPrimaryCap": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "marketPrimaryCap": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "minimumPrimaryUnits": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "minimumC2CUnits": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "creatorBond": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    }
+                  },
+                  "required": [
+                    "rulesHash",
+                    "metadataURI",
+                    "resolutionSourceHash",
+                    "resolutionSourceURI",
+                    "outcomeCount",
+                    "closeAt",
+                    "eventStartsAt",
+                    "outcomeDeadlineAt",
+                    "creatorTreasury",
+                    "deploymentMode",
+                    "featureFlags",
+                    "creatorRakeBps",
+                    "creatorC2CFeeBps",
+                    "perUserPrimaryCap",
+                    "marketPrimaryCap",
+                    "minimumPrimaryUnits",
+                    "minimumC2CUnits",
+                    "creatorBond"
+                  ],
+                  "additionalProperties": false
+                },
+                "userSalt": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                },
+                "maxPayment": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "params",
+                "userSalt",
+                "maxPayment"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "create-listing"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "outcomeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "unitPrice": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "outcomeId",
+                "units",
+                "unitPrice",
+                "expiresAt"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "fill-listing"
+                },
+                "listingId": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "minUnits": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxPayment": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "deadline": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "listingId",
+                "units",
+                "minUnits",
+                "maxPayment",
+                "deadline"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "cancel-listing"
+                },
+                "listingId": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "listingId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "return-listing"
+                },
+                "listingId": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "listingId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "resolve"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "outcomeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "evidenceHash": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "outcomeId",
+                "evidenceHash"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "creator-void"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "evidenceHash": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "evidenceHash"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "void-timeout"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-winner"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-early-bird"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "refund"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-timeout-bonus"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "settle-bond"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-bond"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-fees"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "transfer"
+                },
+                "recipient": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "recipient",
+                "amount"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "callData": {
+          "type": "string",
+          "maxLength": 65538,
+          "pattern": "^0x(?:[\\da-fA-F]{2})*$"
+        },
+        "factory": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "factoryData": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65538,
+              "pattern": "^0x(?:[\\da-fA-F]{2})*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "environment",
+        "deploymentId",
+        "accountId",
+        "idempotencyKey",
+        "intent",
+        "nonce",
+        "callData",
+        "factory",
+        "factoryData"
+      ],
+      "additionalProperties": false
+    },
+    "PreparedOperation": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "account": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "environment": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+            },
+            "deploymentId": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+            },
+            "controller": {
+              "type": "string"
+            },
+            "address": {
+              "type": "string"
+            },
+            "walletKind": {
+              "type": "string",
+              "enum": [
+                "embedded",
+                "external"
+              ]
+            },
+            "kernelVersion": {
+              "type": "string",
+              "const": "0.3.1"
+            },
+            "entryPointVersion": {
+              "type": "string",
+              "const": "0.7"
+            },
+            "index": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "derivationVersion": {
+              "type": "number",
+              "const": 1
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            }
+          },
+          "required": [
+            "id",
+            "environment",
+            "deploymentId",
+            "controller",
+            "address",
+            "walletKind",
+            "kernelVersion",
+            "entryPointVersion",
+            "index",
+            "derivationVersion",
+            "createdAt"
+          ],
+          "additionalProperties": false
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "calls": {
+          "minItems": 1,
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "to": {
+                "type": "string"
+              },
+              "data": {
+                "type": "string",
+                "maxLength": 65538,
+                "pattern": "^0x(?:[\\da-fA-F]{2})*$"
+              },
+              "value": {
+                "type": "string",
+                "const": "0"
+              }
+            },
+            "required": [
+              "to",
+              "data",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "callData": {
+          "type": "string",
+          "maxLength": 65538,
+          "pattern": "^0x(?:[\\da-fA-F]{2})*$"
+        },
+        "factory": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "factoryData": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65538,
+              "pattern": "^0x(?:[\\da-fA-F]{2})*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "maxGasCost": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "expiresInSeconds": {
+          "type": "integer",
+          "minimum": 60,
+          "maximum": 300
+        }
+      },
+      "required": [
+        "account",
+        "nonce",
+        "calls",
+        "callData",
+        "factory",
+        "factoryData",
+        "maxGasCost",
+        "expiresInSeconds"
+      ],
+      "additionalProperties": false
+    },
+    "Operation": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "environment": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "deploymentId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "accountId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "account": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "faucet",
+            "buy",
+            "create-market",
+            "create-listing",
+            "fill-listing",
+            "cancel-listing",
+            "return-listing",
+            "resolve",
+            "creator-void",
+            "void-timeout",
+            "claim-winner",
+            "claim-early-bird",
+            "refund",
+            "claim-timeout-bonus",
+            "settle-bond",
+            "claim-bond",
+            "claim-fees",
+            "transfer"
+          ]
+        },
+        "intent": {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "faucet"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "buy"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "outcomeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "minUnits": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxPayment": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "deadline": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "outcomeId",
+                "units",
+                "minUnits",
+                "maxPayment",
+                "deadline"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "create-market"
+                },
+                "params": {
+                  "type": "object",
+                  "properties": {
+                    "rulesHash": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    },
+                    "metadataURI": {
+                      "type": "string",
+                      "maxLength": 512,
+                      "format": "uri"
+                    },
+                    "resolutionSourceHash": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    },
+                    "resolutionSourceURI": {
+                      "type": "string",
+                      "maxLength": 512,
+                      "format": "uri"
+                    },
+                    "outcomeCount": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 32
+                    },
+                    "closeAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "eventStartsAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "outcomeDeadlineAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "creatorTreasury": {
+                      "type": "string"
+                    },
+                    "deploymentMode": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "const": 0
+                        },
+                        {
+                          "type": "number",
+                          "const": 1
+                        }
+                      ]
+                    },
+                    "featureFlags": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "creatorRakeBps": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "creatorC2CFeeBps": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10000
+                    },
+                    "perUserPrimaryCap": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "marketPrimaryCap": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "minimumPrimaryUnits": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "minimumC2CUnits": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "creatorBond": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    }
+                  },
+                  "required": [
+                    "rulesHash",
+                    "metadataURI",
+                    "resolutionSourceHash",
+                    "resolutionSourceURI",
+                    "outcomeCount",
+                    "closeAt",
+                    "eventStartsAt",
+                    "outcomeDeadlineAt",
+                    "creatorTreasury",
+                    "deploymentMode",
+                    "featureFlags",
+                    "creatorRakeBps",
+                    "creatorC2CFeeBps",
+                    "perUserPrimaryCap",
+                    "marketPrimaryCap",
+                    "minimumPrimaryUnits",
+                    "minimumC2CUnits",
+                    "creatorBond"
+                  ],
+                  "additionalProperties": false
+                },
+                "userSalt": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                },
+                "maxPayment": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "params",
+                "userSalt",
+                "maxPayment"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "create-listing"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "outcomeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "unitPrice": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "outcomeId",
+                "units",
+                "unitPrice",
+                "expiresAt"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "fill-listing"
+                },
+                "listingId": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "minUnits": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxPayment": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "deadline": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "listingId",
+                "units",
+                "minUnits",
+                "maxPayment",
+                "deadline"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "cancel-listing"
+                },
+                "listingId": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "listingId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "return-listing"
+                },
+                "listingId": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "listingId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "resolve"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "outcomeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "evidenceHash": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "outcomeId",
+                "evidenceHash"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "creator-void"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "evidenceHash": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "evidenceHash"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "void-timeout"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-winner"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-early-bird"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "refund"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-timeout-bonus"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "settle-bond"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-bond"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "claim-fees"
+                }
+              },
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "transfer"
+                },
+                "recipient": {
+                  "type": "string"
+                },
+                "amount": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "recipient",
+                "amount"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "preparing",
+            "awaiting-signature",
+            "submitted",
+            "confirming",
+            "confirmed",
+            "reverted",
+            "cancelled",
+            "unknown"
+          ]
+        },
+        "nonce": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "calls": {
+          "minItems": 1,
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "to": {
+                "type": "string"
+              },
+              "data": {
+                "type": "string",
+                "maxLength": 65538,
+                "pattern": "^0x(?:[\\da-fA-F]{2})*$"
+              },
+              "value": {
+                "type": "string",
+                "const": "0"
+              }
+            },
+            "required": [
+              "to",
+              "data",
+              "value"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "callData": {
+          "type": "string",
+          "maxLength": 65538,
+          "pattern": "^0x(?:[\\da-fA-F]{2})*$"
+        },
+        "factory": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "factoryData": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 65538,
+              "pattern": "^0x(?:[\\da-fA-F]{2})*$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "providerOperationId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 256
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "userOperationHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transactionHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "blockNumber": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "blockHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actualGasCost": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finality": {
+          "default": "pending",
+          "type": "string",
+          "enum": [
+            "pending",
+            "application-confirmed",
+            "finalized"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "maxGasCost": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "lane": {
+          "type": "string",
+          "enum": [
+            "exposure",
+            "exit"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "environment",
+        "deploymentId",
+        "accountId",
+        "account",
+        "kind",
+        "intent",
+        "state",
+        "nonce",
+        "calls",
+        "callData",
+        "factory",
+        "factoryData",
+        "providerOperationId",
+        "userOperationHash",
+        "transactionHash",
+        "blockNumber",
+        "blockHash",
+        "actualGasCost",
+        "createdAt",
+        "updatedAt",
+        "expiresAt",
+        "maxGasCost",
+        "lane",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "LedgerSnapshot": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string"
+        },
+        "deploymentId": {
+          "type": "string"
+        },
+        "version": {
+          "type": "number",
+          "const": 1
+        },
+        "epoch": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "blockNumber": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "blockHash": {
+          "type": "string",
+          "pattern": "^0x[\\da-fA-F]{64}$"
+        },
+        "timestamp": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "coverageStart": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "shadow",
+            "active"
+          ]
+        }
+      },
+      "required": [
+        "environment",
+        "deploymentId",
+        "version",
+        "epoch",
+        "blockNumber",
+        "blockHash",
+        "timestamp",
+        "coverageStart",
+        "complete",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "ActivityPage": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 180
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "market-created",
+                  "market-initialized",
+                  "market-metadata",
+                  "economic-snapshot",
+                  "primary-buy",
+                  "listing-created",
+                  "listing-filled",
+                  "listing-cancelled",
+                  "listing-returned",
+                  "market-resolved",
+                  "market-voided",
+                  "winner-claimed",
+                  "early-bird-claimed",
+                  "refunded",
+                  "timeout-funded",
+                  "timeout-claimed",
+                  "losing-burned",
+                  "remainder-assigned",
+                  "share-transfer",
+                  "payment-transfer",
+                  "bond-locked",
+                  "bond-credited",
+                  "bond-timeout-funded",
+                  "bond-claimed",
+                  "fee-accrued",
+                  "fee-claimed",
+                  "user-operation",
+                  "coverage-gap"
+                ]
+              },
+              "blockNumber": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "blockHash": {
+                "type": "string",
+                "pattern": "^0x[\\da-fA-F]{64}$"
+              },
+              "transactionHash": {
+                "type": "string",
+                "pattern": "^0x[\\da-fA-F]{64}$"
+              },
+              "transactionIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "logIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "factIndex": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "timestamp": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "market": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "owner": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "counterparty": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "outcomeId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "listingId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "units": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "amount": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "extra": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "$ref": "#/$defs/__schema0"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "blockNumber",
+              "blockHash",
+              "transactionHash",
+              "transactionIndex",
+              "logIndex",
+              "factIndex",
+              "timestamp",
+              "market",
+              "owner",
+              "counterparty",
+              "outcomeId",
+              "listingId",
+              "units",
+              "amount",
+              "extra"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot": {
+          "type": "object",
+          "properties": {
+            "environment": {
+              "type": "string"
+            },
+            "deploymentId": {
+              "type": "string"
+            },
+            "version": {
+              "type": "number",
+              "const": 1
+            },
+            "epoch": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockNumber": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "timestamp": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "coverageStart": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "shadow",
+                "active"
+              ]
+            }
+          },
+          "required": [
+            "environment",
+            "deploymentId",
+            "version",
+            "epoch",
+            "blockNumber",
+            "blockHash",
+            "timestamp",
+            "coverageStart",
+            "complete",
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "items",
+        "nextCursor",
+        "snapshot"
+      ],
+      "additionalProperties": false,
+      "$defs": {
+        "__schema0": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            },
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema0"
+              }
+            },
+            {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/__schema0"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "Pnl": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "pnl": {
+          "type": "object",
+          "properties": {
+            "owner": {
+              "type": "string"
+            },
+            "realizedNet": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^-?(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "knownRealizedNet": {
+              "type": "string",
+              "pattern": "^-?(0|[1-9]\\d{0,77})$"
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "missingReasons": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "lots": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "market": {
+                    "type": "string"
+                  },
+                  "outcomeId": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "units": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "escrowUnits": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "knownCost": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "costComplete": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "market",
+                  "outcomeId",
+                  "units",
+                  "escrowUnits",
+                  "knownCost",
+                  "costComplete"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "factId": {
+                    "type": "string"
+                  },
+                  "market": {
+                    "type": "string"
+                  },
+                  "outcomeId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,77})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "market-created",
+                      "market-initialized",
+                      "market-metadata",
+                      "economic-snapshot",
+                      "primary-buy",
+                      "listing-created",
+                      "listing-filled",
+                      "listing-cancelled",
+                      "listing-returned",
+                      "market-resolved",
+                      "market-voided",
+                      "winner-claimed",
+                      "early-bird-claimed",
+                      "refunded",
+                      "timeout-funded",
+                      "timeout-claimed",
+                      "losing-burned",
+                      "remainder-assigned",
+                      "share-transfer",
+                      "payment-transfer",
+                      "bond-locked",
+                      "bond-credited",
+                      "bond-timeout-funded",
+                      "bond-claimed",
+                      "fee-accrued",
+                      "fee-claimed",
+                      "user-operation",
+                      "coverage-gap"
+                    ]
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "amount": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?(0|[1-9]\\d{0,77})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "proceeds": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "allocatedCost": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "complete": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "factId",
+                  "market",
+                  "outcomeId",
+                  "kind",
+                  "timestamp",
+                  "amount",
+                  "proceeds",
+                  "allocatedCost",
+                  "complete",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "creatorIncome": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "creatorClaimed": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "bondLocked": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "bondCredited": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "bondClaimed": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "bondSlashed": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "paymentIn": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "paymentOut": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "gasCost": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            }
+          },
+          "required": [
+            "owner",
+            "realizedNet",
+            "knownRealizedNet",
+            "complete",
+            "missingReasons",
+            "lots",
+            "entries",
+            "creatorIncome",
+            "creatorClaimed",
+            "bondLocked",
+            "bondCredited",
+            "bondClaimed",
+            "bondSlashed",
+            "paymentIn",
+            "paymentOut",
+            "gasCost"
+          ],
+          "additionalProperties": false
+        },
+        "snapshot": {
+          "type": "object",
+          "properties": {
+            "environment": {
+              "type": "string"
+            },
+            "deploymentId": {
+              "type": "string"
+            },
+            "version": {
+              "type": "number",
+              "const": 1
+            },
+            "epoch": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockNumber": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "timestamp": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "coverageStart": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "shadow",
+                "active"
+              ]
+            }
+          },
+          "required": [
+            "environment",
+            "deploymentId",
+            "version",
+            "epoch",
+            "blockNumber",
+            "blockHash",
+            "timestamp",
+            "coverageStart",
+            "complete",
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "pnl",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    "PnlFact": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "factId": {
+                "type": "string"
+              },
+              "market": {
+                "type": "string"
+              },
+              "outcomeId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "market-created",
+                  "market-initialized",
+                  "market-metadata",
+                  "economic-snapshot",
+                  "primary-buy",
+                  "listing-created",
+                  "listing-filled",
+                  "listing-cancelled",
+                  "listing-returned",
+                  "market-resolved",
+                  "market-voided",
+                  "winner-claimed",
+                  "early-bird-claimed",
+                  "refunded",
+                  "timeout-funded",
+                  "timeout-claimed",
+                  "losing-burned",
+                  "remainder-assigned",
+                  "share-transfer",
+                  "payment-transfer",
+                  "bond-locked",
+                  "bond-credited",
+                  "bond-timeout-funded",
+                  "bond-claimed",
+                  "fee-accrued",
+                  "fee-claimed",
+                  "user-operation",
+                  "coverage-gap"
+                ]
+              },
+              "timestamp": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "amount": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "proceeds": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "allocatedCost": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "complete": {
+                "type": "boolean"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "factId",
+              "market",
+              "outcomeId",
+              "kind",
+              "timestamp",
+              "amount",
+              "proceeds",
+              "allocatedCost",
+              "complete",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "snapshot": {
+          "type": "object",
+          "properties": {
+            "environment": {
+              "type": "string"
+            },
+            "deploymentId": {
+              "type": "string"
+            },
+            "version": {
+              "type": "number",
+              "const": 1
+            },
+            "epoch": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockNumber": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "timestamp": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "coverageStart": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "shadow",
+                "active"
+              ]
+            }
+          },
+          "required": [
+            "environment",
+            "deploymentId",
+            "version",
+            "epoch",
+            "blockNumber",
+            "blockHash",
+            "timestamp",
+            "coverageStart",
+            "complete",
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "items",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    "Entitlements": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "market": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "holding",
+                  "escrow",
+                  "winner",
+                  "early-bird",
+                  "refund",
+                  "timeout-bonus",
+                  "bond",
+                  "fees"
+                ]
+              },
+              "outcomeId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "listingId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "units": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "amount": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "conditional",
+                  "claimable",
+                  "executing",
+                  "claimed",
+                  "unknown"
+                ]
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "market",
+              "kind",
+              "outcomeId",
+              "listingId",
+              "units",
+              "amount",
+              "status",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "snapshot": {
+          "type": "object",
+          "properties": {
+            "environment": {
+              "type": "string"
+            },
+            "deploymentId": {
+              "type": "string"
+            },
+            "version": {
+              "type": "number",
+              "const": 1
+            },
+            "epoch": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockNumber": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "timestamp": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "coverageStart": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "shadow",
+                "active"
+              ]
+            }
+          },
+          "required": [
+            "environment",
+            "deploymentId",
+            "version",
+            "epoch",
+            "blockNumber",
+            "blockHash",
+            "timestamp",
+            "coverageStart",
+            "complete",
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "items",
+        "nextCursor",
+        "snapshot"
+      ],
+      "additionalProperties": false
+    },
+    "Leaderboard": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "periods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+              },
+              "startsAt": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "endsAt": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "publishedAt": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "markets": {
+                "minItems": 1,
+                "maxItems": 200,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "market": {
+                      "type": "string"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    }
+                  },
+                  "required": [
+                    "market",
+                    "startsAt"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "id",
+              "startsAt",
+              "endsAt",
+              "publishedAt",
+              "markets"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "snapshot": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "period": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+                    },
+                    "startsAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "endsAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "markets": {
+                      "minItems": 1,
+                      "maxItems": 200,
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "market": {
+                            "type": "string"
+                          },
+                          "startsAt": {
+                            "type": "string",
+                            "pattern": "^(0|[1-9]\\d{0,77})$"
+                          }
+                        },
+                        "required": [
+                          "market",
+                          "startsAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "startsAt",
+                    "endsAt",
+                    "publishedAt",
+                    "markets"
+                  ],
+                  "additionalProperties": false
+                },
+                "version": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "statisticsVersion": {
+                  "type": "string",
+                  "const": "weighted-average-v1"
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "environment": {
+                      "type": "string"
+                    },
+                    "deploymentId": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "number",
+                      "const": 1
+                    },
+                    "epoch": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "blockNumber": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "blockHash": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "coverageStart": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "pattern": "^(0|[1-9]\\d{0,77})$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "complete": {
+                      "type": "boolean"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "shadow",
+                        "active"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "environment",
+                    "deploymentId",
+                    "version",
+                    "epoch",
+                    "blockNumber",
+                    "blockHash",
+                    "timestamp",
+                    "coverageStart",
+                    "complete",
+                    "status"
+                  ],
+                  "additionalProperties": false
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                },
+                "excluded": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "account": {
+                        "type": "string"
+                      },
+                      "reasons": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "account",
+                      "reasons"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "correction": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "period",
+                "version",
+                "statisticsVersion",
+                "data",
+                "createdAt",
+                "excluded",
+                "correction"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "account": {
+                "type": "string"
+              },
+              "rank": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "realizedNet": {
+                "type": "string",
+                "pattern": "^-?(0|[1-9]\\d{0,77})$"
+              },
+              "marketCount": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "account",
+              "rank",
+              "realizedNet",
+              "marketCount"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "disabled",
+            "awaiting-roster",
+            "awaiting-snapshot",
+            "available",
+            "correction-pending"
+          ]
+        }
+      },
+      "required": [
+        "periods",
+        "snapshot",
+        "items",
+        "nextCursor",
+        "status"
+      ],
+      "additionalProperties": false
+    },
+    "LeaderboardPeriod": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "startsAt": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "endsAt": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "publishedAt": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "markets": {
+          "minItems": 1,
+          "maxItems": 200,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "market": {
+                "type": "string"
+              },
+              "startsAt": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              }
+            },
+            "required": [
+              "market",
+              "startsAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "id",
+        "startsAt",
+        "endsAt",
+        "publishedAt",
+        "markets"
+      ],
+      "additionalProperties": false
+    },
+    "OpsReport": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string"
+        },
+        "deploymentId": {
+          "type": "string"
+        },
+        "window": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string"
+            },
+            "end": {
+              "type": "string"
+            },
+            "timeZone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "bounds": {
+              "type": "string",
+              "const": "[start,end)"
+            }
+          },
+          "required": [
+            "start",
+            "end",
+            "timeZone",
+            "bounds"
+          ]
+        },
+        "generatedAt": {
+          "type": "string"
+        },
+        "providerManagement": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "provider": {
+                  "type": "string",
+                  "const": "zerodev"
+                },
+                "source": {
+                  "type": "string",
+                  "const": "https://public-api.zerodev.app"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "chainId": {
+                  "type": "number",
+                  "const": 421614
+                },
+                "pollingSeconds": {
+                  "type": "number",
+                  "const": 300
+                },
+                "staleAfterSeconds": {
+                  "type": "number",
+                  "const": 900
+                },
+                "mappingStatus": {
+                  "type": "string",
+                  "const": "awaiting-real-response-contract"
+                },
+                "endpoints": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "endpoint": {
+                        "type": "string",
+                        "enum": [
+                          "statistics",
+                          "policies",
+                          "webhooks",
+                          "team-spend"
+                        ]
+                      },
+                      "lastAttemptAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "lastSuccessAt": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "requestedWindow": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "start": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              "end": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "dataWindow": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "start": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              },
+                              "end": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "error": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "unauthorized",
+                              "forbidden",
+                              "rate-limited",
+                              "provider-error",
+                              "timeout",
+                              "unavailable",
+                              "invalid-response"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "stale": {
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "endpoint",
+                      "lastAttemptAt",
+                      "lastSuccessAt",
+                      "requestedWindow",
+                      "dataWindow",
+                      "error",
+                      "stale"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "provider",
+                "source",
+                "projectId",
+                "chainId",
+                "pollingSeconds",
+                "staleAfterSeconds",
+                "mappingStatus",
+                "endpoints"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "data": {
+          "type": "object",
+          "properties": {
+            "indexedBlock": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "indexedTimestamp": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "coverageComplete": {
+              "type": "boolean"
+            },
+            "epoch": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "indexedBlock",
+            "indexedTimestamp",
+            "coverageComplete",
+            "epoch"
+          ]
+        },
+        "funnel": {
+          "type": "object",
+          "properties": {
+            "visitingSessions": {
+              "type": "number"
+            },
+            "loginSubjects": {
+              "type": "number"
+            },
+            "readyAccounts": {
+              "type": "number"
+            },
+            "firstSuccessfulTradingAccounts": {
+              "type": "number"
+            },
+            "claimingAccounts": {
+              "type": "number"
+            },
+            "reinvestingAccounts": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "visitingSessions",
+            "loginSubjects",
+            "readyAccounts",
+            "firstSuccessfulTradingAccounts",
+            "claimingAccounts",
+            "reinvestingAccounts"
+          ]
+        },
+        "operations": {
+          "type": "object",
+          "properties": {
+            "registered": {
+              "type": "number"
+            },
+            "confirmed": {
+              "type": "number"
+            },
+            "reverted": {
+              "type": "number"
+            },
+            "unknown": {
+              "type": "number"
+            },
+            "pending": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "registered",
+            "confirmed",
+            "reverted",
+            "unknown",
+            "pending"
+          ]
+        },
+        "trading": {
+          "type": "object",
+          "properties": {
+            "activeAccounts": {
+              "type": "number"
+            },
+            "activeAddresses": {
+              "type": "number"
+            },
+            "primaryPayment": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "c2cVolume": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            }
+          },
+          "required": [
+            "activeAccounts",
+            "activeAddresses",
+            "primaryPayment",
+            "c2cVolume"
+          ]
+        },
+        "fees": {
+          "type": "object",
+          "properties": {
+            "protocolAccrued": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "creatorAccrued": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "unknownAccrued": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "claimed": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "claimable": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "asOfBlock": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "protocolAccrued",
+            "creatorAccrued",
+            "unknownAccrued",
+            "claimed",
+            "claimable",
+            "asOfBlock"
+          ]
+        },
+        "gas": {
+          "type": "object",
+          "properties": {
+            "userOperationActualWei": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "providerInvoices": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "reference": {
+                    "type": "string"
+                  },
+                  "start": {
+                    "type": "string"
+                  },
+                  "end": {
+                    "type": "string"
+                  },
+                  "amount": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "reference",
+                  "start",
+                  "end",
+                  "amount",
+                  "currency"
+                ]
+              }
+            },
+            "providerBillingStatus": {
+              "type": "string",
+              "enum": [
+                "unavailable",
+                "imported"
+              ]
+            }
+          },
+          "required": [
+            "userOperationActualWei",
+            "providerInvoices",
+            "providerBillingStatus"
+          ]
+        },
+        "budgets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "lane": {
+                "type": "string",
+                "enum": [
+                  "exposure",
+                  "exit"
+                ]
+              },
+              "reservedWei": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "remainingWei": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "operations": {
+                "type": "number"
+              },
+              "remainingOperations": {
+                "type": "number"
+              },
+              "resetsAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "lane",
+              "reservedWei",
+              "remainingWei",
+              "operations",
+              "remainingOperations",
+              "resetsAt"
+            ]
+          }
+        },
+        "weeklyBudget": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "start": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                },
+                "end": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                },
+                "timeZone": {
+                  "type": "string",
+                  "const": "Asia/Shanghai"
+                },
+                "weekStartsOn": {
+                  "type": "string",
+                  "const": "monday"
+                },
+                "projectLimitWei": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "lanes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "lane": {
+                        "type": "string",
+                        "enum": [
+                          "exposure",
+                          "exit"
+                        ]
+                      },
+                      "limitWei": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,77})$"
+                      },
+                      "reservedWei": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,77})$"
+                      },
+                      "remainingWei": {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,77})$"
+                      }
+                    },
+                    "required": [
+                      "lane",
+                      "limitWei",
+                      "reservedWei",
+                      "remainingWei"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "start",
+                "end",
+                "timeZone",
+                "weekStartsOn",
+                "projectLimitWei",
+                "lanes"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "services": {
+          "type": "object",
+          "properties": {
+            "rpc": {
+              "type": "string",
+              "enum": [
+                "available",
+                "unavailable",
+                "unknown"
+              ]
+            },
+            "chainHead": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "indexDelayBlocks": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "events": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "number"
+              }
+            },
+            "providerHardLimitUsd": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "providerHardLimitWei": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "providerHardLimitPeriodSeconds": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "providerSpendUsd": {
+              "type": "null"
+            },
+            "providerPolicyVerified": {
+              "type": "boolean",
+              "const": false
+            }
+          },
+          "required": [
+            "rpc",
+            "chainHead",
+            "indexDelayBlocks",
+            "events",
+            "providerHardLimitUsd",
+            "providerHardLimitWei",
+            "providerHardLimitPeriodSeconds",
+            "providerSpendUsd",
+            "providerPolicyVerified"
+          ]
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "environment",
+        "deploymentId",
+        "window",
+        "generatedAt",
+        "data",
+        "funnel",
+        "operations",
+        "trading",
+        "fees",
+        "gas",
+        "budgets",
+        "weeklyBudget",
+        "services",
+        "notes"
+      ]
+    },
+    "Telemetry": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "sessionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "event": {
+          "type": "string",
+          "enum": [
+            "visit",
+            "login",
+            "account-ready"
+          ]
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "accountId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "required": [
+        "id",
+        "sessionId",
+        "event",
+        "occurredAt"
+      ],
+      "additionalProperties": false
+    },
+    "Feedback": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "accountId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "id",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "FeedbackQuery": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "limit": {
+          "default": 30,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": "string",
+          "maxLength": 2048,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "operationId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FeedbackPage": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "environment": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "deploymentId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "snapshotAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "accountId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "operationId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "receivedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "id",
+              "accountId",
+              "operationId",
+              "message",
+              "receivedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "environment",
+        "deploymentId",
+        "snapshotAt",
+        "items",
+        "nextCursor"
+      ],
+      "additionalProperties": false
+    },
+    "Market": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "chainId": {
+          "type": "number"
+        },
+        "market": {
+          "type": "string"
+        },
+        "creator": {
+          "type": "string"
+        },
+        "creatorTreasury": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcomeCount": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "closeAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "eventStartsAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcomeDeadlineAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolutionWindow": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rulesHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "metadataUri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolutionSourceHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "resolutionSourceUri": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "featureFlags": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "marketPrimaryCap": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "primaryFilledUnits": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "primaryPayment": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "creatorBond": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "state": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "voidReason": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "winningOutcome": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidenceHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "createdBlock": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "updatedBlock": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "confirmationStatus": {
+          "type": "string",
+          "enum": [
+            "provisional",
+            "confirmed"
+          ]
+        },
+        "question": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "chainId",
+        "market",
+        "creator",
+        "creatorTreasury",
+        "outcomeCount",
+        "closeAt",
+        "createdAt",
+        "eventStartsAt",
+        "outcomeDeadlineAt",
+        "resolutionWindow",
+        "rulesHash",
+        "metadataUri",
+        "resolutionSourceHash",
+        "resolutionSourceUri",
+        "featureFlags",
+        "marketPrimaryCap",
+        "primaryFilledUnits",
+        "primaryPayment",
+        "creatorBond",
+        "state",
+        "voidReason",
+        "winningOutcome",
+        "evidenceHash",
+        "createdBlock",
+        "updatedBlock",
+        "confirmationStatus"
+      ]
+    },
+    "Listing": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "chainId": {
+          "type": "number"
+        },
+        "listingId": {
+          "type": "string",
+          "pattern": "^0x[\\da-fA-F]{64}$"
+        },
+        "vault": {
+          "type": "string"
+        },
+        "seller": {
+          "type": "string"
+        },
+        "outcomeId": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "remainingUnits": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "unitPrice": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "updatedBlock": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        }
+      },
+      "required": [
+        "chainId",
+        "listingId",
+        "vault",
+        "seller",
+        "outcomeId",
+        "remainingUnits",
+        "unitPrice",
+        "expiresAt",
+        "active",
+        "updatedBlock"
+      ]
+    }
+  }
+}

@@ -376,6 +376,8 @@ function canaryEvidence() {
       market: timeoutMarket,
       mode: "FULL",
       closeAt: deadline - 86_400,
+      outcomeDeadlineAt: deadline - 900,
+      resolutionWindow: 900,
       deadline,
       voidReceipt: receipt(7001, deadline),
       slashedBond: "10000000",
@@ -417,6 +419,8 @@ function canaryEvidence() {
       market: a(604),
       mode: "CLONE",
       closeAt: deadline - 86_300,
+      outcomeDeadlineAt: deadline - 800,
+      resolutionWindow: 900,
       deadline: deadline + 100,
       voidReceipt: receipt(7010, deadline + 100),
       slashedBond: "10000000",
@@ -496,18 +500,26 @@ test("final deployment manifest accepts a complete cross-linked runtime record",
 test("source-verification planning accepts only explicit pending records", () => {
   const fixture = finalManifest();
   fixture.status = "BOOTSTRAP_FINALIZED_PENDING_CANARY";
-  fixture.canaryEvidence = { evidenceSha256: "0".repeat(64), status: "PENDING" };
+  fixture.canaryEvidence = {
+    evidenceSha256: "0".repeat(64),
+    status: "PENDING",
+  };
   fixture.sourceVerification = fixture.sourceVerification.map((item) => ({
     ...item,
     status: "PENDING",
     constructorArgsVerified: false,
     runtimeBytecodeVerified: false,
   }));
-  assert.doesNotThrow(() => validateFinalManifest(fixture, {
-    allowPendingCanary: true,
-    allowPendingSourceVerification: true,
-  }));
-  assert.throws(() => validateFinalManifest(fixture, { allowPendingCanary: true }), /explicitly PENDING/);
+  assert.doesNotThrow(() =>
+    validateFinalManifest(fixture, {
+      allowPendingCanary: true,
+      allowPendingSourceVerification: true,
+    }),
+  );
+  assert.throws(
+    () => validateFinalManifest(fixture, { allowPendingCanary: true }),
+    /explicitly PENDING/,
+  );
 });
 
 test("final manifest rejects missing fields", () => {
@@ -534,8 +546,7 @@ test("final manifest requires Ethereum Sepolia parent binding and finalized stat
 
 test("final manifest rejects source-verification links outside Arbitrum Sepolia Arbiscan", () => {
   const fixture = finalManifest();
-  fixture.sourceVerification[0].explorerUrl =
-    `https://example.com/address/${fixture.sourceVerification[0].address}#code`;
+  fixture.sourceVerification[0].explorerUrl = `https://example.com/address/${fixture.sourceVerification[0].address}#code`;
   assert.throws(() => validateFinalManifest(fixture), /Arbiscan address URL/);
 });
 
@@ -834,8 +845,7 @@ test("live verifier reaches strict PASS only after two matching RPCs and evidenc
           l1BlockNumber: `0x${manifest.referenceBlock.l1BlockNumber.toString(16)}`,
         };
       }
-    }
-    else if (request.method === "eth_getCode") result = runtime;
+    } else if (request.method === "eth_getCode") result = runtime;
     else if (request.method === "eth_getStorageAt") result = h(1);
     else if (request.method === "eth_getLogs") result = logs;
     else if (request.method === "eth_call") {

@@ -1,0 +1,462 @@
+{
+  "services": {
+    "bootstrap-usdc": {
+      "image": "postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f",
+      "restart": "no",
+      "depends_on": {
+        "bootstrap-databases": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "environment": {
+        "PGHOST": "postgres",
+        "PGPASSWORD": "${CPREDICT_STACK_POSTGRES_ADMIN_PASSWORD:?set in .env.compose.local}",
+        "POSTGRES_USER": "cpredict_bootstrap",
+        "POSTGRES_DB": "postgres",
+        "CPREDICT_STACK_MIGRATOR_PASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_INDEXER_PASSWORD": "${CPREDICT_STACK_INDEXER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_PAYMASTER_PASSWORD": "${CPREDICT_STACK_PAYMASTER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_METADATA_PASSWORD": "${CPREDICT_STACK_METADATA_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_USDC_INDEXER_PASSWORD": "${CPREDICT_STACK_USDC_INDEXER_PASSWORD:?configure public-site stack input}",
+        "CPREDICT_STACK_USDC_METADATA_PASSWORD": "${CPREDICT_STACK_USDC_METADATA_PASSWORD:?configure public-site stack input}"
+      },
+      "volumes": [
+        "./deploy/compose/postgres/init/00-create-databases.sh:/usr/local/bin/bootstrap-cpredict-databases:ro"
+      ],
+      "entrypoint": [
+        "bash",
+        "/usr/local/bin/bootstrap-cpredict-databases",
+        "usdc"
+      ],
+      "user": "999:999",
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=16m"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "networks": [
+        "data"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "0.5",
+            "memory": "256M"
+          }
+        }
+      }
+    },
+    "migrate-indexer-usdc": {
+      "image": "postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f",
+      "restart": "no",
+      "depends_on": {
+        "bootstrap-usdc": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "environment": {
+        "PGHOST": "postgres",
+        "PGDATABASE": "cpredict_usdc_indexer",
+        "PGUSER": "cpredict_migrator",
+        "PGPASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_INDEXER_PASSWORD": "${CPREDICT_STACK_INDEXER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_DATABASE_ENVIRONMENT": "usdc",
+        "CPREDICT_STACK_USDC_INDEXER_PASSWORD": "${CPREDICT_STACK_USDC_INDEXER_PASSWORD:?configure public-site stack input}",
+        "CPREDICT_STACK_USDC_METADATA_PASSWORD": "${CPREDICT_STACK_USDC_METADATA_PASSWORD:?configure public-site stack input}"
+      },
+      "volumes": [
+        "./offchain/indexer/migrations:/migrations:ro",
+        "./deploy/compose/postgres/run-migrations.sh:/usr/local/bin/run-cpredict-migrations:ro"
+      ],
+      "entrypoint": [
+        "bash",
+        "/usr/local/bin/run-cpredict-migrations",
+        "indexer"
+      ],
+      "user": "999:999",
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=16m"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "networks": [
+        "data"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "0.5",
+            "memory": "256M"
+          }
+        }
+      }
+    },
+    "migrate-app-usdc": {
+      "image": "postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f",
+      "restart": "no",
+      "depends_on": {
+        "migrate-indexer-usdc": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "environment": {
+        "PGHOST": "postgres",
+        "PGDATABASE": "cpredict_usdc_indexer",
+        "PGUSER": "cpredict_migrator",
+        "PGPASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_INDEXER_PASSWORD": "${CPREDICT_STACK_INDEXER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_DATABASE_ENVIRONMENT": "usdc",
+        "CPREDICT_STACK_USDC_INDEXER_PASSWORD": "${CPREDICT_STACK_USDC_INDEXER_PASSWORD:?configure public-site stack input}",
+        "CPREDICT_STACK_USDC_METADATA_PASSWORD": "${CPREDICT_STACK_USDC_METADATA_PASSWORD:?configure public-site stack input}"
+      },
+      "volumes": [
+        "./offchain/app-service/migrations:/migrations:ro",
+        "./deploy/compose/postgres/run-migrations.sh:/usr/local/bin/run-cpredict-migrations:ro"
+      ],
+      "entrypoint": [
+        "bash",
+        "/usr/local/bin/run-cpredict-migrations",
+        "app"
+      ],
+      "user": "999:999",
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=16m"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "networks": [
+        "data"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "0.5",
+            "memory": "256M"
+          }
+        }
+      }
+    },
+    "migrate-metadata-usdc": {
+      "image": "postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f",
+      "restart": "no",
+      "depends_on": {
+        "bootstrap-usdc": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "environment": {
+        "PGHOST": "postgres",
+        "PGDATABASE": "cpredict_usdc_metadata",
+        "PGUSER": "cpredict_migrator",
+        "PGPASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_METADATA_PASSWORD": "${CPREDICT_STACK_METADATA_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_DATABASE_ENVIRONMENT": "usdc",
+        "CPREDICT_STACK_USDC_INDEXER_PASSWORD": "${CPREDICT_STACK_USDC_INDEXER_PASSWORD:?configure public-site stack input}",
+        "CPREDICT_STACK_USDC_METADATA_PASSWORD": "${CPREDICT_STACK_USDC_METADATA_PASSWORD:?configure public-site stack input}"
+      },
+      "volumes": [
+        "./offchain/metadata-service/migrations:/migrations:ro",
+        "./deploy/compose/postgres/run-migrations.sh:/usr/local/bin/run-cpredict-migrations:ro"
+      ],
+      "entrypoint": [
+        "bash",
+        "/usr/local/bin/run-cpredict-migrations",
+        "metadata"
+      ],
+      "user": "999:999",
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=16m"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "networks": [
+        "data"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "0.5",
+            "memory": "256M"
+          }
+        }
+      }
+    },
+    "indexer-usdc": {
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "indexer",
+        "args": {
+          "CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"
+        }
+      },
+      "restart": "unless-stopped",
+      "stop_grace_period": "15s",
+      "depends_on": {
+        "migrate-app-usdc": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "environment": {
+        "CPREDICT_INDEXER_HOST": "0.0.0.0",
+        "CPREDICT_INDEXER_CONTAINER_MODE": "true",
+        "CPREDICT_INDEXER_PORT": "8787",
+        "CPREDICT_INDEXER_LOG_LEVEL": "info",
+        "CPREDICT_INDEXER_CHAIN_ID": "421614",
+        "CPREDICT_INDEXER_RPC_URL": "${CPREDICT_INDEXER_RPC_URL:-${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}}",
+        "CPREDICT_INDEXER_DATABASE_URL": "postgresql://cpredict_usdc_indexer:${CPREDICT_STACK_USDC_INDEXER_PASSWORD}@postgres/cpredict_usdc_indexer?sslmode=disable",
+        "CPREDICT_INDEXER_FACTORY_ADDRESS": "${CPREDICT_USDC_INDEXER_FACTORY_ADDRESS:?configure public-site stack input}",
+        "CPREDICT_INDEXER_CORE_ADDRESSES": "${CPREDICT_USDC_INDEXER_CORE_ADDRESSES:?configure public-site stack input}",
+        "CPREDICT_INDEXER_DEPLOYMENT_BLOCK": "${CPREDICT_USDC_INDEXER_DEPLOYMENT_BLOCK:?configure public-site stack input}",
+        "CPREDICT_INDEXER_CONFIRMATIONS": "2",
+        "CPREDICT_INDEXER_BATCH_SIZE": "${CPREDICT_INDEXER_BATCH_SIZE:-100}",
+        "CPREDICT_INDEXER_MAX_BATCHES_PER_TICK": "1",
+        "CPREDICT_INDEXER_POLL_INTERVAL_MS": "1000",
+        "CPREDICT_INDEXER_RPC_TIMEOUT_MS": "5000",
+        "CPREDICT_INDEXER_DATABASE_POOL_SIZE": "10",
+        "CPREDICT_INDEXER_LISTEN_BACKLOG": "16384",
+        "CPREDICT_INDEXER_HTTP_MAX_CONNECTIONS": "20000",
+        "CPREDICT_INDEXER_WS_MAX_CONNECTIONS": "12000",
+        "CPREDICT_INDEXER_WS_HEARTBEAT_INTERVAL_MS": "15000",
+        "CPREDICT_INDEXER_WS_MAX_BUFFERED_AMOUNT_BYTES": "65536",
+        "CPREDICT_INDEXER_WS_SHUTDOWN_GRACE_MS": "5000",
+        "CPREDICT_INDEXER_PUBLIC_CONFIG_FILE": "/run/cpredict/application.json",
+        "CPREDICT_INDEXER_METADATA_URL": "http://metadata-usdc:8793"
+      },
+      "ports": [
+        "127.0.0.1:${CPREDICT_STACK_USDC_INDEXER_PORT:-8887}:8787"
+      ],
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=32m"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/readyz').then(r=>{if(!r.ok)process.exit(1)})"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 12,
+        "start_period": "15s"
+      },
+      "networks": [
+        "app",
+        "data"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "2.0",
+            "memory": "1G"
+          }
+        }
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${CPREDICT_STACK_USDC_CONFIG_FILE:?configure public-site stack input}",
+          "target": "/run/cpredict/application.json",
+          "read_only": true
+        }
+      ]
+    },
+    "metadata-usdc": {
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "metadata",
+        "args": {
+          "CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"
+        }
+      },
+      "restart": "unless-stopped",
+      "stop_grace_period": "15s",
+      "depends_on": {
+        "migrate-metadata-usdc": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "environment": {
+        "CPREDICT_METADATA_HOST": "0.0.0.0",
+        "CPREDICT_METADATA_CONTAINER_MODE": "true",
+        "CPREDICT_METADATA_PORT": "8793",
+        "CPREDICT_METADATA_LOG_LEVEL": "info",
+        "CPREDICT_METADATA_CHAIN_ID": "421614",
+        "CPREDICT_METADATA_FACTORY_ADDRESS": "${CPREDICT_USDC_INDEXER_FACTORY_ADDRESS:?configure public-site stack input}",
+        "CPREDICT_METADATA_PUBLIC_BASE_URL": "${CPREDICT_USDC_METADATA_PUBLIC_BASE_URL:?configure public-site stack input}",
+        "CPREDICT_METADATA_DATABASE_URL": "postgresql://cpredict_usdc_metadata:${CPREDICT_STACK_USDC_METADATA_PASSWORD}@postgres/cpredict_usdc_metadata?sslmode=disable",
+        "CPREDICT_METADATA_CHALLENGE_TTL_SECONDS": "300",
+        "CPREDICT_METADATA_DATABASE_POOL_SIZE": "5",
+        "CPREDICT_METADATA_RPC_URL": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}"
+      },
+      "ports": [
+        "127.0.0.1:${CPREDICT_STACK_USDC_METADATA_PORT:-8893}:8793"
+      ],
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=16m"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8793/readyz').then(r=>{if(!r.ok)process.exit(1)})"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 12,
+        "start_period": "15s"
+      },
+      "networks": [
+        "app",
+        "data"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "1.0",
+            "memory": "512M"
+          }
+        }
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      }
+    },
+    "app-usdc": {
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "app-service",
+        "args": {
+          "CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"
+        }
+      },
+      "restart": "unless-stopped",
+      "stop_grace_period": "15s",
+      "depends_on": {
+        "migrate-app-usdc": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "environment": {
+        "CPREDICT_APP_HOST": "0.0.0.0",
+        "CPREDICT_APP_PORT": "8795",
+        "CPREDICT_APP_CONTAINER_MODE": "true",
+        "CPREDICT_APP_CONFIG_FILE": "/run/cpredict/application.json",
+        "CPREDICT_APP_DATABASE_URL": "postgresql://cpredict_usdc_indexer:${CPREDICT_STACK_USDC_INDEXER_PASSWORD}@postgres/cpredict_usdc_indexer?sslmode=disable",
+        "CPREDICT_APP_METADATA_URL": "http://metadata-usdc:8793"
+      },
+      "ports": [
+        "127.0.0.1:${CPREDICT_STACK_USDC_APP_PORT:-8895}:8795"
+      ],
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=16m"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8795/readyz').then(r=>{if(!r.ok)process.exit(1)})"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 12,
+        "start_period": "15s"
+      },
+      "networks": [
+        "app",
+        "data"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "1.0",
+            "memory": "512M"
+          }
+        }
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "env_file": [
+        {
+          "path": "${CPREDICT_STACK_USDC_APP_ENV_FILE:?configure public-site stack input}",
+          "required": true,
+          "format": "raw"
+        }
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${CPREDICT_STACK_USDC_CONFIG_FILE:?configure public-site stack input}",
+          "target": "/run/cpredict/application.json",
+          "read_only": true
+        }
+      ]
+    }
+  }
+}

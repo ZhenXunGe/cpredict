@@ -5,6 +5,11 @@ import {
   normalizeEvidenceHash,
 } from "../../sdk/src/evidence.js";
 import { deriveMutations, type DerivedMutation } from "./derived.js";
+import type { Environment } from "../../app-core/src/contracts.js";
+import { PostgresFinancialLedger } from "./financial-store.js";
+import { scopedAccountLogs } from "./scoped-logs.js";
+import { type PublicClient } from "viem";
+import { normalizeLog } from "./store.js";
 import type {
   ActivityKind,
   ActivityView,
@@ -35,8 +40,9 @@ type Db = Sql | TransactionSql;
 /** PostgreSQL event store with canonical-block lineage and transactionally rebuilt projections. */
 export class PostgresEventStore implements EventStore, IndexerQueryStore {
   private readonly sql: Sql;
+  readonly financial: PostgresFinancialLedger | undefined;
 
-  constructor(connectionString: string, maximumConnections = 10) {
+  constructor(connectionString: string, maximumConnections = 10, environment?: Environment) {
     if (
       !connectionString.startsWith("postgres://") &&
       !connectionString.startsWith("postgresql://")
@@ -57,6 +63,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       prepare: true,
       onnotice: () => undefined,
     });
+    this.financial = environment ? new PostgresFinancialLedger(this.sql, environment) : undefined;
   }
 
   async checkpoint(chainId: number): Promise<ChainCheckpoint | undefined> {
@@ -106,6 +113,10 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
         const inserted = await insertRawEvent(transaction, event);
         if (inserted) await applyProjection(transaction, event);
       }
+      if (this.financial) {
+        await this.projectFinancialTransactions(transaction, events.map(e => e.transactionHash));
+        await this.financial.project(transaction, [], blocks, checkpoint);
+      }
       const checkpointBlocks = await transaction<Array<{ block_hash: Hex }>>`
         SELECT block_hash FROM canonical_blocks
         WHERE chain_id = ${checkpoint.chainId}
@@ -151,6 +162,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       `;
       for (const row of retained)
         await applyProjection(transaction, mapRawEvent(chainId, row));
+      if (this.financial) await this.financial.rollback(transaction, blockNumber);
 
       if (blockNumber !== undefined) {
         const blocks = await transaction<Array<{ block_hash: Hex }>>`
@@ -397,6 +409,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
         markets: string | null;
         markets_evidence_hash: boolean;
         markets_rules_hash: boolean;
+        markets_time_fields: boolean;
         activities: string | null;
         activity_participants: string | null;
         markets_chain_created_idx: string | null;
@@ -423,6 +436,10 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
             AND table_name = 'markets'
             AND column_name = 'rules_hash'
         ) AS markets_rules_hash,
+        (SELECT count(*) = 3 FROM information_schema.columns
+          WHERE table_schema = current_schema() AND table_name = 'markets'
+            AND column_name IN ('created_at', 'event_starts_at', 'outcome_deadline_at')
+        ) AS markets_time_fields,
         to_regclass('activities')::text AS activities,
         to_regclass('activity_participants')::text AS activity_participants,
         to_regclass('markets_chain_created_idx')::text AS markets_chain_created_idx,
@@ -439,6 +456,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       row.chain_checkpoints === null ||
       row.markets === null ||
       !row.markets_evidence_hash ||
+      !row.markets_time_fields ||
       !row.markets_rules_hash ||
       row.activities === null ||
       row.activity_participants === null ||
@@ -450,6 +468,68 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     ) {
       throw new Error("indexer database migration is not applied");
     }
+    const fees = await this.sql<{count: number}[]>`SELECT count(*)::int AS count FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='fills' AND column_name IN ('seller_proceeds','platform_fee','creator_fee')`;
+    if (fees[0]?.count !== 3) throw new Error("financial fill migration 006 is not applied");
+    if (this.financial) await this.financial.ready();
+  }
+
+  private async projectFinancialTransactions(db: TransactionSql, hashes: readonly Hex[]): Promise<void> {
+    if (!this.financial || hashes.length === 0) return;
+    const chainId = this.financial.environment.deployment.chainId;
+    const unique = [...new Set(hashes)];
+    const rows = await db<RawEventRow[]>`SELECT block_number,block_hash,transaction_hash,transaction_index,log_index,contract_address,topics,data,confirmation_status FROM chain_events WHERE chain_id=${chainId} AND transaction_hash IN ${db(unique)} ORDER BY block_number,transaction_index,log_index`;
+    const numbers = [...new Set(rows.map(r=>r.block_number))];
+    if (!numbers.length) return;
+    const blockRows = await db<CanonicalBlockRow[]>`SELECT block_number,block_hash,parent_hash,block_timestamp,confirmation_status FROM canonical_blocks WHERE chain_id=${chainId} AND block_number IN ${db(numbers)} ORDER BY block_number`;
+    await db`DELETE FROM ledger_facts WHERE chain_id=${chainId} AND transaction_hash IN ${db(unique)}`;
+    await this.financial.project(db,rows.map(r=>mapRawEvent(chainId,r)),blockRows.map(r=>mapBlock(chainId,r)));
+  }
+
+  /** Add only logs from an explicitly scoped backfill, without advancing the realtime checkpoint. */
+  async applyFinancialBackfill(events: readonly IndexedEvent[], expectedBlocks: readonly CanonicalBlock[]): Promise<void> {
+    if (!this.financial) throw new Error("financial ledger is not configured");
+    await this.sql.begin(async db => {
+      for (const block of expectedBlocks) {
+        const stored=await db<{block_hash: Hex}[]>`SELECT block_hash FROM canonical_blocks WHERE chain_id=${block.chainId} AND block_number=${block.blockNumber.toString()}`;
+        if (stored[0]?.block_hash!==block.blockHash) throw new Error("backfill canonical block mismatch");
+      }
+      for (const event of events) {
+        if (!expectedBlocks.some(b=>b.chainId===event.chainId && b.blockNumber===event.blockNumber && b.blockHash===event.blockHash)) throw new Error("backfill log block is not verified");
+        if (await insertRawEvent(db,event)) await applyProjection(db,event);
+      }
+      await this.projectFinancialTransactions(db,events.map(e=>e.transactionHash));
+    });
+  }
+
+  /** Rebuild the shadow facts in bounded block ranges. Raw event coverage is never upgraded by replay alone. */
+  async replayFinancial(from: bigint, to: bigint): Promise<void> {
+    if (!this.financial || from>to || from<BigInt(this.financial.environment.deployment.deploymentBlock)) throw new RangeError("invalid financial replay scope");
+    const chainId=this.financial.environment.deployment.chainId;
+    await this.sql.begin(async db => {
+      const epochs=await db<{epoch:string}[]>`UPDATE ledger_environment SET epoch=epoch+1,status='shadow' WHERE singleton RETURNING epoch`;
+      await db`INSERT INTO ledger_corrections(epoch,from_block,reason) VALUES(${epochs[0]!.epoch},${from.toString()},'projection_replay')`;
+      for(let block=from;block<=to;block+=500n) {
+        const end=block+499n<to?block+499n:to;
+        const hashes=await db<{transaction_hash:Hex}[]>`SELECT DISTINCT transaction_hash FROM chain_events WHERE chain_id=${chainId} AND block_number BETWEEN ${block.toString()} AND ${end.toString()}`;
+        await this.projectFinancialTransactions(db,hashes.map(r=>r.transaction_hash));
+      }
+    });
+  }
+
+  async backfillFinancialAccounts(client: PublicClient): Promise<void> {
+    if (!this.financial) return;
+    const chainId=this.financial.environment.deployment.chainId,checkpoint=await this.checkpoint(chainId);
+    if(!checkpoint) return;
+    const range=await this.financial.accountBackfillRange(checkpoint.blockNumber);
+    if(!range) return;
+    const rows=await this.sql<CanonicalBlockRow[]>`SELECT block_number,block_hash,parent_hash,block_timestamp,confirmation_status FROM canonical_blocks WHERE chain_id=${chainId} AND block_number BETWEEN ${range.from.toString()} AND ${range.to.toString()} ORDER BY block_number`;
+    if(BigInt(rows.length)!==range.to-range.from+1n) throw new Error("account backfill requires missing canonical history to be restored first");
+    const blocks=rows.map(r=>mapBlock(chainId,r)),end=blocks.at(-1)!;
+    const canonical=await client.getBlock({blockNumber:range.to});
+    if(canonical.hash!==end.blockHash) throw new Error("account backfill canonical range changed");
+    const logs=await scopedAccountLogs(client,this.financial.environment.deployment.paymentToken,range.accounts,range.from,range.to);
+    await this.applyFinancialBackfill(logs.map(log=>normalizeLog(chainId,log,"confirmed")),blocks);
+    await this.financial.accountScanned(range.accounts,range.from,range.to,end.blockHash);
   }
 
   async close(): Promise<void> {
@@ -497,7 +577,7 @@ async function insertRawEvent(db: Db, event: IndexedEvent): Promise<boolean> {
     ) VALUES (
       ${event.chainId}, ${event.blockNumber.toString()}, ${event.blockHash}, ${event.transactionHash},
       ${event.transactionIndex}, ${event.logIndex}, ${event.address},
-      ${JSON.stringify(event.topics)}, ${event.data}, ${event.confirmationStatus}
+      ${db.json([...event.topics])}, ${event.data}, ${event.confirmationStatus}
     ) ON CONFLICT (chain_id, transaction_hash, log_index) DO NOTHING
     RETURNING transaction_hash
   `;
@@ -544,18 +624,22 @@ async function applyMutation(
     case "market-initialized":
       await db`
         INSERT INTO markets (
-          chain_id, market, creator, deployment_mode, outcome_count, close_at, resolution_window,
+          chain_id, market, creator, deployment_mode, outcome_count, created_at, close_at, event_starts_at, outcome_deadline_at, resolution_window,
           market_primary_cap, creator_bond, state, created_block, updated_block,
           confirmation_status
         ) VALUES (
           ${event.chainId}, ${mutation.market}, ${mutation.creator}, ${mutation.deploymentMode},
-          ${mutation.outcomeCount}, ${mutation.closeAt.toString()}, ${mutation.resolutionWindow.toString()},
+          ${mutation.outcomeCount}, ${mutation.createdAt.toString()}, ${mutation.closeAt.toString()},
+          ${mutation.eventStartsAt?.toString() ?? null}, ${mutation.outcomeDeadlineAt.toString()}, ${mutation.resolutionWindow.toString()},
           ${mutation.marketPrimaryCap.toString()}, ${mutation.creatorBond.toString()}, 0,
           ${event.blockNumber.toString()}, ${event.blockNumber.toString()},
           ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, market) DO UPDATE SET
           outcome_count = EXCLUDED.outcome_count,
+          created_at = EXCLUDED.created_at,
           close_at = EXCLUDED.close_at,
+          event_starts_at = EXCLUDED.event_starts_at,
+          outcome_deadline_at = EXCLUDED.outcome_deadline_at,
           resolution_window = EXCLUDED.resolution_window,
           market_primary_cap = EXCLUDED.market_primary_cap,
           creator_bond = EXCLUDED.creator_bond,
@@ -571,7 +655,8 @@ async function applyMutation(
           resolution_source_hash = ${mutation.resolutionSourceHash},
           resolution_source_uri = ${mutation.resolutionSourceUri},
           close_at = ${mutation.closeAt.toString()},
-          early_bird_start = ${mutation.earlyBirdStart.toString()},
+          event_starts_at = ${mutation.eventStartsAt?.toString() ?? null},
+          outcome_deadline_at = ${mutation.outcomeDeadlineAt.toString()},
           creator_treasury = ${mutation.creatorTreasury},
           feature_flags = ${mutation.featureFlags.toString()},
           updated_block = ${event.blockNumber.toString()},
@@ -609,6 +694,7 @@ async function applyMutation(
       `;
       await db`
         UPDATE markets SET state = ${mutation.state},
+          void_reason = ${mutation.voidReason},
           winning_outcome = ${nullableBigint(mutation.winningOutcome)},
           evidence_hash = ${mutation.evidenceHash},
           updated_block = ${event.blockNumber.toString()}, confirmation_status = ${event.confirmationStatus}
@@ -665,11 +751,11 @@ async function applyMutation(
       await db`
         INSERT INTO fills (
           chain_id, transaction_hash, log_index, listing_id, vault, buyer, seller,
-          filled_units, gross, block_number, confirmation_status
+          filled_units, gross, seller_proceeds, platform_fee, creator_fee, block_number, confirmation_status
         ) VALUES (
           ${event.chainId}, ${event.transactionHash}, ${event.logIndex}, ${mutation.listingId},
           ${listing.vault}, ${mutation.buyer}, ${mutation.seller}, ${mutation.filledUnits.toString()},
-          ${mutation.gross.toString()}, ${event.blockNumber.toString()}, ${event.confirmationStatus}
+          ${mutation.gross.toString()}, ${mutation.sellerProceeds.toString()}, ${mutation.platformFee.toString()}, ${mutation.creatorFee.toString()}, ${event.blockNumber.toString()}, ${event.confirmationStatus}
         ) ON CONFLICT (chain_id, transaction_hash, log_index) DO NOTHING
       `;
       await recordActivity(db, event, {
@@ -836,19 +922,21 @@ interface RawEventRow {
   confirmation_status: ConfirmationStatus;
 }
 
-interface MarketRow {
+export interface MarketRow {
   chain_id: string;
   market: Address;
   creator: Address;
   deployment_mode: number;
   outcome_count: number | null;
   close_at: string | null;
+  created_at: string | null;
+  event_starts_at: string | null;
+  outcome_deadline_at: string | null;
   resolution_window: string | null;
   rules_hash: Hex | null;
   metadata_uri: string | null;
   resolution_source_hash: Hex | null;
   resolution_source_uri: string | null;
-  early_bird_start: string | null;
   creator_treasury: Address | null;
   feature_flags: string | null;
   market_primary_cap: string | null;
@@ -856,6 +944,7 @@ interface MarketRow {
   primary_payment: string;
   creator_bond: string;
   state: number;
+  void_reason: number;
   winning_outcome: string | null;
   evidence_hash: Hex | null;
   created_block: string;
@@ -863,7 +952,7 @@ interface MarketRow {
   confirmation_status: ConfirmationStatus;
 }
 
-interface ListingRow {
+export interface ListingRow {
   chain_id: string;
   listing_id: Hex;
   vault: Address;
@@ -888,6 +977,9 @@ interface FillRow {
   seller: Address;
   filled_units: string;
   gross: string;
+  seller_proceeds: string | null;
+  platform_fee: string | null;
+  creator_fee: string | null;
   block_number: string;
   confirmation_status: ConfirmationStatus;
 }
@@ -946,6 +1038,19 @@ function mapBlock(chainId: number, row: CanonicalBlockRow): CanonicalBlock {
 }
 
 function mapRawEvent(chainId: number, row: RawEventRow): IndexedEvent {
+  // Corrupt JSON must abort the rebuilding transaction, not turn known events
+  // into unknown topics and silently erase their projections.
+  if (
+    !Array.isArray(row.topics) ||
+    row.topics.length > 4 ||
+    !row.topics.every(
+      (topic) => typeof topic === "string" && /^0x[0-9a-fA-F]{64}$/.test(topic),
+    )
+  ) {
+    throw new Error(
+      "persisted event topics must be an array of bytes32 values",
+    );
+  }
   return {
     chainId,
     blockNumber: BigInt(row.block_number),
@@ -960,7 +1065,7 @@ function mapRawEvent(chainId: number, row: RawEventRow): IndexedEvent {
   };
 }
 
-function mapMarket(row: MarketRow): MarketView {
+export function mapMarket(row: MarketRow): MarketView {
   const evidenceHash =
     row.evidence_hash === null
       ? null
@@ -972,14 +1077,17 @@ function mapMarket(row: MarketRow): MarketView {
     deploymentMode: row.deployment_mode,
     outcomeCount: row.outcome_count,
     closeAt: row.close_at === null ? null : BigInt(row.close_at),
+    createdAt: row.created_at === null ? null : BigInt(row.created_at),
+    eventStartsAt:
+      row.event_starts_at === null ? null : BigInt(row.event_starts_at),
+    outcomeDeadlineAt:
+      row.outcome_deadline_at === null ? null : BigInt(row.outcome_deadline_at),
     resolutionWindow:
       row.resolution_window === null ? null : BigInt(row.resolution_window),
     rulesHash: row.rules_hash,
     metadataUri: row.metadata_uri,
     resolutionSourceHash: row.resolution_source_hash,
     resolutionSourceUri: row.resolution_source_uri,
-    earlyBirdStart:
-      row.early_bird_start === null ? null : BigInt(row.early_bird_start),
     creatorTreasury:
       row.creator_treasury === null ? null : getAddress(row.creator_treasury),
     featureFlags: row.feature_flags === null ? null : BigInt(row.feature_flags),
@@ -989,6 +1097,7 @@ function mapMarket(row: MarketRow): MarketView {
     primaryPayment: BigInt(row.primary_payment),
     creatorBond: BigInt(row.creator_bond),
     state: row.state,
+    voidReason: row.void_reason,
     winningOutcome:
       row.winning_outcome === null ? null : BigInt(row.winning_outcome),
     evidenceHash,
@@ -1000,7 +1109,7 @@ function mapMarket(row: MarketRow): MarketView {
   };
 }
 
-function mapListing(row: ListingRow): ListingView {
+export function mapListing(row: ListingRow): ListingView {
   return {
     chainId: Number(row.chain_id),
     listingId: row.listing_id,
@@ -1028,6 +1137,9 @@ function mapFill(row: FillRow): FillView {
     seller: getAddress(row.seller),
     filledUnits: BigInt(row.filled_units),
     gross: BigInt(row.gross),
+    sellerProceeds: row.seller_proceeds == null ? null : BigInt(row.seller_proceeds),
+    platformFee: row.platform_fee == null ? null : BigInt(row.platform_fee),
+    creatorFee: row.creator_fee == null ? null : BigInt(row.creator_fee),
     blockNumber: BigInt(row.block_number),
     confirmationStatus: row.confirmation_status,
   };
@@ -1173,13 +1285,19 @@ function activityCursor(value: string): ActivityCursor {
 }
 
 function terminalActivityKind(
-  value: "resolved" | "voided-creator" | "voided-timeout",
+  value:
+    | "resolved"
+    | "voided-creator"
+    | "voided-no-winning-supply"
+    | "voided-timeout",
 ): ActivityKind {
   switch (value) {
     case "resolved":
       return "market-resolved";
     case "voided-creator":
       return "market-voided-creator";
+    case "voided-no-winning-supply":
+      return "market-voided-no-winning-supply";
     case "voided-timeout":
       return "market-voided-timeout";
   }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { marketDisplayState } from "../src/protocol.js";
+import {
+  marketDisplayState,
+  marketFinalResultLabel,
+  outcomeDisplayLabel,
+} from "../src/protocol.js";
 
 describe("market display state", () => {
   it("keeps an unexpired open market tradable", () => {
@@ -42,16 +46,54 @@ describe("market display state", () => {
       primaryBuyOpen: false,
     });
     expect(
-      marketDisplayState({ marketState: 2, observedAt: 99n, closeAt: 100n }),
+      marketDisplayState({
+        marketState: 2,
+        voidReason: 1,
+        observedAt: 99n,
+        closeAt: 100n,
+      }),
     ).toEqual({
       label: "创建者作废",
       primaryBuyOpen: false,
     });
     expect(
-      marketDisplayState({ marketState: 3, observedAt: 99n, closeAt: 100n }),
+      marketDisplayState({
+        marketState: 2,
+        voidReason: 2,
+        observedAt: 99n,
+        closeAt: 100n,
+      }),
+    ).toEqual({
+      label: "零胜方份额作废",
+      primaryBuyOpen: false,
+    });
+    expect(
+      marketDisplayState({
+        marketState: 2,
+        voidReason: 3,
+        observedAt: 99n,
+        closeAt: 100n,
+      }),
     ).toEqual({
       label: "超时作废",
       primaryBuyOpen: false,
     });
+  });
+
+  it("maps terminal outcomes to rule labels and keeps voids winnerless", () => {
+    expect(outcomeDisplayLabel(0, ["Yes", "No"])).toBe("Yes");
+    expect(outcomeDisplayLabel(1n, null)).toBe("结果 2");
+    expect(
+      marketFinalResultLabel({ marketState: 1, winningOutcome: 1 }, [
+        "Yes",
+        "No",
+      ]),
+    ).toBe("No");
+    expect(
+      marketFinalResultLabel({ marketState: 2, winningOutcome: 0 }, [
+        "Yes",
+        "No",
+      ]),
+    ).toBe("无获胜结果（已作废）");
   });
 });

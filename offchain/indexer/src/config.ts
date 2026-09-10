@@ -1,5 +1,6 @@
 import { getAddress, isAddress, zeroAddress, type Address } from "viem";
 import { z } from "zod";
+import { parseMetadataServiceUrl } from "../../app-core/src/service-url.js";
 
 const unsignedInteger = z
   .string()
@@ -27,6 +28,8 @@ const logLevel = z.enum([
 const schema = z
   .object({
     CPREDICT_INDEXER_HOST: serviceHost,
+    CPREDICT_INDEXER_PUBLIC_CONFIG_FILE: z.string().min(1).optional(),
+    CPREDICT_INDEXER_METADATA_URL: z.string().url().optional(),
     CPREDICT_INDEXER_CONTAINER_MODE: booleanString.default("false"),
     CPREDICT_INDEXER_PORT: safeInteger.refine(
       (value) => value >= 1 && value <= 65_535,
@@ -41,8 +44,7 @@ const schema = z
       .string()
       .url()
       .refine(
-        (value) =>
-          isSecurePostgresUrl(value) || isComposePostgresUrl(value),
+        (value) => isSecurePostgresUrl(value) || isComposePostgresUrl(value),
         "must use secure PostgreSQL or the explicit Compose-internal endpoint",
       ),
     CPREDICT_INDEXER_FACTORY_ADDRESS: address,
@@ -89,10 +91,23 @@ const schema = z
     ),
   })
   .superRefine((value, context) => {
-    const publicBind = ["0.0.0.0", "::"].includes(
-      value.CPREDICT_INDEXER_HOST,
-    );
+    const publicBind = ["0.0.0.0", "::"].includes(value.CPREDICT_INDEXER_HOST);
     const containerMode = value.CPREDICT_INDEXER_CONTAINER_MODE === "true";
+    if (value.CPREDICT_INDEXER_METADATA_URL) {
+      try {
+        parseMetadataServiceUrl(
+          value.CPREDICT_INDEXER_METADATA_URL,
+          containerMode,
+        );
+      } catch {
+        context.addIssue({
+          code: "custom",
+          path: ["CPREDICT_INDEXER_METADATA_URL"],
+          message:
+            "must use HTTPS, loopback, or the declared Compose metadata endpoint",
+        });
+      }
+    }
     if (publicBind !== containerMode) {
       context.addIssue({
         code: "custom",
@@ -135,6 +150,8 @@ const schema = z
   });
 
 export interface IndexerServiceConfig {
+  publicConfigFile?: string;
+  metadataUrl?: string;
   host: "127.0.0.1" | "::1" | "0.0.0.0" | "::";
   containerMode: boolean;
   port: number;
@@ -172,6 +189,12 @@ export function parseIndexerServiceConfig(
     parsed.CPREDICT_INDEXER_CORE_ADDRESSES,
   );
   return {
+    ...(parsed.CPREDICT_INDEXER_PUBLIC_CONFIG_FILE
+      ? { publicConfigFile: parsed.CPREDICT_INDEXER_PUBLIC_CONFIG_FILE }
+      : {}),
+    ...(parsed.CPREDICT_INDEXER_METADATA_URL
+      ? { metadataUrl: parsed.CPREDICT_INDEXER_METADATA_URL }
+      : {}),
     host: parsed.CPREDICT_INDEXER_HOST,
     containerMode: parsed.CPREDICT_INDEXER_CONTAINER_MODE === "true",
     port: parsed.CPREDICT_INDEXER_PORT,

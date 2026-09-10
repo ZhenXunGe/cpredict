@@ -48,8 +48,14 @@ contract ExposureSource {
 
 contract BondMarketMock {
     ProtocolTypes.MarketState public marketState;
+    ProtocolTypes.VoidReason public voidReason;
     uint256 public totalPrincipal;
     uint256 public funded;
+
+    function setVoidReason(ProtocolTypes.VoidReason reason) external {
+        marketState = ProtocolTypes.MarketState.VOIDED;
+        voidReason = reason;
+    }
 
     function setState(ProtocolTypes.MarketState state) external {
         marketState = state;
@@ -377,7 +383,7 @@ contract VaultControlComponentsTest is ProtocolTestBase {
         vm.expectRevert(abi.encodeWithSelector(BondNotLocked.selector, ALICE));
         localEscrow.settleBond(ALICE);
 
-        market.setState(ProtocolTypes.MarketState.VOIDED_CREATOR);
+        market.setVoidReason(ProtocolTypes.VoidReason.CREATOR);
         localEscrow.settleBond(address(market));
         assertEq(localEscrow.creditOf(CREATOR), 10);
         vm.expectPartialRevert(BondStateMismatch.selector);
@@ -398,7 +404,7 @@ contract VaultControlComponentsTest is ProtocolTestBase {
         usdc.mint(address(localEscrow), 12);
         localEscrow.lockBond(address(market), CREATOR, 12);
         market.setTotalPrincipal(1);
-        market.setState(ProtocolTypes.MarketState.VOIDED_TIMEOUT);
+        market.setVoidReason(ProtocolTypes.VoidReason.TIMEOUT);
 
         vm.expectEmit(true, false, false, true, address(localEscrow));
         emit BondFundedToTimeoutMarket(address(market), 12);
@@ -415,7 +421,7 @@ contract VaultControlComponentsTest is ProtocolTestBase {
         localEscrow.setFactory(address(this));
         usdc.mint(address(localEscrow), 12);
         localEscrow.lockBond(address(market), CREATOR, 12);
-        market.setState(ProtocolTypes.MarketState.VOIDED_TIMEOUT);
+        market.setVoidReason(ProtocolTypes.VoidReason.TIMEOUT);
 
         vm.expectEmit(true, true, false, true, address(localEscrow));
         emit EmptyTimeoutBondCredited(address(market), CREATOR, 12);

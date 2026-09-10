@@ -24,7 +24,6 @@ import {
     ZeroAmount,
     FillBelowMinimum,
     PaymentAboveMaximum,
-    WinningOutcomeHasNoSupply,
     NothingToClaim,
     AlreadySettled,
     AlreadyInitialized,
@@ -91,15 +90,17 @@ contract MarketVaultInitializationTest is ProtocolTestBase {
         _expectInitRevert(init, InvalidConfiguration.selector);
         init = _validInit();
         init.closeAt = init.createdAt + 5 minutes - 1;
+        init.outcomeDeadlineAt = init.closeAt;
         _expectInitRevert(init, InvalidConfiguration.selector);
         init = _validInit();
         init.closeAt = init.createdAt + 90 days + 1;
+        init.outcomeDeadlineAt = init.closeAt;
         _expectInitRevert(init, InvalidConfiguration.selector);
         init = _validInit();
-        init.earlyBirdStart = init.createdAt - 1;
+        init.eventStartsAt = init.closeAt;
         _expectInitRevert(init, InvalidConfiguration.selector);
         init = _validInit();
-        init.earlyBirdStart = init.closeAt;
+        init.outcomeDeadlineAt = init.closeAt - 1;
         _expectInitRevert(init, InvalidConfiguration.selector);
     }
 
@@ -121,7 +122,8 @@ contract MarketVaultInitializationTest is ProtocolTestBase {
             outcomeCount: 2,
             createdAt: uint64(block.timestamp),
             closeAt: uint64(block.timestamp + 1 days),
-            earlyBirdStart: uint64(block.timestamp),
+            eventStartsAt: 0,
+            outcomeDeadlineAt: uint64(block.timestamp + 1 days),
             resolutionWindow: uint64(1 days),
             creatorTreasury: CREATOR_TREASURY,
             deploymentMode: ProtocolTypes.DeploymentMode.FULL,
@@ -163,24 +165,25 @@ contract MarketVaultMetadataAndBuyEdgesTest is ProtocolTestBase {
     function testCreatorCanUpdateAllMutableMetadataBeforeFirstBuy() public {
         MarketVaultCoreV1 market = _createDefault();
         uint64 newClose = uint64(block.timestamp + 2 days);
-        uint64 newEarly = uint64(block.timestamp + 1 hours);
         vm.prank(CREATOR);
         market.updateBeforeFirstBuy(
-            keccak256("new-rules"),
-            "ipfs://new/{id}.json",
-            keccak256("new-source"),
-            "https://example.com/new",
-            newClose,
-            newEarly,
-            ALICE,
-            ProtocolTypes.FEATURE_PERMIT2
+            ProtocolTypes.MarketTerms({
+                rulesHash: keccak256("new-rules"),
+                metadataURI: "ipfs://new/{id}.json",
+                resolutionSourceHash: keccak256("new-source"),
+                resolutionSourceURI: "https://example.com/new",
+                closeAt: newClose,
+                eventStartsAt: 0,
+                outcomeDeadlineAt: newClose,
+                creatorTreasury: ALICE,
+                featureFlags: ProtocolTypes.FEATURE_PERMIT2
+            })
         );
         assertEq(market.rulesHash(), keccak256("new-rules"));
         assertEq(market.uri(0), "ipfs://new/{id}.json");
         assertEq(market.resolutionSourceHash(), keccak256("new-source"));
         assertEq(market.resolutionSourceURI(), "https://example.com/new");
         assertEq(market.closeAt(), newClose);
-        assertEq(market.earlyBirdStart(), newEarly);
         assertEq(market.creatorTreasury(), ALICE);
         assertFalse(market.earlyBirdEnabled());
         assertTrue(market.permit2Enabled());
@@ -214,14 +217,17 @@ contract MarketVaultMetadataAndBuyEdgesTest is ProtocolTestBase {
         vm.prank(CREATOR);
         vm.expectPartialRevert(InvalidConfiguration.selector);
         market.updateBeforeFirstBuy(
-            keccak256("rules"),
-            "ipfs://ok",
-            bytes32(0),
-            "",
-            uint64(created + 5 minutes - 1),
-            created,
-            CREATOR_TREASURY,
-            0
+            ProtocolTypes.MarketTerms({
+                rulesHash: keccak256("rules"),
+                metadataURI: "ipfs://ok",
+                resolutionSourceHash: bytes32(0),
+                resolutionSourceURI: "",
+                closeAt: uint64(created + 5 minutes - 1),
+                eventStartsAt: 0,
+                outcomeDeadlineAt: uint64(created + 5 minutes - 1),
+                creatorTreasury: CREATOR_TREASURY,
+                featureFlags: 0
+            })
         );
 
         _buy(market, ALICE, 0, 10e6);
@@ -246,14 +252,17 @@ contract MarketVaultMetadataAndBuyEdgesTest is ProtocolTestBase {
         vm.prank(CREATOR);
         vm.expectRevert(MarketNotOpen.selector);
         market.updateBeforeFirstBuy(
-            keccak256("rules"),
-            "ipfs://ok",
-            bytes32(0),
-            "",
-            created + 5 minutes,
-            created,
-            CREATOR_TREASURY,
-            0
+            ProtocolTypes.MarketTerms({
+                rulesHash: keccak256("rules"),
+                metadataURI: "ipfs://ok",
+                resolutionSourceHash: bytes32(0),
+                resolutionSourceURI: "",
+                closeAt: created + 5 minutes,
+                eventStartsAt: 0,
+                outcomeDeadlineAt: created + 5 minutes,
+                creatorTreasury: CREATOR_TREASURY,
+                featureFlags: 0
+            })
         );
     }
 
@@ -302,25 +311,67 @@ contract MarketVaultMetadataAndBuyEdgesTest is ProtocolTestBase {
         market.buy(0, 10e6, 10e6, 10e6, uint64(block.timestamp + 1 hours));
     }
 
-    function testEarlyBirdWeightsCoverBeforeAndAllThreeSegments() public {
+    function testEarlyBirdWeightsStartAtCreationAndCoverExactThirds() public {
         ProtocolTypes.CreateMarketParams memory params =
             _defaultParams(ProtocolTypes.DeploymentMode.FULL);
-        params.closeAt = uint64(block.timestamp + 4 hours);
-        params.earlyBirdStart = uint64(block.timestamp + 1 hours);
+        params.closeAt = uint64(block.timestamp + 3 hours);
+        params.outcomeDeadlineAt = params.closeAt;
         MarketVaultCoreV1 market = _create(params, keccak256("weights"));
+        uint64 created = market.createdAt();
 
         _buy(market, ALICE, 0, 10e6);
         assertEq(market.earlyBirdScore(ALICE), 30e6);
-        vm.warp(params.earlyBirdStart + 10 minutes);
+        vm.warp(created + 1 hours - 1);
         _buy(market, BOB, 0, 10e6);
         assertEq(market.earlyBirdScore(BOB), 30e6);
-        vm.warp(params.earlyBirdStart + 70 minutes);
+        vm.warp(created + 1 hours);
         _buy(market, CAROL, 1, 10e6);
         assertEq(market.earlyBirdScore(CAROL), 20e6);
-        vm.warp(params.earlyBirdStart + 130 minutes);
+        vm.warp(created + 2 hours);
         usdc.mint(address(0xD0D), 10e6);
         _buy(market, address(0xD0D), 1, 10e6);
         assertEq(market.earlyBirdScore(address(0xD0D)), 10e6);
+    }
+
+    function testLateFirstPurchaseDoesNotRequireAnEarlyBuyerFullAndClone() public {
+        for (uint256 mode; mode < 2; ++mode) {
+            ProtocolTypes.CreateMarketParams memory params =
+                _defaultParams(ProtocolTypes.DeploymentMode(mode));
+            // warp changes time inside this test transaction; avoid a cached TIMESTAMP.
+            params.closeAt = uint64(vm.getBlockTimestamp() + 300);
+            params.outcomeDeadlineAt = params.closeAt;
+            MarketVaultCoreV1 market = _create(params, bytes32(mode));
+            vm.warp(params.closeAt - 1);
+            _buy(market, ALICE, 0, 10e6);
+            assertEq(market.earlyBirdScore(ALICE), 10e6);
+            assertEq(market.totalPrincipal(), 10e6);
+        }
+    }
+
+    function testChangingCloseDoesNotRestartCreationClockAndScoresOnlyFilledUnits() public {
+        MarketVaultCoreV1 market = _createDefault();
+        uint64 created = market.createdAt();
+        vm.warp(created + 1 days);
+        vm.prank(CREATOR);
+        market.updateBeforeFirstBuy(
+            ProtocolTypes.MarketTerms({
+                rulesHash: keccak256("later-close"),
+                metadataURI: "ipfs://later",
+                resolutionSourceHash: bytes32(0),
+                resolutionSourceURI: "",
+                closeAt: created + 2 days,
+                eventStartsAt: 0,
+                outcomeDeadlineAt: created + 2 days,
+                creatorTreasury: CREATOR_TREASURY,
+                featureFlags: ProtocolTypes.FEATURE_EARLY_BIRD
+            })
+        );
+        assertEq(market.createdAt(), created);
+        _approveMarket(ALICE, market);
+        vm.prank(ALICE);
+        uint256 filled = market.buy(0, 110e6, 100e6, 110e6, created + 2 days);
+        assertEq(filled, 100e6);
+        assertEq(market.earlyBirdScore(ALICE), 200e6);
     }
 
     function testDisabledEarlyBirdNeverCreatesScore() public {
@@ -364,14 +415,17 @@ contract MarketVaultMetadataAndBuyEdgesTest is ProtocolTestBase {
         uint256 flags
     ) internal {
         market.updateBeforeFirstBuy(
-            newRules,
-            metadata,
-            keccak256("source"),
-            resolutionURI,
-            uint64(block.timestamp + 2 days),
-            uint64(block.timestamp),
-            treasury,
-            flags
+            ProtocolTypes.MarketTerms({
+                rulesHash: newRules,
+                metadataURI: metadata,
+                resolutionSourceHash: keccak256("source"),
+                resolutionSourceURI: resolutionURI,
+                closeAt: uint64(block.timestamp + 2 days),
+                eventStartsAt: 0,
+                outcomeDeadlineAt: uint64(block.timestamp + 2 days),
+                creatorTreasury: treasury,
+                featureFlags: flags
+            })
         );
     }
 }
@@ -388,7 +442,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         bytes32 indexed evidenceHash
     );
     event MarketVoided(
-        ProtocolTypes.MarketState indexed terminalState,
+        ProtocolTypes.VoidReason indexed reason,
         address indexed caller,
         uint256 refundPrincipal,
         bytes32 indexed evidenceHash
@@ -412,7 +466,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         );
         _buy(creatorVoided, ALICE, 0, 20e6);
         vm.expectEmit(true, true, true, true, address(creatorVoided));
-        emit MarketVoided(ProtocolTypes.MarketState.VOIDED_CREATOR, CREATOR, 20e6, voidEvidence);
+        emit MarketVoided(ProtocolTypes.VoidReason.CREATOR, CREATOR, 20e6, voidEvidence);
         vm.prank(CREATOR);
         creatorVoided.creatorVoid(voidEvidence);
 
@@ -421,7 +475,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         );
         vm.warp(timeoutVoided.resolutionDeadline());
         vm.expectEmit(true, true, true, true, address(timeoutVoided));
-        emit MarketVoided(ProtocolTypes.MarketState.VOIDED_TIMEOUT, ALICE, 0, bytes32(0));
+        emit MarketVoided(ProtocolTypes.VoidReason.TIMEOUT, ALICE, 0, bytes32(0));
         vm.prank(ALICE);
         timeoutVoided.voidAfterDeadline();
     }
@@ -449,9 +503,6 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         vm.expectPartialRevert(InvalidOutcome.selector);
         market.resolve(2, bytes32(0));
         vm.prank(CREATOR);
-        vm.expectPartialRevert(WinningOutcomeHasNoSupply.selector);
-        market.resolve(1, bytes32(0));
-        vm.prank(CREATOR);
         market.resolve(0, bytes32(0));
         assertTrue(market.isTerminal());
         vm.prank(CREATOR);
@@ -475,7 +526,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         vm.expectRevert(ResolutionWindowExpired.selector);
         market.resolve(0, bytes32(0));
         market.voidAfterDeadline();
-        assertEq(uint8(market.marketState()), uint8(ProtocolTypes.MarketState.VOIDED_TIMEOUT));
+        assertEq(uint8(market.marketState()), uint8(ProtocolTypes.MarketState.VOIDED));
     }
 
     function testCreatorVoidExpiresAtDeadlineAndCannotRacePermissionlessTimeout() public {
@@ -485,9 +536,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         vm.warp(beforeDeadline.resolutionDeadline() - 1);
         vm.prank(CREATOR);
         beforeDeadline.creatorVoid(bytes32(0));
-        assertEq(
-            uint8(beforeDeadline.marketState()), uint8(ProtocolTypes.MarketState.VOIDED_CREATOR)
-        );
+        assertEq(uint8(beforeDeadline.marketState()), uint8(ProtocolTypes.MarketState.VOIDED));
 
         MarketVaultCoreV1 atDeadline = _create(
             _defaultParams(ProtocolTypes.DeploymentMode.FULL), keccak256("void-at-deadline")
@@ -498,7 +547,7 @@ contract MarketVaultSettlementEdgesTest is ProtocolTestBase {
         atDeadline.creatorVoid(bytes32(0));
         vm.prank(ALICE);
         atDeadline.voidAfterDeadline();
-        assertEq(uint8(atDeadline.marketState()), uint8(ProtocolTypes.MarketState.VOIDED_TIMEOUT));
+        assertEq(uint8(atDeadline.marketState()), uint8(ProtocolTypes.MarketState.VOIDED));
         vm.prank(CREATOR);
         vm.expectRevert(MarketTerminal.selector);
         atDeadline.creatorVoid(bytes32(0));

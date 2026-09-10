@@ -5,7 +5,7 @@ import { createReadStream } from "node:fs";
 import { readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildSnapshotSql } from "./backup.mjs";
+import { backupDatabaseInventory, buildSnapshotSql } from "./backup.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const SAFE_ID = /^[a-z0-9][a-z0-9_-]{8,62}$/;
@@ -73,7 +73,8 @@ export async function runRestoreDrill({
       "start disposable PostgreSQL",
     );
     await waitForPostgres(run, container, env);
-    for (const database of ["cpredict_indexer", "cpredict_paymaster", "cpredict_metadata"])
+    const inventory = backupDatabaseInventory({ usdc: "usdc-indexer" in manifest.dumps });
+    for (const { database } of inventory)
       await command(
         [
           "exec",
@@ -87,11 +88,7 @@ export async function runRestoreDrill({
         ],
         `create ${database}`,
       );
-    for (const [name, database] of [
-      ["indexer", "cpredict_indexer"],
-      ["paymaster", "cpredict_paymaster"],
-      ["metadata", "cpredict_metadata"],
-    ]) {
+    for (const { name, database } of inventory) {
       const result = await pipe(
         "docker",
         [
@@ -121,31 +118,14 @@ export async function runRestoreDrill({
           `restore ${name} failed (${result.code}): ${result.stderr.slice(-2000)}`,
         );
     }
-    await verifyMigrations(pipe, container, env, manifest.migrations);
-    const snapshots = {
-      indexer: await snapshot(
-        run,
-        container,
-        env,
-        "cpredict_indexer",
-        "indexer",
-      ),
-      paymaster: await snapshot(
-        run,
-        container,
-        env,
-        "cpredict_paymaster",
-        "paymaster",
-      ),
-      metadata: await snapshot(
-        run,
-        container,
-        env,
-        "cpredict_metadata",
-        "metadata",
-      ),
-    };
+    const snapshots = {};
+    for (const { name, database, kind } of inventory) snapshots[name] = await snapshot(run, container, env, database, kind, manifest.snapshots[name]);
+    // Compare the restored backup before additive migrations introduce new tables.
     compareSnapshots(manifest.snapshots, snapshots);
+    await verifyMigrations(pipe, container, env, manifest.migrations, inventory);
+    const after = {};
+    for (const { name, database, kind } of inventory) after[name] = await snapshot(run, container, env, database, kind, manifest.snapshots[name]);
+    compareSnapshots(manifest.snapshots, after);
     const report = {
       schemaVersion: "cpredict.restore-drill.v1",
       evidenceClass: "LOCAL_RESTORE_DRILL",
@@ -188,13 +168,15 @@ export async function runRestoreDrill({
 
 export async function validateBackupFiles(directory, manifest) {
   if (
-    manifest.schemaVersion !== "cpredict.stack-backup.v1" ||
+    !["cpredict.stack-backup.v1", "cpredict.stack-backup.v2"].includes(manifest.schemaVersion) ||
     manifest.chainId !== 421614
   )
     throw new Error("backup manifest schema or chain is invalid");
-  for (const name of ["indexer", "paymaster", "metadata"]) {
+  const inventory = backupDatabaseInventory({ usdc: "usdc-indexer" in (manifest.dumps ?? {}) || "usdc-metadata" in (manifest.dumps ?? {}) });
+  if (Object.keys(manifest.dumps ?? {}).sort().join(",") !== inventory.map((d) => d.name).sort().join(",")) throw new Error("backup database inventory is invalid");
+  for (const { name } of inventory) {
     const record = manifest.dumps?.[name];
-    if (!record || basename(record.file) !== record.file)
+    if (!record || basename(record.file) !== record.file || record.file !== `${name}.dump`)
       throw new Error(`${name} dump path is unsafe`);
     const path = resolve(directory, record.file);
     const metadata = await stat(path);
@@ -207,7 +189,8 @@ export async function validateBackupFiles(directory, manifest) {
 }
 
 export function compareSnapshots(expected, actual) {
-  for (const database of ["indexer", "paymaster", "metadata"]) {
+  if (Object.keys(expected).sort().join(",") !== Object.keys(actual).sort().join(",")) throw new Error("backup database inventory changed during restore");
+  for (const database of Object.keys(expected)) {
     if (stableJson(expected[database]) !== stableJson(actual[database]))
       throw new Error(
         `${database} rows, projections, checkpoint or budget balances changed during restore`,
@@ -238,16 +221,18 @@ async function waitForPostgres(run, container, env) {
   throw new Error("disposable PostgreSQL did not become ready");
 }
 
-async function verifyMigrations(pipe, container, env, migrations) {
+async function verifyMigrations(pipe, container, env, migrations, inventory) {
   for (const migration of migrations) {
-    const database = migration.path.includes("paymaster-service")
-      ? "cpredict_paymaster"
+    if (!/^offchain\/(indexer|app-service|paymaster-service|metadata-service)\/migrations\/[0-9]{3}_[a-z0-9_]+\.sql$/.test(migration.path)) throw new Error("unsafe migration path in backup");
+    const kind = migration.path.includes("paymaster-service")
+      ? "paymaster"
       : migration.path.includes("metadata-service")
-        ? "cpredict_metadata"
-        : "cpredict_indexer";
+        ? "metadata"
+        : "indexer";
     const path = resolve(ROOT, migration.path);
     if ((await sha256File(path)) !== migration.sha256)
       throw new Error(`${migration.path} source hash drifted`);
+    for (const { database } of inventory.filter((entry) => entry.kind === kind)) {
     const result = await pipe(
       "docker",
       [
@@ -267,11 +252,12 @@ async function verifyMigrations(pipe, container, env, migrations) {
     );
     if (result.code !== 0)
       throw new Error(`${migration.path} idempotency verification failed`);
+    }
   }
 }
 
-async function snapshot(run, container, env, database, kind) {
-  const tables = snapshotTables(kind);
+async function snapshot(run, container, env, database, kind, expected) {
+  const tables = expected?.rows ? Object.keys(expected.rows).sort() : snapshotTables(kind);
   const result = await run(
     "docker",
     [
@@ -288,7 +274,7 @@ async function snapshot(run, container, env, database, kind) {
       "--no-align",
       "--set=ON_ERROR_STOP=1",
       "--command",
-      buildSnapshotSql(kind, tables),
+      buildSnapshotSql(kind, tables, { fingerprints: Boolean(expected?.contentSha256), columns: expected?.columns }),
     ],
     { cwd: ROOT, env },
   );

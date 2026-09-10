@@ -36,7 +36,7 @@ scripts/security/crytic-export
 # Inputs not consumed by the Compose Dockerfiles
 docs
 reports
+work
 ref
 lib
 load
-

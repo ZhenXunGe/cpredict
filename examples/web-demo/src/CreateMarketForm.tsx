@@ -10,9 +10,8 @@ import {
 } from "../../../offchain/sdk/src/index.js";
 import {
   buildCreateMarketTimes,
+  assertCreationTimingExecutable,
   formatCreatorSettlementWindow,
-  MAX_MARKET_DURATION_MINUTES,
-  MIN_MARKET_DURATION_MINUTES,
 } from "./create-market-times.js";
 import {
   publishMarketMetadata,
@@ -54,7 +53,7 @@ type FieldName =
   | "source"
   | "criteria"
   | "cancellation"
-  | "duration"
+  | "times"
   | "marketCap"
   | "perUserCap"
   | "bond"
@@ -79,12 +78,15 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
     DEFAULT_RESOLUTION_SOURCE,
   );
   const [resolutionCriteria, setResolutionCriteria] = useState(
-    "市场截止后，按所引用公开来源明确公布的结果进行结算。",
+    "按结果判断截止时间前所引用公开来源明确公布的结果进行结算。",
   );
   const [cancellationPolicy, setCancellationPolicy] = useState(
-    "若引用源不可用，或在结算窗口内未给出明确结果，则作废该市场。",
+    "若事件取消、延期，或引用源在结果判断截止前未给出明确结果，则作废该市场。",
   );
-  const [durationMinutes, setDurationMinutes] = useState("15");
+  const [closeAtInput, setCloseAtInput] = useState("");
+  const [eventStartsAtInput, setEventStartsAtInput] = useState("");
+  const [eventStartUnknown, setEventStartUnknown] = useState(true);
+  const [outcomeDeadlineAtInput, setOutcomeDeadlineAtInput] = useState("");
   const [mode, setMode] = useState<"0" | "1">("0");
   const [rakeBps, setRakeBps] = useState("200");
   const [creatorC2CFeeBps, setCreatorC2CFeeBps] = useState("0");
@@ -95,16 +97,44 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
   const [bond, setBond] = useState("10");
   const [earlyBird, setEarlyBird] = useState(true);
   const [permit2, setPermit2] = useState(true);
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmedKey, setConfirmedKey] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  const [stage, setStage] = useState<"idle" | "authorizing" | "publishing">(
-    "idle",
-  );
+  const [stage, setStage] = useState<
+    "idle" | "checking" | "authorizing" | "publishing"
+  >("idle");
   const [factoryAllowance, setFactoryAllowance] = useState(
     props.factoryAllowance,
   );
   const salt = useMemo(() => randomBytes32(), []);
+  const draftKey = JSON.stringify([
+    props.factory,
+    props.creator,
+    props.wallet.chainId,
+    props.paymentToken,
+    props.creationFee.toString(),
+    props.resolutionWindowSeconds,
+    question,
+    outcomeLabels,
+    resolutionSource,
+    resolutionCriteria,
+    cancellationPolicy,
+    closeAtInput,
+    eventStartsAtInput,
+    eventStartUnknown,
+    outcomeDeadlineAtInput,
+    mode,
+    rakeBps,
+    creatorC2CFeeBps,
+    perUserCap,
+    marketCap,
+    minimumPrimary,
+    minimumC2C,
+    bond,
+    earlyBird,
+    permit2,
+  ]);
+  const confirmed = confirmedKey === draftKey;
 
   useEffect(
     () => setFactoryAllowance(props.factoryAllowance),
@@ -112,28 +142,30 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
   );
 
   function marketDraft() {
-    const now = BigInt(Math.floor(Date.now() / 1_000));
-    const minutes = parseInteger(
-      durationMinutes,
-      MIN_MARKET_DURATION_MINUTES,
-      MAX_MARKET_DURATION_MINUTES,
-      "市场期限",
-    );
-    const { closeAt, earlyBirdStart } = buildCreateMarketTimes(now, minutes);
+    const times = buildCreateMarketTimes({
+      closeAt: closeAtInput,
+      eventStartsAt: eventStartUnknown ? null : eventStartsAtInput,
+      outcomeDeadlineAt: outcomeDeadlineAtInput,
+      resolutionWindowSeconds: props.resolutionWindowSeconds,
+    });
     const outcomes = outcomeLabels
       .split(/\r?\n/)
       .map((value) => value.trim())
       .filter(Boolean);
     const rules: MarketRules = {
-      version: "cpredict-rules-v1",
+      version: "cpredict-rules-v2",
       question: question.trim(),
       outcomes,
-      closesAt: Number(closeAt),
+      closeAt: Number(times.closeAt),
+      eventStartsAt:
+        times.eventStartsAt === null ? null : Number(times.eventStartsAt),
+      outcomeDeadlineAt: Number(times.outcomeDeadlineAt),
+      resolutionDeadlineAt: Number(times.resolutionDeadlineAt),
       resolutionSource: validatedUri(resolutionSource, "公开判定来源"),
       resolutionCriteria: resolutionCriteria.trim(),
       cancellationPolicy: cancellationPolicy.trim(),
     };
-    return { rules, closeAt, earlyBirdStart };
+    return { rules, ...times };
   }
 
   function marketCapValue(): bigint {
@@ -224,7 +256,8 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
         ...publication,
         outcomeCount: prepared.rules.outcomes.length,
         closeAt: prepared.closeAt,
-        earlyBirdStart: prepared.earlyBirdStart,
+        eventStartsAt: prepared.eventStartsAt ?? 0n,
+        outcomeDeadlineAt: prepared.outcomeDeadlineAt,
         creatorTreasury: props.creator,
         deploymentMode: mode === "0" ? 0 : 1,
         featureFlags: (earlyBird ? 1n : 0n) | (permit2 ? 2n : 0n),
@@ -246,6 +279,11 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
       if (!validateForm()) throw new Error("请先修正表单中标出的字段");
       if (!confirmed) throw new Error("请先确认不可变参数与创建者单方结算风险");
       const prepared = marketDraft();
+      setStage("checking");
+      assertCreationTimingExecutable(
+        prepared,
+        await props.client.readCreationTiming(props.factory),
+      );
       const amount = economicValues().bondAmount + props.creationFee;
       if (authorizationRequired(factoryAllowance, amount)) {
         setStage("authorizing");
@@ -259,6 +297,10 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
         wallet: props.wallet,
         rules: prepared.rules,
       });
+      assertCreationTimingExecutable(
+        prepared,
+        await props.client.readCreationTiming(props.factory),
+      );
       const result = await props.execute("创建市场", () =>
         props.client.createMarket(draft(publication, prepared)),
       );
@@ -328,14 +370,7 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
       8,
       2_048,
     );
-    validate(next, "duration", () =>
-      parseInteger(
-        durationMinutes,
-        MIN_MARKET_DURATION_MINUTES,
-        MAX_MARKET_DURATION_MINUTES,
-        "市场期限",
-      ),
-    );
+    validate(next, "times", marketDraft);
     validate(next, "marketCap", marketCapValue);
     const cap = next.marketCap === undefined ? marketCapValue() : null;
     if (cap !== null) {
@@ -407,6 +442,13 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
       className="market-create-form"
       onSubmit={(event) => void submit(event)}
       noValidate
+      onChangeCapture={(event) => {
+        if (
+          !(event.target instanceof HTMLInputElement) ||
+          event.target.name !== "confirm-creation"
+        )
+          setConfirmedKey(null);
+      }}
     >
       <div className="form-grid">
         <label className="span-2">
@@ -532,29 +574,76 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
             message={fieldErrors.cancellation}
           />
         </label>
-        <label>
-          <span>市场期限（分钟，11–129600）</span>
-          <input
-            type="number"
-            inputMode="numeric"
-            min={MIN_MARKET_DURATION_MINUTES}
-            max={MAX_MARKET_DURATION_MINUTES}
-            step="1"
-            value={durationMinutes}
-            onChange={(event) => {
-              setDurationMinutes(event.currentTarget.value);
-              clearField("duration");
-            }}
-            aria-invalid={fieldErrors.duration !== undefined}
-            required
-          />
-          <FieldError message={fieldErrors.duration} />
-          <small>
-            市场期限是购买截止时间，不是结算截止。截止后创建者还有{" "}
-            {formatCreatorSettlementWindow(props.resolutionWindowSeconds)}{" "}
-            可以指定获胜结果；逾期只能超时作废（全员退本金，不能再选赢家）。
-          </small>
-        </label>
+        <fieldset className="span-2" disabled={disabled}>
+          <legend>时间条款（全部为 UTC 绝对时间）</legend>
+          <label>
+            <span>封盘时间（UTC）</span>
+            <input
+              type="datetime-local"
+              step="1"
+              value={closeAtInput}
+              required
+              onChange={(event) => {
+                setCloseAtInput(event.currentTarget.value);
+                clearField("times");
+              }}
+            />
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={eventStartUnknown}
+              onChange={(event) => {
+                setEventStartUnknown(event.currentTarget.checked);
+                clearField("times");
+              }}
+            />
+            事件开始时间未知
+          </label>
+          {!eventStartUnknown && (
+            <label>
+              <span>事件开始时间（UTC）</span>
+              <input
+                type="datetime-local"
+                step="1"
+                value={eventStartsAtInput}
+                required
+                onChange={(event) => {
+                  setEventStartsAtInput(event.currentTarget.value);
+                  clearField("times");
+                }}
+              />
+            </label>
+          )}
+          {eventStartUnknown && (
+            <p role="note">
+              事件开始未知：无法验证是否在实际事件开始前封盘，参与者需注意提前获知结果的风险。
+            </p>
+          )}
+          <label>
+            <span>结果判断截止时间（UTC）</span>
+            <input
+              type="datetime-local"
+              step="1"
+              value={outcomeDeadlineAtInput}
+              required
+              onChange={(event) => {
+                setOutcomeDeadlineAtInput(event.currentTarget.value);
+                clearField("times");
+              }}
+            />
+          </label>
+          <FieldError message={fieldErrors.times} />
+          <p>
+            结算超时 = 结果判断截止 +{" "}
+            {formatCreatorSettlementWindow(props.resolutionWindowSeconds)}
+            ；窗口在创建时冻结。 creator
+            可在封盘后提前结算，无须等到结果判断截止。到超时截止后，只能触发作废退款。
+          </p>
+          <p>
+            已确认时间不会随刷新或重试延期；提交时按链上时间验证。填入时间不证明现实事件一定如期发生。
+          </p>
+        </fieldset>
         <label>
           <span>市场总上限（{props.paymentTokenSymbol}）</span>
           <input
@@ -707,6 +796,15 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
           </dd>
         </div>
       </dl>
+      {previewRules !== null && (
+        <p className="callout">
+          结算超时（UTC）：
+          {new Date(
+            marketDraft().rules.resolutionDeadlineAt * 1_000,
+          ).toISOString()}
+          。 封盘后即可结算；此处不是新的等待期。
+        </p>
+      )}
       <p className="callout">
         提交时如额度不足会先请求精确授权，再由钱包签名发布不可变规则并单独确认创建交易；平台自动生成
         Metadata URI，无需手工填写。
@@ -714,8 +812,11 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
       <label className="confirmation">
         <input
           type="checkbox"
+          name="confirm-creation"
           checked={confirmed}
-          onChange={(event) => setConfirmed(event.currentTarget.checked)}
+          onChange={(event) =>
+            setConfirmedKey(event.currentTarget.checked ? draftKey : null)
+          }
         />{" "}
         我已核对问题、结果、判定来源、时间、上限、费用、保证金与 Full/Clone
         风险，并理解创建后经济参数不可改。
@@ -735,13 +836,15 @@ export function CreateMarketForm(props: CreateMarketFormProps) {
           精确授权创建费 + 保证金
         </button>
         <button className="button primary" disabled={disabled || !confirmed}>
-          {stage === "authorizing"
-            ? "等待精确授权…"
-            : stage === "publishing"
-              ? "等待规则签名…"
-              : needsAuthorization
-                ? "精确授权、签名并创建市场"
-                : "签名规则并创建市场"}
+          {stage === "checking"
+            ? "核对链上时间…"
+            : stage === "authorizing"
+              ? "等待精确授权…"
+              : stage === "publishing"
+                ? "等待规则签名…"
+                : needsAuthorization
+                  ? "精确授权、签名并创建市场"
+                  : "签名规则并创建市场"}
         </button>
       </div>
     </form>

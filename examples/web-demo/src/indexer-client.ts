@@ -1,17 +1,16 @@
 import { getAddress, isAddress, type Address, type Hex } from "viem";
 import {
   encodeMarketRules,
+  assertMarketState,
   marketRulesSchema,
   type MarketRules,
 } from "../../../offchain/sdk/src/index.js";
 
-export type CatalogStatus =
-  "open" | "resolved" | "voided-creator" | "voided-timeout";
+export type CatalogStatus = "open" | "resolved" | "voided";
 
 export const TERMINAL_CATALOG_STATUSES = [
   "resolved",
-  "voided-creator",
-  "voided-timeout",
+  "voided",
 ] as const satisfies readonly CatalogStatus[];
 
 export interface MarketCatalogItem {
@@ -20,12 +19,17 @@ export interface MarketCatalogItem {
   deploymentMode: number;
   outcomeCount: number | null;
   closeAt: bigint | null;
+  createdAt: bigint | null;
+  eventStartsAt: bigint | null;
+  outcomeDeadlineAt: bigint | null;
   resolutionWindow: bigint | null;
   rulesHash: Hex | null;
   marketPrimaryCap: bigint | null;
   primaryFilledUnits: bigint;
   creatorBond: bigint;
   status: CatalogStatus;
+  voidReason: number;
+  winningOutcome: bigint | null;
   createdBlock: bigint;
   confirmationStatus: "provisional" | "confirmed";
 }
@@ -84,6 +88,7 @@ export type ActivityKind =
   | "terminal-listing-returned"
   | "market-resolved"
   | "market-voided-creator"
+  | "market-voided-no-winning-supply"
   | "market-voided-timeout"
   | "winner-claimed"
   | "early-bird-claimed"
@@ -276,21 +281,45 @@ function parseMarket(value: unknown): MarketCatalogItem {
   );
   const status = enumValue(
     item.status,
-    ["open", "resolved", "voided-creator", "voided-timeout"] as const,
+    ["open", "resolved", "voided"] as const,
     "status",
   );
+  const voidReason = integer(item.voidReason, "voidReason", 0, 3);
+  assertMarketState(
+    status === "open" ? 0 : status === "resolved" ? 1 : 2,
+    voidReason,
+  );
+  const winningOutcome =
+    item.winningOutcome === undefined
+      ? null
+      : nullableBigint(item.winningOutcome, "winningOutcome");
+  if (
+    winningOutcome !== null &&
+    outcomeCount !== null &&
+    winningOutcome >= BigInt(outcomeCount)
+  ) {
+    throw new TypeError("winningOutcome is invalid");
+  }
   return {
     market: address(item.market, "market"),
     creator: address(item.creator, "creator"),
     deploymentMode: integer(item.deploymentMode, "deploymentMode", 0, 1),
     outcomeCount,
     closeAt: nullableBigint(item.closeAt, "closeAt"),
+    createdAt: nullableBigint(item.createdAt, "createdAt"),
+    eventStartsAt: nullableBigint(item.eventStartsAt, "eventStartsAt"),
+    outcomeDeadlineAt: nullableBigint(
+      item.outcomeDeadlineAt,
+      "outcomeDeadlineAt",
+    ),
     resolutionWindow: nullableBigint(item.resolutionWindow, "resolutionWindow"),
     rulesHash: nullableBytes32(item.rulesHash, "rulesHash"),
     marketPrimaryCap: nullableBigint(item.marketPrimaryCap, "marketPrimaryCap"),
     primaryFilledUnits: bigint(item.primaryFilledUnits, "primaryFilledUnits"),
     creatorBond: bigint(item.creatorBond, "creatorBond"),
     status,
+    voidReason,
+    winningOutcome,
     createdBlock: bigint(item.createdBlock, "createdBlock"),
     confirmationStatus: confirmation(item.confirmationStatus),
   };
@@ -312,6 +341,7 @@ function parseActivity(value: unknown): WalletActivityItem {
         "terminal-listing-returned",
         "market-resolved",
         "market-voided-creator",
+        "market-voided-no-winning-supply",
         "market-voided-timeout",
         "winner-claimed",
         "early-bird-claimed",
@@ -344,7 +374,7 @@ function parsePosition(value: unknown): IndexedPosition {
     marketState:
       item.marketState === undefined
         ? null
-        : nullableInteger(item.marketState, "marketState", 0, 3),
+        : nullableInteger(item.marketState, "marketState", 0, 2),
     winningOutcome:
       item.winningOutcome === undefined
         ? null

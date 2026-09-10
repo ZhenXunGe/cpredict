@@ -108,7 +108,8 @@ contract Permit2FlowsTest is Test {
             resolutionSourceURI: "",
             outcomeCount: 2,
             closeAt: uint64(block.timestamp + 1 days),
-            earlyBirdStart: uint64(block.timestamp),
+            eventStartsAt: 0,
+            outcomeDeadlineAt: uint64(block.timestamp + 1 days),
             creatorTreasury: CREATOR_TREASURY,
             deploymentMode: ProtocolTypes.DeploymentMode.FULL,
             featureFlags: ProtocolTypes.FEATURE_EARLY_BIRD | ProtocolTypes.FEATURE_PERMIT2,
@@ -396,14 +397,17 @@ contract Permit2FlowsTest is Test {
     function testMarketplacePermit2RespectsMarketFeatureFlag() public {
         vm.prank(CREATOR);
         market.updateBeforeFirstBuy(
-            keccak256("permit2-rules"),
-            "ipfs://permit2/{id}.json",
-            bytes32(0),
-            "",
-            uint64(block.timestamp + 1 days),
-            uint64(block.timestamp),
-            CREATOR_TREASURY,
-            ProtocolTypes.FEATURE_EARLY_BIRD
+            ProtocolTypes.MarketTerms({
+                rulesHash: keccak256("permit2-rules"),
+                metadataURI: "ipfs://permit2/{id}.json",
+                resolutionSourceHash: bytes32(0),
+                resolutionSourceURI: "",
+                closeAt: uint64(block.timestamp + 1 days),
+                eventStartsAt: 0,
+                outcomeDeadlineAt: uint64(block.timestamp + 1 days),
+                creatorTreasury: CREATOR_TREASURY,
+                featureFlags: ProtocolTypes.FEATURE_EARLY_BIRD
+            })
         );
         _standardBuyAlice(20e6);
         vm.prank(alice);

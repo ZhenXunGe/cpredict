@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.36;
 
-/// @notice Shared V1 protocol data types. Values are ABI-stable within V1.
+/// @notice Shared target-protocol types. This development revision requires a fresh deployment.
 library ProtocolTypes {
     uint256 internal constant BPS = 10_000;
     uint256 internal constant SHARE_SCALE = 1_000_000;
@@ -24,8 +24,14 @@ library ProtocolTypes {
     enum MarketState {
         OPEN,
         RESOLVED,
-        VOIDED_CREATOR,
-        VOIDED_TIMEOUT
+        VOIDED
+    }
+
+    enum VoidReason {
+        NONE,
+        CREATOR,
+        NO_WINNING_SUPPLY,
+        TIMEOUT
     }
 
     struct CreateMarketParams {
@@ -35,7 +41,9 @@ library ProtocolTypes {
         string resolutionSourceURI;
         uint8 outcomeCount;
         uint64 closeAt;
-        uint64 earlyBirdStart;
+        // Zero represents an explicitly unknown event start; never a guessed timestamp.
+        uint64 eventStartsAt;
+        uint64 outcomeDeadlineAt;
         address creatorTreasury;
         DeploymentMode deploymentMode;
         uint256 featureFlags;
@@ -46,6 +54,18 @@ library ProtocolTypes {
         uint128 minimumPrimaryUnits;
         uint128 minimumC2CUnits;
         uint128 creatorBond;
+    }
+
+    struct MarketTerms {
+        bytes32 rulesHash;
+        string metadataURI;
+        bytes32 resolutionSourceHash;
+        string resolutionSourceURI;
+        uint64 closeAt;
+        uint64 eventStartsAt;
+        uint64 outcomeDeadlineAt;
+        address creatorTreasury;
+        uint256 featureFlags;
     }
 
     struct EconomicSnapshot {
@@ -74,7 +94,8 @@ library ProtocolTypes {
         uint8 outcomeCount;
         uint64 createdAt;
         uint64 closeAt;
-        uint64 earlyBirdStart;
+        uint64 eventStartsAt;
+        uint64 outcomeDeadlineAt;
         uint64 resolutionWindow;
         address creatorTreasury;
         DeploymentMode deploymentMode;

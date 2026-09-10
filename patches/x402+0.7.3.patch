@@ -1,0 +1,56 @@
+diff --git a/node_modules/x402/dist/esm/types/index.d.mts b/node_modules/x402/dist/esm/types/index.d.mts
+index 13cbc96..2095fe3 100644
+--- a/node_modules/x402/dist/esm/types/index.d.mts
++++ b/node_modules/x402/dist/esm/types/index.d.mts
+@@ -1181,10 +1181,10 @@ declare const usdcABI: readonly [{
+     readonly type: "function";
+ }];
+ 
+-declare const index$1_ChainConfig: typeof ChainConfig;
+-declare const index$1_ConnectedClient: typeof ConnectedClient;
+-declare const index$1_EvmSigner: typeof EvmSigner;
+-declare const index$1_SignerWallet: typeof SignerWallet;
++type index$1_ChainConfig = ChainConfig;
++type index$1_ConnectedClient = ConnectedClient;
++type index$1_EvmSigner = EvmSigner;
++type index$1_SignerWallet = SignerWallet;
+ declare const index$1_authorizationPrimaryType: typeof authorizationPrimaryType;
+ declare const index$1_authorizationTypes: typeof authorizationTypes;
+ declare const index$1_config: typeof config;
+@@ -1200,7 +1200,7 @@ declare const index$1_isSignerWallet: typeof isSignerWallet;
+ declare const index$1_isZkStackChain: typeof isZkStackChain;
+ declare const index$1_usdcABI: typeof usdcABI;
+ declare namespace index$1 {
+-  export { index$1_ChainConfig as ChainConfig, index$1_ConnectedClient as ConnectedClient, index$1_EvmSigner as EvmSigner, index$1_SignerWallet as SignerWallet, index$1_authorizationPrimaryType as authorizationPrimaryType, index$1_authorizationTypes as authorizationTypes, index$1_config as config, index$1_createClientAvalancheFuji as createClientAvalancheFuji, index$1_createClientSepolia as createClientSepolia, index$1_createConnectedClient as createConnectedClient, index$1_createSigner as createSigner, index$1_createSignerAvalancheFuji as createSignerAvalancheFuji, index$1_createSignerSepolia as createSignerSepolia, index$1_getChainFromNetwork as getChainFromNetwork, index$1_isAccount as isAccount, index$1_isSignerWallet as isSignerWallet, index$1_isZkStackChain as isZkStackChain, index$1_usdcABI as usdcABI };
++  export { type index$1_ChainConfig as ChainConfig, type index$1_ConnectedClient as ConnectedClient, type index$1_EvmSigner as EvmSigner, type index$1_SignerWallet as SignerWallet, index$1_authorizationPrimaryType as authorizationPrimaryType, index$1_authorizationTypes as authorizationTypes, index$1_config as config, index$1_createClientAvalancheFuji as createClientAvalancheFuji, index$1_createClientSepolia as createClientSepolia, index$1_createConnectedClient as createConnectedClient, index$1_createSigner as createSigner, index$1_createSignerAvalancheFuji as createSignerAvalancheFuji, index$1_createSignerSepolia as createSignerSepolia, index$1_getChainFromNetwork as getChainFromNetwork, index$1_isAccount as isAccount, index$1_isSignerWallet as isSignerWallet, index$1_isZkStackChain as isZkStackChain, index$1_usdcABI as usdcABI };
+ }
+ 
+ declare const SvmAddressRegex: RegExp;
+diff --git a/node_modules/x402/dist/cjs/types/index.d.ts b/node_modules/x402/dist/cjs/types/index.d.ts
+index 57a6a2d..c767c7a 100644
+--- a/node_modules/x402/dist/cjs/types/index.d.ts
++++ b/node_modules/x402/dist/cjs/types/index.d.ts
+@@ -1181,10 +1181,10 @@ declare const usdcABI: readonly [{
+     readonly type: "function";
+ }];
+ 
+-declare const index$1_ChainConfig: typeof ChainConfig;
+-declare const index$1_ConnectedClient: typeof ConnectedClient;
+-declare const index$1_EvmSigner: typeof EvmSigner;
+-declare const index$1_SignerWallet: typeof SignerWallet;
++type index$1_ChainConfig = ChainConfig;
++type index$1_ConnectedClient = ConnectedClient;
++type index$1_EvmSigner = EvmSigner;
++type index$1_SignerWallet = SignerWallet;
+ declare const index$1_authorizationPrimaryType: typeof authorizationPrimaryType;
+ declare const index$1_authorizationTypes: typeof authorizationTypes;
+ declare const index$1_config: typeof config;
+@@ -1200,7 +1200,7 @@ declare const index$1_isSignerWallet: typeof isSignerWallet;
+ declare const index$1_isZkStackChain: typeof isZkStackChain;
+ declare const index$1_usdcABI: typeof usdcABI;
+ declare namespace index$1 {
+-  export { index$1_ChainConfig as ChainConfig, index$1_ConnectedClient as ConnectedClient, index$1_EvmSigner as EvmSigner, index$1_SignerWallet as SignerWallet, index$1_authorizationPrimaryType as authorizationPrimaryType, index$1_authorizationTypes as authorizationTypes, index$1_config as config, index$1_createClientAvalancheFuji as createClientAvalancheFuji, index$1_createClientSepolia as createClientSepolia, index$1_createConnectedClient as createConnectedClient, index$1_createSigner as createSigner, index$1_createSignerAvalancheFuji as createSignerAvalancheFuji, index$1_createSignerSepolia as createSignerSepolia, index$1_getChainFromNetwork as getChainFromNetwork, index$1_isAccount as isAccount, index$1_isSignerWallet as isSignerWallet, index$1_isZkStackChain as isZkStackChain, index$1_usdcABI as usdcABI };
++  export { type index$1_ChainConfig as ChainConfig, type index$1_ConnectedClient as ConnectedClient, type index$1_EvmSigner as EvmSigner, type index$1_SignerWallet as SignerWallet, index$1_authorizationPrimaryType as authorizationPrimaryType, index$1_authorizationTypes as authorizationTypes, index$1_config as config, index$1_createClientAvalancheFuji as createClientAvalancheFuji, index$1_createClientSepolia as createClientSepolia, index$1_createConnectedClient as createConnectedClient, index$1_createSigner as createSigner, index$1_createSignerAvalancheFuji as createSignerAvalancheFuji, index$1_createSignerSepolia as createSignerSepolia, index$1_getChainFromNetwork as getChainFromNetwork, index$1_isAccount as isAccount, index$1_isSignerWallet as isSignerWallet, index$1_isZkStackChain as isZkStackChain, index$1_usdcABI as usdcABI };
+ }
+ 
+ declare const SvmAddressRegex: RegExp;

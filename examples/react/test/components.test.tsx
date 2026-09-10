@@ -56,6 +56,8 @@ const client = new Proxy(
   | "claimEarlyBird"
   | "refund"
   | "claimTimeoutBonus"
+  | "settleBond"
+  | "claimBondFor"
   | "approvePaymentToken"
   | "buy"
   | "buyWithPermit2"
@@ -78,7 +80,8 @@ describe("React protocol call examples", () => {
             resolutionSourceURI: "https://example.invalid/result",
             outcomeCount: 2,
             closeAt: 1_900_000_000n,
-            earlyBirdStart: 1_800_000_000n,
+            eventStartsAt: 0n,
+            outcomeDeadlineAt: 1_900_000_000n,
             creatorTreasury: address,
             deploymentMode: 0,
             featureFlags: 0n,
@@ -162,6 +165,24 @@ describe("React protocol call examples", () => {
     expect(html).toMatch(/超时作废<\/button>/);
   });
 
+  it("points creators to bond release after a non-timeout terminal", () => {
+    const html = renderToStaticMarkup(
+      <MarketLifecyclePanel
+        client={client}
+        vault={address}
+        outcomeCount={2}
+        creatorMode
+        closeAt={1_900_000_000n}
+        resolutionDeadline={1_900_000_900n}
+        observedAt={1_900_000_200n}
+        marketState={1}
+      />,
+    );
+    expect(html).toContain("该市场已终局");
+    expect(html).toContain("释放并领取押金");
+    expect(html).toContain("仅超时弃盘且有参与者时押金罚没");
+  });
+
   it("maps settlement phases from closeAt and resolutionDeadline", () => {
     expect(
       creatorSettlementPhase({
@@ -189,7 +210,7 @@ describe("React protocol call examples", () => {
     ).toBe("window-expired");
     expect(
       creatorSettlementPhase({
-        marketState: 3,
+        marketState: 2,
         observedAt: 150n,
         closeAt: 100n,
         resolutionDeadline: 200n,
@@ -273,6 +294,8 @@ describe("React protocol call examples", () => {
         paymentToken={address}
         vault={address}
         marketplace={address}
+        observedAt={1_800_000_000n}
+        closeAt={1_900_000_000n}
         selectedListing={{
           listingId,
           vault: address,
@@ -284,7 +307,13 @@ describe("React protocol call examples", () => {
       />,
     );
     const claimsHtml = renderToStaticMarkup(
-      <ClaimsPanel client={client} vault={address} owner={address} />,
+      <ClaimsPanel
+        client={client}
+        vault={address}
+        owner={address}
+        bondEscrow={address}
+        creator={address}
+      />,
     );
     expect(marketHtml).toContain("单独授权份额托管");
     expect(marketHtml).toContain("授权份额托管并创建挂单");
@@ -298,6 +327,9 @@ describe("React protocol call examples", () => {
     expect(claimsHtml).toContain("Claim winnings");
     expect(claimsHtml).toContain("Refund principal");
     expect(claimsHtml).toContain("Claim timeout bond bonus");
+    expect(claimsHtml).toContain("Release creator bond");
+    expect(claimsHtml).toContain("Claim creator bond");
+    expect(claimsHtml).toContain("Timeout abandonment with participants");
   });
 
   it("quotes only an active, unexpired onchain listing with enough remaining shares", () => {
@@ -326,6 +358,20 @@ describe("React protocol call examples", () => {
     expect(() => quoteFillFromChain(listing, address, 3_000_000n)).toThrow(
       "超过",
     );
+    expect(
+      quoteFillFromChain(
+        { ...listing, unitPrice: 1_200_000n },
+        address,
+        1_000_000n,
+      ),
+    ).toBe(1_200_000n);
+    expect(() =>
+      quoteFillFromChain(
+        { ...listing, vault: "0x00000000000000000000000000000000000000b2" },
+        address,
+        1_000_000n,
+      ),
+    ).toThrow("不属于当前市场");
   });
 
   it("renders both bounded primary-payment authorization paths", () => {

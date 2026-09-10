@@ -7,8 +7,9 @@ import { runRestoreDrill } from "./restore-drill.mjs";
 export async function createVerifiedBackup({
   backup = createStackBackup,
   restore = runRestoreDrill,
+  usdc = false,
 } = {}) {
-  const created = await backup();
+  const created = await backup({ usdc });
   const report = await restore({ backupDirectory: created.directory });
   if (report.status !== "PASS")
     throw new Error("backup restore drill did not pass");
@@ -19,7 +20,7 @@ if (
   process.argv[1] &&
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
-  createVerifiedBackup()
+  createVerifiedBackup({ usdc: process.argv.includes("--usdc") })
     .then(({ directory }) =>
       process.stdout.write(`VERIFIED BACKUP ${directory}\n`),
     )

@@ -87,22 +87,21 @@ contract BondEscrowV1 is ReentrancyGuard {
 
         ProtocolTypes.MarketState state = IMarketVaultV1(market).marketState();
         if (state == ProtocolTypes.MarketState.OPEN) revert BondStateMismatch(market);
+        bool timeout = state == ProtocolTypes.MarketState.VOIDED
+            && IMarketVaultV1(market).voidReason() == ProtocolTypes.VoidReason.TIMEOUT;
 
         amount = bond.amount;
         bond.settled = true;
         totalLocked -= amount;
 
-        if (
-            state == ProtocolTypes.MarketState.VOIDED_TIMEOUT
-                && IMarketVaultV1(market).totalPrincipal() != 0
-        ) {
+        if (timeout && IMarketVaultV1(market).totalPrincipal() != 0) {
             paymentToken.safeTransfer(market, amount);
             IMarketVaultV1(market).fundTimeoutBonus(amount);
             emit BondFundedToTimeoutMarket(market, amount);
         } else {
             creditOf[bond.creator] += amount;
             totalCredits += amount;
-            if (state == ProtocolTypes.MarketState.VOIDED_TIMEOUT) {
+            if (timeout) {
                 emit EmptyTimeoutBondCredited(market, bond.creator, amount);
             }
             emit BondCredited(market, bond.creator, amount);

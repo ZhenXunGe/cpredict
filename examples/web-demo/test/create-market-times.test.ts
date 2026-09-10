@@ -1,50 +1,99 @@
 import { describe, expect, it } from "vitest";
 import {
   buildCreateMarketTimes,
+  assertCreationTimingExecutable,
+  parseUtcDateTime,
   formatCreatorSettlementWindow,
-  MAX_MARKET_DURATION_MINUTES,
-  MARKET_CREATION_MINING_BUFFER_SECONDS,
-  MIN_MARKET_DURATION_MINUTES,
 } from "../src/create-market-times.js";
 
 describe("buildCreateMarketTimes", () => {
-  it("keeps earlyBirdStart valid when the transaction is mined after submission", () => {
-    const submittedAt = 1_000_000n;
-    const minedAt = submittedAt + 8n;
-
-    const times = buildCreateMarketTimes(submittedAt, 15);
-
-    expect(times.earlyBirdStart).toBe(
-      submittedAt + MARKET_CREATION_MINING_BUFFER_SECONDS,
+  const input = {
+    closeAt: "2026-09-10T12:00",
+    eventStartsAt: "2026-09-10T12:01",
+    outcomeDeadlineAt: "2026-09-11T12:00",
+    resolutionWindowSeconds: 900,
+  };
+  it("uses UTC absolute values and anchors timeout at the outcome deadline", () => {
+    const times = buildCreateMarketTimes(input);
+    expect(times.closeAt).toBe(
+      BigInt(Date.parse("2026-09-10T12:00:00Z") / 1_000),
     );
-    expect(times.earlyBirdStart).toBeGreaterThanOrEqual(minedAt);
-    expect(times.earlyBirdStart).toBeLessThan(times.closeAt);
+    expect(times.resolutionDeadlineAt).toBe(times.outcomeDeadlineAt + 900n);
+    expect(times).toEqual(buildCreateMarketTimes(input));
   });
-
-  it("preserves a requested 15-minute duration", () => {
-    const submittedAt = 1_000_000n;
-
-    expect(buildCreateMarketTimes(submittedAt, 15).closeAt).toBe(
-      submittedAt + 15n * 60n,
-    );
-  });
-
-  it("preserves the 90-day maximum boundary", () => {
-    const submittedAt = 1_000_000n;
-
+  it("requires explicit null for an unknown start and still requires an outcome deadline", () => {
     expect(
-      buildCreateMarketTimes(submittedAt, MAX_MARKET_DURATION_MINUTES).closeAt,
-    ).toBe(submittedAt + 90n * 86_400n);
+      buildCreateMarketTimes({ ...input, eventStartsAt: null }).eventStartsAt,
+    ).toBeNull();
+    expect(() =>
+      buildCreateMarketTimes({ ...input, eventStartsAt: "" }),
+    ).toThrow();
+    expect(() =>
+      buildCreateMarketTimes({
+        ...input,
+        eventStartsAt: null,
+        outcomeDeadlineAt: "",
+      }),
+    ).toThrow();
   });
-
+  it("checks equality boundaries without adding an event or settlement waiting period", () => {
+    expect(() =>
+      buildCreateMarketTimes({ ...input, eventStartsAt: input.closeAt }),
+    ).toThrow();
+    expect(() =>
+      buildCreateMarketTimes({
+        ...input,
+        eventStartsAt: input.outcomeDeadlineAt,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      buildCreateMarketTimes({
+        ...input,
+        eventStartsAt: null,
+        outcomeDeadlineAt: input.closeAt,
+      }),
+    ).not.toThrow();
+  });
+  it("revalidates against chain time without moving the original intent", () => {
+    const times = buildCreateMarketTimes(input);
+    const original = { ...times };
+    for (const remaining of [300n, 90n * 86_400n])
+      expect(() =>
+        assertCreationTimingExecutable(times, {
+          observedAt: times.closeAt - remaining,
+          resolutionWindow: 900n,
+        }),
+      ).not.toThrow();
+    for (const remaining of [299n, 90n * 86_400n + 1n])
+      expect(() =>
+        assertCreationTimingExecutable(times, {
+          observedAt: times.closeAt - remaining,
+          resolutionWindow: 900n,
+        }),
+      ).toThrow(/重新确认/);
+    expect(() =>
+      assertCreationTimingExecutable(times, {
+        observedAt: times.closeAt - 600n,
+        resolutionWindow: 1_800n,
+      }),
+    ).toThrow(/不一致/);
+    expect(times).toEqual(original);
+  });
+  it.each([null, undefined, 899, 30 * 86_400 + 1])(
+    "requires a verified frozen window: %s",
+    (resolutionWindowSeconds) => {
+      expect(() =>
+        buildCreateMarketTimes({ ...input, resolutionWindowSeconds }),
+      ).toThrow();
+    },
+  );
   it.each([
-    MIN_MARKET_DURATION_MINUTES - 1,
-    MAX_MARKET_DURATION_MINUTES + 1,
-    15.5,
-  ])("rejects an invalid duration of %s minutes", (durationMinutes) => {
-    expect(() => buildCreateMarketTimes(1_000_000n, durationMinutes)).toThrow(
-      RangeError,
-    );
+    "",
+    "2026-02-30T12:00",
+    "2026-09-10T24:00",
+    "2026-09-10T12:00+08:00",
+  ])("rejects malformed/normalized dates: %s", (value) => {
+    expect(() => parseUtcDateTime(value, "时间")).toThrow();
   });
 });
 

@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://cpredict.example/schemas/stack-backup-v1.json",
+  "$id": "https://cpredict.example/schemas/stack-backup.json",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "evidenceClass", "chainId", "generatedAt", "sourceManifestSha256", "deploymentIdentity", "deploymentInputSha256", "postgresVersion", "dumps", "migrations", "snapshots"],
   "properties": {
-    "schemaVersion": { "const": "cpredict.stack-backup.v1" },
+    "schemaVersion": { "enum": ["cpredict.stack-backup.v1", "cpredict.stack-backup.v2"] },
     "evidenceClass": { "const": "LOCAL_STACK_BACKUP" },
     "chainId": { "const": 421614 },
     "generatedAt": { "type": "string", "format": "date-time" },
@@ -16,10 +16,14 @@
     "dumps": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["indexer", "paymaster"],
+      "required": ["indexer", "paymaster", "metadata"],
+      "dependentRequired": { "usdc-indexer": ["usdc-metadata"], "usdc-metadata": ["usdc-indexer"] },
       "properties": {
         "indexer": { "$ref": "#/$defs/fileRecord" },
-        "paymaster": { "$ref": "#/$defs/fileRecord" }
+        "paymaster": { "$ref": "#/$defs/fileRecord" },
+        "metadata": { "$ref": "#/$defs/fileRecord" },
+        "usdc-indexer": { "$ref": "#/$defs/fileRecord" },
+        "usdc-metadata": { "$ref": "#/$defs/fileRecord" }
       }
     },
     "migrations": {
@@ -30,10 +34,14 @@
     "snapshots": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["indexer", "paymaster"],
+      "required": ["indexer", "paymaster", "metadata"],
+      "dependentRequired": { "usdc-indexer": ["usdc-metadata"], "usdc-metadata": ["usdc-indexer"] },
       "properties": {
         "indexer": { "type": "object" },
-        "paymaster": { "type": "object" }
+        "paymaster": { "type": "object" },
+        "metadata": { "type": "object" },
+        "usdc-indexer": { "type": "object" },
+        "usdc-metadata": { "type": "object" }
       }
     }
   },
@@ -44,7 +52,7 @@
       "additionalProperties": false,
       "required": ["file", "bytes", "sha256"],
       "properties": {
-        "file": { "type": "string", "pattern": "^(indexer|paymaster)\\.dump$" },
+        "file": { "type": "string", "pattern": "^(indexer|paymaster|metadata|usdc-indexer|usdc-metadata)\\.dump$" },
         "bytes": { "type": "integer", "minimum": 1 },
         "sha256": { "$ref": "#/$defs/sha256" }
       }

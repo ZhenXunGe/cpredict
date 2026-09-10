@@ -12,9 +12,14 @@ const EMAIL = /^[A-Za-z0-9._+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/;
 
 export function parseProxyArgs(argv) {
   const output = {};
-  for (let index = 0; index < argv.length; index += 2) {
+  for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
-    const value = argv[index + 1];
+    if (flag === "--public-site") {
+      if (output.publicSite) throw new Error(`duplicate option ${flag}`);
+      output.publicSite = true;
+      continue;
+    }
+    const value = argv[++index];
     if (value === undefined || value.startsWith("--"))
       throw new Error(`${flag}: missing value`);
     const key = {
@@ -32,7 +37,7 @@ export function parseProxyArgs(argv) {
   return output;
 }
 
-export function validateProxyInput({ host, mode, email }) {
+export function validateProxyInput({ host, mode, email, publicSite }) {
   const normalizedHost = host.toLowerCase();
   if (!EMAIL.test(email))
     throw new Error("--email must be a valid ACME contact address");
@@ -43,7 +48,8 @@ export function validateProxyInput({ host, mode, email }) {
     if (!DOMAIN.test(normalizedHost))
       throw new Error("domain mode requires one lowercase public DNS name");
   } else throw new Error("--mode must be domain or ip");
-  return { host: normalizedHost, mode, email };
+  if (publicSite !== undefined && typeof publicSite !== "boolean") throw new Error("publicSite must be a boolean");
+  return { host: normalizedHost, mode, email, ...(publicSite ? { publicSite: true } : {}) };
 }
 
 export async function renderPublicProxy(
@@ -70,7 +76,7 @@ export async function renderPublicProxy(
   );
   const proxy = replaceAll(
     await readFile(
-      resolve(ROOT, "deploy/host/nginx/cpredict.conf.template"),
+      resolve(ROOT, `deploy/host/nginx/${value.publicSite ? "public-site" : "cpredict"}.conf.template`),
       "utf8",
     ),
     replacements,
@@ -90,7 +96,7 @@ export async function renderPublicProxy(
   return { output, files: Object.keys(files), ...value };
 }
 
-function issueScript({ host, mode, email }) {
+function issueScript({ host, mode, email, publicSite = false }) {
   const certificateArgs =
     mode === "ip"
       ? `--preferred-profile shortlived --ip-address ${host}`
@@ -114,21 +120,21 @@ if [[ $EUID -ne 0 ]]; then
   echo "run this installer as root" >&2
   exit 1
 fi
-for command in nginx certbot htpasswd systemctl install curl grep sed sort stat dirname; do
+for command in nginx certbot ${publicSite ? "" : "htpasswd "}systemctl install curl grep sed sort stat dirname; do
   command -v "$command" >/dev/null || { echo "$command is required" >&2; exit 1; }
 done
 if [[ -e /etc/nginx/sites-enabled/default ]]; then
   echo "disable the default nginx site after reviewing it; refusing to change it automatically" >&2
   exit 1
 fi
-if [[ ! -s /etc/nginx/cpredict.htpasswd ]]; then
+${publicSite ? "" : `if [[ ! -s /etc/nginx/cpredict.htpasswd ]]; then
   echo "create /etc/nginx/cpredict.htpasswd with: htpasswd -c /etc/nginx/cpredict.htpasswd <user>" >&2
   exit 1
 fi
 if [[ $(stat -c '%a' /etc/nginx/cpredict.htpasswd) != 640 && $(stat -c '%a' /etc/nginx/cpredict.htpasswd) != 600 ]]; then
   echo "/etc/nginx/cpredict.htpasswd must use mode 0600 or 0640" >&2
   exit 1
-fi
+fi`}
 ${versionCheck}
 script_dir="$(cd -- "$(dirname -- "\${BASH_SOURCE[0]}")" && pwd)"
 install -d -m 0755 /var/www/cpredict-acme
@@ -154,10 +160,16 @@ else
 fi
 status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
   --connect-to '${host}:443:127.0.0.1:443' "https://${host}/readyz")"
-if [[ "$status" != 401 ]]; then
-  echo "expected authenticated edge to return 401 without credentials; got $status" >&2
+if [[ "$status" != ${publicSite ? "404" : "401"} ]]; then
+  echo "expected ${publicSite ? "private readiness route to return 404" : "authenticated edge to return 401 without credentials"}; got $status" >&2
   exit 1
 fi
+${publicSite ? `status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \\
+  --connect-to '${host}:443:127.0.0.1:443' "https://${host}/site-config.json")"
+if [[ "$status" != 200 ]]; then
+  echo "expected the public site configuration without Basic Auth; got $status" >&2
+  exit 1
+fi` : ""}
 echo "Cpredict public proxy installed for https://${host}"
 `;
 }

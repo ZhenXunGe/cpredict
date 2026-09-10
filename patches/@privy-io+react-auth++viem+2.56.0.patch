@@ -1,0 +1,24 @@
+diff --git a/node_modules/@privy-io/react-auth/node_modules/viem/_types/tempo/Zone.d.ts b/node_modules/@privy-io/react-auth/node_modules/viem/_types/tempo/Zone.d.ts
+index b8d6ac8..ab0839b 100644
+--- a/node_modules/@privy-io/react-auth/node_modules/viem/_types/tempo/Zone.d.ts
++++ b/node_modules/@privy-io/react-auth/node_modules/viem/_types/tempo/Zone.d.ts
+@@ -1,4 +1,10 @@
+ import type { Chain } from '../types/chain.js';
++import type { chainConfig } from './chainConfig.js';
++type ZoneChainConfig<config extends from.Parameters> = typeof chainConfig & {
++    nativeCurrency: { name: string; symbol: string; decimals: number };
++    rpcUrls: { default: { http: string[] } };
++    supportsTransactionReplacementDetection: boolean;
++} & config;
+ /** Defines a Tempo Zone chain. */
+ export declare function from<const config extends from.Parameters>(config: config): (Chain<undefined> extends infer T_1 ? { [K_1 in keyof T_1 as K_1 extends "blockTime" | "nativeCurrency" | "rpcUrls" | "supportsTransactionReplacementDetection" | "extendSchema" | "formatters" | "prepareTransactionRequest" | "serializers" | "verifyHash" | keyof config ? ({
+     nativeCurrency: {
+@@ -511,7 +517,7 @@ export declare function from<const config extends from.Parameters>(config: confi
+         readonly transaction: import("../index.js").SerializeTransactionFn;
+     };
+     verifyHash: (client: import("../index.js").Client, parameters: import("../index.js").VerifyHashActionParameters) => Promise<boolean>;
+-} & config)[K_1] extends void ? never : K_1 : K_1]: K_1 extends keyof U ? U[K_1] : T_1[K_1]; } : never) & {
++} & config)[K_1] extends void ? never : K_1 : K_1]: K_1 extends keyof ZoneChainConfig<config> ? ZoneChainConfig<config>[K_1] : T_1[K_1]; } : never) & {
+     nativeCurrency: {
+         name: string;
+         symbol: string;

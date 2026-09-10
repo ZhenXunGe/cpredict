@@ -83,11 +83,6 @@ const PROTOCOL_ERROR_BY_SELECTOR = {
     kind: "authorization",
     message: "当前钱包不是该市场 Creator，无法执行此操作。",
   },
-  "0xe8327997": {
-    name: "WinningOutcomeHasNoSupply",
-    kind: "configuration",
-    message: "所选获胜结果没有持仓份额，不能结算到该结果。请改选有持仓的结果。",
-  },
 } as const satisfies Record<string, ProtocolErrorCopy>;
 
 const PROTOCOL_ERROR_BY_NAME: Record<string, ProtocolErrorCopy> =

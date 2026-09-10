@@ -1,0 +1,178 @@
+{
+  "services": {
+    "migrate-app": {
+      "image": "postgres:17.10-bookworm@sha256:9b18b78397054fce88a9552e9d5a3ad5bb7fd258c5b3cc1c5028e46373d6ea8f",
+      "restart": "no",
+      "depends_on": {
+        "migrate-indexer": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "environment": {
+        "PGHOST": "postgres",
+        "PGDATABASE": "cpredict_indexer",
+        "PGUSER": "cpredict_migrator",
+        "PGPASSWORD": "${CPREDICT_STACK_MIGRATOR_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_INDEXER_PASSWORD": "${CPREDICT_STACK_INDEXER_PASSWORD:?set in .env.compose.local}",
+        "CPREDICT_STACK_BACKUP_PASSWORD": "${CPREDICT_STACK_BACKUP_PASSWORD:?set in .env.compose.local}"
+      },
+      "volumes": [
+        "./offchain/app-service/migrations:/migrations:ro",
+        "./deploy/compose/postgres/run-migrations.sh:/usr/local/bin/run-cpredict-migrations:ro"
+      ],
+      "entrypoint": [
+        "bash",
+        "/usr/local/bin/run-cpredict-migrations",
+        "app"
+      ],
+      "user": "999:999",
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=16m"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "networks": [
+        "data"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "0.5",
+            "memory": "256M"
+          }
+        }
+      }
+    },
+    "app-service": {
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "app-service",
+        "args": {
+          "CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set by stack orchestrator}"
+        }
+      },
+      "restart": "unless-stopped",
+      "stop_grace_period": "15s",
+      "depends_on": {
+        "migrate-app": {
+          "condition": "service_completed_successfully"
+        }
+      },
+      "environment": {
+        "CPREDICT_APP_HOST": "0.0.0.0",
+        "CPREDICT_APP_PORT": "8795",
+        "CPREDICT_APP_CONTAINER_MODE": "true",
+        "CPREDICT_APP_CONFIG_FILE": "/run/cpredict/application.json",
+        "CPREDICT_APP_DATABASE_URL": "postgresql://cpredict_indexer:${CPREDICT_STACK_INDEXER_PASSWORD}@postgres/cpredict_indexer?sslmode=disable",
+        "CPREDICT_APP_METADATA_URL": "http://metadata:8793"
+      },
+      "ports": [
+        "127.0.0.1:${CPREDICT_STACK_APP_PORT:-8795}:8795"
+      ],
+      "read_only": true,
+      "tmpfs": [
+        "/tmp:rw,noexec,nosuid,size=16m"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "cap_drop": [
+        "ALL"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8795/readyz').then(r=>{if(!r.ok)process.exit(1)})"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 12,
+        "start_period": "15s"
+      },
+      "networks": [
+        "app",
+        "data"
+      ],
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "1.0",
+            "memory": "512M"
+          }
+        }
+      },
+      "logging": {
+        "driver": "json-file",
+        "options": {
+          "max-size": "10m",
+          "max-file": "3"
+        }
+      },
+      "env_file": [
+        {
+          "path": "${CPREDICT_STACK_CTUSD_APP_ENV_FILE:?configure public-site stack input}",
+          "required": true,
+          "format": "raw"
+        }
+      ],
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${CPREDICT_STACK_CTUSD_CONFIG_FILE:?configure public-site stack input}",
+          "target": "/run/cpredict/application.json",
+          "read_only": true
+        }
+      ]
+    },
+    "indexer": {
+      "environment": {
+        "CPREDICT_INDEXER_PUBLIC_CONFIG_FILE": "/run/cpredict/application.json",
+        "CPREDICT_INDEXER_METADATA_URL": "http://metadata:8793"
+      },
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${CPREDICT_STACK_CTUSD_CONFIG_FILE:?configure public-site stack input}",
+          "target": "/run/cpredict/application.json",
+          "read_only": true
+        }
+      ],
+      "depends_on": {
+        "migrate-app": {
+          "condition": "service_completed_successfully"
+        }
+      }
+    },
+    "metadata": {
+      "environment": {
+        "CPREDICT_METADATA_RPC_URL": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}"
+      }
+    },
+    "web-demo": {
+      "build": {
+        "target": "public-site"
+      },
+      "depends_on": {
+        "app-service": {
+          "condition": "service_healthy"
+        }
+      },
+      "volumes": [
+        {
+          "type": "bind",
+          "source": "${CPREDICT_STACK_SITE_CONFIG_FILE:?configure public-site stack input}",
+          "target": "/usr/share/nginx/html/site-config.json",
+          "read_only": true
+        }
+      ]
+    }
+  }
+}
