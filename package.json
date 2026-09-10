@@ -8,6 +8,19 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "site:dev": "vite --config examples/user-site/vite.config.ts",
+    "site:build": "npm run site:check && vite build --config examples/user-site/vite.config.ts",
+    "site:preview": "vite preview --config examples/user-site/vite.config.ts",
+    "site:check": "tsc -p examples/user-site/tsconfig.json",
+    "site:check:dependencies": "tsc -p examples/user-site/tsconfig.json --skipLibCheck false",
+    "site:test:dependencies": "node --test scripts/public-site/dependency-compatibility.test.mjs",
+    "site:test:postgres": "node scripts/public-site/test-postgres.mjs",
+    "presite:test:kernel-fork": "npm run build:offchain && .tools/foundry/bin/forge build test/mocks/KernelERC1155Fixture.sol test/mocks/MockUSDC.sol --offline",
+    "site:test:kernel-fork": "node scripts/public-site/test-kernel-fork.mjs",
+    "site:maintain": "node dist/offchain/app-service/src/maintenance.js",
+    "site:contracts": "node scripts/public-site/contracts.mjs",
+    "site:contracts:check": "node scripts/public-site/contracts.mjs --check",
+    "start:app-service": "node dist/offchain/app-service/src/main.js",
     "demo:validators": "node scripts/generate-web-demo-validators.mjs",
     "demo:validators:check": "node scripts/generate-web-demo-validators.mjs --check",
     "demo:dev": "npm run demo:validators:check && vite --config examples/web-demo/vite.config.ts",
@@ -76,15 +89,38 @@
   "dependencies": {
     "@fastify/helmet": "13.1.0",
     "@fastify/rate-limit": "11.2.0",
-    "fastify": "5.10.0",
+    "@privy-io/react-auth": "3.40.0",
+    "@radix-ui/react-dialog": "1.1.23",
+    "@solana-program/memo": "0.8.0",
+    "@solana-program/system": "0.8.0",
+    "@solana-program/token": "0.6.0",
+    "@solana/kit": "3.0.3",
+    "@tanstack/react-query": "5.102.8",
+    "@zerodev/ecdsa-validator": "5.4.5",
+    "@zerodev/sdk": "5.5.10",
+    "fastify": "5.12.3",
+    "jose": "6.2.12",
+    "lucide-react": "1.43.0",
+    "ox": "0.8.9",
     "pino": "10.3.1",
     "postgres": "3.4.9",
     "prom-client": "15.1.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "react-router-dom": "7.18.3",
     "viem": "2.55.8",
     "ws": "8.21.0",
     "zod": "4.4.3"
+  },
+  "overrides": {
+    "@walletconnect/ethereum-provider@>=2.21.1 <=2.22.4": "2.22.4",
+    "uuid@<=11.1.1": "11.1.1",
+    "axios@^1.0.0": "1.18.0",
+    "fast-uri@^3.0.0": "3.1.6",
+    "fast-uri@^4.0.0": "4.1.3",
+    "ws@^8.0.0": "8.21.0",
+    "vite": "8.2.1",
+    "vitest": "4.1.11"
   },
   "devDependencies": {
     "@types/node": "22.20.1",
@@ -95,8 +131,9 @@
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "playwright": "1.63.0-alpha-2026-08-31",
+    "prettier": "3.6.2",
     "typescript": "7.0.2",
     "vite": "8.2.1",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   }
 }

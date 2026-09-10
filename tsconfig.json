@@ -21,5 +21,6 @@
     "offchain/**/*.tsx",
     "examples/**/*.ts",
     "examples/**/*.tsx"
-  ]
+  ],
+  "exclude": ["examples/user-site"]
 }

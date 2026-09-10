@@ -40,6 +40,7 @@ suite("PostgresEventStore integration", () => {
       "003_read_api_indexes.sql",
       "004_market_metadata.sql",
       "005_activity_catalog.sql",
+      "006_financial_facts.sql",
     ]) {
       const migration = await readFile(
         new URL(`../migrations/${name}`, import.meta.url),
@@ -312,6 +313,8 @@ suite("PostgresEventStore integration", () => {
         "utf8",
       );
       await migrationSql.unsafe(activityCatalogMigration);
+      await expect(legacyStore.ready()).rejects.toThrow("financial fill migration 006 is not applied");
+      await migrationSql.unsafe(await readFile(new URL("../migrations/006_financial_facts.sql", import.meta.url), "utf8"));
       await expect(legacyStore.ready()).resolves.toBeUndefined();
       await migrationSql`ALTER TABLE markets DROP COLUMN outcome_deadline_at`;
       await expect(legacyStore.ready()).rejects.toThrow(

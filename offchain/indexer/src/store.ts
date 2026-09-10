@@ -92,6 +92,9 @@ export interface FillView {
   seller: Address;
   filledUnits: bigint;
   gross: bigint;
+  sellerProceeds: bigint | null;
+  platformFee: bigint | null;
+  creatorFee: bigint | null;
   blockNumber: bigint;
   confirmationStatus: ConfirmationStatus;
 }
