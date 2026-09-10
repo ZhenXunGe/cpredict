@@ -34,6 +34,23 @@ server {
     proxy_read_timeout 5s;
   }
 
+  # ZeroDev's callback is a deny-by-default policy decision, not an authenticated
+  # transaction submission route. Keep the existing demo at the same root URL.
+  location = /ctusd/app/v1/sponsorship/policy {
+    limit_except POST { deny all; }
+    client_max_body_size 128k;
+    resolver 127.0.0.11 valid=10s ipv6=off;
+    set $ctusd_policy_upstream app-service:8795;
+    proxy_pass http://$ctusd_policy_upstream/v1/sponsorship/policy;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header Authorization "";
+    proxy_set_header X-Forwarded-For "";
+    proxy_connect_timeout 2s;
+    proxy_read_timeout 4s;
+    proxy_send_timeout 4s;
+  }
+
   location = /rpc {
     limit_except POST { deny all; }
     client_max_body_size 64k;

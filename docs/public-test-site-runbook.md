@@ -87,6 +87,8 @@ npm run site:maintain -- validate-site runtime/public-site/ctusd.runtime.json --
 
 ZeroDev 控制台为各项目设置独立 Project Gas Policy，核对原生 ETH 的 Amount 上限与 7 天周期，以及其窗口起点；供应商窗口不自动假定与本地自然周对齐。Custom Policy 的回调路径为当前环境 app 服务下的 `/v1/sponsorship/policy`，需使用已确认的 HTTPS 域名；关闭 Policy Pass on Error，回调返回 AND。URL 尚未确定前不启用公开赞助。[Gas Policies](https://docs.zerodev.app/api-and-toolings/infrastructure/gas-policies)、[Custom Gas Policies](https://docs.zerodev.app/api-and-toolings/infrastructure/custom-gas-policies)。
 
+沿用旧公网入口及其 Basic Auth 时，外层 Nginx 和原 Compose 网关均需增加精确路径 `/ctusd/app/v1/sponsorship/policy` 的 POST 代理；仅该路径免 Basic Auth，根页面和其他鉴权规则沿用现有设置。部署模板已包含此规则。先启用错误即拒绝的 webhook，再保存链预算，避免限额已生效但回调尚未启用的间隙。使用空请求及未登记操作验证公网返回 HTTP 200、`proceed:false`、`logicalOperator:"and"`；403、401、502 或网页 HTML 都不算回调连通。后台 Week 选项只证明供应商周周期，上海周一重置与退出预留仍由本地预算执行；不得声称后台周窗口已经与上海时间对齐。
+
 只读凭据与 RPC 检查可重复执行，每次使用新的输出文件名：
 
 ```sh
