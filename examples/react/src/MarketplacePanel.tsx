@@ -15,6 +15,7 @@ import {
   authorizationRequired,
   authorizeThenExecute,
 } from "./authorizationFlow.js";
+import { shouldFoldListingBeforeClose } from "./marketplacePresentation.js";
 import { transactionDeadline, unixTimeSeconds } from "./transactionTiming.js";
 
 const LISTING_LIFETIME_SECONDS = 24n * 60n * 60n;
@@ -22,6 +23,7 @@ const LISTING_LIFETIME_SECONDS = 24n * 60n * 60n;
 export interface MarketplaceListingSelection {
   listingId: Hex;
   vault: Address;
+  seller?: Address;
   outcomeId: bigint;
   remainingUnits: bigint;
   unitPrice: bigint;
@@ -52,6 +54,7 @@ function selectionFromSnapshot(
   return {
     listingId: listing.listingId,
     vault: listing.vault,
+    seller: listing.seller,
     outcomeId: listing.outcomeId,
     remainingUnits: listing.remainingUnits,
     unitPrice: listing.unitPrice,
@@ -72,7 +75,12 @@ export function MarketplacePanel(props: {
   paymentToken: Address;
   paymentTokenSymbol?: string;
   vault: Address;
+  creator?: Address;
+  wallet?: Address | null;
   marketplace: Address;
+  observedAt: bigint;
+  closeAt: bigint;
+  newExposureBlockReason?: string | null;
   paymentTokenAllowance?: bigint | null;
   shareEscrowApproved?: boolean | null;
   selectedListing?: MarketplaceListingSelection | null;
@@ -132,6 +140,8 @@ export function MarketplacePanel(props: {
   function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     void run(async () => {
+      if (props.newExposureBlockReason)
+        throw new Error(props.newExposureBlockReason);
       const outcomeId = BigInt(sellOutcomeId);
       const amount = parseShareUnits(sellAmount);
       const unitPrice = parseUsdc(sellUnitPrice);
@@ -152,6 +162,7 @@ export function MarketplacePanel(props: {
       const next = {
         listingId: result.listingId,
         vault: props.vault,
+        ...(props.wallet == null ? {} : { seller: props.wallet }),
         outcomeId,
         remainingUnits: amount,
         unitPrice,
@@ -165,6 +176,8 @@ export function MarketplacePanel(props: {
   }
 
   async function freshFillQuote() {
+    if (props.newExposureBlockReason)
+      throw new Error(props.newExposureBlockReason);
     if (selectedListing === null)
       throw new Error("请先选择一笔活跃挂单再买入。");
     const desiredUnits = parseShareUnits(fillAmount);
@@ -255,16 +268,39 @@ export function MarketplacePanel(props: {
   const fillAuthorizationRequired =
     draftGross === null ||
     authorizationRequired(paymentTokenAllowance, draftGross);
+  let draftSellUnitPrice: bigint | null = null;
+  try {
+    draftSellUnitPrice = parseUsdc(sellUnitPrice);
+  } catch {
+    draftSellUnitPrice = null;
+  }
+  const sellPriceWillBeFolded =
+    draftSellUnitPrice !== null &&
+    shouldFoldListingBeforeClose(
+      draftSellUnitPrice,
+      props.observedAt,
+      props.closeAt,
+    );
+  const selectedListingAbovePrimary =
+    selectedListing !== null &&
+    shouldFoldListingBeforeClose(
+      selectedListing.unitPrice,
+      props.observedAt,
+      props.closeAt,
+    );
 
   return (
     <section aria-labelledby="marketplace-title">
       <h2 id="marketplace-title">C2C 持仓转让</h2>
       <p role="note">C2C 成交不改变奖池或最终赔付。</p>
+      {props.newExposureBlockReason ? (
+        <p role="alert">{props.newExposureBlockReason}</p>
+      ) : null}
 
       <div className="marketplace-section">
         <h3>创建卖单</h3>
         <button
-          disabled={state.pending}
+          disabled={state.pending || Boolean(props.newExposureBlockReason)}
           type="button"
           onClick={() => void run(approveShareEscrow)}
         >
@@ -292,7 +328,18 @@ export function MarketplacePanel(props: {
               onChange={(event) => setSellUnitPrice(event.currentTarget.value)}
             />
           </label>
-          <button disabled={state.pending} type="submit">
+          {props.observedAt < props.closeAt ? (
+            <p role={sellPriceWillBeFolded ? "alert" : "note"}>
+              封盘前高于一级固定价 1 {paymentTokenSymbol}
+              /份的挂单默认折叠，买家仍可展开查看和购买。
+            </p>
+          ) : (
+            <p role="note">市场已封盘，终局前 C2C 可以自由定价。</p>
+          )}
+          <button
+            disabled={state.pending || Boolean(props.newExposureBlockReason)}
+            type="submit"
+          >
             {shareEscrowApproved ? "创建挂单" : "授权份额托管并创建挂单"}
           </button>
         </form>
@@ -300,6 +347,7 @@ export function MarketplacePanel(props: {
 
       <div
         className="marketplace-section"
+        role="region"
         aria-labelledby="selected-listing-title"
       >
         <h3 id="selected-listing-title">已选挂单</h3>
@@ -308,6 +356,18 @@ export function MarketplacePanel(props: {
         ) : (
           <>
             <dl className="marketplace-listing-summary">
+              <div>
+                <dt>卖家</dt>
+                <dd className="mono">
+                  {selectedListing.seller ?? "读取链上挂单后确认"}
+                </dd>
+                {selectedListing.seller !== undefined &&
+                props.creator !== undefined &&
+                selectedListing.seller.toLowerCase() ===
+                  props.creator.toLowerCase() ? (
+                  <dd>creator 本人</dd>
+                ) : null}
+              </div>
               <div>
                 <dt>挂单 ID</dt>
                 <dd className="mono" data-testid="selected-listing-id">
@@ -329,6 +389,13 @@ export function MarketplacePanel(props: {
                 <dd>{formatShareUnits(selectedListing.remainingUnits)} 份</dd>
               </div>
             </dl>
+            {selectedListingAbovePrimary ? (
+              <p role="alert">
+                该挂单高于一级固定价 1 {paymentTokenSymbol}
+                /份，仍可按挂单价格购买。
+                一级购买可能因上限或暂停等原因不可用，请先核对市场页的购买条件。
+              </p>
+            ) : null}
             <label>
               买入份数{" "}
               <input
@@ -341,14 +408,14 @@ export function MarketplacePanel(props: {
               {paymentTokenSymbol}
             </p>
             <button
-              disabled={state.pending}
+              disabled={state.pending || Boolean(props.newExposureBlockReason)}
               type="button"
               onClick={() => void run(approveFillPayment)}
             >
               精确授权 {paymentTokenSymbol} 用于成交
             </button>
             <button
-              disabled={state.pending}
+              disabled={state.pending || Boolean(props.newExposureBlockReason)}
               type="button"
               onClick={() => void run(fill)}
             >

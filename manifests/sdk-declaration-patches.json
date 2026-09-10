@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "path": "node_modules/@privy-io/react-auth",
+      "name": "@privy-io/react-auth",
+      "version": "3.40.0",
+      "integrity": "sha512-nj80Yms88E7cPDH9KjqI1VA5yAi3/Elwntef32lv5faVimHOZr97jNKGFxQqWtx+YwdKDbdMh1hHmttEtY6rDQ==",
+      "source": "https://registry.npmjs.org/@privy-io/react-auth/-/react-auth-3.40.0.tgz",
+      "runtimeSha256": "30f4e5e69eaaeaf16972f3959690cf6c9d52abe42f9ac0a7109b06e02c707211",
+      "patch": "patches/@privy-io+react-auth+3.40.0.patch",
+      "files": [
+        {
+          "path": "dist/dts/types-C8c3jEOh.d.ts",
+          "originalSha256": "089e8d3cf563c6c3c32a1099004d64c076940fb457986de0d158bdfe0f3622bc",
+          "patchedSha256": "87bdf27406151ff9ecde66128e2a833e36854a223519e1edff1a88e7697b95e7"
+        },
+        {
+          "path": "dist/dts/types-C8c3jEOh.d.mts",
+          "originalSha256": "089e8d3cf563c6c3c32a1099004d64c076940fb457986de0d158bdfe0f3622bc",
+          "patchedSha256": "87bdf27406151ff9ecde66128e2a833e36854a223519e1edff1a88e7697b95e7"
+        }
+      ],
+      "sources": [
+        {
+          "path": "dist/esm/context-MM1cZbHj.mjs",
+          "sha256": "339afe858f00f9a1ff23faf7ddcbc4e74faf05de08cdeb460c10d6051dc270ec"
+        },
+        {
+          "path": "dist/esm/ModalFooter-DfVgQI26.mjs",
+          "sha256": "8161a0492e1c08777ef620efa31842a17cf49ff3dbb78fa6d723dd3e7d0ea62d"
+        },
+        {
+          "path": "dist/esm/InjectedWalletIcon-DLcYOGDj.mjs",
+          "sha256": "72f92271bfe9ab830b7272e0629f7032b810eeeb041bbd83754efd09c5982b2f"
+        },
+        {
+          "path": "dist/esm/getEmbeddedConnectedWallet-Ba6LFHzY.mjs",
+          "sha256": "d0cc361d4c31a2fb7f465b13f6c80f67c43ab78a345e073c2dbf147a7bd7dbd2"
+        },
+        {
+          "path": "dist/esm/index-rkoxGjIC.mjs",
+          "sha256": "a5ef58348a859960647e4fcf02ce63a65dc2103a21dcfeda9c651eaa4d5297d1"
+        },
+        {
+          "path": "dist/esm/useWallets-BMGs2cU3.mjs",
+          "sha256": "64ebe0d7c4f90d8840ac914398406ef255746affeb4531cd168be45b2fa0a7e2"
+        }
+      ],
+      "patchSha256": "002cd7380fc495684d9bddeabdfbcdc51f9d0437c37d5e350895cef66f725ffd"
+    },
+    {
+      "path": "node_modules/@privy-io/react-auth/node_modules/@privy-io/js-sdk-core",
+      "name": "@privy-io/js-sdk-core",
+      "version": "0.73.0",
+      "integrity": "sha512-mrwJB6pi+B/LyLDaSAYQMAOWq0UPL1H2xXRYKw+bhzS0Xv7RbuIdDrZkWJNPn7dmOoDX5R5TKmS/EaJPu5FzsQ==",
+      "source": "https://registry.npmjs.org/@privy-io/js-sdk-core/-/js-sdk-core-0.73.0.tgz",
+      "runtimeSha256": "8b824b37fbaeaef7b944e2cb314d26152b3db19ce6c4e59283fdd3e1f2340f21",
+      "patch": "patches/@privy-io+react-auth++@privy-io+js-sdk-core+0.73.0.patch",
+      "files": [
+        {
+          "path": "dist/dts/index.d.ts",
+          "originalSha256": "f2bb2e7679037bb9ff9bd81bcddb3991ab1427a02ec3ddddc28f4ce552dd97af",
+          "patchedSha256": "c35c7d47e19713a4c7fde44ac42ede2cd70daf7cb1268c803f1c59b5ad2c2463"
+        },
+        {
+          "path": "dist/dts/index.d.mts",
+          "originalSha256": "f2bb2e7679037bb9ff9bd81bcddb3991ab1427a02ec3ddddc28f4ce552dd97af",
+          "patchedSha256": "c35c7d47e19713a4c7fde44ac42ede2cd70daf7cb1268c803f1c59b5ad2c2463"
+        }
+      ],
+      "sources": [
+        {
+          "path": "dist/esm/index.mjs",
+          "sha256": "25705a2358a5d95160dd00d73dcfef1c616cf56485ffe70b23452f67e0400af8"
+        }
+      ],
+      "patchSha256": "03e09380a4a896a871a6ae392e75f2fd5769c1c07e057f6b5942f88a4602ca70"
+    },
+    {
+      "path": "node_modules/@privy-io/react-auth/node_modules/viem",
+      "name": "viem",
+      "version": "2.56.0",
+      "integrity": "sha512-JmkgIk4jN+im4oguLxwPv19pwSaGH9kcGSq25Ilm55106ULBBMNR3eWKKA0wZoeyLPSHIiOwZ4sGceEYEIq7LA==",
+      "source": "https://registry.npmjs.org/viem/-/viem-2.56.0.tgz",
+      "runtimeSha256": "736eeeb5f5e53a6d24aa04123805aaacc748db8b03c3c5abdf1c38b8d9984539",
+      "patch": "patches/@privy-io+react-auth++viem+2.56.0.patch",
+      "files": [
+        {
+          "path": "_types/tempo/Zone.d.ts",
+          "originalSha256": "1301a230770b2f29ae32ffb6b18fd20c562aa5445bdb7d1e4f5f172588b9281a",
+          "patchedSha256": "d4d3fc75297ed126d58e3ce0b772a3eeeb3f053ae4c5049e3fffce22384b611d"
+        }
+      ],
+      "sources": [
+        {
+          "path": "tempo/Zone.ts",
+          "sha256": "4f11565d1b54cb5fd4c8b87d08a95b50f004a730bf1e63ec5da136e6eeefa19f"
+        },
+        {
+          "path": "utils/chain/defineChain.ts",
+          "sha256": "ece94353b8cce7cecc7716a03c4a0c5fd75bff47ab7ca9cbd41fdf6367079739"
+        },
+        {
+          "path": "types/utils.ts",
+          "sha256": "912d3e5298a83fb96f1046b43c2b09b37087ad9e08d71d90dc58e768aeccb098"
+        }
+      ],
+      "patchSha256": "e03c494da7af4211e8f5f5e9e44ef11130c43c6963146b747bf11b40827fc7b0"
+    },
+    {
+      "path": "node_modules/x402",
+      "name": "x402",
+      "version": "0.7.3",
+      "integrity": "sha512-8CIZsdMTOn52PjMH/ErVke9ebeZ7ErwiZ5FL3tN3Wny7Ynxs3LkuB/0q7IoccRLdVXA7f2lueYBJ2iDrElhXnA==",
+      "source": "https://registry.npmjs.org/x402/-/x402-0.7.3.tgz",
+      "runtimeSha256": "d0bc3e2662fb2693e99122038c0e5befa2f4f6cf3bf84e7531248dfbb425ec42",
+      "patch": "patches/x402+0.7.3.patch",
+      "files": [
+        {
+          "path": "dist/esm/types/index.d.mts",
+          "originalSha256": "57d1ce34db4583e0ed5fa54a0475ec68d1084a787611486fadaa7ac8442169d7",
+          "patchedSha256": "96598cb4c5543a346fd99cc4bee19c3ecc1ede0c49e0189e9c0ebd8853c409a4"
+        },
+        {
+          "path": "dist/cjs/types/index.d.ts",
+          "originalSha256": "15593fc8649c9caddad2f93230619774e2cc365bbdbe95fb9759bb968284edbb",
+          "patchedSha256": "e464cc46a5edffe75e1430a0c1e8be05b80903c0ee582d3d4ef1aa3414b6f5ca"
+        }
+      ],
+      "sources": [
+        {
+          "path": "dist/esm/config-CFBSAuxW.d.mts",
+          "sha256": "bf2877bf031a42cefb1eaaf50a4eea3359ba918fc21e8cceee79726d54faa0f8"
+        },
+        {
+          "path": "dist/esm/wallet-h2_C4cJt.d.mts",
+          "sha256": "d984422049f59be16326dfe811a66520892038f25cf1c6bd0950c71c905e1fe1"
+        },
+        {
+          "path": "dist/esm/types/index.mjs",
+          "sha256": "e790d6ce0700eb8a04115beb2d601ec0c722df0f71bf80be480bbcb70ec52c3f"
+        }
+      ],
+      "patchSha256": "eda26421ddaf254f037d50e488bfde83c7aec7753c49b89347b62bd6f2181cb4"
+    }
+  ]
+}

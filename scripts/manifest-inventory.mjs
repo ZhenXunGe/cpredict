@@ -2,13 +2,15 @@ import { readdir } from "node:fs/promises";
 import { extname, join, relative } from "node:path";
 
 const recursiveInventory = [
+  ["patches", [".patch", ".md"]],
+  ["manifests/npm-licenses", [".txt"]],
   ["src", [".sol"]],
   ["test", [".sol"]],
   ["script", [".sol"]],
   ["offchain", [".ts", ".tsx", ".sql", ".md", ".json"]],
   [
     "examples",
-    [".ts", ".tsx", ".js", ".md", ".conf", ".css", ".html", ".json"],
+    [".ts", ".tsx", ".js", ".md", ".conf", ".css", ".html", ".json", ".svg"],
   ],
   ["scripts", [".py", ".sh", ".mjs", ".yaml"]],
   ["load", [".js", ".json", ".mjs", ".sh", ".md"]],
@@ -27,6 +29,8 @@ const explicitInventory = [
   ".env.example",
   ".env.compose.example",
   "compose.yaml",
+  "compose.public-site.yaml",
+  "compose.usdc.yaml",
   "deploy/compose/Dockerfile.offchain",
   "deploy/compose/Dockerfile.demo",
   "foundry.toml",
@@ -62,11 +66,19 @@ const explicitInventory = [
   "manifests/container-images.lock.json",
   "manifests/sbom.spdx.json",
   "manifests/licenses.json",
+  "manifests/npm-license-evidence.json",
+  "manifests/sdk-declaration-patches.json",
   "manifests/third-party-notices.md",
   "docs/zh/00-delivery-status.md",
   "docs/zh/13-compose-runtime-operations.md",
   "docs/zh/14-single-host-deployment-runbook.md",
   "docs/zh/15-reverse-tunnel-deployment-runbook.md",
+  "docs/public-test-site-contract.md",
+  "docs/public-test-site-runbook.md",
+  "docs/public-test-site-acceptance.md",
+  "docs/public-test-site-remaining.md",
+  "docs/public-test-site-license-review.md",
+  "generated/public-site/contracts.json",
 ];
 
 const excludedInventoryPaths = new Set([

@@ -322,7 +322,8 @@ contract MarketFactoryV1 is ReentrancyGuard {
             outcomeCount: params.outcomeCount,
             createdAt: block.timestamp.toUint64(),
             closeAt: params.closeAt,
-            earlyBirdStart: params.earlyBirdStart,
+            eventStartsAt: params.eventStartsAt,
+            outcomeDeadlineAt: params.outcomeDeadlineAt,
             resolutionWindow: resolutionWindow,
             creatorTreasury: params.creatorTreasury,
             deploymentMode: params.deploymentMode,
@@ -355,9 +356,13 @@ contract MarketFactoryV1 is ReentrancyGuard {
         if (
             params.closeAt < block.timestamp + 5 minutes
                 || params.closeAt > block.timestamp + 90 days
-                || params.earlyBirdStart < block.timestamp
-                || params.earlyBirdStart >= params.closeAt
         ) revert InvalidConfiguration("market.times");
+        if (
+            params.outcomeDeadlineAt < params.closeAt
+                || (params.eventStartsAt != 0
+                    && (params.eventStartsAt <= params.closeAt
+                        || params.eventStartsAt > params.outcomeDeadlineAt))
+        ) revert InvalidConfiguration("market.eventTimes");
         if ((params.featureFlags & ~SUPPORTED_FEATURE_FLAGS) != 0) {
             revert UnsupportedFeatureFlags(params.featureFlags);
         }

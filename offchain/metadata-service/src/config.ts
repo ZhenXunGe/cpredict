@@ -27,6 +27,8 @@ const schema = z
       "silent",
     ]),
     CPREDICT_METADATA_CHAIN_ID: z.literal("421614"),
+    CPREDICT_METADATA_TRUSTED_PROXIES: z.string().default("").transform(v=>v?v.split(",").map(s=>s.trim()):[]).pipe(z.array(z.union([z.ipv4(),z.ipv6()])).max(8)),
+    CPREDICT_METADATA_RPC_URL: z.string().url().refine(isSecurePublicUrl).optional(),
     CPREDICT_METADATA_FACTORY_ADDRESS: address,
     CPREDICT_METADATA_PUBLIC_BASE_URL: z
       .string()
@@ -67,11 +69,13 @@ const schema = z
   });
 
 export interface MetadataServiceConfig {
+  trustedProxies?: string[];
   host: "127.0.0.1" | "::1" | "0.0.0.0" | "::";
   containerMode: boolean;
   port: number;
   logLevel: z.infer<(typeof schema)["shape"]["CPREDICT_METADATA_LOG_LEVEL"]>;
   chainId: 421_614;
+  rpcUrl?: string | undefined;
   factory: Address;
   publicBaseUrl: string;
   databaseUrl: string;
@@ -93,6 +97,8 @@ export function parseMetadataServiceConfig(
     port: parsed.CPREDICT_METADATA_PORT,
     logLevel: parsed.CPREDICT_METADATA_LOG_LEVEL,
     chainId: 421_614,
+    trustedProxies: parsed.CPREDICT_METADATA_TRUSTED_PROXIES,
+    rpcUrl: parsed.CPREDICT_METADATA_RPC_URL,
     factory: parsed.CPREDICT_METADATA_FACTORY_ADDRESS,
     publicBaseUrl: parsed.CPREDICT_METADATA_PUBLIC_BASE_URL,
     databaseUrl: parsed.CPREDICT_METADATA_DATABASE_URL,

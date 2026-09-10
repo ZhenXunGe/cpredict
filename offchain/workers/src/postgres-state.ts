@@ -39,7 +39,7 @@ export class PostgresTerminalWorkerState implements TerminalWorkerState {
       INSERT INTO terminal_worker_attempts (chain_id, market, last_attempt_block, results)
       VALUES (
         ${this.chainId}, ${market.toLowerCase()}, ${blockNumber.toString()},
-        ${JSON.stringify(serialized)}
+        ${this.sql.json(serialized)}
       )
       ON CONFLICT (chain_id, market) DO UPDATE SET
         last_attempt_block = EXCLUDED.last_attempt_block,

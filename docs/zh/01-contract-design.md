@@ -42,28 +42,33 @@ Factory 部署后默认不可创建市场。Governance 必须在 marketplace、G
 
 ## 3. 状态机
 
-| 状态                               | 允许                                                    | 禁止                 |
-| ---------------------------------- | ------------------------------------------------------- | -------------------- |
-| OPEN，`now < closeAt`              | buy、transfer、listing/fill/cancel、creator void        | resolve、timeout     |
-| CLOSED，`closeAt ≤ now < deadline` | transfer、listing/fill/cancel、creator resolve/void     | primary buy、timeout |
-| RESOLVED                           | winner/early claim、loser burn、terminal listing return | 新风险、状态改变     |
-| VOIDED_CREATOR                     | 1:1 refund、bond return、terminal listing return        | 新风险、结果改变     |
-| VOIDED_TIMEOUT                     | 1:1 refund、延迟 bonus、terminal listing return         | 新风险、结果改变     |
+| 状态                                | 允许                                                    | 禁止                 |
+| ----------------------------------- | ------------------------------------------------------- | -------------------- |
+| OPEN，`now < closeAt`               | buy、transfer、listing/fill/cancel、creator void        | resolve、timeout     |
+| CLOSED，`closeAt ≤ now < deadline`  | transfer、listing/fill/cancel、creator resolve/void     | primary buy、timeout |
+| RESOLVED                            | winner/early claim、loser burn、terminal listing return | 新风险、状态改变     |
+| VOIDED，CREATOR / NO_WINNING_SUPPLY | 1:1 refund、bond return、terminal listing return        | 新风险、结果改变     |
+| VOIDED，TIMEOUT                     | 1:1 refund、延迟 bonus、terminal listing return         | 新风险、结果改变     |
 
 市场存储不需要 keeper 写入 CLOSED；所有入口按时间计算。终局不可逆。resolution deadline 是
-`closeAt + 24 hours`。creator 的 resolve/void 窗口均为半开区间：仅 `now < deadline`；在
+`outcomeDeadlineAt + resolutionWindow`，窗口在创建时冻结。已知事件要求
+`closeAt < eventStartsAt <= outcomeDeadlineAt`；未知开始时间链上为 0，规则 JSON 为显式 null，
+仍要求 `outcomeDeadlineAt >= closeAt`。creator 在封盘后可以提前选结果，不等待结果判断截止。
+creator 的 resolve/void 窗口均为半开区间：仅 `now < deadline`；在
 `now == deadline` 时 creator 入口已关闭且 `voidAfterDeadline` 对任何地址开放，二者没有同一时间戳
-竞争窗口。胜桶 supply 为零时禁止 resolve，creator 必须在窗口内 void，超时后任何人 void。
+竞争窗口。选择胜桶 supply 为零时直接进入 `VOIDED / NO_WINNING_SUPPLY`，不收抽水、
+不发早鸟，押金返还 creator；不改选其他结果，也不按超时罚没。
+主状态只有 OPEN/RESOLVED/VOIDED，作废原因另记 NONE/CREATOR/NO_WINNING_SUPPLY/TIMEOUT。
 claim/refund 永不过期。
 
 ## 4. 创建与不可变快照
 
 Factory 校验：规则哈希非零；URI ≤512 bytes；2–32 outcomes；封盘距离 5 分钟–90 天；
-`createdAt ≤ earlyBirdStart < closeAt`；Full/Clone cap 受配置上限和硬上限；最低操作单位在
+创建时间由执行区块确定，不接受额外早鸟起点；Full/Clone cap 受配置上限和硬上限；最低操作单位在
 10,000–5,000,000 atomic units；bond 为 `max(10 USDC, ceil(cap×2%))` 至 1,000 USDC；
 feature flag 必须是已知位。
 
-第一笔购买前 creator 只能更新 metadata/rules/source/close/early start/treasury 等明确字段；
+第一笔购买前 creator 只能更新 metadata/rules/source/close/treasury 等明确字段；
 第一笔购买使经济、时间和展示关键字段冻结。creator、market cap、deployment mode、bond、
 payment token 和 Factory 永不改变。配置治理只影响以后创建的市场，不追溯修改存量市场。
 
@@ -80,9 +85,13 @@ payment token 和 Factory 永不改变。配置治理只影响以后创建的市
 
 ## 6. 早鸟
 
-`earlyBirdStart..closeAt` 等分三段，权重 3/2/1；start 前同为 3。每次一级购买累积
-`score[user] += units×weight`，不随 ERC-1155 转移。void 无早鸟奖励；resolve 时早鸟池从
-creator 净 rake 扣除，不能改变 winner pool。
+`createdAt..closeAt` 等分三段，权重 3/2/1。比较 `offset*3 < duration`、
+`offset*3 < duration*2`，不先舍入每段长度；恰好跨过边界即进入下一段。
+不存在额外起点、起点前奖励或创建缓冲期。修改 closeAt 不重置 createdAt；第一个买家
+即使在最后一段才来，仍可以正常购买。每次按执行区块时间和实际成交 units 累积
+`score[user] += filledUnits×weight`，覆盖所有桶，不随 ERC-1155 转移；卖光和输方
+仍可保有早鸟。所有 void 无早鸟奖励；resolve 时早鸟池从 creator 净 rake 中分配，
+不改变 winner pool、不重复扣用户派彩。零抽水、零奖励和原子单位舍入均不构成保证返现。
 
 ## 7. 结算会计
 

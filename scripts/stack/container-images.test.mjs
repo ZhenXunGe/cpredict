@@ -50,7 +50,7 @@ test("Dockerfiles pin reviewed Node and Nginx image digests", () => {
     4,
   );
   assert.match(demo, new RegExp(`FROM ${node} AS build`));
-  assert.match(demo, new RegExp(`FROM ${nginx}\\n`));
+  assert.match(demo, new RegExp(`FROM ${nginx} AS demo\\n`));
   assert.match(demo, /USER root\nRUN apk upgrade --no-cache[\s\S]*USER 101/);
 });
 
@@ -137,8 +137,12 @@ test("CI builds and scans every application image with the pinned scanner", asyn
   assert.match(workflow, /npm run scan:container-config/);
   assert.equal(
     workflow.match(/--build-arg "CPREDICT_IMAGE_REVISION=\$GITHUB_SHA"/g)?.length,
-    5,
+    7,
   );
+  for (const image of ["cpredict-app-service:ci", "cpredict-public-site:ci"]) {
+    assert.ok(workflow.includes(`--tag ${image}`), `missing ${image} build`);
+    assert.ok(scanner.includes(image), `missing ${image} vulnerability scan`);
+  }
   assert.match(
     workflow,
     /docker image inspect --format[^\n]*org\.opencontainers\.image\.revision/,

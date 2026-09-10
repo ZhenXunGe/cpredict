@@ -29,12 +29,17 @@ describe("same-origin indexer client", () => {
             deploymentMode: 0,
             outcomeCount: 2,
             closeAt: "1893456000",
+            createdAt: "1893455000",
+            eventStartsAt: null,
+            outcomeDeadlineAt: "1893457000",
             resolutionWindow: "900",
             rulesHash: `0x${"11".repeat(32)}`,
             marketPrimaryCap: "20000000",
             primaryFilledUnits: "3000000",
             creatorBond: "10000000",
             status: "open",
+            voidReason: 0,
+            winningOutcome: null,
             createdBlock: "123",
             confirmationStatus: "confirmed",
           },
@@ -55,6 +60,7 @@ describe("same-origin indexer client", () => {
       marketPrimaryCap: 20_000_000n,
       primaryFilledUnits: 3_000_000n,
       resolutionWindow: 900n,
+      winningOutcome: null,
     });
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("owner=0x");
     expect(String(fetchMock.mock.calls[0]?.[0])).toContain("status=open");
@@ -71,22 +77,22 @@ describe("same-origin indexer client", () => {
         market:
           status === "resolved"
             ? MARKET
-            : `0x000000000000000000000000000000000000100${status === "voided-creator" ? "2" : "3"}`,
+            : "0x0000000000000000000000000000000000001002",
         creator: CREATOR,
         deploymentMode: 0,
         outcomeCount: 2,
-        closeAt:
-          status === "resolved"
-            ? "100"
-            : status === "voided-creator"
-              ? "300"
-              : "200",
+        closeAt: status === "resolved" ? "100" : "200",
+        createdAt: "1",
+        eventStartsAt: null,
+        outcomeDeadlineAt: "300",
         resolutionWindow: "900",
         rulesHash: `0x${"11".repeat(32)}`,
         marketPrimaryCap: "20000000",
         primaryFilledUnits: "3000000",
         creatorBond: "10000000",
         status,
+        voidReason: status === "resolved" ? 0 : 1,
+        winningOutcome: status === "resolved" ? "0" : null,
         createdBlock: "123",
         confirmationStatus: "confirmed",
       };
@@ -97,19 +103,18 @@ describe("same-origin indexer client", () => {
       basePath: "/indexer",
       chainId: 421614,
     });
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls.map((call) => String(call[0]))).toEqual(
       expect.arrayContaining([
         expect.stringContaining("status=resolved"),
-        expect.stringContaining("status=voided-creator"),
-        expect.stringContaining("status=voided-timeout"),
+        expect.stringContaining("status=voided"),
       ]),
     );
     expect(page.items.map((item) => item.status)).toEqual([
-      "voided-creator",
-      "voided-timeout",
+      "voided",
       "resolved",
     ]);
+    expect(page.items.at(-1)?.winningOutcome).toBe(0n);
   });
 
   it("filters listings by vault", async () => {
@@ -240,12 +245,44 @@ describe("same-origin indexer client", () => {
     });
   });
 
+  it("rejects removed V1 position state values", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        json({
+          items: [
+            {
+              vault: MARKET,
+              owner: CREATOR,
+              outcomeId: "0",
+              balance: "1000000",
+              updatedBlock: "1",
+              confirmationStatus: "confirmed",
+              marketState: 3,
+              winningOutcome: null,
+            },
+          ],
+        }),
+      ),
+    );
+    await expect(
+      fetchWalletPositions({
+        basePath: "/indexer",
+        chainId: 421614,
+        owner: CREATOR,
+      }),
+    ).rejects.toThrow(/marketState/);
+  });
+
   it("accepts only self-hosted metadata whose content matches rulesHash", async () => {
     const rules: MarketRules = {
-      version: "cpredict-rules-v1",
+      version: "cpredict-rules-v2",
       question: "Will the public result be Yes at close?",
       outcomes: ["Yes", "No"],
-      closesAt: 1_893_456_000,
+      closeAt: 1_893_456_000,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 1_893_456_000,
+      resolutionDeadlineAt: 1_893_456_000 + 86_400,
       resolutionSource: "https://example.com/result",
       resolutionCriteria: "Use the final result shown by the public source.",
       cancellationPolicy: "Void when no unambiguous final result is published.",

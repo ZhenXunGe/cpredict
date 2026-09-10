@@ -32,7 +32,6 @@ import {
     ZeroAmount,
     FillBelowMinimum,
     PaymentAboveMaximum,
-    WinningOutcomeHasNoSupply,
     NothingToClaim,
     AlreadySettled,
     InexactTokenTransfer,
@@ -82,10 +81,12 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     uint8 public outcomeCount;
     uint64 public createdAt;
     uint64 public closeAt;
-    uint64 public earlyBirdStart;
+    uint64 public eventStartsAt;
+    uint64 public outcomeDeadlineAt;
     uint64 public resolutionWindow;
     ProtocolTypes.DeploymentMode public deploymentMode;
     ProtocolTypes.MarketState public marketState;
+    ProtocolTypes.VoidReason public voidReason;
     uint256 public featureFlags;
 
     uint128 public perUserPrimaryCap;
@@ -120,7 +121,10 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         address indexed creator,
         ProtocolTypes.DeploymentMode indexed mode,
         uint8 outcomeCount,
+        uint64 createdAt,
         uint64 closeAt,
+        uint64 eventStartsAt,
+        uint64 outcomeDeadlineAt,
         uint64 resolutionWindow,
         uint128 marketPrimaryCap,
         uint128 creatorBond
@@ -131,7 +135,8 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         bytes32 indexed resolutionSourceHash,
         string resolutionSourceURI,
         uint64 closeAt,
-        uint64 earlyBirdStart,
+        uint64 eventStartsAt,
+        uint64 outcomeDeadlineAt,
         address indexed creatorTreasury,
         uint256 featureFlags
     );
@@ -164,7 +169,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         bytes32 indexed evidenceHash
     );
     event MarketVoided(
-        ProtocolTypes.MarketState indexed terminalState,
+        ProtocolTypes.VoidReason indexed reason,
         address indexed caller,
         uint256 refundPrincipal,
         bytes32 indexed evidenceHash
@@ -249,7 +254,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     }
 
     function resolutionDeadline() public view returns (uint256) {
-        return uint256(closeAt) + resolutionWindow;
+        return uint256(outcomeDeadlineAt) + resolutionWindow;
     }
 
     function earlyBirdEnabled() public view returns (bool) {
@@ -274,7 +279,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         _initialize(params);
     }
 
-    function _initialize(ProtocolTypes.MarketInitParams memory params) internal {
+    function _initialize(ProtocolTypes.MarketInitParams calldata params) internal {
         if (_initialized) revert AlreadyInitialized();
         if (msg.sender != params.factory) revert InvalidInitializer(msg.sender);
         if (
@@ -288,21 +293,10 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         if (params.outcomeCount < 2 || params.outcomeCount > 32) {
             revert InvalidConfiguration("outcomeCount");
         }
-        if (params.rulesHash == bytes32(0)) revert InvalidConfiguration("rulesHash");
-        if (bytes(params.metadataURI).length > MAX_URI_LENGTH) {
-            revert UriTooLong(bytes(params.metadataURI).length, MAX_URI_LENGTH);
-        }
-        if (bytes(params.resolutionSourceURI).length > MAX_URI_LENGTH) {
-            revert UriTooLong(bytes(params.resolutionSourceURI).length, MAX_URI_LENGTH);
-        }
-        if ((params.featureFlags & ~SUPPORTED_FEATURE_FLAGS) != 0) {
-            revert UnsupportedFeatureFlags(params.featureFlags);
-        }
         if (
             params.resolutionWindow < MIN_RESOLUTION_WINDOW
                 || params.resolutionWindow > MAX_RESOLUTION_WINDOW
         ) revert InvalidConfiguration("resolutionWindow");
-        _validateTimes(params.createdAt, params.closeAt, params.earlyBirdStart);
 
         _initialized = true;
         factory = params.factory;
@@ -314,45 +308,44 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         feeVault = IFeeVaultV1(params.feeVault);
         permit2 = ISignatureTransfer(params.permit2);
         creator = params.creator;
-        creatorTreasury = params.creatorTreasury;
-        rulesHash = params.rulesHash;
-        resolutionSourceHash = params.resolutionSourceHash;
-        resolutionSourceURI = params.resolutionSourceURI;
         outcomeCount = params.outcomeCount;
         createdAt = params.createdAt;
-        closeAt = params.closeAt;
-        earlyBirdStart = params.earlyBirdStart;
         resolutionWindow = params.resolutionWindow;
         deploymentMode = params.deploymentMode;
-        featureFlags = params.featureFlags;
         perUserPrimaryCap = params.perUserPrimaryCap;
         marketPrimaryCap = params.marketPrimaryCap;
         minimumPrimaryUnits = params.minimumPrimaryUnits;
         minimumC2CUnits = params.minimumC2CUnits;
         creatorBond = params.creatorBond;
         _economics = params.economics;
-        _setURI(params.metadataURI);
+        _setTerms(
+            ProtocolTypes.MarketTerms({
+                rulesHash: params.rulesHash,
+                metadataURI: params.metadataURI,
+                resolutionSourceHash: params.resolutionSourceHash,
+                resolutionSourceURI: params.resolutionSourceURI,
+                closeAt: params.closeAt,
+                eventStartsAt: params.eventStartsAt,
+                outcomeDeadlineAt: params.outcomeDeadlineAt,
+                creatorTreasury: params.creatorTreasury,
+                featureFlags: params.featureFlags
+            })
+        );
 
         emit MarketInitialized(
             address(this),
             params.creator,
             params.deploymentMode,
             params.outcomeCount,
+            params.createdAt,
             params.closeAt,
+            params.eventStartsAt,
+            params.outcomeDeadlineAt,
             params.resolutionWindow,
             params.marketPrimaryCap,
             params.creatorBond
         );
-        emit MarketMetadataUpdated(
-            params.rulesHash,
-            params.metadataURI,
-            params.resolutionSourceHash,
-            params.resolutionSourceURI,
-            params.closeAt,
-            params.earlyBirdStart,
-            params.creatorTreasury,
-            params.featureFlags
-        );
+        _emitMetadataUpdated(params.metadataURI);
         emit EconomicSnapshotCreated(
             params.economics.creatorRakeBps,
             params.economics.protocolShareBps,
@@ -364,49 +357,49 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     }
 
     /// @notice Updates non-economic market metadata before the first primary purchase.
-    function updateBeforeFirstBuy(
-        bytes32 newRulesHash,
-        string calldata newMetadataURI,
-        bytes32 newResolutionSourceHash,
-        string calldata newResolutionSourceURI,
-        uint64 newCloseAt,
-        uint64 newEarlyBirdStart,
-        address newCreatorTreasury,
-        uint256 newFeatureFlags
-    ) external onlyCreator {
+    function updateBeforeFirstBuy(ProtocolTypes.MarketTerms calldata terms) external onlyCreator {
         if (firstBuyOccurred()) revert ImmutableAfterFirstBuy();
         if (marketState != ProtocolTypes.MarketState.OPEN) revert MarketTerminal();
-        if (newRulesHash == bytes32(0)) revert InvalidConfiguration("rulesHash");
-        if (newCreatorTreasury == address(0)) revert ZeroAddress();
-        if (bytes(newMetadataURI).length > MAX_URI_LENGTH) {
-            revert UriTooLong(bytes(newMetadataURI).length, MAX_URI_LENGTH);
-        }
-        if (bytes(newResolutionSourceURI).length > MAX_URI_LENGTH) {
-            revert UriTooLong(bytes(newResolutionSourceURI).length, MAX_URI_LENGTH);
-        }
-        if ((newFeatureFlags & ~SUPPORTED_FEATURE_FLAGS) != 0) {
-            revert UnsupportedFeatureFlags(newFeatureFlags);
-        }
-        _validateTimes(createdAt, newCloseAt, newEarlyBirdStart);
-        if (newCloseAt <= block.timestamp) revert MarketNotOpen();
+        _setTerms(terms);
+        if (terms.closeAt <= block.timestamp) revert MarketNotOpen();
+        _emitMetadataUpdated(terms.metadataURI);
+    }
 
-        rulesHash = newRulesHash;
-        resolutionSourceHash = newResolutionSourceHash;
-        resolutionSourceURI = newResolutionSourceURI;
-        closeAt = newCloseAt;
-        earlyBirdStart = newEarlyBirdStart;
-        creatorTreasury = newCreatorTreasury;
-        featureFlags = newFeatureFlags;
-        _setURI(newMetadataURI);
+    function _setTerms(ProtocolTypes.MarketTerms memory terms) private {
+        if (terms.rulesHash == bytes32(0)) revert InvalidConfiguration("rulesHash");
+        if (terms.creatorTreasury == address(0)) revert ZeroAddress();
+        if (bytes(terms.metadataURI).length > MAX_URI_LENGTH) {
+            revert UriTooLong(bytes(terms.metadataURI).length, MAX_URI_LENGTH);
+        }
+        if (bytes(terms.resolutionSourceURI).length > MAX_URI_LENGTH) {
+            revert UriTooLong(bytes(terms.resolutionSourceURI).length, MAX_URI_LENGTH);
+        }
+        if ((terms.featureFlags & ~SUPPORTED_FEATURE_FLAGS) != 0) {
+            revert UnsupportedFeatureFlags(terms.featureFlags);
+        }
+        _validateTimes(createdAt, terms.closeAt, terms.eventStartsAt, terms.outcomeDeadlineAt);
+        rulesHash = terms.rulesHash;
+        resolutionSourceHash = terms.resolutionSourceHash;
+        resolutionSourceURI = terms.resolutionSourceURI;
+        creatorTreasury = terms.creatorTreasury;
+        featureFlags = terms.featureFlags;
+        closeAt = terms.closeAt;
+        eventStartsAt = terms.eventStartsAt;
+        outcomeDeadlineAt = terms.outcomeDeadlineAt;
+        _setURI(terms.metadataURI);
+    }
+
+    function _emitMetadataUpdated(string memory metadataURI) private {
         emit MarketMetadataUpdated(
-            newRulesHash,
-            newMetadataURI,
-            newResolutionSourceHash,
-            newResolutionSourceURI,
-            newCloseAt,
-            newEarlyBirdStart,
-            newCreatorTreasury,
-            newFeatureFlags
+            rulesHash,
+            metadataURI,
+            resolutionSourceHash,
+            resolutionSourceURI,
+            closeAt,
+            eventStartsAt,
+            outcomeDeadlineAt,
+            creatorTreasury,
+            featureFlags
         );
     }
 
@@ -559,10 +552,10 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
 
     function _earlyBirdWeight(uint256 timestamp) internal view returns (uint8) {
         if (!earlyBirdEnabled()) return 0;
-        if (timestamp < earlyBirdStart) return 3;
-        if (timestamp >= closeAt) return 0;
-        uint256 duration = uint256(closeAt) - earlyBirdStart;
-        uint256 offset = timestamp - earlyBirdStart;
+        if (timestamp < createdAt || timestamp >= closeAt) return 0;
+        uint256 duration = uint256(closeAt) - createdAt;
+        uint256 offset = timestamp - createdAt;
+        // Compare integer cross-products: no rounded segment length or pre-start bonus.
         if (offset * 3 < duration) return 3;
         if (offset * 3 < duration * 2) return 2;
         return 1;
@@ -570,7 +563,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
 
     /// @notice Resolves the market and commits any creator-supplied evidence in the terminal event.
     /// @dev Opaque event-only hash; it never affects auth, state, or payouts. Zero means absent.
-    /// @param outcomeId The winning outcome whose outstanding supply receives the winner pool.
+    /// @param outcomeId The selected outcome; zero supply voids without rake or bond slash.
     /// @param evidenceHash Hash commitment to offchain resolution evidence; zero if absent.
     function resolve(uint256 outcomeId, bytes32 evidenceHash) external onlyCreator nonReentrant {
         if (marketState != ProtocolTypes.MarketState.OPEN) revert MarketTerminal();
@@ -578,7 +571,10 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         if (block.timestamp >= resolutionDeadline()) revert ResolutionWindowExpired();
         if (outcomeId >= outcomeCount) revert InvalidOutcome(outcomeId, outcomeCount);
         uint256 winningSupply = totalSupply(outcomeId);
-        if (winningSupply == 0) revert WinningOutcomeHasNoSupply(outcomeId);
+        if (winningSupply == 0) {
+            _void(ProtocolTypes.VoidReason.NO_WINNING_SUPPLY, evidenceHash);
+            return;
+        }
 
         ProtocolTypes.PayoutBreakdown memory breakdown = _calculatePayouts();
         marketState = ProtocolTypes.MarketState.RESOLVED;
@@ -625,7 +621,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     function creatorVoid(bytes32 evidenceHash) external onlyCreator {
         if (marketState != ProtocolTypes.MarketState.OPEN) revert MarketTerminal();
         if (block.timestamp >= resolutionDeadline()) revert ResolutionWindowExpired();
-        _void(ProtocolTypes.MarketState.VOIDED_CREATOR, evidenceHash);
+        _void(ProtocolTypes.VoidReason.CREATOR, evidenceHash);
     }
 
     /// @notice Permissionlessly voids a market after the resolution deadline.
@@ -633,14 +629,15 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     function voidAfterDeadline() external {
         if (marketState != ProtocolTypes.MarketState.OPEN) revert MarketTerminal();
         if (block.timestamp < resolutionDeadline()) revert TimeoutNotReached();
-        _void(ProtocolTypes.MarketState.VOIDED_TIMEOUT, bytes32(0));
+        _void(ProtocolTypes.VoidReason.TIMEOUT, bytes32(0));
     }
 
-    function _void(ProtocolTypes.MarketState terminalState, bytes32 evidenceHash) internal {
-        marketState = terminalState;
+    function _void(ProtocolTypes.VoidReason reason, bytes32 evidenceHash) internal {
+        marketState = ProtocolTypes.MarketState.VOIDED;
+        voidReason = reason;
         uint256 principal = totalPrincipal();
         remainingRefundPrincipal = principal;
-        emit MarketVoided(terminalState, msg.sender, principal, evidenceHash);
+        emit MarketVoided(reason, msg.sender, principal, evidenceHash);
     }
 
     function claimWinnings() external returns (uint256 payout) {
@@ -690,11 +687,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
     }
 
     function refundFor(address owner) public nonReentrant returns (uint256 amount) {
-        ProtocolTypes.MarketState state = marketState;
-        if (
-            state != ProtocolTypes.MarketState.VOIDED_CREATOR
-                && state != ProtocolTypes.MarketState.VOIDED_TIMEOUT
-        ) revert MarketNotClosed();
+        if (marketState != ProtocolTypes.MarketState.VOIDED) revert MarketNotClosed();
         _rejectProtocolMarketplaceOwner(owner);
 
         for (uint256 outcomeId = 0; outcomeId < outcomeCount; ++outcomeId) {
@@ -702,7 +695,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         }
         if (amount == 0) revert NothingToClaim();
         remainingRefundPrincipal -= amount;
-        if (state == ProtocolTypes.MarketState.VOIDED_TIMEOUT) {
+        if (voidReason == ProtocolTypes.VoidReason.TIMEOUT) {
             timeoutBonusUnits[owner] += amount;
         }
         for (uint256 outcomeId = 0; outcomeId < outcomeCount; ++outcomeId) {
@@ -711,13 +704,16 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         }
         _paymentToken.safeTransfer(owner, amount);
         emit PrincipalRefunded(
-            owner, msg.sender, amount, amount, state == ProtocolTypes.MarketState.VOIDED_TIMEOUT
+            owner, msg.sender, amount, amount, voidReason == ProtocolTypes.VoidReason.TIMEOUT
         );
     }
 
     function fundTimeoutBonus(uint256 amount) external nonReentrant {
         if (msg.sender != bondEscrow) revert Unauthorized(msg.sender);
-        if (marketState != ProtocolTypes.MarketState.VOIDED_TIMEOUT) revert MarketNotClosed();
+        if (
+            marketState != ProtocolTypes.MarketState.VOIDED
+                || voidReason != ProtocolTypes.VoidReason.TIMEOUT
+        ) revert MarketNotClosed();
         if (timeoutBonusFunded) revert AlreadySettled();
         if (amount == 0) revert ZeroAmount();
         timeoutBonusFunded = true;
@@ -817,10 +813,7 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         uint256 liabilities;
         if (marketState == ProtocolTypes.MarketState.RESOLVED) {
             liabilities = remainingWinnerPool + remainingEarlyBirdPool;
-        } else if (
-            marketState == ProtocolTypes.MarketState.VOIDED_CREATOR
-                || marketState == ProtocolTypes.MarketState.VOIDED_TIMEOUT
-        ) {
+        } else if (marketState == ProtocolTypes.MarketState.VOIDED) {
             liabilities = remainingRefundPrincipal + remainingTimeoutBonusPool;
         } else {
             liabilities = totalPrincipal();
@@ -829,14 +822,24 @@ abstract contract MarketVaultCoreV1 is ERC1155Supply, ReentrancyGuard {
         if (balance < liabilities) revert Insolvent(balance, liabilities);
     }
 
-    function _validateTimes(uint64 creationTime, uint64 marketClose, uint64 earlyStart)
-        internal
-        pure
-    {
+    function _validateTimes(
+        uint64 creationTime,
+        uint64 marketClose,
+        uint64 eventStart,
+        uint64 outcomeDeadline
+    ) internal pure {
         if (
-            marketClose < creationTime + 5 minutes || marketClose > creationTime + 90 days
-                || earlyStart < creationTime || earlyStart >= marketClose
-        ) revert InvalidConfiguration("market.times");
+            uint256(marketClose) < uint256(creationTime) + 5 minutes
+                || uint256(marketClose) > uint256(creationTime) + 90 days
+        ) {
+            revert InvalidConfiguration("market.times");
+        }
+        if (
+            outcomeDeadline < marketClose
+                || (eventStart != 0 && (eventStart <= marketClose || eventStart > outcomeDeadline))
+        ) {
+            revert InvalidConfiguration("market.eventTimes");
+        }
     }
 
     /// @dev Reverts instead of truncating if a future protocol version raises caps beyond the

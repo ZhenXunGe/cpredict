@@ -1,0 +1,35 @@
+# Initial development thresholds. Load into the existing monitoring system;
+# validate its targets/rules with promtool and real failure injection at rollout.
+groups:
+  - name: cpredict-public-site
+    rules:
+      - alert: CpredictApplicationUnavailable
+        expr: up{job=~"cpredict-app-.*"} == 0
+        for: 2m
+        annotations:
+          summary: Application metrics cannot be read from the internal endpoint
+      - alert: CpredictDependencyUnavailable
+        expr: cpredict_app_dependency_available{service=~"database|chain|bundler|paymaster"} == 0
+        for: 2m
+        annotations:
+          summary: A required application dependency is unavailable
+      - alert: CpredictObservationsStale
+        expr: time() - cpredict_app_dependency_last_success_timestamp_seconds{service=~"database|chain"} > 180
+        for: 1m
+        annotations:
+          summary: Database or chain observations have stopped advancing
+      - alert: CpredictRecoveryDelayed
+        expr: cpredict_app_oldest_pending_seconds > 600
+        for: 5m
+        annotations:
+          summary: Pending operations require query-only investigation; do not resend
+      - alert: CpredictExitBudgetLow
+        expr: cpredict_app_weekly_remaining_eth{lane="exit"} < 0.002
+        for: 1m
+        annotations:
+          summary: The independent exit sponsorship reserve is running low
+      - alert: CpredictApplicationErrors
+        expr: sum by (job, instance) (rate(cpredict_app_http_requests_total{status_class="5xx"}[5m])) / clamp_min(sum by (job, instance) (rate(cpredict_app_http_requests_total[5m])), 0.01) > 0.01
+        for: 5m
+        annotations:
+          summary: Unexpected application errors exceed the development capacity target

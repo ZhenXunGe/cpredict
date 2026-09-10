@@ -7,6 +7,12 @@ import { PostgresEventStore } from "./postgres-store.js";
 import { BoundedIndexerScheduler } from "./scheduler.js";
 import { PrometheusIndexerTelemetry } from "./telemetry.js";
 import { IndexerWebSocketHub } from "./websocket.js";
+import { readFile } from "node:fs/promises";
+import { environmentSchema, sameAddress } from "../../app-core/src/contracts.js";
+import { verifyDeployment } from "../../app-service/src/chain.js";
+import { refreshPublicMetadata } from "./public-catalog.js";
+import { Leaderboards } from "./leaderboards.js";
+import { appRuntimeSchema } from "../../app-service/src/config.js";
 
 export interface IndexerRuntime {
   stop(): Promise<void>;
@@ -22,6 +28,13 @@ export async function startIndexerRuntime(
   config: IndexerServiceConfig,
   dependencies: IndexerRuntimeDependencies = {},
 ): Promise<IndexerRuntime> {
+  const publicRuntime=config.publicConfigFile?appRuntimeSchema.parse(JSON.parse(await readFile(config.publicConfigFile,"utf8"))):undefined;
+  const environment=publicRuntime?.environment;
+  if(environment) {
+    if(!config.metadataUrl)throw new Error("public indexer requires CPREDICT_INDEXER_METADATA_URL");
+    const d=environment.deployment,expected=[d.factory,d.marketplace,d.feeVault,d.bondEscrow].map(a=>a.toLowerCase()).sort(),actual=config.coreAddresses.map(a=>a.toLowerCase()).sort();
+    if(d.chainId!==config.chainId || !sameAddress(d.factory,config.factoryAddress) || BigInt(d.deploymentBlock)!==config.deploymentBlock || JSON.stringify(expected)!==JSON.stringify(actual)) throw new Error("public indexer configuration does not match deployment manifest");
+  }
   const client =
     dependencies.client ??
     createPublicClient({
@@ -33,7 +46,7 @@ export async function startIndexerRuntime(
   const telemetry = dependencies.telemetry ?? new PrometheusIndexerTelemetry();
   const rawStore =
     dependencies.store ??
-    new PostgresEventStore(config.databaseUrl, config.databasePoolSize);
+    new PostgresEventStore(config.databaseUrl, config.databasePoolSize,environment);
   const store = new InstrumentedEventQueryStore(
     rawStore,
     config.databasePoolSize,
@@ -62,6 +75,7 @@ export async function startIndexerRuntime(
     batchSize: config.batchSize,
     addresses: config.coreAddresses,
     factoryAddress: config.factoryAddress,
+    ...(rawStore.financial?{financial:{paymentToken:rawStore.financial.environment.deployment.paymentToken,accounts:()=>rawStore.financial!.trackedAccounts(),scanned:(accounts:readonly import("viem").Address[],from:bigint,to:bigint,hash:import("viem").Hex)=>rawStore.financial!.accountScanned(accounts,from,to,hash),backfill:()=>rawStore.backfillFinancialAccounts(client)}}:{}),
   });
   const scheduler = new BoundedIndexerScheduler(indexer, telemetry, {
     intervalMs: config.pollIntervalMs,
@@ -96,12 +110,14 @@ export async function startIndexerRuntime(
     };
   };
   const app = createIndexerApi(store, {
+    trustedProxies: publicRuntime?.trustedProxies ?? [],
     readiness,
     syncStatus,
     registry: telemetry.registry,
     logLevel: config.logLevel,
     maxConnections: config.httpMaxConnections,
     websocket,
+    ...(rawStore.financial?{financial:{ledger:rawStore.financial,client,confirmations:config.confirmations}}:{}),
   });
 
   try {
@@ -109,6 +125,7 @@ export async function startIndexerRuntime(
     if (rpcChainId !== config.chainId)
       throw new Error("RPC chainId does not match indexer config");
     await startupStage("database", () => store.ready());
+    if(environment) await verifyDeployment(client,environment);
     await startupStage("initial-sync", () => scheduler.runTick());
     scheduler.start();
     await startupStage("http-listen", () =>
@@ -127,13 +144,28 @@ export async function startIndexerRuntime(
   }
 
   let stopped = false;
+  let publicTimer: ReturnType<typeof setTimeout> | undefined;
+  let publicTick: Promise<void> | undefined;
+  if(rawStore.financial && config.metadataUrl){
+    const ledger=rawStore.financial,metadataUrl=config.metadataUrl,leaderboards=new Leaderboards(ledger);
+    const run=async()=>{
+      try{await refreshPublicMetadata(ledger,metadataUrl);}catch{app.log.warn("public metadata catalog refresh unavailable");}
+      if(ledger.environment.features.leaderboard){
+        try{const periods=await leaderboards.periods();for(const period of periods.slice(0,5)){try{await leaderboards.publish(period.id);}catch{/* Unreconciled, incomplete or not-yet-started periods stay unpublished. */}}}catch{app.log.warn("leaderboard refresh unavailable");}
+      }
+      if(!stopped){publicTimer=setTimeout(()=>{publicTick=run();},60000);publicTimer.unref();}
+    };
+    publicTick=run();
+  }
   return {
     async stop(): Promise<void> {
       if (stopped) return;
       stopped = true;
+      if(publicTimer)clearTimeout(publicTimer);
       unsubscribeFromBatches();
       await scheduler.stop();
       await app.close();
+      await publicTick;
       await store.close();
     },
   };

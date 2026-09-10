@@ -5,6 +5,7 @@ import {
   WalletPositionsView,
   indexerCaughtUp,
   isActiveHolding,
+  isClaimableWinningPosition,
   mergeWalletPositions,
   type WalletPositionsState,
 } from "../src/WalletIndexerPanels.js";
@@ -98,12 +99,15 @@ describe("positions page synchronization", () => {
     expect(html).not.toContain(">5 份<");
     expect(html).toContain("结果 1");
     expect(html).not.toContain("结果 2");
+    expect(html).toContain("胜出款待领取");
+    expect(html).toContain("去领取胜出款");
+    expect(html).toContain(`href="#/settlement/${MARKET}"`);
   });
 
   it("keeps voided shares visible until they are refunded", () => {
     const html = renderToStaticMarkup(
       <PositionsPage
-        market={market({ marketState: 2, winningOutcome: 0 })}
+        market={market({ marketState: 2, voidReason: 1, winningOutcome: 0 })}
         account={account([2_000_000n, 5_000_000n])}
         wallet={{ address: OWNER } as unknown as ConnectedWallet}
         indexerEnabled
@@ -116,10 +120,42 @@ describe("positions page synchronization", () => {
     expect(html).toContain(">2 份<");
     expect(html).toContain(">5 份<");
     expect(html).toContain("结果 2");
+    expect(html).toContain("本金待退款");
+    expect(html).toContain("去退还本金");
+    expect(html).toContain(`href="#/settlement/${MARKET}"`);
+    expect(html).not.toContain("胜出款待领取");
+    expect(html).not.toContain("去领取胜出款");
   });
 });
 
 describe("active holdings", () => {
+  it("marks only non-zero resolved winning shares as claimable", () => {
+    expect(
+      isClaimableWinningPosition({
+        balance: 2_000_000n,
+        outcomeId: 0,
+        marketState: 1,
+        winningOutcome: 0,
+      }),
+    ).toBe(true);
+    expect(
+      isClaimableWinningPosition({
+        balance: 0n,
+        outcomeId: 0,
+        marketState: 1,
+        winningOutcome: 0,
+      }),
+    ).toBe(false);
+    expect(
+      isClaimableWinningPosition({
+        balance: 2_000_000n,
+        outcomeId: 1,
+        marketState: 1,
+        winningOutcome: 0,
+      }),
+    ).toBe(false);
+  });
+
   it("treats resolved losing outcomes as inactive once the winner is known", () => {
     expect(
       isActiveHolding({
@@ -253,7 +289,8 @@ function market(overrides: Partial<MarketSnapshot> = {}): MarketSnapshot {
     outcomeCount: 2,
     createdAt: 1_899_999_000n,
     closeAt: 1_900_001_000n,
-    earlyBirdStart: 1_899_999_500n,
+    eventStartsAt: null,
+    outcomeDeadlineAt: 1_900_001_000n,
     featureFlags: 0n,
     perUserPrimaryCap: 10_000_000n,
     marketPrimaryCap: 20_000_000n,
@@ -261,6 +298,7 @@ function market(overrides: Partial<MarketSnapshot> = {}): MarketSnapshot {
     minimumC2CUnits: 1_000_000n,
     creatorBond: 10_000_000n,
     marketState: 0,
+    voidReason: 0,
     winningOutcome: 0,
     totalPrincipal: 2_000_000n,
     resolutionDeadline: 1_900_001_900n,

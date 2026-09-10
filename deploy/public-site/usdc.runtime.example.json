@@ -1,0 +1,49 @@
+{
+  "environment": {
+    "id": "usdc-public-test",
+    "label": "USDC 独立验收",
+    "asset": "USDC",
+    "decimals": 6,
+    "deployment": {
+      "id": "CONFIGURE_DISTINCT_DEPLOYMENT_ID",
+      "manifestHash": "CONFIGURE_VERIFIED_MANIFEST_HASH",
+      "sourceCommit": "CONFIGURE_DEPLOYED_SOURCE_COMMIT",
+      "chainId": 421614,
+      "deploymentBlock": "CONFIGURE_DEPLOYMENT_BLOCK",
+      "factory": "CONFIGURE_FACTORY_ADDRESS",
+      "marketplace": "CONFIGURE_MARKETPLACE_ADDRESS",
+      "bondEscrow": "CONFIGURE_BOND_ESCROW_ADDRESS",
+      "feeVault": "CONFIGURE_FEE_VAULT_ADDRESS",
+      "paymentToken": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
+      "protocolTreasury": "CONFIGURE_PROTOCOL_TREASURY_ADDRESS",
+      "runtimeCodeHashes": {}
+    },
+    "account": {
+      "kernelVersion": "0.3.1",
+      "entryPointVersion": "0.7",
+      "index": "CONFIGURE_DISTINCT_FIXED_INDEX",
+      "derivationVersion": 1
+    },
+    "services": {
+      "app": "/usdc/app",
+      "indexer": "/usdc/indexer/public",
+      "metadata": "/usdc/metadata",
+      "rpc": "/usdc/app/v1/rpc"
+    },
+    "privyAppId": "CONFIGURE_DISTINCT_PRIVY_APP_ID",
+    "explorerUrl": "https://sepolia.arbiscan.io",
+    "legacyUrl": "/demo/",
+    "features": {
+      "newExposure": false,
+      "faucet": false,
+      "leaderboard": false,
+      "sponsorship": false
+    }
+  },
+  "sponsor": null,
+  "allowedOrigins": ["https://configure-public-host.example"],
+  "adminSubjects": [],
+  "confirmations": 2,
+  "minimumOperationBlock": "CONFIGURE_DEPLOYMENT_BLOCK",
+  "trustedProxies": []
+}

@@ -368,12 +368,14 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
             deploymentMode: mutation.deploymentMode,
             outcomeCount: null,
             closeAt: null,
+            createdAt: null,
+            eventStartsAt: null,
+            outcomeDeadlineAt: null,
             resolutionWindow: null,
             rulesHash: null,
             metadataUri: null,
             resolutionSourceHash: null,
             resolutionSourceUri: null,
-            earlyBirdStart: null,
             creatorTreasury: null,
             featureFlags: null,
             marketPrimaryCap: null,
@@ -381,6 +383,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
             primaryPayment: 0n,
             creatorBond: mutation.creatorBond,
             state: 0,
+            voidReason: 0,
             winningOutcome: null,
             evidenceHash: null,
             evidenceUri: null,
@@ -406,13 +409,15 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           creator: mutation.creator,
           deploymentMode: mutation.deploymentMode,
           outcomeCount: mutation.outcomeCount,
+          createdAt: mutation.createdAt,
           closeAt: mutation.closeAt,
+          eventStartsAt: mutation.eventStartsAt,
+          outcomeDeadlineAt: mutation.outcomeDeadlineAt,
           resolutionWindow: mutation.resolutionWindow,
           rulesHash: current?.rulesHash ?? null,
           metadataUri: current?.metadataUri ?? null,
           resolutionSourceHash: current?.resolutionSourceHash ?? null,
           resolutionSourceUri: current?.resolutionSourceUri ?? null,
-          earlyBirdStart: current?.earlyBirdStart ?? null,
           creatorTreasury: current?.creatorTreasury ?? null,
           featureFlags: current?.featureFlags ?? null,
           marketPrimaryCap: mutation.marketPrimaryCap,
@@ -420,6 +425,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           primaryPayment: current?.primaryPayment ?? 0n,
           creatorBond: mutation.creatorBond,
           state: current?.state ?? 0,
+          voidReason: current?.voidReason ?? 0,
           winningOutcome: current?.winningOutcome ?? null,
           evidenceHash: current?.evidenceHash ?? null,
           evidenceUri: current?.evidenceUri ?? null,
@@ -443,7 +449,8 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           resolutionSourceHash: mutation.resolutionSourceHash,
           resolutionSourceUri: mutation.resolutionSourceUri,
           closeAt: mutation.closeAt,
-          earlyBirdStart: mutation.earlyBirdStart,
+          eventStartsAt: mutation.eventStartsAt,
+          outcomeDeadlineAt: mutation.outcomeDeadlineAt,
           creatorTreasury: mutation.creatorTreasury,
           featureFlags: mutation.featureFlags,
           updatedBlock: event.blockNumber,
@@ -485,6 +492,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
         this.markets.set(key, {
           ...current,
           state: mutation.state,
+          voidReason: mutation.voidReason,
           winningOutcome: mutation.winningOutcome,
           evidenceHash: mutation.evidenceHash,
           evidenceUri:
@@ -565,6 +573,9 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           seller: mutation.seller,
           filledUnits: mutation.filledUnits,
           gross: mutation.gross,
+          sellerProceeds: mutation.sellerProceeds,
+          platformFee: mutation.platformFee,
+          creatorFee: mutation.creatorFee,
           blockNumber: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
         });
@@ -831,13 +842,19 @@ function compareActivityToCursor(
 }
 
 function terminalActivityKind(
-  value: "resolved" | "voided-creator" | "voided-timeout",
+  value:
+    | "resolved"
+    | "voided-creator"
+    | "voided-no-winning-supply"
+    | "voided-timeout",
 ): ActivityKind {
   switch (value) {
     case "resolved":
       return "market-resolved";
     case "voided-creator":
       return "market-voided-creator";
+    case "voided-no-winning-supply":
+      return "market-voided-no-winning-supply";
     case "voided-timeout":
       return "market-voided-timeout";
   }

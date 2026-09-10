@@ -14,12 +14,21 @@ import {
 } from "../../sdk/src/evidence.js";
 import { marketStatus, type MarketView } from "./store.js";
 import type { IndexerWebSocketHub } from "./websocket.js";
+import { AppError } from "../../app-core/src/contracts.js";
+import { financialActivity, registerFinancialApi } from "./financial-api.js";
+import type { PostgresFinancialLedger } from "./financial-store.js";
+import { publicCatalog } from "./public-catalog.js";
+import type { PublicClient } from "viem";
 
 export interface IndexerApiOptions {
+  trustedProxies?: string[];
+  financial?: {
+    ledger: PostgresFinancialLedger;
+    client: PublicClient;
+    confirmations: bigint;
+  };
   readiness?: (() => Promise<void>) | undefined;
-  syncStatus?:
-    | ((chainId: number) => Promise<IndexerSyncStatus>)
-    | undefined;
+  syncStatus?: ((chainId: number) => Promise<IndexerSyncStatus>) | undefined;
   registry?: Registry | undefined;
   logLevel?:
     | "fatal"
@@ -60,7 +69,7 @@ const opaqueCursorSchema = z
   .regex(/^[A-Za-z0-9_-]{1,256}$/)
   .optional();
 const marketStatusSchema = z
-  .enum(["open", "resolved", "voided-creator", "voided-timeout"])
+  .enum(["open", "resolved", "voided"])
   .transform((value) => value as MarketStatus);
 
 export function createIndexerApi(
@@ -75,7 +84,7 @@ export function createIndexerApi(
     requestTimeout: 5_000,
     connectionTimeout: 5_000,
     maxRequestsPerSocket: 1_000,
-    trustProxy: false,
+    trustProxy: options.trustedProxies?.length ? options.trustedProxies : false,
   });
   if (options.maxConnections !== undefined)
     app.server.maxConnections = options.maxConnections;
@@ -215,6 +224,7 @@ export function createIndexerApi(
       jsonPage(await store.listActivity(query.chainId, params.owner, query)),
     );
   });
+
   app.get("/v1/listings", async (request, reply) => {
     const query = z
       .object({
@@ -268,12 +278,64 @@ export function createIndexerApi(
     );
   });
 
+  const financial = options.financial;
+  if (financial) {
+    app.register(
+      async (publicApi) => {
+        const env = financial.ledger.environment;
+        // Encapsulation keeps legacy callers independent of the public-site binding.
+        publicApi.addHook("preValidation", async (request) => {
+          z.object({
+            environment: z.literal(env.id),
+            deploymentId: z.literal(env.deployment.id),
+            chainId: chainIdSchema
+              .refine((value) => value === env.deployment.chainId)
+              .optional(),
+          }).parse(request.query);
+        });
+        publicApi.get("/v2/markets", async (request) =>
+          publicCatalog(financial.ledger, "markets", request.query),
+        );
+        publicApi.get("/v2/markets/:market", async (request, reply) => {
+          const { market: address } = z
+            .object({ market: addressSchema })
+            .parse(request.params);
+          const market = await store.market(env.deployment.chainId, address);
+          return market === undefined
+            ? reply.code(404).send({ error: "market not found" })
+            : reply.send(jsonMarketV2(market));
+        });
+        publicApi.get("/v1/listings", async (request) =>
+          publicCatalog(financial.ledger, "listings", request.query),
+        );
+        publicApi.get("/v2/activity/:owner", async (request) => {
+          const { owner } = z
+            .object({ owner: addressSchema })
+            .parse(request.params);
+          return financialActivity(financial.ledger, owner, request.query);
+        });
+        registerFinancialApi(
+          publicApi,
+          financial.ledger,
+          financial.client,
+          financial.confirmations,
+        );
+      },
+      { prefix: "/public" },
+    );
+  }
+
   app.setNotFoundHandler(async (_request, reply) =>
     reply.code(404).send({ error: "not found" }),
   );
   app.setErrorHandler(async (error, _request, reply) => {
+    if (error instanceof AppError)
+      return reply
+        .code(error.status)
+        .send({ error: { code: error.code, message: error.message } });
     if (
       error instanceof z.ZodError ||
+      error instanceof SyntaxError ||
       error instanceof RangeError ||
       error instanceof TypeError
     ) {
@@ -346,6 +408,7 @@ function jsonMarketV1(value: MarketView): unknown {
     marketPrimaryCap: value.marketPrimaryCap,
     creatorBond: value.creatorBond,
     state: value.state,
+    voidReason: value.voidReason,
     winningOutcome: value.winningOutcome,
     ...evidence,
     createdBlock: value.createdBlock,

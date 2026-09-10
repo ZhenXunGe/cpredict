@@ -219,19 +219,25 @@ contract FactoryValidationTest is ProtocolTestBase {
         ProtocolTypes.CreateMarketParams memory params =
             _defaultParams(ProtocolTypes.DeploymentMode.FULL);
         params.closeAt = uint64(block.timestamp + 5 minutes - 1);
+        params.outcomeDeadlineAt = params.closeAt;
         _expectCreateRevert(params, InvalidConfiguration.selector, "close-too-soon");
 
         params = _defaultParams(ProtocolTypes.DeploymentMode.FULL);
         params.closeAt = uint64(block.timestamp + 90 days + 1);
+        params.outcomeDeadlineAt = params.closeAt;
         _expectCreateRevert(params, InvalidConfiguration.selector, "close-too-far");
+    }
 
-        params = _defaultParams(ProtocolTypes.DeploymentMode.FULL);
-        vm.warp(block.timestamp + 1);
-        _expectCreateRevert(params, InvalidConfiguration.selector, "early-before-create");
-
-        params = _defaultParams(ProtocolTypes.DeploymentMode.FULL);
-        params.earlyBirdStart = params.closeAt;
-        _expectCreateRevert(params, InvalidConfiguration.selector, "early-at-close");
+    function testDelayedCreationUsesExecutionTimeWithoutAClientEarlyBirdStart() public {
+        ProtocolTypes.CreateMarketParams memory params =
+            _defaultParams(ProtocolTypes.DeploymentMode.FULL);
+        uint64 confirmedClose = params.closeAt;
+        vm.warp(block.timestamp + 20 minutes);
+        MarketVaultCoreV1 market = _create(params, keccak256("delayed-create"));
+        assertEq(market.createdAt(), block.timestamp);
+        assertEq(market.closeAt(), confirmedClose);
+        _buy(market, ALICE, 0, 10e6);
+        assertEq(market.earlyBirdScore(ALICE), 30e6);
     }
 
     function testFactoryRejectsModeMarketAndUserCapFailures() public {

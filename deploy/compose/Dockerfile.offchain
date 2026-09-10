@@ -1,6 +1,9 @@
 FROM node:22.23.2-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3ebafdd95eaf7767a7e5 AS build
 WORKDIR /app
 COPY package.json package-lock.json tsconfig.json ./
+COPY patches ./patches
+COPY manifests/sdk-declaration-patches.json ./manifests/sdk-declaration-patches.json
+COPY scripts/public-site/apply-declaration-patches.mjs ./scripts/public-site/apply-declaration-patches.mjs
 RUN npm ci --ignore-scripts
 COPY offchain ./offchain
 COPY examples ./examples
@@ -22,6 +25,8 @@ RUN rm -rf /opt/yarn-v1.22.22 /usr/local/lib/node_modules/npm /usr/local/lib/nod
     && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY --from=runtime-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist/offchain/indexer ./dist/offchain/indexer
+COPY --from=build --chown=node:node /app/dist/offchain/app-core ./dist/offchain/app-core
+COPY --from=build --chown=node:node /app/dist/offchain/app-service ./dist/offchain/app-service
 COPY --from=build --chown=node:node /app/dist/offchain/sdk ./dist/offchain/sdk
 COPY package.json ./package.json
 USER node
@@ -71,3 +76,7 @@ COPY --from=build --chown=node:node /app/dist/offchain/sdk ./dist/offchain/sdk
 COPY package.json ./package.json
 USER node
 CMD ["node", "dist/offchain/permit2-relay-service/src/main.js"]
+
+# The app's reporting/reconciliation modules share the indexer's compiled graph.
+FROM indexer AS app-service
+CMD ["node", "dist/offchain/app-service/src/main.js"]

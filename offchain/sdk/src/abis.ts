@@ -16,7 +16,8 @@ const createMarketComponents = [
   { name: "resolutionSourceURI", type: "string" },
   { name: "outcomeCount", type: "uint8" },
   { name: "closeAt", type: "uint64" },
-  { name: "earlyBirdStart", type: "uint64" },
+  { name: "eventStartsAt", type: "uint64" },
+  { name: "outcomeDeadlineAt", type: "uint64" },
   { name: "creatorTreasury", type: "address" },
   { name: "deploymentMode", type: "uint8" },
   { name: "featureFlags", type: "uint256" },
@@ -30,6 +31,13 @@ const createMarketComponents = [
 ] as const;
 
 export const marketFactoryAbi = [
+  {
+    type: "function",
+    name: "resolutionWindow",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint64" }],
+  },
   {
     type: "function",
     name: "createMarket",
@@ -68,6 +76,13 @@ export const marketFactoryAbi = [
 export const marketVaultAbi = [
   {
     type: "function",
+    name: "voidReason",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint8" }],
+  },
+  {
+    type: "function",
     name: "buy",
     stateMutability: "nonpayable",
     inputs: [
@@ -104,14 +119,21 @@ export const marketVaultAbi = [
     name: "updateBeforeFirstBuy",
     stateMutability: "nonpayable",
     inputs: [
-      { name: "newRulesHash", type: "bytes32" },
-      { name: "newMetadataURI", type: "string" },
-      { name: "newResolutionSourceHash", type: "bytes32" },
-      { name: "newResolutionSourceURI", type: "string" },
-      { name: "newCloseAt", type: "uint64" },
-      { name: "newEarlyBirdStart", type: "uint64" },
-      { name: "newCreatorTreasury", type: "address" },
-      { name: "newFeatureFlags", type: "uint256" },
+      {
+        name: "terms",
+        type: "tuple",
+        components: [
+          { name: "rulesHash", type: "bytes32" },
+          { name: "metadataURI", type: "string" },
+          { name: "resolutionSourceHash", type: "bytes32" },
+          { name: "resolutionSourceURI", type: "string" },
+          { name: "closeAt", type: "uint64" },
+          { name: "eventStartsAt", type: "uint64" },
+          { name: "outcomeDeadlineAt", type: "uint64" },
+          { name: "creatorTreasury", type: "address" },
+          { name: "featureFlags", type: "uint256" },
+        ],
+      },
     ],
     outputs: [],
   },
@@ -200,7 +222,10 @@ export const marketVaultAbi = [
       { name: "creator", type: "address", indexed: true },
       { name: "mode", type: "uint8", indexed: true },
       { name: "outcomeCount", type: "uint8", indexed: false },
+      { name: "createdAt", type: "uint64", indexed: false },
       { name: "closeAt", type: "uint64", indexed: false },
+      { name: "eventStartsAt", type: "uint64", indexed: false },
+      { name: "outcomeDeadlineAt", type: "uint64", indexed: false },
       { name: "resolutionWindow", type: "uint64", indexed: false },
       { name: "marketPrimaryCap", type: "uint128", indexed: false },
       { name: "creatorBond", type: "uint128", indexed: false },
@@ -216,7 +241,8 @@ export const marketVaultAbi = [
       { name: "resolutionSourceHash", type: "bytes32", indexed: true },
       { name: "resolutionSourceURI", type: "string", indexed: false },
       { name: "closeAt", type: "uint64", indexed: false },
-      { name: "earlyBirdStart", type: "uint64", indexed: false },
+      { name: "eventStartsAt", type: "uint64", indexed: false },
+      { name: "outcomeDeadlineAt", type: "uint64", indexed: false },
       { name: "creatorTreasury", type: "address", indexed: true },
       { name: "featureFlags", type: "uint256", indexed: false },
     ],
@@ -256,7 +282,7 @@ export const marketVaultAbi = [
     name: "MarketVoided",
     anonymous: false,
     inputs: [
-      { name: "terminalState", type: "uint8", indexed: true },
+      { name: "reason", type: "uint8", indexed: true },
       { name: "caller", type: "address", indexed: true },
       { name: "refundPrincipal", type: "uint256", indexed: false },
       { name: "evidenceHash", type: "bytes32", indexed: true },
@@ -339,11 +365,6 @@ export const marketVaultAbi = [
     type: "error",
     name: "Unauthorized",
     inputs: [{ name: "caller", type: "address" }],
-  },
-  {
-    type: "error",
-    name: "WinningOutcomeHasNoSupply",
-    inputs: [{ name: "outcomeId", type: "uint256" }],
   },
 ] as const;
 
@@ -490,6 +511,20 @@ export const bondEscrowAbi = [
     name: "settleBond",
     stateMutability: "nonpayable",
     inputs: [{ name: "market", type: "address" }],
+    outputs: [{ name: "amount", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "claim",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [{ name: "amount", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "claimFor",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "creator", type: "address" }],
     outputs: [{ name: "amount", type: "uint256" }],
   },
 ] as const;
