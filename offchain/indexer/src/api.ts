@@ -70,7 +70,7 @@ const opaqueCursorSchema = z
   .regex(/^[A-Za-z0-9_-]{1,256}$/)
   .optional();
 const marketStatusSchema = z
-  .enum(["open", "resolved", "voided"])
+  .enum(["open", "resolved", "voided", "voided-creator", "voided-timeout"])
   .transform((value) => value as MarketStatus);
 
 export function createIndexerApi(
@@ -430,7 +430,7 @@ function jsonMarketV1(value: MarketView): unknown {
 function jsonMarketV2(value: MarketView): unknown {
   return json({
     ...value,
-    status: marketStatus(value.state),
+    status: marketStatus(value.state, value.protocolVersion),
     ...normalizedEvidence(value),
   });
 }
