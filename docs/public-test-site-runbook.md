@@ -207,3 +207,11 @@ npm run site:test:kernel-fork -- --rpc-url https://sepolia-rollup.arbitrum.io/rp
 公共 RPC 的历史状态读取并不稳定：2026-09-09 重跑上述旧区块时返回 `metadata is not found`，更换存储 slot 编码仍失败。需要重现旧快照时，应使用验证过的历史 RPC；另选当前固定区块只能证明新的快照下通过，不能作为旧区块回放成功。失败记录必须保留，不能自动退回 `latest` 或将此节点预检解释为长期历史覆盖保证。
 
 开发服务器 `npm run site:dev` 的 `/test/browser/fixture.html` 是带显著标记的页面夹具，不能签名或发送交易；该入口不在生产构建输入中。实际根入口没有运行配置时保持交易关闭。当前验收状态见 [验收记录](public-test-site-acceptance.md)，逐项工程、配置、真实环境与发布待办见 [剩余清单](public-test-site-remaining.md)。
+
+## Existing ctUSD deployments using the original ABI
+
+Set `environment.deployment.protocolVersion` to `legacy-v1` only after verifying the original deployment manifest and runtime code hashes. Omission retains the time-v2 model. This selects the original initialization/metadata event signatures, legacy rules commitments, and explicit terminal-state translation at the public-site boundary. Original database state values and stored event JSON remain unchanged. Migration `007_legacy_deployment.sql` adds missing fields; unknown new time commitments stay null. The metadata service serves both immutable rules formats.
+
+Build the reviewed, compatible demo with `node scripts/public-site/build-legacy-demo.mjs <exact-legacy-source-commit>`. Add its printed output directory as `CPREDICT_STACK_LEGACY_DEMO_DIR` in the private Compose environment. `stack.mjs up --public-site` validates its build record and mounts that bundle at `/demo/`; the public application continues to build from main. Legacy market creation stays in this compatible demo until a separate original-ABI creation form is accepted. Never submit the time-v2 create tuple to the old factory.
+
+Rehearse against restored database backups before switching services. Verify original market/position values after migration and reorg replay, and preserve the original runtime package and container images for rollback. Replaying historical financial facts does not establish full scanner coverage, payment-token coverage, or reconciled PnL. Keep sponsorship disabled until the supplier's actual hard cap and policy composition are verified.

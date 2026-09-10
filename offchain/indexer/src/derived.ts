@@ -1,4 +1,9 @@
 import {
+  legacyMarketEvents,
+  publicMarketState,
+  type ProtocolVersion,
+} from "../../sdk/src/legacy-protocol.js";
+import {
   decodeEventLog,
   getAddress,
   parseAbiItem,
@@ -33,10 +38,10 @@ export type DerivedMutation =
       creator: Address;
       deploymentMode: number;
       outcomeCount: number;
-      createdAt: bigint;
+      createdAt: bigint | null;
       closeAt: bigint;
       eventStartsAt: bigint | null;
-      outcomeDeadlineAt: bigint;
+      outcomeDeadlineAt: bigint | null;
       resolutionWindow: bigint;
       marketPrimaryCap: bigint;
       creatorBond: bigint;
@@ -50,7 +55,8 @@ export type DerivedMutation =
       resolutionSourceUri: string;
       closeAt: bigint;
       eventStartsAt: bigint | null;
-      outcomeDeadlineAt: bigint;
+      outcomeDeadlineAt: bigint | null;
+      earlyBirdStart?: bigint;
       creatorTreasury: Address;
       featureFlags: bigint;
     }
@@ -140,6 +146,14 @@ const eventByTopic = new Map<Hex, (typeof eventItems)[number]>(
   eventItems.map((item) => [toEventSelector(item), item]),
 );
 
+const legacyEventByTopic = new Map<Hex, AbiEvent>([
+  ...eventByTopic,
+  ...legacyMarketEvents.map((item): [Hex, AbiEvent] => [
+    toEventSelector(item),
+    item,
+  ]),
+]);
+
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000" as Address;
 
 export function discoverMarketAddresses(
@@ -158,10 +172,13 @@ export function discoverMarketAddresses(
 
 export function deriveMutations(
   event: IndexedEvent,
+  protocol: ProtocolVersion = "time-v2",
 ): readonly DerivedMutation[] {
   const topic = event.topics[0];
   if (topic === undefined) return [];
-  const item = eventByTopic.get(topic);
+  const item = (
+    protocol === "legacy-v1" ? legacyEventByTopic : eventByTopic
+  ).get(topic);
   if (item === undefined) return [];
   const decoded = decodeEventLog({
     abi: [item],
@@ -190,13 +207,14 @@ export function deriveMutations(
           creator: address(args.creator),
           deploymentMode: number(args.mode),
           outcomeCount: number(args.outcomeCount),
-          createdAt: bigint(args.createdAt),
+          createdAt: protocol === "legacy-v1" ? null : bigint(args.createdAt),
           closeAt: bigint(args.closeAt),
           eventStartsAt:
-            bigint(args.eventStartsAt) === 0n
+            protocol === "legacy-v1" || bigint(args.eventStartsAt) === 0n
               ? null
               : bigint(args.eventStartsAt),
-          outcomeDeadlineAt: bigint(args.outcomeDeadlineAt),
+          outcomeDeadlineAt:
+            protocol === "legacy-v1" ? null : bigint(args.outcomeDeadlineAt),
           resolutionWindow: bigint(args.resolutionWindow),
           marketPrimaryCap: bigint(args.marketPrimaryCap),
           creatorBond: bigint(args.creatorBond),
@@ -213,10 +231,14 @@ export function deriveMutations(
           resolutionSourceUri: text(args.resolutionSourceURI),
           closeAt: bigint(args.closeAt),
           eventStartsAt:
-            bigint(args.eventStartsAt) === 0n
+            protocol === "legacy-v1" || bigint(args.eventStartsAt) === 0n
               ? null
               : bigint(args.eventStartsAt),
-          outcomeDeadlineAt: bigint(args.outcomeDeadlineAt),
+          outcomeDeadlineAt:
+            protocol === "legacy-v1" ? null : bigint(args.outcomeDeadlineAt),
+          ...(protocol === "legacy-v1"
+            ? { earlyBirdStart: bigint(args.earlyBirdStart) }
+            : {}),
           creatorTreasury: address(args.creatorTreasury),
           featureFlags: bigint(args.featureFlags),
         },
@@ -247,19 +269,25 @@ export function deriveMutations(
           evidenceHash: optionalEvidenceHash(args.evidenceHash),
         },
       ];
-    case "MarketVoided":
+    case "MarketVoided": {
+      const reason =
+        protocol === "legacy-v1"
+          ? publicMarketState(protocol, number(args.terminalState), 0)
+              .voidReason
+          : number(args.reason);
       return [
         {
           kind: "market-terminal",
           market: event.address,
-          terminalKind: terminalKind(args.reason),
+          terminalKind: terminalKind(reason),
           caller: address(args.caller),
-          state: 2,
-          voidReason: number(args.reason),
+          state: protocol === "legacy-v1" ? number(args.terminalState) : 2,
+          voidReason: reason,
           winningOutcome: null,
           evidenceHash: optionalEvidenceHash(args.evidenceHash),
         },
       ];
+    }
     case "ListingCreated":
       return [
         {

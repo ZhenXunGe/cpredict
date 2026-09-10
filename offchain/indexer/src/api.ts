@@ -1,3 +1,4 @@
+import { publicMarketState } from "../../sdk/src/legacy-protocol.js";
 import Fastify, { type FastifyInstance } from "fastify";
 import { Counter, Gauge, Histogram, Registry } from "prom-client";
 import { getAddress, isAddress, type Address, type Hex } from "viem";
@@ -303,7 +304,16 @@ export function createIndexerApi(
           const market = await store.market(env.deployment.chainId, address);
           return market === undefined
             ? reply.code(404).send({ error: "market not found" })
-            : reply.send(jsonMarketV2(market));
+            : reply.send(
+                jsonMarketV2({
+                  ...market,
+                  ...publicMarketState(
+                    financial.ledger.environment.deployment.protocolVersion,
+                    market.state,
+                    market.voidReason,
+                  ),
+                }),
+              );
         });
         publicApi.get("/v1/listings", async (request) =>
           publicCatalog(financial.ledger, "listings", request.query),

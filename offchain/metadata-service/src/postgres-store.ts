@@ -1,6 +1,6 @@
 import postgres, { type Sql } from "postgres";
 import { getAddress, type Address, type Hex } from "viem";
-import { marketRulesSchema } from "../../sdk/src/market-rules.js";
+import { publishedMarketRulesSchema } from "../../sdk/src/published-market-rules.js";
 import {
   ChallengeUnavailableError,
   type MarketPublication,
@@ -182,7 +182,9 @@ function mapChallenge(row: ChallengeRow): MetadataChallenge {
 }
 
 function mapPublication(row: PublicationRow): MarketPublication {
-  const rules = marketRulesSchema.parse(JSON.parse(row.canonical_json));
+  const rules = publishedMarketRulesSchema.parse(
+    JSON.parse(row.canonical_json),
+  );
   return {
     chainId: Number(row.chain_id),
     factory: getAddress(row.factory),

@@ -1,3 +1,4 @@
+import { publicMarketState } from "../../sdk/src/legacy-protocol.js";
 import { parseAbi, type Address, type Hex, type PublicClient } from "viem";
 import type { Environment } from "../../app-core/src/contracts.js";
 import { sameAddress } from "../../app-core/src/contracts.js";
@@ -48,7 +49,9 @@ export class OnchainRightsReader implements RightsReader {
       ownerTimeoutUnits,
     ] = await Promise.all([
       this.client.readContract({ ...shared, functionName: "marketState" }),
-      this.client.readContract({ ...shared, functionName: "voidReason" }),
+      this.environment.deployment.protocolVersion === "legacy-v1"
+        ? Promise.resolve(0)
+        : this.client.readContract({ ...shared, functionName: "voidReason" }),
       this.client.readContract({ ...shared, functionName: "winningOutcome" }),
       this.client.readContract({ ...shared, functionName: "outcomeCount" }),
       this.client.readContract({
@@ -106,8 +109,11 @@ export class OnchainRightsReader implements RightsReader {
         )),
       );
     return {
-      state,
-      voidReason,
+      ...publicMarketState(
+        this.environment.deployment.protocolVersion,
+        state,
+        voidReason,
+      ),
       winningOutcome: BigInt(winningOutcome),
       balances,
       winnerPool,

@@ -229,6 +229,8 @@ export function buildRuntimePackage({
     CPREDICT_INDEXER_CORE_ADDRESSES: [
       normalizedAddresses.factory,
       normalizedAddresses.marketplace,
+      normalizedAddresses.bondEscrow,
+      normalizedAddresses.feeVault,
     ].join(","),
     CPREDICT_INDEXER_DEPLOYMENT_BLOCK: String(deploymentBlock),
     CPREDICT_PAYMASTER_ENTRY_POINT: normalizedExternal.entryPoint,

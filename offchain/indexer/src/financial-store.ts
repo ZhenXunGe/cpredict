@@ -154,7 +154,7 @@ export class PostgresFinancialLedger {
       // Completeness starts only with a full configured scanner at deployment, never by inferring it from event counts.
       await db`UPDATE ledger_environment SET
         coverage_start=COALESCE(coverage_start,${first?.toString() ?? null}),
-        coverage_complete=CASE WHEN indexed_block=${checkpoint.blockNumber.toString()}::numeric THEN coverage_complete WHEN indexed_block IS NULL THEN ${first?.toString() ?? null}::numeric=deployment_block ELSE coverage_complete AND indexed_block+1=${first?.toString() ?? null}::numeric END,
+        coverage_complete=CASE WHEN indexed_block=${checkpoint.blockNumber.toString()}::numeric THEN coverage_complete WHEN ${first?.toString() ?? null}::numeric IS NULL THEN false WHEN indexed_block IS NULL THEN ${first?.toString() ?? null}::numeric=deployment_block ELSE coverage_complete AND indexed_block+1=${first?.toString() ?? null}::numeric END,
         indexed_block=${checkpoint.blockNumber.toString()},indexed_hash=${checkpoint.blockHash} WHERE singleton`;
     }
   }

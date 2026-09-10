@@ -181,7 +181,7 @@ export function buildSnapshotSql(kind, tables, { fingerprints = false, columns }
 
 async function migrationInventory() {
   const files = [
-    ...["001_indexer.sql", "002_settlement_evidence.sql", "003_read_api_indexes.sql", "004_market_metadata.sql", "005_activity_catalog.sql", "006_financial_facts.sql"].map(
+    ...["001_indexer.sql", "002_settlement_evidence.sql", "003_read_api_indexes.sql", "004_market_metadata.sql", "005_activity_catalog.sql", "006_financial_facts.sql", "007_legacy_deployment.sql"].map(
       (name) => `offchain/indexer/migrations/${name}`,
     ),
     "offchain/paymaster-service/migrations/001_sponsor_budget.sql",

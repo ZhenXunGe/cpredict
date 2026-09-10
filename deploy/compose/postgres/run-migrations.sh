@@ -13,6 +13,7 @@ case "$kind" in
       /migrations/004_market_metadata.sql
       /migrations/005_activity_catalog.sql
       /migrations/006_financial_facts.sql
+      /migrations/007_legacy_deployment.sql
     )
     ;;
   paymaster)

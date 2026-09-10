@@ -1,0 +1,9 @@
+services:
+  web-demo:
+    volumes:
+      - type: bind
+        source: ${CPREDICT_STACK_LEGACY_DEMO_DIR:?Build the reviewed legacy demo first}
+        target: /usr/share/nginx/html/demo
+        read_only: true
+        bind:
+          create_host_path: false

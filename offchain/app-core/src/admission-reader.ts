@@ -1,4 +1,8 @@
 import {
+  legacyMarketRulesSchema,
+  encodeLegacyMarketRules,
+} from "../../sdk/src/legacy-market-rules.js";
+import {
   getAddress,
   parseAbi,
   keccak256,
@@ -52,6 +56,33 @@ export class ProtocolAdmissionReader implements AdmissionReader {
     });
   }
   async verifiedRules(market: Address): Promise<boolean> {
+    if (this.environment.deployment.protocolVersion === "legacy-v1") {
+      const [rulesHash, closeAt] = await Promise.all([
+        this.client.readContract({
+          address: market,
+          abi: vaultAbi,
+          functionName: "rulesHash",
+        }),
+        this.client.readContract({
+          address: market,
+          abi: vaultAbi,
+          functionName: "closeAt",
+        }),
+      ]);
+      const result = legacyMarketRulesSchema.safeParse(
+        await fetchJson(
+          `${this.metadataUrl.replace(/\/$/, "")}/v1/markets/${rulesHash}/rules.json`,
+          { signal: AbortSignal.timeout(5000) },
+          32768,
+        ),
+      );
+      return (
+        result.success &&
+        BigInt(result.data.closesAt) === closeAt &&
+        encodeLegacyMarketRules(result.data).rulesHash.toLowerCase() ===
+          rulesHash.toLowerCase()
+      );
+    }
     const [
       rulesHash,
       closeAt,
@@ -120,6 +151,8 @@ export class ProtocolAdmissionReader implements AdmissionReader {
   async creationPayment(
     params: Extract<BusinessIntent, { kind: "create-market" }>["params"],
   ): Promise<bigint> {
+    if (this.environment.deployment.protocolVersion === "legacy-v1")
+      throw new AppError("legacy_creation_requires_demo", 409);
     const [rules, resolutionWindow] = await Promise.all([
       fetchJson(
         `${this.metadataUrl.replace(/\/$/, "")}/v1/markets/${params.rulesHash}/rules.json`,

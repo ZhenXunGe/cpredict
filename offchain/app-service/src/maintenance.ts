@@ -53,6 +53,7 @@ const migrationPaths = [
     "004_market_metadata.sql",
     "005_activity_catalog.sql",
     "006_financial_facts.sql",
+    "007_legacy_deployment.sql",
   ].map((n) => `offchain/indexer/migrations/${n}`),
   "offchain/app-service/migrations/001_application.sql",
   "offchain/app-service/migrations/002_operational_queries.sql",

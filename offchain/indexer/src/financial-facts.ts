@@ -1,4 +1,8 @@
 import {
+  legacyMarketEvents,
+  publicMarketState,
+} from "../../sdk/src/legacy-protocol.js";
+import {
   decodeEventLog,
   getAddress,
   parseAbi,
@@ -53,6 +57,13 @@ export const financialEventsAbi = [
 const byTopic = new Map<string, AbiEvent>(
   financialEventsAbi.map((item) => [toEventSelector(item).toLowerCase(), item]),
 );
+const legacyByTopic = new Map<string, AbiEvent>([
+  ...byTopic,
+  ...legacyMarketEvents.map((item): [string, AbiEvent] => [
+    toEventSelector(item).toLowerCase(),
+    item,
+  ]),
+]);
 type Args = Record<string, unknown>;
 type Decoded = { event: IndexedEvent; name: string; args: Args };
 export interface LedgerListing {
@@ -99,7 +110,11 @@ export function normalizeFinancialFacts(
   );
   const decoded: Decoded[] = [];
   for (const e of [...events].sort(compareRaw)) {
-    const item = byTopic.get(e.topics[0]?.toLowerCase() ?? "");
+    const item = (
+      context.environment.deployment.protocolVersion === "legacy-v1"
+        ? legacyByTopic
+        : byTopic
+    ).get(e.topics[0]?.toLowerCase() ?? "");
     if (!item) continue;
     const value = decodeEventLog({
       abi: [item],
@@ -457,7 +472,21 @@ export function normalizeFinancialFacts(
         );
         break;
       case "MarketVoided":
-        add(e, "market-voided", common, a);
+        add(
+          e,
+          "market-voided",
+          common,
+          context.environment.deployment.protocolVersion === "legacy-v1"
+            ? {
+                ...a,
+                reason: publicMarketState(
+                  "legacy-v1",
+                  Number(a.terminalState),
+                  0,
+                ).voidReason,
+              }
+            : a,
+        );
         break;
       case "WinnerClaimed":
       case "PrincipalRefunded":
