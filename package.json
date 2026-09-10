@@ -66,6 +66,8 @@
     "stack:proxy:render": "node scripts/stack/render-public-proxy.mjs",
     "stack:tunnel:render": "node scripts/stack/render-reverse-tunnel.mjs",
     "stack:up": "node scripts/stack/stack.mjs up",
+    "stack:update:public": "node scripts/stack/public-update.mjs",
+    "stack:publisher:prepare": "node scripts/stack/prepare-cloud-publisher.mjs",
     "stack:status": "node scripts/stack/stack.mjs status",
     "stack:verify": "node scripts/stack/verify-runtime.mjs",
     "stack:logs": "node scripts/stack/stack.mjs logs",

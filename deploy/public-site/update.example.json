@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "publicOrigin": "https://101.32.241.211",
+  "localOrigin": "http://127.0.0.1:4177",
+  "ssh": {
+    "host": "101.32.241.211",
+    "port": 22,
+    "user": "cpredict-publish",
+    "identityFile": "REPLACE_WITH_EXISTING_PRIVATE_PUBLISHER_IDENTITY",
+    "knownHostsFile": "REPLACE_WITH_VERIFIED_KNOWN_HOSTS_FILE"
+  },
+  "composeOverrides": ["runtime/public-site/update.override.json"]
+}
