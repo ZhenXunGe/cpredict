@@ -64,7 +64,7 @@ test("public-site CI inventory includes every application and financial test and
   const report = validReport(inventory);
   assert.deepEqual(
     validatePostgresIntegrationResult(report, "/repo", inventory),
-    { files: 8, tests: 31, passed: 31, skipped: 0 },
+    { files: 8, tests: 36, passed: 36, skipped: 0 },
   );
   report.testResults[7].assertionResults[0].status = "skipped";
   assert.throws(

@@ -5,15 +5,20 @@ import {
   type AppAccount,
   type Operation,
   type OperationState,
+  type DepositReportQuery,
 } from "../../app-core/src/contracts.js";
 import type { SponsorConfig } from "../src/config.js";
 import {
   assertAccountUnchanged,
   assertQuota,
+  assertDepositRegistration,
+  depositView,
+  depositActive,
   type ApplicationStore,
   type ControlChallenge,
   type OperationPatch,
   type StoredOperation,
+  type StoredDeposit,
 } from "../src/store.js";
 
 /** Test double only: production always uses the transactional PostgreSQL store. */
@@ -22,6 +27,117 @@ export class MemoryApplicationStore implements ApplicationStore {
   readonly bindings = new Map<string, Set<string>>();
   readonly accountRows = new Map<string, AppAccount>();
   readonly records = new Map<string, StoredOperation>();
+  readonly depositRows = new Map<string, StoredDeposit>();
+  async deposit(id: string, now: string) {
+    const r = this.depositRows.get(id);
+    if (!r) return undefined;
+    return structuredClone({
+      ...r,
+      deposit: depositView(
+        r.deposit,
+        r.deposit.operationId
+          ? this.records.get(r.deposit.operationId)?.operation
+          : undefined,
+        now,
+      ),
+    });
+  }
+  async depositByKey(subject: string, key: string, now: string) {
+    const r = [...this.depositRows.values()].find(
+      (d) => d.subject === subject && d.idempotencyKey === key,
+    );
+    return r ? this.deposit(r.deposit.id, now) : undefined;
+  }
+  async createDeposit(value: StoredDeposit) {
+    const old = await this.depositByKey(
+      value.subject,
+      value.idempotencyKey,
+      value.deposit.createdAt,
+    );
+    if (old) {
+      if (old.requestHash !== value.requestHash)
+        throw new AppError("idempotency_conflict", 409);
+      return old;
+    }
+    for (const r of this.depositRows.values()) {
+      const d = (await this.deposit(r.deposit.id, value.deposit.createdAt))!
+        .deposit;
+      if (d.accountId === value.deposit.accountId && depositActive(d))
+        throw new AppError("deposit_in_progress", 409);
+    }
+    this.depositRows.set(value.deposit.id, structuredClone(value));
+    return structuredClone(value);
+  }
+  async depositPage(
+    subject: string,
+    accountId: string,
+    now: string,
+    limit: number,
+    _cursor?: string,
+    activeOnly = false,
+  ) {
+    const records = await Promise.all(
+      [...this.depositRows.keys()].map((id) => this.deposit(id, now)),
+    );
+    return {
+      items: records
+        .filter(
+          (r): r is StoredDeposit =>
+            !!r &&
+            r.subject === subject &&
+            r.deposit.accountId === accountId &&
+            (!activeOnly || depositActive(r.deposit)),
+        )
+        .map((r) => r.deposit)
+        .sort(
+          (a, b) =>
+            b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id),
+        )
+        .slice(0, limit),
+      nextCursor: null,
+    };
+  }
+  async cancelDeposit(id: string, subject: string, now: string) {
+    const r = await this.deposit(id, now);
+    if (!r || r.subject !== subject)
+      throw new AppError("deposit_not_found", 404);
+    if (r.deposit.operationId)
+      throw new AppError(
+        "deposit_already_registered",
+        409,
+        "请查询原入金操作",
+        r.deposit.operationId,
+      );
+    if (r.deposit.state !== "awaiting-authorization") return r;
+    r.deposit = {
+      ...r.deposit,
+      state: "cancelled",
+      updatedAt: now,
+      reason: "user_cancelled_before_submission",
+    };
+    this.depositRows.set(id, structuredClone(r));
+    return r;
+  }
+  async depositReport(q: DepositReportQuery, now: string) {
+    const records = await Promise.all(
+      [...this.depositRows.keys()].map((id) => this.deposit(id, now)),
+    );
+    return {
+      items: records
+        .map((r) => r!.deposit)
+        .filter(
+          (d) =>
+            d.createdAt >= q.start &&
+            d.createdAt < q.end &&
+            (!q.accountId || d.accountId === q.accountId) &&
+            (!q.id || d.id === q.id) &&
+            (!q.source ||
+              d.authorization.from.toLowerCase() === q.source.toLowerCase()),
+        )
+        .slice(0, q.limit),
+      nextCursor: null,
+    };
+  }
   async ready() {}
   async close() {}
   async createChallenge(c: ControlChallenge) {
@@ -95,6 +211,16 @@ export class MemoryApplicationStore implements ApplicationStore {
       return structuredClone(old);
     }
     assertQuota([...this.records.values()], value, limits);
+    if (value.operation.intent.kind === "deposit-usdc") {
+      const d = this.depositRows.get(value.operation.intent.depositId);
+      assertDepositRegistration(d, value);
+      d!.deposit = {
+        ...d!.deposit,
+        operationId: value.operation.id,
+        state: "awaiting-signature",
+        updatedAt: value.operation.updatedAt,
+      };
+    }
     this.records.set(value.operation.id, structuredClone(value));
     return structuredClone(value);
   }

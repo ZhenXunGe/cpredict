@@ -26,6 +26,8 @@
     "site:test:capacity": "node scripts/public-site/test-capacity.mjs",
     "presite:test:kernel-fork": "npm run build:offchain && .tools/foundry/bin/forge build test/mocks/KernelERC1155Fixture.sol test/mocks/MockUSDC.sol --offline",
     "site:test:kernel-fork": "node scripts/public-site/test-kernel-fork.mjs",
+    "presite:test:usdc-deposit-fork": "npm run build:offchain",
+    "site:test:usdc-deposit-fork": "node scripts/public-site/test-usdc-deposit-fork.mjs",
     "site:maintain": "node dist/offchain/app-service/src/maintenance.js",
     "site:contracts": "node scripts/public-site/contracts.mjs",
     "site:contracts:check": "node scripts/public-site/contracts.mjs --check",

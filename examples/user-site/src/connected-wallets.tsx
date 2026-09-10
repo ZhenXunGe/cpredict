@@ -4,6 +4,7 @@ import {
   usePrivy,
   useWallets,
   useExportWallet,
+  useConnectWallet,
 } from "@privy-io/react-auth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { arbitrumSepolia } from "viem/chains";
@@ -74,6 +75,7 @@ function ConnectedSession({
   const privy = usePrivy(),
     { wallets, ready: walletsReady } = useWallets(),
     { exportWallet } = useExportWallet(),
+    { connectWallet } = useConnectWallet(),
     cache = useQueryClient();
   const api = useMemo(
     () => new SiteApi(environment, privy.getAccessToken),
@@ -133,6 +135,8 @@ function ConnectedSession({
     error: query.error,
     login: () => privy.login(),
     linkWallet: () => privy.linkWallet(),
+    connectFundingWallet: () =>
+      connectWallet({ walletChainType: "ethereum-only" }),
     logout: async () => {
       await cache.cancelQueries();
       cache.clear();

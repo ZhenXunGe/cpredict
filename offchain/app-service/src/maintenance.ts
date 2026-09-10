@@ -57,6 +57,7 @@ const migrationPaths = [
   ].map((n) => `offchain/indexer/migrations/${n}`),
   "offchain/app-service/migrations/001_application.sql",
   "offchain/app-service/migrations/002_operational_queries.sql",
+  "offchain/app-service/migrations/003_usdc_deposits.sql",
 ];
 async function run() {
   if (command === "validate-site") {

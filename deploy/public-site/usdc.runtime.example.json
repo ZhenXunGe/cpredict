@@ -21,7 +21,7 @@
     "account": {
       "kernelVersion": "0.3.1",
       "entryPointVersion": "0.7",
-      "index": "CONFIGURE_DISTINCT_FIXED_INDEX",
+      "index": "1002",
       "derivationVersion": 1
     },
     "services": {
@@ -36,7 +36,8 @@
       "newExposure": false,
       "faucet": false,
       "leaderboard": false,
-      "sponsorship": false
+      "sponsorship": false,
+      "gaslessDeposit": false
     }
   },
   "sponsor": null,

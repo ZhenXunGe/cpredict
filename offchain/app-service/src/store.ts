@@ -5,6 +5,8 @@ import {
   type AppAccount,
   type Operation,
   type OperationState,
+  type Deposit,
+  type DepositReportQuery,
 } from "../../app-core/src/contracts.js";
 import type { SponsorConfig } from "./config.js";
 import {
@@ -28,6 +30,81 @@ export interface StoredOperation {
   subject: string;
   idempotencyKey: string;
   requestHash: Hex;
+}
+export interface StoredDeposit {
+  deposit: Deposit;
+  subject: string;
+  idempotencyKey: string;
+  requestHash: Hex;
+}
+export function depositView(
+  d: Deposit,
+  operation: Operation | undefined,
+  now: string,
+): Deposit {
+  if (operation)
+    return {
+      ...d,
+      state: operation.state,
+      operationId: operation.id,
+      userOperationHash: operation.userOperationHash,
+      transactionHash: operation.transactionHash,
+      blockNumber: operation.blockNumber,
+      blockHash: operation.blockHash,
+      actualGasCost: operation.actualGasCost,
+      finality: operation.finality,
+      reason: operation.reason,
+      updatedAt: operation.updatedAt,
+    };
+  return d.state === "awaiting-authorization" &&
+    Date.parse(d.expiresAt) <= Date.parse(now)
+    ? { ...d, state: "expired", reason: "deposit_authorization_expired" }
+    : d;
+}
+export function depositActive(d: Deposit): boolean {
+  return (
+    [
+      "awaiting-authorization",
+      "preparing",
+      "awaiting-signature",
+      "submitted",
+      "confirming",
+      "unknown",
+    ].includes(d.state) ||
+    (d.state === "reverted" && d.finality !== "finalized")
+  );
+}
+export function assertDepositRegistration(
+  d: StoredDeposit | undefined,
+  value: StoredOperation,
+): void {
+  const o = value.operation,
+    i = o.intent;
+  if (i.kind !== "deposit-usdc") return;
+  if (
+    !d ||
+    d.subject !== value.subject ||
+    d.deposit.accountId !== o.accountId ||
+    d.deposit.environment !== o.environment ||
+    d.deposit.deploymentId !== o.deploymentId
+  )
+    throw new AppError("deposit_not_found", 404);
+  if (d.deposit.operationId)
+    throw new AppError(
+      "deposit_already_registered",
+      409,
+      "请查询原入金操作",
+      d.deposit.operationId,
+    );
+  if (
+    d.deposit.state !== "awaiting-authorization" ||
+    Date.parse(d.deposit.expiresAt) <= Date.parse(o.createdAt)
+  )
+    throw new AppError("deposit_authorization_expired", 409);
+  if (
+    JSON.stringify(d.deposit.authorization) !== JSON.stringify(i.authorization)
+  )
+    throw new AppError("deposit_authorization_mismatch", 403);
 }
 export type OperationPatch = Partial<
   Pick<
@@ -58,6 +135,30 @@ export interface ApplicationStore {
   accounts(subject: string): Promise<AppAccount[]>;
   allAccounts(): Promise<AppAccount[]>;
   account(id: string, subject: string): Promise<AppAccount | undefined>;
+  deposit(id: string, now: string): Promise<StoredDeposit | undefined>;
+  depositByKey(
+    subject: string,
+    key: string,
+    now: string,
+  ): Promise<StoredDeposit | undefined>;
+  createDeposit(value: StoredDeposit): Promise<StoredDeposit>;
+  depositPage(
+    subject: string,
+    accountId: string,
+    now: string,
+    limit: number,
+    cursor?: string,
+    activeOnly?: boolean,
+  ): Promise<{ items: Deposit[]; nextCursor: string | null }>;
+  depositReport(
+    query: DepositReportQuery,
+    now: string,
+  ): Promise<{ items: Deposit[]; nextCursor: string | null }>;
+  cancelDeposit(
+    id: string,
+    subject: string,
+    now: string,
+  ): Promise<StoredDeposit>;
   byKey(subject: string, key: string): Promise<StoredOperation | undefined>;
   admit(
     value: StoredOperation,
@@ -173,6 +274,17 @@ export function assertQuota(
     ).length >= limits.methodDailyOperations
   )
     throw new AppError("method_quota_exhausted", 429);
+  if (o.intent.kind === "deposit-usdc") {
+    const source = o.intent.authorization.from.toLowerCase();
+    if (
+      sameDay.filter(
+        (v) =>
+          v.operation.intent.kind === "deposit-usdc" &&
+          v.operation.intent.authorization.from.toLowerCase() === source,
+      ).length >= limits.methodDailyOperations
+    )
+      throw new AppError("deposit_source_quota_exhausted", 429);
+  }
 }
 
 export function assertAccountUnchanged(a: AppAccount, b: AppAccount): void {

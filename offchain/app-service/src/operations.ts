@@ -25,15 +25,19 @@ import {
 } from "../../app-core/src/kernel.js";
 import type { AppRuntime } from "./config.js";
 import type { ApplicationStore } from "./store.js";
+import { DepositService } from "./deposits.js";
 
 export class OperationService {
+  readonly deposits: DepositService;
   constructor(
     readonly runtime: AppRuntime,
     readonly store: ApplicationStore,
     readonly client: PublicClient,
     readonly reader: AdmissionReader,
     readonly now: () => Date = () => new Date(),
-  ) {}
+  ) {
+    this.deposits = new DepositService(this);
+  }
   async controlledAccount(
     identity: VerifiedIdentity,
     accountId: string,
@@ -141,6 +145,14 @@ export class OperationService {
     if (!env.features.sponsorship || !this.runtime.sponsor)
       throw new AppError("sponsorship_disabled", 503);
     const account = await this.controlledAccount(identity, accountId);
+    if (intent.kind === "deposit-usdc")
+      await this.deposits.validate(
+        identity.subject,
+        accountId,
+        account.address,
+        intent,
+        this.runtime.sponsor.validitySeconds + 10,
+      );
     const kernel = await createAppKernel(
       this.client,
       readOnlyController(account.controller),

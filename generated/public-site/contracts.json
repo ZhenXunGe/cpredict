@@ -211,6 +211,9 @@
                   },
                   "sponsorship": {
                     "type": "boolean"
+                  },
+                  "gaslessDeposit": {
+                    "type": "boolean"
                   }
                 },
                 "required": [
@@ -433,6 +436,9 @@
             },
             "sponsorship": {
               "type": "boolean"
+            },
+            "gaslessDeposit": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -648,6 +654,9 @@
                   "type": "boolean"
                 },
                 "sponsorship": {
+                  "type": "boolean"
+                },
+                "gaslessDeposit": {
                   "type": "boolean"
                 }
               },
@@ -1025,6 +1034,67 @@
               },
               "required": [
                 "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "deposit-usdc"
+                },
+                "depositId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "authorization": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "validAfter": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "validBefore": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "nonce": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "to",
+                    "value",
+                    "validAfter",
+                    "validBefore",
+                    "nonce"
+                  ],
+                  "additionalProperties": false
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{130}$"
+                }
+              },
+              "required": [
+                "kind",
+                "depositId",
+                "authorization",
+                "signature"
               ],
               "additionalProperties": false
             },
@@ -1741,6 +1811,7 @@
           "type": "string",
           "enum": [
             "faucet",
+            "deposit-usdc",
             "buy",
             "create-market",
             "create-listing",
@@ -1772,6 +1843,67 @@
               },
               "required": [
                 "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "deposit-usdc"
+                },
+                "depositId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "authorization": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "validAfter": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "validBefore": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "nonce": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "to",
+                    "value",
+                    "validAfter",
+                    "validBefore",
+                    "nonce"
+                  ],
+                  "additionalProperties": false
+                },
+                "signature": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{130}$"
+                }
+              },
+              "required": [
+                "kind",
+                "depositId",
+                "authorization",
+                "signature"
               ],
               "additionalProperties": false
             },
@@ -2474,6 +2606,581 @@
         "maxGasCost",
         "lane",
         "reason"
+      ],
+      "additionalProperties": false
+    },
+    "DepositPrepare": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "source": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "idempotencyKey": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        }
+      },
+      "required": [
+        "accountId",
+        "source",
+        "amount",
+        "idempotencyKey"
+      ],
+      "additionalProperties": false
+    },
+    "Deposit": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "environment": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "deploymentId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+        },
+        "accountId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "account": {
+          "type": "string"
+        },
+        "domain": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "version": {
+              "type": "string",
+              "const": "2"
+            },
+            "chainId": {
+              "type": "number",
+              "const": 421614
+            },
+            "verifyingContract": {
+              "type": "string",
+              "const": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+            }
+          },
+          "required": [
+            "name",
+            "version",
+            "chainId",
+            "verifyingContract"
+          ],
+          "additionalProperties": false
+        },
+        "authorization": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "validAfter": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "validBefore": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "nonce": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            }
+          },
+          "required": [
+            "from",
+            "to",
+            "value",
+            "validAfter",
+            "validBefore",
+            "nonce"
+          ],
+          "additionalProperties": false
+        },
+        "state": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "preparing",
+                "awaiting-signature",
+                "submitted",
+                "confirming",
+                "confirmed",
+                "reverted",
+                "cancelled",
+                "unknown"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "awaiting-authorization",
+                "expired"
+              ]
+            }
+          ]
+        },
+        "operationId": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "userOperationHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transactionHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "blockNumber": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "blockHash": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "actualGasCost": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finality": {
+          "type": "string",
+          "enum": [
+            "pending",
+            "application-confirmed",
+            "finalized"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "environment",
+        "deploymentId",
+        "accountId",
+        "account",
+        "domain",
+        "authorization",
+        "state",
+        "operationId",
+        "userOperationHash",
+        "transactionHash",
+        "blockNumber",
+        "blockHash",
+        "actualGasCost",
+        "finality",
+        "createdAt",
+        "updatedAt",
+        "expiresAt",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "DepositPage": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "environment": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+              },
+              "deploymentId": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+              },
+              "accountId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "account": {
+                "type": "string"
+              },
+              "domain": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "version": {
+                    "type": "string",
+                    "const": "2"
+                  },
+                  "chainId": {
+                    "type": "number",
+                    "const": 421614
+                  },
+                  "verifyingContract": {
+                    "type": "string",
+                    "const": "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
+                  }
+                },
+                "required": [
+                  "name",
+                  "version",
+                  "chainId",
+                  "verifyingContract"
+                ],
+                "additionalProperties": false
+              },
+              "authorization": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "validAfter": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "validBefore": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "nonce": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "value",
+                  "validAfter",
+                  "validBefore",
+                  "nonce"
+                ],
+                "additionalProperties": false
+              },
+              "state": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "preparing",
+                      "awaiting-signature",
+                      "submitted",
+                      "confirming",
+                      "confirmed",
+                      "reverted",
+                      "cancelled",
+                      "unknown"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "awaiting-authorization",
+                      "expired"
+                    ]
+                  }
+                ]
+              },
+              "operationId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "userOperationHash": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "transactionHash": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "blockNumber": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "blockHash": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "actualGasCost": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "finality": {
+                "type": "string",
+                "enum": [
+                  "pending",
+                  "application-confirmed",
+                  "finalized"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "environment",
+              "deploymentId",
+              "accountId",
+              "account",
+              "domain",
+              "authorization",
+              "state",
+              "operationId",
+              "userOperationHash",
+              "transactionHash",
+              "blockNumber",
+              "blockHash",
+              "actualGasCost",
+              "finality",
+              "createdAt",
+              "updatedAt",
+              "expiresAt",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "nextCursor"
+      ],
+      "additionalProperties": false
+    },
+    "DepositReportQuery": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "end": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "accountId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "source": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "limit": {
+          "default": 30,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "cursor": {
+          "type": "string",
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "start",
+        "end"
       ],
       "additionalProperties": false
     },

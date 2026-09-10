@@ -93,9 +93,20 @@ export const environmentSchema = z
       faucet: z.boolean(),
       leaderboard: z.boolean(),
       sponsorship: z.boolean(),
+      gaslessDeposit: z.boolean().optional(),
     }),
   })
   .superRefine((v, ctx) => {
+    if (
+      v.features.gaslessDeposit &&
+      (v.asset !== "USDC" || v.account.index !== "1002")
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["features", "gaslessDeposit"],
+        message:
+          "gasless deposits require the USDC environment and fixed account index 1002",
+      });
     if (
       v.asset === "USDC" &&
       v.deployment.paymentToken.toLowerCase() !==
@@ -190,8 +201,37 @@ const createParams = z.strictObject({
   minimumC2CUnits: positive,
   creatorBond: positive,
 });
+export const receiveAuthorizationSchema = z.strictObject({
+  from: address,
+  to: address,
+  value: positive,
+  validAfter: uint,
+  validBefore: positive,
+  nonce: hash.transform((v) => v.toLowerCase() as Hex),
+});
+export const depositPrepareSchema = z.strictObject({
+  accountId: z.string().uuid(),
+  source: address,
+  amount: positive,
+  idempotencyKey: z.string().uuid(),
+});
+export const usdcDomainSchema = z.strictObject({
+  name: z.string().min(1).max(100),
+  version: z.literal("2"),
+  chainId: z.literal(421614),
+  verifyingContract: z.literal("0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"),
+});
 export const intentSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("faucet") }),
+  z.strictObject({
+    kind: z.literal("deposit-usdc"),
+    depositId: z.string().uuid(),
+    authorization: receiveAuthorizationSchema,
+    signature: z
+      .string()
+      .regex(/^0x[\da-fA-F]{130}$/)
+      .transform((v) => v.toLowerCase() as Hex),
+  }),
   z.strictObject({
     kind: z.literal("buy"),
     ...market,
@@ -256,6 +296,7 @@ export type BudgetLane = "exposure" | "exit";
 export function budgetLane(kind: OperationKind): BudgetLane {
   return [
     "faucet",
+    "deposit-usdc",
     "buy",
     "create-market",
     "create-listing",
@@ -310,6 +351,7 @@ export const operationSchema = z.strictObject({
   account: address,
   kind: z.enum([
     "faucet",
+    "deposit-usdc",
     "buy",
     "create-market",
     "create-listing",
@@ -352,6 +394,52 @@ export const operationSchema = z.strictObject({
   reason: z.string().max(128).nullable(),
 });
 export type Operation = z.infer<typeof operationSchema>;
+export const depositSchema = z.strictObject({
+  id: z.string().uuid(),
+  environment: id,
+  deploymentId: id,
+  accountId: z.string().uuid(),
+  account: address,
+  domain: usdcDomainSchema,
+  authorization: receiveAuthorizationSchema,
+  state: z.union([
+    operationStateSchema,
+    z.enum(["awaiting-authorization", "expired"]),
+  ]),
+  operationId: z.string().uuid().nullable(),
+  userOperationHash: hash.nullable(),
+  transactionHash: hash.nullable(),
+  blockNumber: uint.nullable(),
+  blockHash: hash.nullable(),
+  actualGasCost: uint.nullable(),
+  finality: z.enum(["pending", "application-confirmed", "finalized"]),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  expiresAt: z.string().datetime(),
+  reason: z.string().max(128).nullable(),
+});
+export type Deposit = z.infer<typeof depositSchema>;
+export const depositPageSchema = z.strictObject({
+  items: z.array(depositSchema),
+  nextCursor: z.string().nullable(),
+});
+export const depositReportQuerySchema = z
+  .strictObject({
+    start: z.string().datetime(),
+    end: z.string().datetime(),
+    accountId: z.string().uuid().optional(),
+    source: address.optional(),
+    id: z.string().uuid().optional(),
+    limit: z.coerce.number().int().min(1).max(100).default(30),
+    cursor: z.string().max(2048).optional(),
+  })
+  .refine(
+    (q) =>
+      Date.parse(q.end) > Date.parse(q.start) &&
+      Date.parse(q.end) - Date.parse(q.start) <= 32 * 86400000,
+    "deposit report requires a positive interval of at most 32 days",
+  );
+export type DepositReportQuery = z.infer<typeof depositReportQuerySchema>;
 export function isRecoverable(s: OperationState): boolean {
   return ["submitted", "confirming", "unknown"].includes(s);
 }

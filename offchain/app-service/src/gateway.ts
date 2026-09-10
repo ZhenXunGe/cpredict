@@ -246,6 +246,15 @@ export class AuthenticatedAAGateway {
     )
       throw new AppError("operation_admission_expired", 409);
     await this.service.controlledAccount(identity, o.accountId);
+    if (o.intent.kind === "deposit-usdc")
+      await this.service.deposits.validate(
+        identity.subject,
+        o.accountId,
+        o.account,
+        o.intent,
+        0,
+        o.id,
+      );
     if (rpc.method === "eth_sendUserOperation" && userOperationHash) {
       // Persist the exact hash BEFORE the network side effect. A crash here is
       // deliberately recoverable as unknown; it never authorizes a second send.
@@ -339,6 +348,15 @@ export class AuthenticatedAAGateway {
       )
         return deny;
       assertOperationBinding(o, p.userOp);
+      if (o.intent.kind === "deposit-usdc")
+        await this.service.deposits.validate(
+          admitted.subject,
+          o.accountId,
+          o.account,
+          o.intent,
+          0,
+          o.id,
+        );
       // A policy callback is never an identity credential. Only the authenticated,
       // quota-reserved exact inner-call registration above can make it eligible.
       // Paymaster data can still be absent while the provider is deciding whether to issue it.

@@ -189,6 +189,7 @@ async function migrationInventory() {
     "offchain/metadata-service/migrations/001_metadata.sql",
     "offchain/app-service/migrations/001_application.sql",
     "offchain/app-service/migrations/002_operational_queries.sql",
+    "offchain/app-service/migrations/003_usdc_deposits.sql",
   ];
   return Promise.all(files.map(async (path) => ({ path, sha256: await sha256File(resolve(ROOT, path)) })));
 }

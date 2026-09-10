@@ -63,13 +63,11 @@ function setup(patch: Partial<Operation> = {}, success = true) {
       }),
   };
   const bundler = {
-    request: vi
-      .fn()
-      .mockResolvedValue({
-        userOpHash: H(1),
-        success: true,
-        receipt: { transactionHash: H(2) },
-      }),
+    request: vi.fn().mockResolvedValue({
+      userOpHash: H(1),
+      success: true,
+      receipt: { transactionHash: H(2) },
+    }),
   };
   const recovery = new OperationRecovery(
     store,
@@ -82,6 +80,31 @@ function setup(patch: Partial<Operation> = {}, success = true) {
 }
 
 describe("operation recovery without replay", () => {
+  it("keeps a successful operation unknown when its USDC transfer evidence is missing", async () => {
+    const s = setup({
+      kind: "deposit-usdc",
+      intent: {
+        kind: "deposit-usdc",
+        depositId: "30000000-0000-4000-8000-000000000001",
+        authorization: {
+          from: A(10),
+          to: operation.account,
+          value: "1000000",
+          validAfter: "0",
+          validBefore: "2000000000",
+          nonce: H(55),
+        },
+        signature: `0x${"11".repeat(65)}`,
+      },
+    });
+    expect(await s.recovery.refresh(s.current)).toMatchObject({
+      state: "unknown",
+      reason: "deposit_transfer_unverified",
+      actualGasCost: "30",
+      finality: "pending",
+      userOperationHash: H(1),
+    });
+  });
   it("uses individual execution evidence even when the provider claims success", async () => {
     const s = setup({}, false);
     expect(await s.recovery.refresh(s.current)).toMatchObject({

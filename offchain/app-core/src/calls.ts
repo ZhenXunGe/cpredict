@@ -20,6 +20,7 @@ import {
   type BusinessIntent,
   type Environment,
 } from "./contracts.js";
+import { receiveCall } from "./usdc.js";
 
 const mintAbi = parseAbi(["function mint(address to,uint256 amount)"]);
 const feeAbi = parseAbi([
@@ -119,6 +120,24 @@ export async function buildBusinessCalls(
   if ("minUnits" in intent && BigInt(intent.minUnits) > BigInt(intent.units))
     throw new AppError("invalid_minimum_units");
   switch (intent.kind) {
+    case "deposit-usdc":
+      if (
+        environment.asset !== "USDC" ||
+        !environment.features.gaslessDeposit ||
+        environment.account.index !== "1002"
+      )
+        throw new AppError("gasless_deposit_disabled", 503);
+      if (
+        !sameAddress(intent.authorization.to, account) ||
+        sameAddress(intent.authorization.from, account)
+      )
+        throw new AppError("deposit_recipient_mismatch", 403);
+      if (
+        BigInt(intent.authorization.validAfter) >= nowSeconds ||
+        BigInt(intent.authorization.validBefore) <= nowSeconds
+      )
+        throw new AppError("deposit_authorization_expired", 409);
+      return [receiveCall(intent.authorization, intent.signature)];
     case "faucet":
       if (environment.asset !== "ctUSD" || !environment.features.faucet)
         throw new AppError("faucet_disabled", 503);
