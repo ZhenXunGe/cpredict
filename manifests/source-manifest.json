@@ -65,6 +65,10 @@
       "sha256": "33c77a45731d146d07035063003eeb07ef3817f9241d2d00ee577a93c5081b9f"
     },
     {
+      "path": "compose.static-handoff.yaml",
+      "sha256": "cbd79e7f97c8789a9961c13ef9fdc3aaa208d071b0f9c2b9e989f810924bafb9"
+    },
+    {
       "path": "compose.usdc.yaml",
       "sha256": "95e71ec4b6831637f22d8e8a29e9f55fbb5f6e480d35221fc679db43914f5de4"
     },
@@ -114,7 +118,7 @@
     },
     {
       "path": "deploy/host/reverse-tunnel/README.md.template",
-      "sha256": "2952fb31dcac998d7c7abe2304d4c63a5d07a08d3d734141ee53cd53472d2399"
+      "sha256": "1fd60911495ded66b3bb7969d504e1196bff75eb9ee469d38e976a3a660fb235"
     },
     {
       "path": "deploy/host/reverse-tunnel/cloud-cli.sh.template",
@@ -122,15 +126,15 @@
     },
     {
       "path": "deploy/host/reverse-tunnel/launchd.plist.template",
-      "sha256": "39177c287f0202ea4a2eb977303866f04a711615c0337428fda0027a13f3a5db"
+      "sha256": "9c0d2c534376ba25e7b6b7657fea4d89acb97665f766c4e8ed2e4c6a1d7658a9"
     },
     {
       "path": "deploy/host/reverse-tunnel/macos-cli.sh.template",
-      "sha256": "9a0a854da8d56d938ca75d2cc4452d942fa6df893822d054cdaf66e78cec5c39"
+      "sha256": "94970024e3b752df6a3a11bcb1c13eb72e82a1f409cf1f0a00212f8b91f8cbd1"
     },
     {
       "path": "deploy/host/reverse-tunnel/macos-worker.sh.template",
-      "sha256": "7f078271c1b1eb498e5700ea6cbb2f80bb6ae8f18186338bd42b62b68246928b"
+      "sha256": "91482a9ddd135c438d2a61dd15e1f65baadcf6c69fa3fa1e8c48f06b479a21ce"
     },
     {
       "path": "deploy/host/reverse-tunnel/sshd.conf.template",
@@ -210,7 +214,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "c76d71a486a3ed7dbc3de532cdeefc57abc86bac3a1b259099218b7789284c5d"
+      "sha256": "43da2a6e1965c560a38420c4d238dd34db80bb75b7f5888202d298e1cac5e91f"
     },
     {
       "path": "docs/zh/00-delivery-status.md",
@@ -1910,7 +1914,7 @@
     },
     {
       "path": "scripts/manifest-inventory.mjs",
-      "sha256": "580647c5155c1571673188c7e9e269a9916a3ab586048cc861147a39bd46dac6"
+      "sha256": "15880038b144b088ad09910af141a7161881543a66e1cb937553fc9199ce2aaf"
     },
     {
       "path": "scripts/normalize-text-log.mjs",
@@ -2223,6 +2227,10 @@
     {
       "path": "scripts/stack/entrypoint-smoke.mjs",
       "sha256": "58e8a641885cbed35d42abcdc21e6a5e341fd700eac3a70a05ba5e2ba975620c"
+    },
+    {
+      "path": "scripts/stack/export-public-static-assets.mjs",
+      "sha256": "d2180e8bdd7b23a2f30d582ae4194c7fd6e59e6b0d0e3e582f1f8bf2cca1f635"
     },
     {
       "path": "scripts/stack/host-materials.test.mjs",

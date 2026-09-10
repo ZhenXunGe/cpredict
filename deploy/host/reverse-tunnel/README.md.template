@@ -64,9 +64,18 @@ On success it removes that temporary upload.
    sudo cpredict-tunnel-cloud verify
    ```
 
-The cloud `verify` command is the acceptance point that proves the live loopback listener and the local
-`/readyz` response. The Mac must remain plugged in; the worker uses `caffeinate -s` while it is running,
-and launchd restarts it after network loss or process exit.
+The Mac worker checks gateway `/healthz`; the public-site gateway keeps `/readyz`
+container-local. The legacy cloud `verify` command expects the legacy readiness
+route; after a public-site upgrade, check the cloud loopback `/healthz`, the public
+homepage and an actual full asset GET instead. Public `/readyz` stays private
+(401 for the legacy edge, 404 for the public site).
+
+The tunnel serves interactive browser requests, so its launchd job uses
+`ProcessType=Interactive`. Background scheduling can throttle the shared SSH
+transport and stall every forwarded request even when the local gateway is fast.
+`restart` reloads the plist so scheduling changes apply to the new worker. The Mac
+must remain plugged in; the worker uses `caffeinate -s` while it is running, and
+launchd restarts it after network loss or process exit.
 
 ## Operations
 
