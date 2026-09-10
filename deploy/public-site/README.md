@@ -39,6 +39,10 @@ not prove that the container environment retains its original values.
 Rollback also retains explicit IPv4/IPv6 and link-local addresses from each
 container's `IPAMConfig`, including the gateway address used by trusted-proxy
 settings. Dynamically assigned container addresses remain dynamic.
+After replacing or restoring backends, the command validates and gracefully
+reloads the existing gateway and any running preview Nginx, then waits for their
+indexer and metadata routes to respond. This refreshes cached backend addresses
+without recreating the preview container or altering its configuration.
 
 Failures after stopping writers restore their previous running image IDs and
 configuration, verify the old public page and asset hashes, and restore the

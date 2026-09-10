@@ -278,6 +278,52 @@ export function rollbackCompose(containers) {
   );
   return result;
 }
+/** Existing Nginx workers may still hold addresses of replaced backend containers. */
+export async function refreshProxyUpstreams(
+  containers,
+  docker,
+  { pause = (ms) => new Promise((done) => setTimeout(done, ms)) } = {},
+) {
+  const proxies = containers.filter((c) => c.State.Running &&
+    ["web-demo", "public-site-preview"].includes(
+      c.Config.Labels?.["com.docker.compose.service"],
+    ));
+  ensure(proxies.some((c) => c.Config.Labels["com.docker.compose.service"] === "web-demo"),
+    "The public gateway is not running");
+  const checks = [];
+  for (const proxy of proxies) {
+    const service = proxy.Config.Labels["com.docker.compose.service"];
+    ensure(/^[0-9a-f]{64}$/.test(proxy.Id), "Invalid running proxy identity");
+    await docker(["exec", proxy.Id, "nginx", "-t"], {
+      label: `Validate ${service} proxy configuration`,
+    });
+    await docker(["exec", proxy.Id, "nginx", "-s", "reload"], {
+      label: `Refresh ${service} upstream addresses`,
+    });
+    const paths = ["/ctusd/indexer/healthz", "/ctusd/metadata/healthz"];
+    const deadline = Date.now() + 45000;
+    let ready = false;
+    // A successful reload signal does not mean the new workers are ready yet.
+    for (let attempt = 0; attempt < 10 && Date.now() < deadline; attempt++) {
+      try {
+        for (const path of paths) {
+          const body = await docker([
+            "exec", proxy.Id, "wget", "-q", "-T", "5", "-O", "-",
+            `http://127.0.0.1:8080${path}`,
+          ], { timeout: 10000, label: `Verify ${service} upstream readiness` });
+          ensure(JSON.parse(body).status === "ok", "Proxy upstream is not ready");
+        }
+        ready = true;
+        break;
+      } catch {
+        if (attempt < 9 && Date.now() < deadline) await pause(1000);
+      }
+    }
+    ensure(ready, `${service} upstreams did not become ready after reload`);
+    checks.push({ service, paths, ready });
+  }
+  return checks;
+}
 export async function createManifest(directory, sourceCommit) {
   ensure(/^[0-9a-f]{40}$/.test(sourceCommit), "Invalid image revision");
   const html = await readFile(resolve(directory, "index.html"));

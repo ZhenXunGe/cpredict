@@ -13,6 +13,7 @@ import {
   fetchBytes,
   privateJson,
   publisher,
+  refreshProxyUpstreams,
   restrictedFile,
   rollbackCompose,
   run,
@@ -100,6 +101,7 @@ export async function execute({ root, config, mode }) {
       ],
       { timeout: 300000, label: "Restore previous service images" },
     );
+    journal.rollbackProxyChecks = await refreshProxyUpstreams(await inspect(), docker);
     await filesUnchanged(journal.privateInputs);
     await databaseUnchanged(journal.database);
     const routes = await verifySite(
@@ -549,6 +551,7 @@ export async function execute({ root, config, mode }) {
     await filesUnchanged(privateInputs);
     await databaseUnchanged(journal.database);
     const after = await inspect();
+    journal.proxyChecks = await refreshProxyUpstreams(after, docker);
     for (const service of SERVICES)
       ensure(
         after.some(

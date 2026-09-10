@@ -8,6 +8,7 @@ import { createServer } from "node:http";
 import {
   createManifest,
   escapeCompose,
+  refreshProxyUpstreams,
   rollbackCompose,
   sha256,
   sshArgs,
@@ -145,6 +146,77 @@ test("rollback comes from running image IDs, preserves runtime isolation, never 
   assert.equal(snapshot.services.indexer.healthcheck.interval, "10000000000ns");
   containers[0].State.Health.Status = "unhealthy";
   assert.throws(() => rollbackCompose(containers), /not healthy/);
+});
+const proxyContainer = (service, digit, running = true) => ({
+  Id: digit.repeat(64),
+  Config: { Labels: { "com.docker.compose.service": service } },
+  State: { Running: running },
+});
+test("proxy refresh retries stale upstreams after one reload without recreating containers", async () => {
+  const gateway = proxyContainer("web-demo", "a");
+  const preview = proxyContainer("public-site-preview", "b");
+  const calls = [];
+  const pauses = [];
+  let stalePreview = true;
+  const checks = await refreshProxyUpstreams([
+    gateway, preview, proxyContainer("indexer", "c"),
+  ], async (args) => {
+    calls.push(args);
+    assert.equal(args[0], "exec");
+    if (args[2] === "wget") {
+      if (args[1] === preview.Id && stalePreview) {
+        stalePreview = false;
+        throw new Error("Old Nginx worker returned 502");
+      }
+      return '{"status":"ok"}';
+    }
+    return "";
+  }, { pause: async (ms) => pauses.push(ms) });
+  assert.deepEqual(checks.map(({ service, ready }) => ({ service, ready })), [
+    { service: "web-demo", ready: true },
+    { service: "public-site-preview", ready: true },
+  ]);
+  assert.deepEqual(pauses, [1000]);
+  for (const proxy of [gateway, preview]) {
+    const proxyCalls = calls.filter((args) => args[1] === proxy.Id);
+    assert.deepEqual(proxyCalls[0], ["exec", proxy.Id, "nginx", "-t"]);
+    assert.deepEqual(proxyCalls[1], ["exec", proxy.Id, "nginx", "-s", "reload"]);
+    assert.equal(proxyCalls.filter((args) => args.includes("reload")).length, 1);
+    assert.ok(proxyCalls.some((args) => args.at(-1) ===
+      "http://127.0.0.1:8080/ctusd/metadata/healthz"));
+  }
+  assert.ok(calls.every((args) => [gateway.Id, preview.Id].includes(args[1])));
+});
+test("proxy refresh leaves stopped previews alone and rejects unhealthy responses", async () => {
+  const gateway = proxyContainer("web-demo", "a");
+  const calls = [];
+  await assert.rejects(refreshProxyUpstreams([
+    gateway, proxyContainer("public-site-preview", "b", false),
+  ], async (args) => {
+    calls.push(args);
+    return args[2] === "wget" ? '{"status":"error"}' : "";
+  }, { pause: async () => {} }), /web-demo upstreams did not become ready/);
+  assert.equal(calls.filter((args) => args.includes("reload")).length, 1);
+  assert.equal(calls.filter((args) => args[2] === "wget").length, 10);
+  assert.ok(calls.every((args) => args[1] === gateway.Id));
+});
+test("invalid proxy configuration prevents reload and a stopped gateway prevents any command", async () => {
+  const calls = [];
+  const docker = async (args) => {
+    calls.push(args);
+    throw new Error("nginx configuration is invalid");
+  };
+  await assert.rejects(refreshProxyUpstreams([
+    proxyContainer("web-demo", "a"),
+  ], docker), /configuration is invalid/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].at(-1), "-t");
+  calls.length = 0;
+  await assert.rejects(refreshProxyUpstreams([
+    proxyContainer("web-demo", "a", false),
+    proxyContainer("public-site-preview", "b"),
+  ], docker), /gateway is not running/);
+  assert.deepEqual(calls, []);
 });
 test("asset manifest binds every file and HTML reference to the source revision", async () => {
   const dir = await mkdtemp(resolve(tmpdir(), "cpredict-manifest-"));
