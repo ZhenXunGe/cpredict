@@ -314,7 +314,17 @@ class FixtureApi extends SiteApi {
 }
 function Fixture() {
   const [cache] = useState(createSiteQueryClient),
-    [api] = useState(() => new FixtureApi(env)),
+    [api] = useState(
+      () =>
+        new FixtureApi(
+          new URLSearchParams(location.search).get("legacy") === "1"
+            ? {
+                ...env,
+                deployment: { ...env.deployment, protocolVersion: "legacy-v1" },
+              }
+            : env,
+        ),
+    ),
     [logged, setLogged] = useState(true),
     [selected, setSelected] = useState(0),
     [failure, setFailure] = useState(false),

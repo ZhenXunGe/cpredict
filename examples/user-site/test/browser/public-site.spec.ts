@@ -321,21 +321,56 @@ test("saved feedback returns a traceable record number", async ({ page }) => {
   await expect(page.getByText(/反馈已保存，编号：[a-f0-9-]{36}/)).toBeVisible();
 });
 
-test("built old Demo remains available at /demo/ with its own assets", async ({
+test("retired Demo URLs lead to the new site and its assets are unavailable", async ({
   page,
 }) => {
-  // Deployment absence is an explicit fixture; it is not evidence for the live contract manifest.
-  await page.route("**/deployment/final.json", (route) =>
-    route.fulfill({ json: { status: "NOT_CONFIGURED" } }),
-  );
-  await page.goto(`${built}/demo`);
-  await expect(page).toHaveURL(`${built}/demo/`);
-  await expect(page.getByRole("main")).toContainText("未部署，已锁定");
-  const wallet =
-    page.viewportSize()!.width >= 851
-      ? page.getByRole("combobox", { name: "选择钱包", exact: true })
-      : page.getByRole("button", { name: "连接钱包", exact: true });
-  await expect(wallet).toBeVisible();
+  for (const path of ["/demo", "/demo/", "/demo/markets"]) {
+    const response = await page.request.get(`${built}${path}`, {
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(308);
+    expect(response.headers().location).toBe("/");
+  }
+  await page.goto(`${built}/demo/`);
+  await expect(page).toHaveURL(`${built}/`);
+  await expect(
+    page.getByRole("heading", { name: "公开测试站尚未开放" }),
+  ).toBeVisible();
   await page.reload();
-  await expect(wallet).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "公开测试站尚未开放" }),
+  ).toBeVisible();
+  const response = await page.request.get(`${built}/demo/assets/index.js`);
+  expect(response.status()).toBe(404);
+});
+
+test("account help keeps app recovery without linking to the retired Demo", async ({
+  page,
+}) => {
+  await open(page, "help");
+  await expect(page.getByRole("heading", { name: "账户与帮助" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "独立恢复操作说明" }),
+  ).toBeVisible();
+  await expect(page.locator('a[href^="/demo"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "退出登录", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "退出登录", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("legacy deployment creation has no obsolete fallback or incompatible form", async ({
+  page,
+}) => {
+  await page.goto(`${fixture}?legacy=1#/ctusd-test/creator/new`);
+  await expect(
+    page.getByRole("heading", { name: "创建测试市场" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("当前部署暂不支持在本站创建市场，已创建的市场仍可浏览。", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.locator('a[href^="/demo"]')).toHaveCount(0);
+  await expect(page.getByLabel("市场问题")).toHaveCount(0);
 });

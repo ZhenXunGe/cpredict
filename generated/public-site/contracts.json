@@ -232,7 +232,6 @@
               "services",
               "privyAppId",
               "explorerUrl",
-              "legacyUrl",
               "features"
             ],
             "additionalProperties": false
@@ -455,7 +454,6 @@
         "services",
         "privyAppId",
         "explorerUrl",
-        "legacyUrl",
         "features"
       ],
       "additionalProperties": false
@@ -672,7 +670,6 @@
             "services",
             "privyAppId",
             "explorerUrl",
-            "legacyUrl",
             "features"
           ],
           "additionalProperties": false

@@ -1,6 +1,6 @@
 # Public test site implementation contract
 
-The user's B0–B5 plan is the scope. The developer Demo and its v1 APIs remain supported. This document maps the new interfaces to code; it does not claim runtime acceptance.
+The user's B0–B5 plan and subsequent scope decisions apply. The retired Demo UI and its dedicated code have been removed; existing v1 APIs and services remain supported. Old EOA exit is out of scope. This document maps the interfaces to code; it does not claim runtime acceptance.
 
 Authoritative wire validation is `offchain/app-core/src/contracts.ts`. Every raw chain integer is a decimal string, every mutation binds environment + deployment + verified application account. Runtime configurations are parsed before providers or requests are started. No browser configuration contains provider secrets or a database URL.
 
@@ -26,11 +26,11 @@ Errors use `{error:{code,message,operationId?}}`; display stable user copy by co
 
 The existing indexer process and database serve both clients. Legacy `/v1/*` and `/v2/*` retain their chain-only requests, response fields and pagination, even when financial projection is enabled. The public site uses the `/public` namespace: `/public/v2/markets`, `/public/v2/markets/:market`, `/public/v1/listings`, and the activity, entitlements, PnL, leaderboard and sync routes above with `/public` prepended. Every public query requires the matching environment and deployment; a supplied chain must also match. Binding validation is scoped to that namespace. Public pagination is bound to filters and the retained projection snapshot.
 
-Public runtime indexer bases end in `/indexer/public`; the old `/indexer/` proxy and Demo configuration keep their original base. These paths share ingestion and queries, not a second indexer deployment.
+Public runtime indexer bases end in `/indexer/public`; the existing `/indexer/` proxy keeps its original base. These paths share ingestion and queries, not a second indexer deployment.
 
 ## Browser compilation and provider declarations
 
-The user site has its own browser TypeScript/Vite build (`npm run site:check` / `site:build`). Application and imported shared TypeScript remain strict, including exact optional fields and unchecked indexes. `check:offchain` retains NodeNext and full declaration checking for services, the SDK and the legacy Demo; the new browser project is checked separately.
+The user site has its own browser TypeScript/Vite build (`npm run site:check` / `site:build`). Application and imported shared TypeScript remain strict, including exact optional fields and unchecked indexes. `check:offchain` retains NodeNext and full declaration checking for services, the SDK and shared React examples; the browser project is checked separately.
 
 Privy React 3.40.0 and three pinned transitive packages publish incomplete declarations. The user-approved declaration-only repairs are documented in `patches/README.md` and hash-bound by `manifests/sdk-declaration-patches.json`; no SDK runtime file changes. Missing type dependencies are pinned from the official package manifests. Both browser and server builds explicitly apply verified patches after `npm ci --ignore-scripts`. The browser now has `skipLibCheck: false`; `site:check:dependencies` is a required passing gate. Wallet/provider runtime acceptance remains mandatory and separate from declaration compatibility.
 

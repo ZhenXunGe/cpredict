@@ -112,21 +112,20 @@ attestation.
 See `docs/zh/01-contract-design.md` and `docs/en/AUDIT_SCOPE.md` for the
 normative design and review boundary.
 
-## Arbitrum Sepolia Web Demo
+## Arbitrum Sepolia public test site
 
-`examples/web-demo` 是可运行的中文合约验证与交互控制台，固定 chainId `421614`，包含
-EIP-6963 钱包、正式 manifest/reference-block/codehash/完整 wiring 门禁、市场创建、Allowance/Permit2 一级购买、
-C2C、结算证据和 claim/refund 入口。`sandbox` 测试网 runtime 会明确显示可任意增发、无真实价值的
-`ctUSD`，提供领取按钮，并让创建/购买/C2C 使用同一测试币。默认部署状态仍为
-`BLOCKED_NOT_DEPLOYED`，因此默认锁定写操作。
+`examples/user-site` 是 ctUSD 用户站，使用 Privy、ZeroDev 和现有协议服务。
+旧 Demo 网页、专属代码及构建入口已移除；`/demo/` 跳转新站首页。
+已有 `web-demo` 容器名称和运行包路径继续使用，承载新站网关，不因此删除服务或数据库。
+缺少运行配置或未通过真实交易验收时，交易功能保持关闭。
 
 ```bash
-npm run demo:dev
-npm run demo:test
-npm run demo:build
+npm run site:dev
+npm run site:test:browser
+npm run site:build
 ```
 
-部署、反向代理、三钱包验收和安全边界见 `docs/zh/12-web-demo-integration.md`。
+部署、反向代理和真实钱包验收见 `docs/public-test-site-runbook.md`。
 
 ## Arbitrum Sepolia direct deployment
 
@@ -148,14 +147,15 @@ Formal evidence still requires the signed-audit-tag, Safe, dual-RPC, canary and 
 
 ## Docker Compose acceptance stack
 
-After `deploy:sync` has generated a DEBUG or final runtime package, the Web Demo, canonical
-Indexer/API/WS and PostgreSQL can be operated through one interface:
+After `deploy:sync` has generated a DEBUG or final runtime package and the public-site
+configuration is prepared, the existing web gateway, Indexer/API/WS and PostgreSQL
+can be operated through one interface:
 
 ```bash
 cp .env.compose.example .env.compose.local
 chmod 600 .env.compose.local
-npm run stack:up
-npm run stack:status
+npm run stack:up -- --public-site
+npm run stack:status -- --public-site
 npm run stack:verify
 npm run stack:backup:verified
 npm run stack:down

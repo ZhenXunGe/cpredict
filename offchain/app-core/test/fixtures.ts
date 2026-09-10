@@ -42,7 +42,6 @@ export const env = environmentSchema.parse({
   privyAppId: "privy-test",
   walletConnectProjectId: "wallet-connect-test",
   explorerUrl: "https://sepolia.arbiscan.io",
-  legacyUrl: "/demo",
   features: {
     newExposure: true,
     sponsorship: true,

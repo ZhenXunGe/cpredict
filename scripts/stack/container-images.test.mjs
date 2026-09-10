@@ -63,6 +63,13 @@ test("offchain runtime images include their compiled SDK dependency", () => {
   );
 });
 
+test("the existing web-demo image target serves only the public site build", () => {
+  assert.match(demo, /RUN npm run site:build/);
+  assert.match(demo, /COPY --from=build \/app\/dist\/user-site \/usr\/share\/nginx\/html/);
+  assert.doesNotMatch(demo, /demo:build|dist\/web-demo|html\/demo/);
+  assert.match(demo, /FROM demo AS public-site/);
+});
+
 test("application images validate and publish the exact source revision", () => {
   assert.equal(
     offchain.match(/ARG CPREDICT_IMAGE_REVISION/g)?.length,

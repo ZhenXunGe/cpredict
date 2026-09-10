@@ -32,7 +32,6 @@
     },
     "privyAppId": "CONFIGURE_DISTINCT_PRIVY_APP_ID",
     "explorerUrl": "https://sepolia.arbiscan.io",
-    "legacyUrl": "/demo/",
     "features": {
       "newExposure": false,
       "faucet": false,

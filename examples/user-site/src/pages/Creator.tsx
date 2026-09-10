@@ -452,11 +452,8 @@ export function CreateMarketPage() {
           description="当前 ctUSD 部署使用原有市场规则。"
         />
         <Notice>
-          请前往现有测试入口创建市场。创建后的市场会显示在本站，原有资产和结算入口继续保留。
+          当前部署暂不支持在本站创建市场，已创建的市场仍可浏览。
         </Notice>
-        <a className="button button-primary" href={api.environment.legacyUrl}>
-          前往 ctUSD 测试入口
-        </a>
       </section>
     );
   return (

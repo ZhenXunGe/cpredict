@@ -13,23 +13,17 @@ COPY examples ./examples
 COPY offchain ./offchain
 COPY generated ./generated
 COPY deployments/arbitrum-sepolia/final-manifest.schema.json ./deployments/arbitrum-sepolia/final-manifest.schema.json
-COPY scripts/generate-web-demo-validators.mjs ./scripts/generate-web-demo-validators.mjs
-RUN npm run demo:build
+RUN npm run site:build
 
-FROM build AS public-build
-RUN npm run demo:build:embedded && npm run site:build
-
+# Keep the image target and Compose service names compatible with existing hosts.
 FROM nginxinc/nginx-unprivileged:1.30.4-alpine@sha256:93722936b82ec8a1178d48448e619226680d2de3706a1640800e186cd5fa7fd3 AS demo
 ARG CPREDICT_IMAGE_REVISION
 RUN printf '%s' "$CPREDICT_IMAGE_REVISION" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${CPREDICT_IMAGE_REVISION}"
 USER root
 RUN apk upgrade --no-cache
-COPY --from=build /app/dist/web-demo /usr/share/nginx/html
-COPY deploy/compose/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY --from=build /app/dist/user-site /usr/share/nginx/html
+COPY deploy/compose/nginx/public-site.conf.template /etc/nginx/templates/default.conf.template
 USER 101
 
 FROM demo AS public-site
-COPY --from=public-build /app/dist/user-site /usr/share/nginx/html
-COPY --from=public-build /app/dist/web-demo-embedded /usr/share/nginx/html/demo
-COPY deploy/compose/nginx/public-site.conf.template /etc/nginx/templates/default.conf.template
