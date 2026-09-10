@@ -12,12 +12,44 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:@babel/helper-string-parser@8.0.0:node_modules/@babel/helper-string-parser",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@babel/helper-string-parser\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@babel/helper-validator-identifier@8.0.4:node_modules/@babel/helper-validator-identifier",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@babel/helper-validator-identifier\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
+      "identity": "npm:@babel/parser@8.0.4:node_modules/@babel/parser",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@babel/parser\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
       "identity": "npm:@babel/runtime@7.29.7:node_modules/@babel/runtime",
       "kind": "runtime",
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/@babel/runtime\"]",
       "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@babel/types@8.0.4:node_modules/@babel/types",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@babel/types\"]",
+      "sourceScope": "Node development dependency"
     },
     {
       "identity": "npm:@base-org/account@1.1.1:node_modules/@base-org/account",

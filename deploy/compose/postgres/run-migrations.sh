@@ -6,33 +6,18 @@ case "$kind" in
   indexer)
     runtime_role=cpredict_indexer
     password_var=CPREDICT_STACK_INDEXER_PASSWORD
-    migrations=(
-      /migrations/001_indexer.sql
-      /migrations/002_settlement_evidence.sql
-      /migrations/003_read_api_indexes.sql
-      /migrations/004_market_metadata.sql
-      /migrations/005_activity_catalog.sql
-      /migrations/006_financial_facts.sql
-      /migrations/007_legacy_deployment.sql
-    )
     ;;
   paymaster)
     runtime_role=cpredict_paymaster
     password_var=CPREDICT_STACK_PAYMASTER_PASSWORD
-    migrations=(
-      /migrations/001_sponsor_budget.sql
-      /migrations/002_permit2_relay_intents.sql
-    )
     ;;
   metadata)
     runtime_role=cpredict_metadata
     password_var=CPREDICT_STACK_METADATA_PASSWORD
-    migrations=(/migrations/001_metadata.sql)
     ;;
   app)
     runtime_role=cpredict_indexer
     password_var=CPREDICT_STACK_INDEXER_PASSWORD
-    migrations=(/migrations/001_application.sql /migrations/002_operational_queries.sql /migrations/003_usdc_deposits.sql)
     ;;
   *) printf '%s\n' 'usage: run-cpredict-migrations indexer|paymaster|metadata|app [migration-directory]' >&2; exit 2 ;;
 esac
@@ -49,10 +34,12 @@ case "${CPREDICT_STACK_DATABASE_ENVIRONMENT:-ctusd}" in
   *) exit 2 ;;
 esac
 
-if [[ -n "${2:-}" ]]; then
-  [[ "$2" =~ ^/[A-Za-z0-9_./-]+$ && -d "$2" ]] || exit 2
-  for i in "${!migrations[@]}"; do migrations[$i]="$2/${migrations[$i]##*/}"; done
-fi
+migration_directory="${2:-/migrations}"
+[[ "$migration_directory" =~ ^/[A-Za-z0-9_./-]+$ && -d "$migration_directory" ]] || exit 2
+export LC_ALL=C
+shopt -s nullglob
+migrations=("$migration_directory"/[0-9][0-9][0-9]_*.sql)
+[[ ${#migrations[@]} -gt 0 ]] || exit 2
 
 runtime_password="${!password_var:-}"
 backup_password="${CPREDICT_STACK_BACKUP_PASSWORD:-}"

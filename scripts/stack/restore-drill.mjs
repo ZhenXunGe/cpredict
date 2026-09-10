@@ -73,7 +73,7 @@ export async function runRestoreDrill({
       "start disposable PostgreSQL",
     );
     await waitForPostgres(run, container, env);
-    const inventory = backupDatabaseInventory({ usdc: "usdc-indexer" in manifest.dumps });
+    const inventory = backupDatabaseInventory({ usdc: "usdc-indexer" in manifest.dumps || "usdc-metadata" in manifest.dumps, names: manifest.databaseNames });
     for (const { database } of inventory)
       await command(
         [
@@ -168,11 +168,13 @@ export async function runRestoreDrill({
 
 export async function validateBackupFiles(directory, manifest) {
   if (
-    !["cpredict.stack-backup.v1", "cpredict.stack-backup.v2"].includes(manifest.schemaVersion) ||
+    !["cpredict.stack-backup.v1", "cpredict.stack-backup.v2", "cpredict.stack-backup.v3"].includes(manifest.schemaVersion) ||
     manifest.chainId !== 421614
   )
     throw new Error("backup manifest schema or chain is invalid");
-  const inventory = backupDatabaseInventory({ usdc: "usdc-indexer" in (manifest.dumps ?? {}) || "usdc-metadata" in (manifest.dumps ?? {}) });
+  if ((manifest.schemaVersion === "cpredict.stack-backup.v3") !== Array.isArray(manifest.databaseNames))
+    throw new Error("backup database inventory version is invalid");
+  const inventory = backupDatabaseInventory({ usdc: "usdc-indexer" in (manifest.dumps ?? {}) || "usdc-metadata" in (manifest.dumps ?? {}), names: manifest.databaseNames });
   if (Object.keys(manifest.dumps ?? {}).sort().join(",") !== inventory.map((d) => d.name).sort().join(",")) throw new Error("backup database inventory is invalid");
   for (const { name } of inventory) {
     const record = manifest.dumps?.[name];

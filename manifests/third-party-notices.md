@@ -264,7 +264,11 @@ Generated deterministically from locked dependency metadata. This is an inventor
 ## MIT
 
 - npm:@adraffy/ens-normalize@1.11.1:node_modules/@adraffy/ens-normalize
+- npm:@babel/helper-string-parser@8.0.0:node_modules/@babel/helper-string-parser
+- npm:@babel/helper-validator-identifier@8.0.4:node_modules/@babel/helper-validator-identifier
+- npm:@babel/parser@8.0.4:node_modules/@babel/parser
 - npm:@babel/runtime@7.29.7:node_modules/@babel/runtime
+- npm:@babel/types@8.0.4:node_modules/@babel/types
 - npm:@base-ui/react@1.8.0:node_modules/@base-ui/react
 - npm:@base-ui/utils@0.4.0:node_modules/@base-ui/utils
 - npm:@coinbase/cdp-sdk@1.55.0:node_modules/@coinbase/cdp-sdk
