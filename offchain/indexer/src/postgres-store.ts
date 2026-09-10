@@ -227,7 +227,14 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     const statusFilter =
       options.status === undefined
         ? this.sql``
-        : this.sql`AND m.state = ${marketState(options.status)}`;
+        : options.status === "voided"
+          ? this
+              .sql`AND (m.state = 2 OR (m.protocol_version = 'legacy-v1' AND m.state = 3))`
+          : options.status === "voided-creator" ||
+              options.status === "voided-timeout"
+            ? this
+                .sql`AND m.protocol_version = 'legacy-v1' AND m.state = ${marketState(options.status)}`
+            : this.sql`AND m.state = ${marketState(options.status)}`;
     const ownerFilter =
       options.owner === undefined
         ? this.sql``

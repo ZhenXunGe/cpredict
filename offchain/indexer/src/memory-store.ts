@@ -21,7 +21,7 @@ import type {
 import {
   decodeOpaqueCursor,
   encodeOpaqueCursor,
-  marketState,
+  matchesMarketStatus,
   positionMarketSnapshot,
 } from "./store.js";
 
@@ -168,7 +168,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
       .filter(
         (market) =>
           options.status === undefined ||
-          market.state === marketState(options.status),
+          matchesMarketStatus(market, options.status),
       )
       .filter((market) => {
         if (owner === undefined) return true;

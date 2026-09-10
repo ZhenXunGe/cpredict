@@ -1186,7 +1186,7 @@
     },
     {
       "path": "offchain/indexer/src/api.ts",
-      "sha256": "80033b4318d86665136a8f8ca61bc9b6b7bc74b39f3cec4ad270beb0bd699e80"
+      "sha256": "fbf17dce92887a23844c087b63586b25f9fb22a288d0564b13e2324fc64c6bdb"
     },
     {
       "path": "offchain/indexer/src/config.ts",
@@ -1226,11 +1226,11 @@
     },
     {
       "path": "offchain/indexer/src/memory-store.ts",
-      "sha256": "fc4f23e127ac4b9c95e17dc37a9cf801b45fe56cfae97956b356c91ed2b853fa"
+      "sha256": "ad16d715aa8f363d054f20e3471462b300c212545212e06254261f980383439a"
     },
     {
       "path": "offchain/indexer/src/postgres-store.ts",
-      "sha256": "39c0d9c0a534d6595a6f48eb52ecee036777eaccaa68fedad9c134e89e4d728a"
+      "sha256": "4ce89769aa71b164c8ae059bca282062152508b765f4ab8b20fcaa93fd7a8c17"
     },
     {
       "path": "offchain/indexer/src/public-catalog.ts",
@@ -1258,7 +1258,7 @@
     },
     {
       "path": "offchain/indexer/src/store.ts",
-      "sha256": "8e200f81c4ab026498606c6dbf7d3bcc68203c499ac34a76252aae07923327a2"
+      "sha256": "ff6c7196e3a3410e80b46f9fc75aad6cda643761ad203663dc49b63947c2a83f"
     },
     {
       "path": "offchain/indexer/src/telemetry.ts",
@@ -1270,7 +1270,7 @@
     },
     {
       "path": "offchain/indexer/test/api.test.ts",
-      "sha256": "8d2e07614b503c0446133166d4ca16e93ea084a618899eebff8f21531ff63697"
+      "sha256": "670489ecdfd044a22d6ddeab8ad36f8d0dac36139ab53b30ac239b8b28f319e0"
     },
     {
       "path": "offchain/indexer/test/config.test.ts",

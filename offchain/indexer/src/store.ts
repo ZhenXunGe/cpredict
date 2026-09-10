@@ -136,7 +136,12 @@ export interface ClaimView {
   confirmationStatus: ConfirmationStatus;
 }
 
-export type MarketStatus = "open" | "resolved" | "voided";
+export type MarketStatus =
+  | "open"
+  | "resolved"
+  | "voided"
+  | "voided-creator"
+  | "voided-timeout";
 
 export interface MarketCatalogOptions {
   limit: number;
@@ -254,19 +259,43 @@ export function marketState(status: MarketStatus): number {
     case "resolved":
       return 1;
     case "voided":
+    case "voided-creator":
       return 2;
+    case "voided-timeout":
+      return 3;
   }
 }
 
-export function marketStatus(state: number): MarketStatus {
+export function matchesMarketStatus(
+  market: Pick<MarketView, "state" | "protocolVersion">,
+  status: MarketStatus,
+): boolean {
+  if (status === "voided")
+    return (
+      market.state === 2 ||
+      (market.protocolVersion === "legacy-v1" && market.state === 3)
+    );
+  if (status === "voided-creator" || status === "voided-timeout")
+    return (
+      market.protocolVersion === "legacy-v1" &&
+      market.state === marketState(status)
+    );
+  return market.state === marketState(status);
+}
+
+export function marketStatus(
+  state: number,
+  protocolVersion?: MarketView["protocolVersion"],
+): MarketStatus {
   switch (state) {
     case 0:
       return "open";
     case 1:
       return "resolved";
     case 2:
+      return protocolVersion === "legacy-v1" ? "voided-creator" : "voided";
     case 3:
-      return "voided";
+      return protocolVersion === "legacy-v1" ? "voided-timeout" : "voided";
     default:
       throw new RangeError(`unknown market state ${state}`);
   }

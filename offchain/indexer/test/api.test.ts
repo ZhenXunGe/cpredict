@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getAddress, type Address, type Hex } from "viem";
 import { evidenceUriFromHash } from "../../sdk/src/evidence.js";
 import { createIndexerApi } from "../src/api.js";
+import { matchesMarketStatus } from "../src/store.js";
 import type {
   ActivityView,
   ClaimView,
@@ -23,6 +24,45 @@ if (EVIDENCE_URI === null)
   throw new Error("non-zero evidence fixture has no URI");
 
 describe("read-only indexer API", () => {
+  it("preserves legacy terminal statuses and filters for the deployed demo", async () => {
+    const legacyMarkets = [2, 3].map((state) => ({
+      ...market(421614, false),
+      protocolVersion: "legacy-v1" as const,
+      state,
+    }));
+    const modernMarket = { ...market(421614, false), state: 2 };
+    const store = new FixtureQueryStore();
+    store.listMarketCatalog = async (_chainId, options) => ({
+      items: [...legacyMarkets, modernMarket].filter(
+        (item) =>
+          options.status === undefined ||
+          matchesMarketStatus(item, options.status),
+      ),
+    });
+    const app = createIndexerApi(store);
+    try {
+      const all = await app.inject("/v2/markets?chainId=421614");
+      expect(all.statusCode).toBe(200);
+      expect(
+        all.json().items.map((item: { status: string }) => item.status),
+      ).toEqual(["voided-creator", "voided-timeout", "voided"]);
+      for (const status of ["voided-creator", "voided-timeout"] as const) {
+        const response = await app.inject(
+          `/v2/markets?chainId=421614&status=${status}`,
+        );
+        expect(response.statusCode).toBe(200);
+        expect(response.json().items).toHaveLength(1);
+        expect(response.json().items[0].status).toBe(status);
+      }
+      const combined = await app.inject(
+        "/v2/markets?chainId=421614&status=voided",
+      );
+      expect(combined.json().items).toHaveLength(3);
+    } finally {
+      await app.close();
+    }
+  });
+
   it("serializes bigint fields and exposes confirmation status", async () => {
     const app = createIndexerApi(new FixtureQueryStore());
     const response = await app.inject({
