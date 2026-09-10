@@ -33,6 +33,7 @@ import {
 } from "./ui.js";
 export const operationLabels: Record<OperationKind, string> = {
   faucet: "领取测试资产",
+  "deposit-usdc": "USDC 免 Gas 入金",
   buy: "一级购买",
   "create-market": "创建市场",
   "create-listing": "挂单卖出",
@@ -136,7 +137,9 @@ export function OperationProvider({ children }: { children: ReactNode }) {
       const stored = sessionStorage.getItem(storageKey);
       if (!stored) return null;
       const parsed = draftSchema.parse(JSON.parse(stored));
-      return parsed.path === path ? parsed : null;
+      return parsed.path === path && parsed.intent.kind !== "deposit-usdc"
+        ? parsed
+        : null;
     } catch {
       return null;
     }
@@ -231,7 +234,10 @@ export function OperationProvider({ children }: { children: ReactNode }) {
     setRecord(null);
     setError(null);
     setStage(null);
-    sessionStorage.setItem(storageKey, JSON.stringify(next));
+    // A USDC authorization is executable by the recipient; never persist its signature in the browser.
+    if (next.intent.kind === "deposit-usdc")
+      sessionStorage.removeItem(storageKey);
+    else sessionStorage.setItem(storageKey, JSON.stringify(next));
   };
   const close = () => {
     current.current.draftId = undefined;

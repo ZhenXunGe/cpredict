@@ -9,7 +9,10 @@ import {
   hash,
   type Operation,
 } from "../../app-core/src/contracts.js";
-import { operationEvent } from "../../app-core/src/receipt.js";
+import {
+  operationEvent,
+  assertDepositTransfer,
+} from "../../app-core/src/receipt.js";
 import type { RpcTransport } from "./http.js";
 import type { ApplicationStore } from "./store.js";
 
@@ -86,6 +89,19 @@ export class OperationRecovery {
     if (block.hash.toLowerCase() !== receipt.blockHash.toLowerCase())
       return this.reorganized(o);
     const enough = head >= receipt.blockNumber + BigInt(this.confirmations - 1);
+    let depositVerified = true;
+    if (event.success && o.intent.kind === "deposit-usdc") {
+      try {
+        assertDepositTransfer(receipt, {
+          hash: o.userOperationHash,
+          sender: o.account,
+          nonce: BigInt(o.nonce),
+          authorization: o.intent.authorization,
+        });
+      } catch {
+        depositVerified = false;
+      }
+    }
     let finality: Operation["finality"] = enough
       ? "application-confirmed"
       : "pending";
@@ -105,17 +121,23 @@ export class OperationRecovery {
         o.id,
         ["submitted", "unknown", "confirming", "confirmed", "reverted"],
         {
-          state: enough
-            ? event.success
-              ? "confirmed"
-              : "reverted"
-            : "confirming",
-          finality,
+          state: !depositVerified
+            ? "unknown"
+            : enough
+              ? event.success
+                ? "confirmed"
+                : "reverted"
+              : "confirming",
+          finality: depositVerified ? finality : "pending",
           transactionHash,
           blockNumber: receipt.blockNumber.toString(),
           blockHash: receipt.blockHash,
           actualGasCost: event.actualGasCost.toString(),
-          reason: enough && !event.success ? "user_operation_reverted" : null,
+          reason: !depositVerified
+            ? "deposit_transfer_unverified"
+            : enough && !event.success
+              ? "user_operation_reverted"
+              : null,
           updatedAt: this.now().toISOString(),
         },
       )
@@ -139,8 +161,11 @@ export class OperationRecovery {
       )
     ).record.operation;
   }
-  async tick(shouldStop: () => boolean = () => false): Promise<{ attempted: number; failed: number }> {
-    let attempted = 0, failed = 0;
+  async tick(
+    shouldStop: () => boolean = () => false,
+  ): Promise<{ attempted: number; failed: number }> {
+    let attempted = 0,
+      failed = 0;
     const started = performance.now();
     for (const item of await this.store.pending(50)) {
       if (shouldStop() || performance.now() - started >= 10_000) break;

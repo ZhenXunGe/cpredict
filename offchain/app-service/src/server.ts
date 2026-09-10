@@ -8,6 +8,8 @@ import {
   bytes,
   intentSchema,
   registerOperationSchema,
+  depositPrepareSchema,
+  depositReportQuerySchema,
   type VerifiedIdentity,
 } from "../../app-core/src/contracts.js";
 import type { IdentityVerifier } from "./auth.js";
@@ -160,6 +162,15 @@ export async function createApplicationServer(options: {
       providerManagement: options.management?.status() ?? null,
     };
   });
+  app.get("/v1/ops/deposits", async (request) => {
+    const identity = await authenticate(request);
+    if (!service.runtime.adminSubjects.includes(identity.subject))
+      throw new AppError("forbidden", 403);
+    return service.store.depositReport(
+      depositReportQuerySchema.parse(request.query),
+      service.now().toISOString(),
+    );
+  });
   app.get("/v1/ops/feedback", async (request) => {
     const identity = await authenticate(request);
     if (!service.runtime.adminSubjects.includes(identity.subject))
@@ -215,6 +226,58 @@ export async function createApplicationServer(options: {
       account: await service.bind(identity, body.challengeId, body.signature),
     };
   });
+  app.post(
+    "/v1/deposits/prepare",
+    { config: { rateLimit: { max: 15, timeWindow: "1 minute" } } },
+    async (request) => ({
+      deposit: await service.deposits.prepare(
+        await authenticate(request),
+        depositPrepareSchema.parse(request.body),
+      ),
+    }),
+  );
+  app.get("/v1/deposits", async (request) => {
+    const identity = await authenticate(request);
+    const q = z
+      .strictObject({
+        accountId: z.string().uuid(),
+        limit: z.coerce.number().int().min(1).max(100).default(30),
+        cursor: z.string().max(2048).optional(),
+        active: z.enum(["true", "false"]).optional(),
+      })
+      .parse(request.query);
+    await service.controlledAccount(identity, q.accountId, false);
+    return service.store.depositPage(
+      identity.subject,
+      q.accountId,
+      service.now().toISOString(),
+      q.limit,
+      q.cursor,
+      q.active === "true",
+    );
+  });
+  app.get("/v1/deposits/:id", async (request) => {
+    const identity = await authenticate(request),
+      id = ownedId(request);
+    let deposit = await service.deposits.owned(identity, id);
+    if (deposit.operationId) {
+      try {
+        await options.recovery.refresh(
+          await service.ownedOperation(identity, deposit.operationId),
+        );
+        deposit = await service.deposits.owned(identity, id);
+      } catch {
+        return { deposit, recovery: "unavailable" };
+      }
+    }
+    return { deposit, recovery: "available" };
+  });
+  app.post("/v1/deposits/:id/cancel", async (request) => ({
+    deposit: await service.deposits.cancel(
+      await authenticate(request),
+      ownedId(request),
+    ),
+  }));
   app.post("/v1/operations/prepare", async (request) => {
     const identity = await authenticate(request);
     const body = z

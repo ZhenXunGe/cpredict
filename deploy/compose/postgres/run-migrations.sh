@@ -32,7 +32,7 @@ case "$kind" in
   app)
     runtime_role=cpredict_indexer
     password_var=CPREDICT_STACK_INDEXER_PASSWORD
-    migrations=(/migrations/001_application.sql /migrations/002_operational_queries.sql)
+    migrations=(/migrations/001_application.sql /migrations/002_operational_queries.sql /migrations/003_usdc_deposits.sql)
     ;;
   *) printf '%s\n' 'usage: run-cpredict-migrations indexer|paymaster|metadata|app [migration-directory]' >&2; exit 2 ;;
 esac

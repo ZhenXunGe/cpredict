@@ -16,6 +16,7 @@ import {
   PageTitle,
 } from "../ui.js";
 import { parseAssetAmount } from "../amounts.js";
+import { GaslessDeposit } from "../GaslessDeposit.js";
 export function AssetsPage() {
   const session = useSession(),
     balance = useBalance(),
@@ -123,6 +124,11 @@ export function AssetsPage() {
                   <Notice>当前暂停项目代付领币，已有资产仍可查看。</Notice>
                 )}
               </>
+            )}
+            {env.asset === "USDC" && (
+              <GaslessDeposit
+                key={`${session.api.key}:${session.identityKey}:${session.account.id}`}
+              />
             )}
           </section>
           <section className="surface">

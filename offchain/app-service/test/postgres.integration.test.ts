@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import postgres from "postgres";
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
 import {
@@ -9,7 +10,17 @@ import {
   env,
   operation,
 } from "../../app-core/test/fixtures.js";
-import { environmentKey } from "../../app-core/src/contracts.js";
+import {
+  environmentKey,
+  depositSchema,
+  operationSchema,
+} from "../../app-core/src/contracts.js";
+import {
+  receiveCall,
+  receiveTypedData,
+  USDC_ADDRESS,
+} from "../../app-core/src/usdc.js";
+import type { StoredDeposit } from "../src/store.js";
 import { sponsorConfigSchema } from "../src/config.js";
 import { PostgresApplicationStore } from "../src/postgres-store.js";
 
@@ -66,6 +77,12 @@ describe.skipIf(!url)("public application PostgreSQL invariants", () => {
     await sql.unsafe(
       await readFile(
         new URL("../migrations/001_application.sql", import.meta.url),
+        "utf8",
+      ),
+    );
+    await sql.unsafe(
+      await readFile(
+        new URL("../migrations/003_usdc_deposits.sql", import.meta.url),
         "utf8",
       ),
     );
@@ -278,6 +295,286 @@ describe.skipIf(!url)("public application PostgreSQL invariants", () => {
     await expect(
       otherProcess.admit(make("104", "exit"), limited),
     ).rejects.toMatchObject({ code: "sponsorship_budget_exhausted" });
+  });
+  const funder = privateKeyToAccount(generatePrivateKey());
+  let depositSequence = 1000;
+  function preparedDeposit(
+    overrides: Partial<StoredDeposit> = {},
+    target = appAccount,
+    now = "2026-09-12T00:00:00.000Z",
+  ): StoredDeposit {
+    const n = ++depositSequence;
+    return {
+      subject,
+      idempotencyKey: randomUUID(),
+      requestHash: H(n),
+      ...overrides,
+      deposit: depositSchema.parse({
+        id: randomUUID(),
+        environment: target.environment,
+        deploymentId: target.deploymentId,
+        accountId: target.id,
+        account: target.address,
+        domain: {
+          name: "USD Coin",
+          version: "2",
+          chainId: 421614,
+          verifyingContract: USDC_ADDRESS,
+        },
+        authorization: {
+          from: funder.address,
+          to: target.address,
+          value: "1000000",
+          validAfter: "0",
+          validBefore: String(Date.parse(now) / 1000 + 600),
+          nonce: H(n),
+        },
+        state: "awaiting-authorization",
+        operationId: null,
+        userOperationHash: null,
+        transactionHash: null,
+        blockNumber: null,
+        blockHash: null,
+        actualGasCost: null,
+        finality: "pending",
+        createdAt: now,
+        updatedAt: now,
+        expiresAt: new Date(Date.parse(now) + 600000).toISOString(),
+        reason: null,
+      }),
+    };
+  }
+  async function depositOperation(value: StoredDeposit) {
+    const d = value.deposit,
+      signature = await funder.signTypedData(
+        receiveTypedData(d.domain, d.authorization),
+      );
+    const call = receiveCall(d.authorization, signature);
+    return {
+      subject: value.subject,
+      idempotencyKey: randomUUID(),
+      requestHash: H(++depositSequence),
+      operation: operationSchema.parse({
+        ...operation,
+        id: randomUUID(),
+        environment: d.environment,
+        deploymentId: d.deploymentId,
+        accountId: d.accountId,
+        account: d.account,
+        nonce: String(depositSequence),
+        kind: "deposit-usdc",
+        intent: {
+          kind: "deposit-usdc",
+          depositId: d.id,
+          authorization: d.authorization,
+          signature,
+        },
+        calls: [call],
+        callData: call.data,
+        lane: "exposure",
+        createdAt: d.createdAt,
+        updatedAt: d.createdAt,
+        expiresAt: d.expiresAt,
+      }),
+    };
+  }
+  it("prepares one durable authorization across processes and rejects conflicting drafts", async () => {
+    const value = preparedDeposit(),
+      now = value.deposit.createdAt;
+    const results = await Promise.all([
+      store.createDeposit(value),
+      otherProcess.createDeposit(value),
+    ]);
+    expect(results.map((r) => r.deposit.id)).toEqual([
+      value.deposit.id,
+      value.deposit.id,
+    ]);
+    await expect(
+      otherProcess.createDeposit({ ...value, requestHash: H(9999) }),
+    ).rejects.toMatchObject({ code: "idempotency_conflict" });
+    await expect(
+      otherProcess.createDeposit(preparedDeposit()),
+    ).rejects.toMatchObject({ code: "deposit_in_progress" });
+    await expect(
+      store.cancelDeposit(value.deposit.id, "did:privy:other", now),
+    ).rejects.toMatchObject({ code: "deposit_not_found" });
+    expect(
+      (await store.cancelDeposit(value.deposit.id, subject, now)).deposit.state,
+    ).toBe("cancelled");
+    const duplicate = preparedDeposit();
+    duplicate.deposit.authorization.nonce = value.deposit.authorization.nonce;
+    await expect(store.createDeposit(duplicate)).rejects.toMatchObject({
+      code: "23505",
+    });
+  });
+  it("serializes cancellation against admission without an orphaned operation or authorization", async () => {
+    const value = preparedDeposit();
+    await store.createDeposit(value);
+    const registered = await depositOperation(value);
+    const results = await Promise.allSettled([
+      store.admit(registered, limits),
+      otherProcess.cancelDeposit(
+        value.deposit.id,
+        subject,
+        value.deposit.createdAt,
+      ),
+    ]);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const d = (await store.deposit(value.deposit.id, value.deposit.createdAt))!
+      .deposit;
+    if (d.operationId) {
+      expect(
+        (await store.operation(d.operationId))!.operation.intent.kind,
+      ).toBe("deposit-usdc");
+      await store.transition(d.operationId, ["awaiting-signature"], {
+        state: "cancelled",
+      });
+    } else {
+      expect(d.state).toBe("cancelled");
+      expect(await store.operation(registered.operation.id)).toBeUndefined();
+    }
+  });
+  it("recovers exactly one linked admission across restart and keeps expired unknown deposits active", async () => {
+    const value = preparedDeposit();
+    await store.createDeposit(value);
+    const registered = await depositOperation(value);
+    const results = await Promise.all([
+      store.admit(registered, limits),
+      otherProcess.admit(registered, limits),
+    ]);
+    expect(results[0]!.operation.id).toBe(results[1]!.operation.id);
+    const reopened = new PostgresApplicationStore(
+      scopedUrl,
+      environmentKey(env),
+    );
+    try {
+      await reopened.ready();
+      expect(
+        (await reopened.depositByKey(
+          subject,
+          value.idempotencyKey,
+          value.deposit.createdAt,
+        ))!.deposit.operationId,
+      ).toBe(registered.operation.id);
+      await reopened.transition(
+        registered.operation.id,
+        ["awaiting-signature"],
+        { state: "unknown", userOperationHash: H(12345) },
+      );
+      const later = "2026-09-12T01:00:00.000Z";
+      expect(
+        (await reopened.deposit(value.deposit.id, later))!.deposit,
+      ).toMatchObject({ state: "unknown", userOperationHash: H(12345) });
+      const next = preparedDeposit();
+      next.deposit.createdAt = later;
+      next.deposit.expiresAt = "2026-09-12T01:10:00.000Z";
+      await expect(reopened.createDeposit(next)).rejects.toMatchObject({
+        code: "deposit_in_progress",
+      });
+      expect(
+        (
+          await reopened.depositPage(
+            subject,
+            appAccount.id,
+            later,
+            100,
+            undefined,
+            true,
+          )
+        ).items.map((d) => d.id),
+      ).toContain(value.deposit.id);
+      const page = await reopened.depositPage(subject, appAccount.id, later, 1);
+      expect(page.nextCursor).toBeTypeOf("string");
+      await expect(
+        reopened.depositPage(
+          "did:privy:other",
+          appAccount.id,
+          later,
+          1,
+          page.nextCursor!,
+        ),
+      ).rejects.toMatchObject({ code: "cursor_filter_mismatch" });
+      await reopened.transition(registered.operation.id, ["unknown"], {
+        state: "confirmed",
+        finality: "finalized",
+      });
+    } finally {
+      await reopened.close();
+    }
+  });
+  it("reserves source quota across users and rolls back the denied deposit link", async () => {
+    const targets = [];
+    for (const n of [801, 802]) {
+      const target = {
+          ...appAccount,
+          id: randomUUID(),
+          controller: A(n),
+          address: A(n + 10),
+        },
+        owner = `did:privy:funding-${n}`,
+        id = randomUUID();
+      await store.createChallenge({
+        ...challenge(id),
+        subject: owner,
+        controller: target.controller,
+      });
+      await store.bindAccount(id, owner, target, operation.createdAt);
+      const value = preparedDeposit(
+        { subject: owner },
+        target,
+        "2026-09-13T00:00:00.000Z",
+      );
+      await store.createDeposit(value);
+      targets.push(value);
+    }
+    const first = await depositOperation(targets[0]!),
+      second = await depositOperation(targets[1]!);
+    await store.admit(first, { ...limits, methodDailyOperations: 1 });
+    await expect(
+      otherProcess.admit(second, { ...limits, methodDailyOperations: 1 }),
+    ).rejects.toMatchObject({ code: "deposit_source_quota_exhausted" });
+    expect(await store.operation(second.operation.id)).toBeUndefined();
+    expect(
+      (await store.deposit(
+        targets[1]!.deposit.id,
+        targets[1]!.deposit.createdAt,
+      ))!.deposit.operationId,
+    ).toBeNull();
+  });
+  it("paginates signature-free operator reconciliation and binds filters to cursors", async () => {
+    const q = {
+        start: "2026-09-12T00:00:00.000Z",
+        end: "2026-09-14T00:00:00.000Z",
+        limit: 1,
+      },
+      now = "2026-09-14T00:00:00.000Z";
+    const first = await store.depositReport(q, now);
+    expect(first.items).toHaveLength(1);
+    expect(first.nextCursor).toBeTypeOf("string");
+    const next = await store.depositReport(
+      { ...q, cursor: first.nextCursor! },
+      now,
+    );
+    expect(next.items[0]!.id).not.toBe(first.items[0]!.id);
+    const filtered = await store.depositReport(
+      {
+        ...q,
+        id: first.items[0]!.id,
+        source: first.items[0]!.authorization.from,
+      },
+      now,
+    );
+    expect(filtered.items).toEqual(first.items);
+    expect(filtered.nextCursor).toBeNull();
+    await expect(
+      store.depositReport(
+        { ...q, start: "2026-09-13T00:00:00.000Z", cursor: first.nextCursor! },
+        now,
+      ),
+    ).rejects.toMatchObject({ code: "cursor_filter_mismatch" });
+    expect(JSON.stringify(first)).not.toContain('"signature":');
+    expect(JSON.stringify(first)).not.toContain('"callData":');
+    expect(JSON.stringify(first)).not.toContain(subject);
   });
   it("shares a weekly cap across processes and days while isolating environments", async () => {
     const schemas = [`${schema}_weekly_a`, `${schema}_weekly_b`];

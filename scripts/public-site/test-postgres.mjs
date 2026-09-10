@@ -116,11 +116,11 @@ try {
     !report.success ||
     report.numPendingTests !== 0 ||
     report.numTodoTests !== 0 ||
-    report.numTotalTests !== 22 ||
-    report.numPassedTests !== 22
+    report.numTotalTests !== 27 ||
+    report.numPassedTests !== 27
   )
     throw new Error(
-      "public-site PostgreSQL tests must all execute and pass (22 expected)",
+      "public-site PostgreSQL tests must all execute and pass (27 expected)",
     );
   process.stdout.write(
     `Public-site PostgreSQL: ${report.numPassedTests}/${report.numTotalTests} passed, no skipped tests.\n`,

@@ -25,6 +25,7 @@ import {
 import { dateText } from "../data.js";
 import { FeedbackInbox } from "./FeedbackInbox.js";
 import { ProviderStatus } from "./ProviderStatus.js";
+import { DepositHistory } from "../DepositHistory.js";
 export function LeaderboardPage() {
   const { api, account } = useSession(),
     [period, setPeriod] = useState("");
@@ -448,6 +449,7 @@ export function OpsPage() {
           </details>
         </div>
       )}
+      {api.environment.asset === "USDC" && <DepositHistory range={range} />}
       <FeedbackInbox />
     </>
   );

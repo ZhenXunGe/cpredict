@@ -6,19 +6,25 @@ import {
   AppError,
   accountSchema,
   operationSchema,
+  depositSchema,
   type AppAccount,
   type Operation,
   type OperationState,
+  type Deposit,
+  type DepositReportQuery,
 } from "../../app-core/src/contracts.js";
 import type { SponsorConfig } from "./config.js";
 import { quotaHistoryStart } from "./budget.js";
 import {
   assertAccountUnchanged,
   assertQuota,
+  assertDepositRegistration,
+  depositView,
   type ApplicationStore,
   type ControlChallenge,
   type OperationPatch,
   type StoredOperation,
+  type StoredDeposit,
 } from "./store.js";
 
 type OperationRow = {
@@ -29,6 +35,20 @@ type OperationRow = {
 };
 const fromRow = (r: OperationRow): StoredOperation => ({
   operation: operationSchema.parse(r.record),
+  subject: r.subject,
+  idempotencyKey: r.idempotency_key,
+  requestHash: r.request_hash,
+});
+type DepositRow = Omit<OperationRow, "record"> & {
+  record: unknown;
+  operation_record?: unknown;
+};
+const fromDepositRow = (r: DepositRow, now: string): StoredDeposit => ({
+  deposit: depositView(
+    depositSchema.parse(r.record),
+    r.operation_record ? operationSchema.parse(r.operation_record) : undefined,
+    now,
+  ),
   subject: r.subject,
   idempotencyKey: r.idempotency_key,
   requestHash: r.request_hash,
@@ -163,6 +183,183 @@ export class PostgresApplicationStore implements ApplicationStore {
     >`SELECT record,subject,idempotency_key,request_hash FROM app_operations WHERE subject=${subject} AND idempotency_key=${key}`;
     return rows[0] ? fromRow(rows[0]) : undefined;
   }
+  async deposit(id: string, now: string): Promise<StoredDeposit | undefined> {
+    const rows = await this.sql<
+      DepositRow[]
+    >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,o.record AS operation_record
+      FROM app_deposits d LEFT JOIN app_operations o ON o.id=d.operation_id WHERE d.id=${id}`;
+    return rows[0] ? fromDepositRow(rows[0], now) : undefined;
+  }
+  async depositByKey(
+    subject: string,
+    key: string,
+    now: string,
+  ): Promise<StoredDeposit | undefined> {
+    const rows = await this.sql<
+      DepositRow[]
+    >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,o.record AS operation_record
+      FROM app_deposits d LEFT JOIN app_operations o ON o.id=d.operation_id WHERE d.subject=${subject} AND d.idempotency_key=${key}`;
+    return rows[0] ? fromDepositRow(rows[0], now) : undefined;
+  }
+  async createDeposit(value: StoredDeposit): Promise<StoredDeposit> {
+    return this.sql.begin(async (tx) => {
+      await tx`SELECT pg_advisory_xact_lock(hashtextextended(${this.environmentIdentity},0))`;
+      const prior = await tx<
+        DepositRow[]
+      >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,o.record AS operation_record
+        FROM app_deposits d LEFT JOIN app_operations o ON o.id=d.operation_id WHERE d.subject=${value.subject} AND d.idempotency_key=${value.idempotencyKey}`;
+      if (prior[0]) {
+        if (prior[0].request_hash !== value.requestHash)
+          throw new AppError("idempotency_conflict", 409);
+        return fromDepositRow(prior[0], value.deposit.createdAt);
+      }
+      const d = value.deposit;
+      const pending = await tx<
+        { id: string; operation_id: string | null }[]
+      >`SELECT d.id,d.operation_id FROM app_deposits d
+        LEFT JOIN app_operations o ON o.id=d.operation_id WHERE d.account_id=${d.accountId} AND (
+          (d.operation_id IS NULL AND d.state='awaiting-authorization' AND d.expires_at > ${d.createdAt}) OR
+          o.state IN ('preparing','awaiting-signature','submitted','confirming','unknown') OR
+          (o.state='reverted' AND coalesce(o.record->>'finality','pending') <> 'finalized')
+        ) LIMIT 1`;
+      if (pending[0])
+        throw new AppError(
+          "deposit_in_progress",
+          409,
+          "该账户已有待完成入金，请查询原记录",
+          pending[0].operation_id ?? undefined,
+        );
+      await tx`INSERT INTO app_deposits(id,subject,idempotency_key,request_hash,account_id,token,source,authorization_nonce,created_at,expires_at,state,operation_id,record)
+        VALUES(${d.id},${value.subject},${value.idempotencyKey},${value.requestHash},${d.accountId},${d.domain.verifyingContract.toLowerCase()},${d.authorization.from.toLowerCase()},${d.authorization.nonce.toLowerCase()},${d.createdAt},${d.expiresAt},${d.state},NULL,${tx.json(d)})`;
+      return value;
+    });
+  }
+  async depositPage(
+    subject: string,
+    accountId: string,
+    now: string,
+    limit: number,
+    cursor?: string,
+    activeOnly = false,
+  ): Promise<{ items: Deposit[]; nextCursor: string | null }> {
+    return this.readDeposits(
+      subject,
+      accountId,
+      now,
+      limit,
+      cursor,
+      activeOnly,
+    );
+  }
+  async depositReport(query: DepositReportQuery, now: string) {
+    return this.readDeposits(
+      null,
+      query.accountId ?? null,
+      now,
+      query.limit,
+      query.cursor,
+      false,
+      query,
+    );
+  }
+  private async readDeposits(
+    subject: string | null,
+    accountId: string | null,
+    now: string,
+    limit: number,
+    cursor?: string,
+    activeOnly = false,
+    report?: DepositReportQuery,
+  ): Promise<{ items: Deposit[]; nextCursor: string | null }> {
+    const filter = createHash("sha256")
+      .update(
+        JSON.stringify([
+          this.environmentIdentity,
+          subject,
+          accountId,
+          activeOnly,
+          report?.start ?? null,
+          report?.end ?? null,
+          report?.source ?? null,
+          report?.id ?? null,
+        ]),
+      )
+      .digest("hex");
+    let before: { filter: string; at: string; id: string } | undefined;
+    if (cursor) {
+      try {
+        before = z
+          .strictObject({
+            filter: z.string(),
+            at: z.string().datetime(),
+            id: z.string().uuid(),
+          })
+          .parse(JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")));
+      } catch {
+        throw new AppError("invalid_cursor");
+      }
+      if (before.filter !== filter)
+        throw new AppError("cursor_filter_mismatch");
+    }
+    const rows = await this.sql<
+      DepositRow[]
+    >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,o.record AS operation_record
+      FROM app_deposits d LEFT JOIN app_operations o ON o.id=d.operation_id
+      WHERE (${subject}::text IS NULL OR d.subject=${subject}) AND (${accountId}::uuid IS NULL OR d.account_id=${accountId})
+      AND (${report?.start ?? null}::timestamptz IS NULL OR d.created_at>=${report?.start ?? null}::timestamptz)
+      AND (${report?.end ?? null}::timestamptz IS NULL OR d.created_at<${report?.end ?? null}::timestamptz)
+      AND (${report?.source?.toLowerCase() ?? null}::text IS NULL OR d.source=${report?.source?.toLowerCase() ?? null})
+      AND (${report?.id ?? null}::uuid IS NULL OR d.id=${report?.id ?? null})
+      AND (${before?.at ?? null}::timestamptz IS NULL OR (d.created_at,d.id) < (${before?.at ?? null}::timestamptz,${before?.id ?? null}::uuid))
+      AND (NOT ${activeOnly} OR (d.operation_id IS NULL AND d.state='awaiting-authorization' AND d.expires_at > ${now})
+        OR o.state IN ('preparing','awaiting-signature','submitted','confirming','unknown')
+        OR (o.state='reverted' AND coalesce(o.record->>'finality','pending') <> 'finalized'))
+      ORDER BY d.created_at DESC,d.id DESC LIMIT ${limit + 1}`;
+    const items = rows
+        .slice(0, limit)
+        .map((r) => fromDepositRow(r, now).deposit),
+      last = items.at(-1);
+    return {
+      items,
+      nextCursor:
+        rows.length > limit && last
+          ? Buffer.from(
+              JSON.stringify({ filter, at: last.createdAt, id: last.id }),
+            ).toString("base64url")
+          : null,
+    };
+  }
+  async cancelDeposit(
+    id: string,
+    subject: string,
+    now: string,
+  ): Promise<StoredDeposit> {
+    return this.sql.begin(async (tx) => {
+      await tx`SELECT pg_advisory_xact_lock(hashtextextended(${this.environmentIdentity},0))`;
+      const rows = await tx<
+        DepositRow[]
+      >`SELECT record,subject,idempotency_key,request_hash FROM app_deposits WHERE id=${id} AND subject=${subject} FOR UPDATE`;
+      if (!rows[0]) throw new AppError("deposit_not_found", 404);
+      const stored = fromDepositRow(rows[0], now),
+        d = stored.deposit;
+      if (d.operationId)
+        throw new AppError(
+          "deposit_already_registered",
+          409,
+          "请查询原入金操作",
+          d.operationId,
+        );
+      if (d.state !== "awaiting-authorization") return stored;
+      const deposit = {
+        ...d,
+        state: "cancelled" as const,
+        updatedAt: now,
+        reason: "user_cancelled_before_submission",
+      };
+      await tx`UPDATE app_deposits SET state='cancelled',record=${tx.json(deposit)} WHERE id=${id}`;
+      return { ...stored, deposit };
+    });
+  }
   async admit(
     value: StoredOperation,
     limits: SponsorConfig,
@@ -179,6 +376,15 @@ export class PostgresApplicationStore implements ApplicationStore {
         return fromRow(prior[0]);
       }
       const o = operationSchema.parse(value.operation);
+      if (o.intent.kind === "deposit-usdc") {
+        const deposits = await tx<
+          DepositRow[]
+        >`SELECT record,subject,idempotency_key,request_hash FROM app_deposits WHERE id=${o.intent.depositId} FOR UPDATE`;
+        assertDepositRegistration(
+          deposits[0] ? fromDepositRow(deposits[0], o.createdAt) : undefined,
+          value,
+        );
+      }
       const rows = await tx<
         OperationRow[]
       >`SELECT record,subject,idempotency_key,request_hash FROM app_operations
@@ -188,6 +394,10 @@ export class PostgresApplicationStore implements ApplicationStore {
       assertQuota(rows.map(fromRow), value, limits);
       await tx`INSERT INTO app_operations(id,subject,idempotency_key,request_hash,account_id,sender,nonce,call_hash,state,kind,lane,created_at,updated_at,expires_at,max_gas_cost,record)
         VALUES(${o.id},${value.subject},${value.idempotencyKey},${value.requestHash},${o.accountId},${o.account.toLowerCase()},${o.nonce},${keccak256(o.callData)},${o.state},${o.kind},${o.lane},${o.createdAt},${o.updatedAt},${o.expiresAt},${o.maxGasCost},${tx.json(o)})`;
+      if (o.intent.kind === "deposit-usdc") {
+        await tx`UPDATE app_deposits SET operation_id=${o.id},state='awaiting-signature',
+          record=record || ${tx.json({ operationId: o.id, state: "awaiting-signature", updatedAt: o.updatedAt })}::jsonb WHERE id=${o.intent.depositId}`;
+      }
       return value;
     });
   }

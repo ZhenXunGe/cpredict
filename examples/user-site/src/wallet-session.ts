@@ -17,6 +17,7 @@ export interface WalletSession {
   error: unknown;
   login(): void;
   linkWallet(): void;
+  connectFundingWallet(): void;
   logout(): Promise<void>;
   selectAccount(id: string): void;
   bindWallet(wallet: ConnectedWallet): Promise<AppAccount>;

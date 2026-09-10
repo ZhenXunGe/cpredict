@@ -4,6 +4,8 @@ The user's B0–B5 plan and subsequent scope decisions apply. The retired Demo U
 
 Authoritative wire validation is `offchain/app-core/src/contracts.ts`. Every raw chain integer is a decimal string, every mutation binds environment + deployment + verified application account. Runtime configurations are parsed before providers or requests are started. No browser configuration contains provider secrets or a database URL.
 
+The default-disabled USDC `deposit-usdc` extension, deposit APIs, transaction boundaries and deferred deployment acceptance are documented in [USDC gasless deposits](usdc-gasless-deposit.md). Funding-wallet connection does not bind or replace the application account controller. The existing ctUSD faucet remains unchanged.
+
 | Interface | Request and validation | Response / consumer / failure |
 | --- | --- | --- |
 | GET /v1/me/accounts | Privy Bearer token, server verification | Verified account identities; client never substitutes controller for asset address |

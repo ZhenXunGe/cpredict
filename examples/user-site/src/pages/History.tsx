@@ -39,6 +39,7 @@ import {
   PageTitle,
 } from "../ui.js";
 import { dateText } from "../data.js";
+import { DepositHistory } from "../DepositHistory.js";
 const labels: Record<LedgerFact["kind"], string> = {
   "market-created": "创建市场",
   "market-initialized": "市场初始化",
@@ -166,6 +167,7 @@ export function HistoryPage() {
         description="链上历史与操作进度分别展示。结果未知的操作仅继续查询，不自动重新发送。"
       />
       <AccountGate />
+      {account && api.environment.asset === "USDC" && <DepositHistory />}
       {account && (
         <>
           <section className="card stack">
@@ -516,6 +518,23 @@ function OperationDetail({
             </dd>
             <dt>环境</dt>
             <dd>{scoped.environment}</dd>
+            {scoped.intent.kind === "deposit-usdc" && (
+              <>
+                <dt>入金记录</dt>
+                <dd className="break-all">{scoped.intent.depositId}</dd>
+                <dt>资金来源</dt>
+                <dd>
+                  <AddressText value={scoped.intent.authorization.from} />
+                </dd>
+                <dt>入金金额</dt>
+                <dd>
+                  <Amount
+                    value={scoped.intent.authorization.value}
+                    asset="USDC"
+                  />
+                </dd>
+              </>
+            )}
             <dt>确认程度</dt>
             <dd>
               {scoped.finality === "finalized"
@@ -540,7 +559,14 @@ function OperationDetail({
                   userOperationHash: scoped.userOperationHash,
                   transactionHash: scoped.transactionHash,
                   nonce: scoped.nonce,
-                  calls: scoped.calls,
+                  calls:
+                    scoped.intent.kind === "deposit-usdc"
+                      ? scoped.calls.map((c) => ({
+                          to: c.to,
+                          value: c.value,
+                          method: "receiveWithAuthorization",
+                        }))
+                      : scoped.calls,
                   reason: scoped.reason,
                 },
                 null,

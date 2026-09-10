@@ -8,11 +8,22 @@ import type { PublicClient } from "viem";
 import {
   A,
   H,
-  env,
-  appAccount,
+  env as ctEnv,
+  appAccount as ctAccount,
   operation,
 } from "../../../../offchain/app-core/test/fixtures.js";
-import { AppError } from "../../../../offchain/app-core/src/contracts.js";
+import {
+  AppError,
+  type Deposit,
+} from "../../../../offchain/app-core/src/contracts.js";
+import { RECEIVE_TYPEHASH } from "../../../../offchain/app-core/src/usdc.js";
+import {
+  depositEnvironment,
+  fixtureDeposit,
+  fixtureWallet,
+  fundingState,
+  disconnectFunding,
+} from "./deposit-fixture.js";
 import { computePnl } from "../../../../offchain/app-core/src/pnl.js";
 import {
   encodeMarketRules,
@@ -43,6 +54,14 @@ import {
 } from "../../src/pages/Reports.js";
 import "../../src/site.css";
 import { reportFixture } from "./report-fixture.js";
+
+const usdc = new URLSearchParams(location.search).get("usdc") === "1";
+const env = usdc ? depositEnvironment : ctEnv;
+const appAccount = usdc
+  ? { ...ctAccount, environment: env.id, index: "1002" }
+  : ctAccount;
+const controllerWallet = fixtureWallet(appAccount.controller, "metamask"),
+  fundingWallet = fixtureWallet(A(30), "rabby");
 
 const now = Math.floor(Date.now() / 1000),
   close = now + 86400;
@@ -111,6 +130,19 @@ const accounts = [
   },
 ];
 class FixtureApi extends SiteApi {
+  deposit: Deposit | null = new URLSearchParams(location.search).has("deposit")
+    ? {
+        ...fixtureDeposit(appAccount),
+        ...(new URLSearchParams(location.search).get("deposit") === "unknown"
+          ? {
+              state: "unknown" as const,
+              operationId: operation.id,
+              userOperationHash: H(40),
+              reason: "provider_result_unknown",
+            }
+          : {}),
+      }
+    : null;
   admin = new URLSearchParams(location.search).get("admin") === "1";
   rulesFail = false;
   slow = false;
@@ -124,7 +156,39 @@ class FixtureApi extends SiteApi {
       p = url.pathname;
     if (this.slow) await new Promise((r) => setTimeout(r, 600));
     let result: unknown;
-    if (p === "/v1/feedback")
+    if (p === "/v1/deposits/prepare") {
+      const input = z
+        .object({
+          accountId: z.string(),
+          source: z.string(),
+          amount: z.string(),
+        })
+        .parse(_options.body);
+      this.deposit = fixtureDeposit(
+        accounts.find((a) => a.id === input.accountId)!,
+        input.source as `0x${string}`,
+        input.amount,
+      );
+      result = { deposit: this.deposit };
+    } else if (p === "/v1/deposits")
+      result = {
+        items:
+          this.deposit?.accountId === url.searchParams.get("accountId") &&
+          this.deposit.state !== "cancelled"
+            ? [this.deposit]
+            : [],
+        nextCursor: null,
+      };
+    else if (p.startsWith("/v1/deposits/")) {
+      if (!this.deposit) throw new AppError("deposit_not_found", 404);
+      if (p.endsWith("/cancel"))
+        this.deposit = {
+          ...this.deposit,
+          state: "cancelled",
+          reason: "user_cancelled",
+        };
+      result = { deposit: this.deposit };
+    } else if (p === "/v1/feedback")
       result = {
         accepted: true,
         id: z.object({ id: z.string().uuid() }).parse(_options.body).id,
@@ -270,6 +334,11 @@ class FixtureApi extends SiteApi {
     }) => {
       if (this.slow) await new Promise((r) => setTimeout(r, 600));
       const values: Record<string, unknown> = {
+        name: "USD Coin",
+        decimals: 6,
+        DOMAIN_SEPARATOR:
+          "0x85944e1292d007732838d6eadfa67589b78ffcededbd4df60488d0af251308bb",
+        RECEIVE_WITH_AUTHORIZATION_TYPEHASH: RECEIVE_TYPEHASH,
         economics: {
           creatorRakeBps: 100,
           protocolShareBps: 500,
@@ -304,6 +373,8 @@ class FixtureApi extends SiteApi {
     };
     return {
       readContract,
+      getChainId: async () => 421614,
+      getCode: async () => "0x6000",
       getBlock: async () => ({
         number: 100n,
         timestamp: BigInt(now),
@@ -330,6 +401,8 @@ function Fixture() {
     [failure, setFailure] = useState(false),
     [slow, setSlow] = useState(false),
     [pending, setPending] = useState(false);
+  const [connected, setConnected] = useState(false),
+    [rejectFunding, setRejectFunding] = useState(false);
   const value = useMemo<WalletSession>(
     () => ({
       identityKey: logged ? "did:privy:fixture" : null,
@@ -338,12 +411,18 @@ function Fixture() {
       api,
       accounts: logged ? accounts : [],
       account: logged ? accounts[selected]! : null,
-      wallets: [],
+      wallets: usdc
+        ? [controllerWallet, ...(connected ? [fundingWallet] : [])]
+        : [],
       opsRead: true,
       loading: false,
       error: null,
       login: () => setLogged(true),
       linkWallet: () => {},
+      connectFundingWallet: () => {
+        fundingState.disconnected = false;
+        setConnected(true);
+      },
       logout: async () => {
         setLogged(false);
         cache.clear();
@@ -362,7 +441,7 @@ function Fixture() {
         throw new AppError("fixture_does_not_export");
       },
     }),
-    [logged, selected, api, cache],
+    [logged, selected, api, cache, connected],
   );
   return (
     <QueryClientProvider client={cache}>
@@ -384,6 +463,33 @@ function Fixture() {
             }}
           >
             <strong>浏览器夹具 · 无真实资金或签名</strong>
+            {usdc && (
+              <>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={rejectFunding}
+                    onChange={(e) => {
+                      fundingState.reject = e.target.checked;
+                      setRejectFunding(e.target.checked);
+                    }}
+                  />
+                  资金钱包拒签
+                </label>
+                <button onClick={() => setTimeout(disconnectFunding, 1000)}>
+                  1 秒后断开资金钱包
+                </button>
+                <button
+                  onClick={() => {
+                    api.environment.features.gaslessDeposit = false;
+                    void cache.invalidateQueries();
+                    setConnected((v) => !v);
+                  }}
+                >
+                  关闭入金开关
+                </button>
+              </>
+            )}
             <button
               onClick={() => {
                 setLogged(!logged);

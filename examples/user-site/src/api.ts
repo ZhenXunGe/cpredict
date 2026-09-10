@@ -105,6 +105,30 @@ export class SiteApi {
   }
 }
 const messages: Record<string, string> = {
+  gasless_deposit_disabled: "当前暂停 USDC 免 Gas 入金，已有记录仍可查询。",
+  deposit_source_not_eoa:
+    "请选择普通 EOA 资金钱包；本次不支持合约钱包或已委托的账户。",
+  deposit_source_required: "请连接并选择持有 USDC 的资金钱包。",
+  deposit_insufficient_balance: "资金钱包的 USDC 余额不足，请重新核对数量。",
+  deposit_signature_rejected: "已取消资金钱包签名，尚未提交入金。",
+  deposit_signature_invalid: "无法核对资金钱包的授权签名，请重新确认。",
+  deposit_authorization_expired:
+    "本次 USDC 授权已过期或剩余时间不足，请取消原准备后重新核对。",
+  deposit_authorization_used: "这份授权已被使用或撤销，请查询原入金记录。",
+  deposit_authorization_mismatch: "授权与原入金记录不一致，已停止操作。",
+  deposit_domain_changed: "USDC 签名配置发生变化，已停止操作。",
+  deposit_recipient_mismatch: "收款地址与当前应用账户不一致，已停止操作。",
+  deposit_in_progress: "此账户已有待完成的入金，请继续查询或核对原记录。",
+  deposit_already_registered: "这笔入金已登记，请继续查询原操作。",
+  deposit_not_found: "无法读取当前账户的这笔入金，请核对账号与环境。",
+  deposit_source_quota_exhausted: "此资金钱包今日已达到入金代付次数限制。",
+  deposit_transfer_unverified:
+    "尚无法完整核对 USDC 到账事件，请查询原操作，勿重复入金。",
+  usdc_authorization_unavailable:
+    "当前无法验证 USDC 签名转账能力，请稍后重新查询。",
+  usdc_transfers_unavailable: "USDC 暂时不允许这笔转账，资金尚未转入。",
+  chain_query_unavailable:
+    "链上读取暂不可用，请稍后重新查询。已提交的操作请勿重复发送。",
   invalid_asset_amount: "请输入大于零、最多 6 位小数的金额。",
   external_wallet_required: "请在已恢复控制钱包的浏览器中打开此工具。",
   browser_lock_required:
