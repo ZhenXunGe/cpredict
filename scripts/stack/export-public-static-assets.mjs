@@ -47,7 +47,7 @@ const staging = await mkdtemp(join(boundary, ".static-export-"));
 await chmod(staging, 0o700);
 const temporaryArchive = join(output, ".assets-" + randomUUID() + ".tmp");
 try {
-  for (const path of ["assets", "demo/assets"]) {
+  for (const path of ["assets"]) {
     await mkdir(join(staging, path), { recursive: true, mode: 0o755 });
     docker([
       "cp",
@@ -98,12 +98,7 @@ try {
     }
   }
   await visit("assets");
-  await visit("demo/assets");
-  if (
-    !files.some((file) => file.path.startsWith("assets/")) ||
-    !files.some((file) => file.path.startsWith("demo/assets/"))
-  )
-    throw new Error("Both asset trees must be nonempty");
+  if (!files.length) throw new Error("Site assets must be nonempty");
   execFileSync(
     "tar",
     [
@@ -113,7 +108,6 @@ try {
       "-C",
       staging,
       "assets",
-      "demo/assets",
     ],
     {
       env: { ...process.env, COPYFILE_DISABLE: "1" },
@@ -130,7 +124,7 @@ try {
   const expected = new Set(files.map((file) => file.path));
   for (const entry of entries) {
     if (
-      (!entry.startsWith("assets/") && !entry.startsWith("demo/assets/")) ||
+      !entry.startsWith("assets/") ||
       entry.split("/").includes("..") ||
       entry.endsWith(".map")
     )
@@ -160,8 +154,6 @@ try {
     uncompressedFileBytes: files.reduce((total, file) => total + file.bytes, 0),
     fileCount: files.length,
     siteAssetFiles: files.filter((file) => file.path.startsWith("assets/"))
-      .length,
-    demoAssetFiles: files.filter((file) => file.path.startsWith("demo/assets/"))
       .length,
     excludedSourceMaps,
     files,

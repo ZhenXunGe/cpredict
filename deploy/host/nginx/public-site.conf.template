@@ -101,7 +101,11 @@ server {
     limit_req zone=cpredict_app_api burst=30 nodelay;
     proxy_pass http://127.0.0.1:4177;
   }
-  # The internal gateway serves root/deep links, /demo/, recovery, immutable
+  # Retire the old UI even when the edge retains copies of its static assets.
+  location = /demo { return 308 /; }
+  location ^~ /demo/assets/ { return 404; }
+  location ^~ /demo/ { return 308 /; }
+  # The internal gateway serves root/deep links, recovery, immutable
   # deployment/metadata paths and no-store runtime configuration together.
   location / {
     limit_except GET HEAD { deny all; }

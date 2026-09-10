@@ -115,11 +115,10 @@ jobs:
           npm run site:test:patches
           npm run site:test:dependencies
           npm run site:test:entrypoints
-      - name: Web Demo build and bundle secret scan
+      - name: Public site build and bundle secret scan
         run: |
-          npm run demo:test
-          npm run demo:build
-          npm run scan:demo-bundle
+          npm run site:build
+          npm run scan:site-bundle
       - name: Compose static config and image builds
         run: |
           docker compose -f compose.yaml config --no-interpolate --quiet

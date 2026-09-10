@@ -54,8 +54,6 @@ if (command === "help" || !allowed.has(command)) {
     resolve(ROOT, "compose.yaml"),
   ];
   if (publicSite) compose.push("-f", resolve(ROOT, "compose.public-site.yaml"));
-  if (publicSite && configuration.environment.CPREDICT_STACK_LEGACY_DEMO_DIR)
-    compose.push("-f", resolve(ROOT, "compose.public-site.legacy.yaml"));
   if (usdc) compose.push("-f", resolve(ROOT, "compose.usdc.yaml"));
   if (sponsorship) compose.push("--profile", "sponsorship");
   if (relay) compose.push("--profile", "relay");

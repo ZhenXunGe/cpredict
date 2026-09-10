@@ -153,7 +153,7 @@ function Configuration() {
         </Empty>
         <Notice>
           ctUSD 与测试网 USDC
-          均为测试资产。旧测试站及旧资产退出入口应由运营配置后保留。
+          均为测试资产，无真实货币价值。
         </Notice>
         <a href="/third-party/index.html">第三方软件声明与许可</a>
       </main>

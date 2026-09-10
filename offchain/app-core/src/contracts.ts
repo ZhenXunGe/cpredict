@@ -82,10 +82,12 @@ export const environmentSchema = z
     // Omit to use Privy's app-level configuration or its SDK default.
     walletConnectProjectId: z.string().trim().min(1).max(128).optional(),
     explorerUrl: secureUrl,
+    // Accepted only for existing runtime files; the retired Demo has no UI entry.
     legacyUrl: z
       .string()
       .max(512)
-      .refine((v) => v.startsWith("/") && !v.startsWith("//")),
+      .refine((v) => v.startsWith("/") && !v.startsWith("//"))
+      .optional(),
     features: z.strictObject({
       newExposure: z.boolean(),
       faucet: z.boolean(),

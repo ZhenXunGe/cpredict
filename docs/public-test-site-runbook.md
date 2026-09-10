@@ -18,7 +18,7 @@ git rev-parse HEAD
 
 ## 代码与构建
 
-- `examples/user-site` 是独立 React/Vite 入口；开发者 Demo 继续使用原构建。
+- `examples/user-site` 是唯一用户站入口；旧 Demo 网页、专属代码、构建及静态挂载已移除。
 - `offchain/app-core` 是账户、业务调用、账本、报表和前后端 Zod 契约。
 - `offchain/app-service` 使用 Privy 身份验证、ZeroDev 官方 SDK、持久化操作登记、准入、恢复和只读报表。
 - `offchain/indexer` 继续负责原始事件摄取；第 006 号迁移提供影子财务投影、账户定向回补、榜单和对账证据。
@@ -32,7 +32,6 @@ npm run build:offchain
 npm run site:contracts
 npm run site:contracts:check
 npm run site:build
-npm run demo:build
 ```
 
 浏览器及完整依赖声明均保持严格类型检查。Privy 发布包内部已复现的声明错误通过 4 个固定包的最小声明补丁修复，`site:check` 与 `site:check:dependencies` 均通过。`npm ci --ignore-scripts` 后，类型检查和构建会显式运行 `site:patches`，版本、integrity 或运行 JavaScript 摘要不匹配即停止。具体版本由 package-lock 锁定，Kernel 0.3.1 / EntryPoint 0.7 与账户 index 不随前端升级变化。
@@ -64,7 +63,7 @@ Bundler 和 Paymaster 可以使用同一条官方 ZeroDev RPC；服务器启动�
 npm run site:maintain -- validate-site runtime/public-site/ctusd.runtime.json --output runtime/public-site/site-config.json
 ```
 
-命令支持一份或多份运行配置，生成的浏览器配置只含公开 environment 字段，文件权限为 0644，供非特权 nginx 读取。`--output` 使用独占创建，避免覆盖已有配置；文件已存在时先生成不同文件名，审核差异后再替换。Compose 挂载该文件；直接静态托管则放入 `dist/user-site/site-config.json`，保持 `Cache-Control: no-store`。本轮浏览器配置仅列 ctUSD，不要求 USDC 凭据或部署。原 `/demo/` 和旧部署资产退出入口必须验证可访问。
+命令支持一份或多份运行配置，生成的浏览器配置只含公开 environment 字段，文件权限为 0644，供非特权 nginx 读取。`--output` 使用独占创建，避免覆盖已有配置；文件已存在时先生成不同文件名，审核差异后再替换。Compose 挂载该文件；直接静态托管则放入 `dist/user-site/site-config.json`，保持 `Cache-Control: no-store`。本轮浏览器配置仅列 ctUSD，不要求 USDC 凭据或部署。旧配置中的 `legacyUrl` 仍可读取但不再用于页面；新配置无需该字段。旧 EOA 资产退出已由用户明确移出本轮范围，智能账户的独立恢复入口继续保留。
 
 开启 sponsorship 之前，补齐 sponsor：独立 projectId、供应商原生币硬预算 `providerHardLimitWei` 与 `providerHardLimitPeriodSeconds`（或独立的 `providerHardLimitUsd`）、`policyOperator: "and"`、`passOnError: false`、单笔最大 Wei、60–300 秒授权有效期、exposure/exit 两条每日项目/账户/主体 Wei 与次数、每方法每日次数以及 weekly 配置。不得将 ETH 额度自动换算成已批准的美元账单预算。配置中的金额不是供应商后台已生效的证据；必须保留后台硬上限、AND、超时拒绝和域名配置验收。未核实前保持开关关闭。
 
@@ -147,7 +146,9 @@ npm run site:maintain -- publish-period --config /secure/ctusd.runtime.json --en
 
 原地升级使用现有 Compose，追加 `--public-site`；USDC 配置就绪后再追加 `--usdc`。先运行 `npm run build:offchain`，将 `.env.compose.example` 中对应私有文件路径填入 `.env.compose.local`。ctUSD 的服务与应用账户表共用原索引数据库；USDC 使用同一 PostgreSQL 实例的独立数据库和角色。配置加载器核对旧 ctUSD 合约、部署区块、浏览器和服务端环境、固定账户 index 及供应商项目，配置不一致则停止。
 
-`npm run stack:proxy:render -- --public-site --host <目标域名> --mode domain --email <ACME联系邮箱>` 只生成主机配置与安装脚本，不执行发布。主机代理转发到原 loopback 网关，新用户站位于根路径，`demo:build:embedded` 的产物位于 `/demo/`，静态资源 base 为 `/demo/`。原 `/runtime-config.json`、`/deployment/`、`/indexer/`、`/metadata/`、`/rpc` 和 relay 路径保留。新应用路由转发 Privy Bearer，页面与 OAuth 不受旧 Basic Auth 拦截；旧 Demo 独立部署时仍可使用原代理模式。`deploy/public-site/nginx.conf.template` 是直接托管静态文件的备选模板，需同时安装嵌入式 Demo 和旧配置，不再跳转旧首页。模板不声称完成供应商 CSP 或真实 HTTPS 验收。
+`npm run stack:proxy:render -- --public-site --host <目标域名> --mode domain --email <ACME联系邮箱>` 只生成主机配置与安装脚本，不执行发布。主机代理转发到原 loopback 网关，新用户站位于根路径；`/demo` 和 `/demo/` 下的旧页面跳转根路径，`/demo/assets/` 返回 404。原 `/runtime-config.json`、`/deployment/`、`/indexer/`、`/metadata/`、`/rpc` 和 relay 路径保留。新应用路由转发 Privy Bearer，页面与 OAuth 不受旧 Basic Auth 拦截。`deploy/public-site/nginx.conf.template` 是直接托管新站静态文件的备选模板。模板不声称完成供应商 CSP 或真实 HTTPS 验收。
+
+删除旧网页不意味着停掉 `web-demo` 容器：该服务名及 `Dockerfile.demo` 的兼容构建目标继续使用，镜像仅包含新站。更新现有网关时撤下旧 `compose.public-site.legacy.yaml` 覆盖文件和 `/usr/share/nginx/html/demo` 挂载；`stack:up -- --public-site` 已不再添加此覆盖文件或要求旧构建目录，旧私有变量可暂留但不会使用。无需停掉或重建数据库、indexer 等后端来删除页面。已有云端静态副本也需同步撤下 `/demo/assets/` 直出规则或添加上述 `^~` 拒绝规则，避免新网关上线后云端继续提供旧文件。保留新站 `/assets/` 的同版本资源及现有代理配置。
 
 若反向 SSH 隧道传输静态模块时超时，先比较源站的完整 GET 与云端隧道 GET，检查重传、拥塞窗口和 macOS 隧道任务的后台调度。不要只用 HEAD 或增加代理超时判断修复成功。可以从正在运行的网关导出公开静态资产，供云端运营核验后本地托管：
 
@@ -155,9 +156,9 @@ npm run site:maintain -- publish-period --config /secure/ctusd.runtime.json --en
 node scripts/stack/export-public-static-assets.mjs --container cpredict-web-demo-1
 ```
 
-该命令直接复制当前容器的 `assets/` 和 `demo/assets/`，不重建镜像，拒绝链接和非普通文件，排除源码映射，检查归档成员，并输出文件数、原始与压缩大小、SHA256 和逐文件清单。归档中不包含首页、配置或 API 数据。输出位于 `runtime/public-site/static-handoff/`，属于有意公开的静态文件，权限为目录 755、文件 644；运行密钥和运行配置仍为 600，不能放入此目录。
+该命令直接复制当前容器的新站 `assets/`，不重建镜像，拒绝链接和非普通文件，排除源码映射，检查归档成员，并输出文件数、原始与压缩大小、SHA256 和逐文件清单。归档中不包含首页、配置或 API 数据。输出位于 `runtime/public-site/static-handoff/`，属于有意公开的静态文件，权限为目录 755、文件 644；运行密钥和运行配置仍为 600，不能放入此目录。
 
-将 `compose.static-handoff.yaml` 作为现有已核验 Compose 配置的最后一个覆盖文件，仅给网关增加只读挂载；保留当前镜像和其他服务。临时下载路径为 `/_static-handoff/<归档名>`，可从云端现有 `http://127.0.0.1:4177` 隧道读取。先完整下载并核对 SHA256，再核对归档路径没有越界、链接及源码映射；云端是否启用本地 `/assets/` 和 `/demo/assets/` 由负责云端配置的任务处理，页面、运行配置与 API 继续使用原代理。切勿在一次传输过程中重启隧道。交接完成后可撤掉临时挂载，并与云端资产回退保持协调。
+将 `compose.static-handoff.yaml` 作为现有已核验 Compose 配置的最后一个覆盖文件，仅给网关增加只读挂载；保留当前镜像和其他服务。临时下载路径为 `/_static-handoff/<归档名>`，可从云端现有 `http://127.0.0.1:4177` 隧道读取。导出仅包含新站 `/assets/`。先完整下载并核对 SHA256，再核对归档路径没有越界、链接及源码映射；云端是否启用本地 `/assets/` 由负责云端配置的任务处理，页面、运行配置与 API 继续使用原代理。切勿在一次传输过程中重启隧道。交接完成后可撤掉临时挂载，并与云端资产回退保持协调。
 
 启用云端静态托管后，每次更新页面或网关前，先同步同一次构建的静态资源并核对逐文件摘要，再原子切换云端资源目录。保留上一版本的带哈希文件，供缓存页面和已打开的浏览器继续加载；同时保留旧镜像、资源目录、代理配置和回退命令，回退页面时同步核对其引用的资源仍可用。
 
@@ -167,7 +168,7 @@ node scripts/stack/export-public-static-assets.mjs --container cpredict-web-demo
 
 应用内部 `/metrics` 已提供请求耗时、依赖可用性、代付拒绝、恢复查询、未知操作、索引延迟、周预算和内存指标；未采集值不伪装成零。使用 `monitoring/prometheus/public-site-scrape.example.yml` 与 `cpredict-public-site-alerts.yml` 接入既有 Prometheus；所有公网代理均屏蔽 metrics/readyz。RPC 业务拒绝不等同于网络服务不可达。真实断网、断库和告警恢复仍需在目标环境留证。
 
-持续页面回归运行 `npm run site:test:browser`：构建新站和 `/demo/` 后，使用现有 Playwright/Chrome 验证实际静态入口与不会签名的业务夹具。PC 与窄视口分别记录；失败 trace、截图和 JSON 报告写入 `reports/generated/public-site/`。测试服务器只监听 loopback；它不能替代真实 nginx/HTTPS 或钱包验收。CI 的 `npm run test:postgres -- --public-site` 必须执行全部 31 项新旧数据库测试，跳过任何一项都会失败。
+持续页面回归运行 `npm run site:test:browser`：构建新站后，使用现有 Playwright/Chrome 验证实际静态入口、旧 URL 跳转、旧资源不可访问与不会签名的业务夹具。PC 与窄视口分别记录；失败 trace、截图和 JSON 报告写入 `reports/generated/public-site/`。测试服务器只监听 loopback；它不能替代真实 nginx/HTTPS 或钱包验收。CI 的 `npm run test:postgres -- --public-site` 必须执行全部 31 项新旧数据库测试，跳过任何一项都会失败。
 
 容量准备执行 `npm run site:test:capacity -- --prepare`（30 秒）；正式本地检查执行 `npm run site:test:capacity`（30 分钟）。使用项目已锁定 PostgreSQL/k6、一次性 loopback 数据库和实际 public indexer 查询接口，种入 100 个市场、50 个账户、10,400 条原始事件。50 个虚拟读者以总计约 10 次/秒查询，保存耗时、错误、连接、队列和应用 RSS/heap；不调用实际代付或扫描真实链。报告写入 `reports/generated/public-site/capacity-*/`，只有正式运行达标才能记录本地容量通过；不代表目标主机、真实浏览器或供应商容量。
 
@@ -204,7 +205,6 @@ npm run test:offchain
 npm run site:test:postgres
 npm run site:contracts:check
 npm run site:build
-npm run demo:build
 npm run check:artifacts
 ```
 
@@ -226,6 +226,6 @@ npm run site:test:kernel-fork -- --rpc-url https://sepolia-rollup.arbitrum.io/rp
 
 Set `environment.deployment.protocolVersion` to `legacy-v1` only after verifying the original deployment manifest and runtime code hashes. Omission retains the time-v2 model. This selects the original initialization/metadata event signatures, legacy rules commitments, and explicit terminal-state translation at the public-site boundary. Original database state values and stored event JSON remain unchanged. Migration `007_legacy_deployment.sql` adds missing fields; unknown new time commitments stay null. The metadata service serves both immutable rules formats.
 
-Build the reviewed, compatible demo with `node scripts/public-site/build-legacy-demo.mjs <exact-legacy-source-commit>`. Add its printed output directory as `CPREDICT_STACK_LEGACY_DEMO_DIR` in the private Compose environment. `stack.mjs up --public-site` validates its build record and mounts that bundle at `/demo/`; the public application continues to build from main. Legacy market creation stays in this compatible demo until a separate original-ABI creation form is accepted. Never submit the time-v2 create tuple to the old factory.
+The retired Demo is no longer built or mounted. `CPREDICT_STACK_LEGACY_DEMO_DIR` is no longer required or used. Original-ABI market reading and indexing remain supported; the creation page explicitly reports that creation is unavailable for this deployment until a separate original-ABI form is accepted. Never submit the time-v2 create tuple to the old factory.
 
 Rehearse against restored database backups before switching services. Verify original market/position values after migration and reorg replay, and preserve the original runtime package and container images for rollback. Replaying historical financial facts does not establish full scanner coverage, payment-token coverage, or reconciled PnL. Keep sponsorship disabled until the supplier's actual hard cap and policy composition are verified.

@@ -118,11 +118,6 @@ export function HelpPage() {
               ))}
             </div>
           )}
-          <h3>旧钱包的资产</h3>
-          <p>旧 EOA 钱包的资产和历史仍然独立保留，不会自动转移到应用账户。</p>
-          <a className="button button-secondary" href={env.legacyUrl}>
-            打开旧测试站与资产退出入口
-          </a>
           <h3>导出与独立恢复</h3>
           <p>
             Privy

@@ -2,12 +2,8 @@ import { readFile } from "node:fs/promises";
 import postgres from "postgres";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createPublicClient, http } from "viem";
+import { z } from "zod";
 import { createIndexerApi } from "../src/api.js";
-import {
-  fetchMarketCatalog,
-  fetchWalletActivity,
-  fetchListings,
-} from "../../../examples/web-demo/src/indexer-client.js";
 import { SiteApi } from "../../../examples/user-site/src/api.js";
 import {
   listingSchema,
@@ -87,7 +83,7 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
     expect(after).toEqual(before);
     expect((await store.financial!.snapshot()).epoch).toBe("3");
   });
-  it("serves both real clients in one process without changing legacy contracts or public binding", async () => {
+  it("serves the public client and existing API contracts in one process", async () => {
     const app = createIndexerApi(store, {
       financial: {
         ledger: store.financial!,
@@ -103,12 +99,18 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
         ...env,
         services: { ...env.services, indexer: `${basePath}/public` },
       });
-      const oldInput = {
-        basePath: "/",
-        chainId: env.deployment.chainId,
-        limit: 1,
+      const legacyQuery = `chainId=${env.deployment.chainId}&limit=1`;
+      const legacyRequest = async <T>(path: string, schema: z.ZodType<T>) => {
+        const response = await app.inject(`${path}?${legacyQuery}`);
+        expect(response.statusCode).toBe(200);
+        return schema.parse(response.json<unknown>());
       };
-      const legacyMarkets = await fetchMarketCatalog(oldInput);
+      const legacyMarkets = await legacyRequest(
+        "/v2/markets",
+        z.object({
+          items: z.array(z.object({ market: z.string(), status: z.string() })),
+        }),
+      );
       const publicMarkets = await site.request(
         "/v2/markets?limit=1",
         page(marketSchema),
@@ -119,7 +121,12 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
       );
       expect(legacyMarkets.items[0]!.status).toBe("open");
       expect(publicMarkets.snapshot!.blockNumber).toBe("3");
-      expect((await fetchListings(oldInput)).items).toEqual([]);
+      expect(
+        await legacyRequest(
+          "/v1/listings",
+          z.object({ items: z.array(z.unknown()) }),
+        ),
+      ).toMatchObject({ items: [] });
       expect(
         (
           await site.request("/v1/listings", page(listingSchema), {
@@ -127,17 +134,19 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
           })
         ).items,
       ).toEqual([]);
-      const oldHistory = await fetchWalletActivity({
-        ...oldInput,
-        owner: trader,
-      });
+      const oldHistory = await legacyRequest(
+        `/v2/activity/${trader}`,
+        z.object({
+          items: z.array(z.object({ kind: z.string(), amount: z.string() })),
+        }),
+      );
       const first = await site.request(
         `/v2/activity/${trader}?limit=1`,
         factsPageSchema,
         { service: "indexer" },
       );
       expect(oldHistory.items[0]!.kind).toBe("primary-purchased");
-      expect(oldHistory.items[0]!.amount).toBe(100n);
+      expect(oldHistory.items[0]!.amount).toBe("100");
       expect(first.items).toHaveLength(1);
       expect(first.snapshot.blockNumber).toBe("3");
       if (first.nextCursor) {

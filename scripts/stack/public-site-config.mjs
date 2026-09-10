@@ -1,6 +1,5 @@
 import { readFile, realpath, stat } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createHash } from "node:crypto";
 import { parseEnvText } from "../deployment/deploy-arbitrum-sepolia.mjs";
 
 const ROOT = resolve(import.meta.dirname, "../..");
@@ -12,7 +11,6 @@ export const PUBLIC_SITE_SECRET_KEYS = [
   "CPREDICT_STACK_USDC_CONFIG_FILE",
   "CPREDICT_STACK_USDC_INDEXER_PASSWORD",
   "CPREDICT_STACK_USDC_METADATA_PASSWORD",
-  "CPREDICT_STACK_LEGACY_DEMO_DIR",
 ];
 const password = /^[A-Za-z0-9_-]{24,128}$/;
 async function inputPath(secret, key, restricted = false) {
@@ -110,31 +108,6 @@ export async function loadPublicSiteStack(
         secretsForRedaction[`${name}_${key}`] = value;
     environments.push({ name, runtime, configPath, providerPath });
     if (name === "ctusd") {
-      if (e.deployment.protocolVersion === "legacy-v1") {
-        if (!secret.CPREDICT_STACK_LEGACY_DEMO_DIR)
-          throw new Error(
-            "legacy deployment requires its reviewed /demo build",
-          );
-        const demo = await realpath(
-          resolve(ROOT, secret.CPREDICT_STACK_LEGACY_DEMO_DIR),
-        );
-        const build = JSON.parse(
-          await readFile(resolve(demo, "legacy-build.json"), "utf8"),
-        );
-        if (
-          build.protocolVersion !== "legacy-v1" ||
-          build.base !== "/demo/" ||
-          !/^[a-f0-9]{40}$/.test(build.sourceCommit)
-        )
-          throw new Error("legacy demo provenance is invalid");
-        if (
-          createHash("sha256")
-            .update(await readFile(resolve(demo, "index.html")))
-            .digest("hex") !== build.indexSha256
-        )
-          throw new Error("legacy demo index differs from its build record");
-        environment.CPREDICT_STACK_LEGACY_DEMO_DIR = demo;
-      }
       const d = e.deployment,
         legacy = configuration.publicEnv;
       const expected = [d.factory, d.marketplace, d.bondEscrow, d.feeVault]

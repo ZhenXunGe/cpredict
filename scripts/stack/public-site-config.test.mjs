@@ -23,7 +23,7 @@ async function fixture(t, both = false) {
       deployment: { id: `${name}-deployment`, manifestHash: `0x${"a".repeat(64)}`, sourceCommit: "a".repeat(40), chainId: 421614, deploymentBlock: "1", factory: address(1 + i * 10), marketplace: address(2 + i * 10), bondEscrow: address(3 + i * 10), feeVault: address(4 + i * 10), paymentToken: i === 0 ? address(5) : "0x75faf114eafb1bdbe2f0316df893fd58ce46aa4d", protocolTreasury: address(6), runtimeCodeHashes: {} },
       account: { kernelVersion: "0.3.1", entryPointVersion: "0.7", index: String(1001 + i), derivationVersion: 1 },
       services: { app: `/${name}/app`, indexer: `/${name}/indexer/public`, metadata: `/${name}/metadata`, rpc: `/${name}/app/v1/rpc` },
-      privyAppId: `${name}-privy`, explorerUrl: "https://sepolia.arbiscan.io", legacyUrl: "/demo/",
+      privyAppId: `${name}-privy`, explorerUrl: "https://sepolia.arbiscan.io",
       features: { newExposure: false, sponsorship: false, faucet: false, leaderboard: false },
     };
     const runtime = { environment, sponsor: null, allowedOrigins: ["https://test.example.com"], adminSubjects: [], trustedProxies: ["172.18.0.2"] };
@@ -48,6 +48,17 @@ test("ctUSD alone reuses the existing deployment and does not require USDC secre
   assert.equal(result.environment.CPREDICT_STACK_CTUSD_CONFIG_FILE, await realpath(f.config.secret.CPREDICT_STACK_CTUSD_CONFIG_FILE));
   assert.equal(result.environment.CPREDICT_USDC_INDEXER_FACTORY_ADDRESS, undefined);
   assert.ok(Object.values(result.secretsForRedaction).includes("ctusd_test_secret"));
+});
+
+test("existing deployment starts without a Demo bundle and accepts obsolete runtime fields", async (t) => {
+  const f = await fixture(t);
+  f.runtimes[0][1].environment.deployment.protocolVersion = "legacy-v1";
+  f.runtimes[0][1].environment.legacyUrl = "/demo/";
+  f.config.secret.CPREDICT_STACK_LEGACY_DEMO_DIR = "/nonexistent/retired-demo";
+  await f.persist();
+  const result = await loadPublicSiteStack(f.config);
+  assert.equal(result.environments[0].runtime.environment.deployment.protocolVersion, "legacy-v1");
+  assert.equal(result.environment.CPREDICT_STACK_LEGACY_DEMO_DIR, undefined);
 });
 
 test("validate-site CLI generates ctUSD-only browser config and preserves an existing output", async (t) => {
@@ -135,5 +146,15 @@ test("public Compose overlays keep services and data separate without a second c
   for (const service of [publicSite.services["app-service"], usdc.services["indexer-usdc"], usdc.services["app-usdc"], usdc.services["metadata-usdc"]]) {
     assert.ok(service.ports.every((p) => p.startsWith("127.0.0.1:")));
     assert.equal(service.read_only, true);
+  }
+});
+
+test("all public Nginx templates retire Demo pages and block stale edge assets", async () => {
+  for (const path of ["deploy/compose/nginx/public-site.conf.template", "deploy/host/nginx/public-site.conf.template", "deploy/public-site/nginx.conf.template"]) {
+    const template = await readFile(new URL(`../../${path}`, import.meta.url), "utf8");
+    assert.match(template, /location = \/demo \{ return 308 \/; \}/);
+    assert.match(template, /location \^~ \/demo\/ \{ return 308 \/; \}/);
+    assert.match(template, /location \^~ \/demo\/assets\/ \{ return 404; \}/);
+    assert.doesNotMatch(template, /\/demo\/index\.html/);
   }
 });
