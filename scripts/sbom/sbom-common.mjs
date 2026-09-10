@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
+import { readNpmLicenseEvidence } from "./npm-license-evidence.mjs";
 
 export const SBOM_PATH = "manifests/sbom.spdx.json";
 export const LICENSES_PATH = "manifests/licenses.json";
@@ -104,9 +105,16 @@ const TOOL_HASH_KEYS = {
   postgresql: "postgresql-archive-sha256",
 };
 const ACCEPTED_LICENSE_EXPRESSIONS = new Set([
+  "(Apache-2.0 AND MIT)",
+  "(MIT AND BSD-3-Clause)",
+  "(MIT OR Apache-2.0)",
+  "0BSD",
   "AGPL-3.0-only",
   "Apache-2.0",
   "BSD-3-Clause",
+  "BSD-2-Clause",
+  "BlueOak-1.0.0",
+  "CC0-1.0",
   "CC-BY-SA-4.0",
   "GPL-3.0-only",
   "ISC",
@@ -139,7 +147,12 @@ export async function createSbomArtifacts(root) {
   );
   assertPlainObject(packageLock.packages, "package-lock packages");
 
-  const npmPackages = npmPackageRecords(packageLock);
+  const npmEvidence = await readNpmLicenseEvidence(
+    root,
+    packageLock,
+    lockBytes,
+  );
+  const npmPackages = npmPackageRecords(packageLock, npmEvidence.declarations);
   const sourcePackages = pipeLockRecords(
     lockBytes.get("manifests/dependencies.lock").toString("utf8"),
     "manifests/dependencies.lock",
@@ -250,6 +263,7 @@ export async function createSbomArtifacts(root) {
     },
     documentDescribes: [rootId],
     packages,
+    hasExtractedLicensingInfos: npmEvidence.extracted,
     relationships,
     annotations: [
       {
@@ -300,6 +314,20 @@ export function validateSbomArtifacts(artifacts, packageLock) {
     sbom.packages.map((item) => item.SPDXID),
     "SPDXID",
   );
+  const extracted = new Map(
+    (sbom.hasExtractedLicensingInfos ?? []).map((e) => [e.licenseId, e]),
+  );
+  for (const [id, evidence] of extracted) {
+    assert(
+      typeof evidence.extractedText === "string" &&
+        evidence.extractedText.length > 0,
+      "missing extracted license text",
+    );
+    assert(
+      id === `LicenseRef-Npm-${sha256(evidence.extractedText).slice(0, 20)}`,
+      "extracted license checksum drift",
+    );
+  }
   for (const item of sbom.packages) {
     assertExactKeys(
       item,
@@ -327,7 +355,8 @@ export function validateSbomArtifacts(artifacts, packageLock) {
       `missing licenseDeclared for ${item.name}`,
     );
     assert(
-      ACCEPTED_LICENSE_EXPRESSIONS.has(item.licenseDeclared),
+      ACCEPTED_LICENSE_EXPRESSIONS.has(item.licenseDeclared) ||
+        extracted.has(item.licenseDeclared),
       `unreviewed SPDX license expression for ${item.name}: ${item.licenseDeclared}`,
     );
     assert(
@@ -386,24 +415,32 @@ export function serializeSbomArtifacts(artifacts) {
   };
 }
 
-function npmPackageRecords(lock) {
+function npmPackageRecords(lock, evidence) {
   const records = [];
   for (const [path, metadata] of Object.entries(lock.packages)) {
     if (path === "") continue;
     assertPlainObject(metadata, `package-lock entry ${path}`);
-    for (const key of ["version", "license", "integrity"]) {
+    for (const key of ["version", "integrity"]) {
       assert(
         typeof metadata[key] === "string" && metadata[key].length > 0,
         `package-lock ${path} missing ${key}`,
       );
     }
+    const supplemental = evidence.get(path);
+    const declared = supplemental?.declared ?? metadata.license;
+    assert(
+      typeof declared === "string" &&
+        declared.length > 0 &&
+        !declared.startsWith("SEE LICENSE"),
+      `package-lock ${path} missing license evidence`,
+    );
     const name = npmNameFromPath(path);
     const integrity = parseIntegrity(metadata.integrity, path);
     const identity = `npm:${name}@${metadata.version}:${path}`;
     records.push({
       identity,
       kind: metadata.dev ? "development" : "runtime",
-      provenance: `package-lock.json#packages[${JSON.stringify(path)}]`,
+      provenance: `package-lock.json#packages[${JSON.stringify(path)}]${supplemental ? `; ${supplemental.provenance}` : ""}`,
       scope: metadata.dev
         ? "Node development dependency"
         : "Node runtime dependency",
@@ -417,9 +454,9 @@ function npmPackageRecords(lock) {
           { algorithm: integrity.algorithm, checksumValue: integrity.hex },
         ],
         licenseConcluded: "NOASSERTION",
-        licenseDeclared: metadata.license,
+        licenseDeclared: declared,
         copyrightText: "NOASSERTION",
-        comment: `Locked npm path ${path}; integrity verified against package-lock.json.`,
+        comment: `Locked npm path ${path}; integrity verified against package-lock.json.${supplemental ? ` License evidence: ${supplemental.provenance}; ${supplemental.status}.` : ""}`,
       },
     });
   }

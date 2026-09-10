@@ -27,6 +27,8 @@ const logLevel = z.enum([
 const schema = z
   .object({
     CPREDICT_INDEXER_HOST: serviceHost,
+    CPREDICT_INDEXER_PUBLIC_CONFIG_FILE: z.string().min(1).optional(),
+    CPREDICT_INDEXER_METADATA_URL: z.string().url().refine(isSecureServiceUrl).optional(),
     CPREDICT_INDEXER_CONTAINER_MODE: booleanString.default("false"),
     CPREDICT_INDEXER_PORT: safeInteger.refine(
       (value) => value >= 1 && value <= 65_535,
@@ -135,6 +137,8 @@ const schema = z
   });
 
 export interface IndexerServiceConfig {
+  publicConfigFile?: string;
+  metadataUrl?: string;
   host: "127.0.0.1" | "::1" | "0.0.0.0" | "::";
   containerMode: boolean;
   port: number;
@@ -172,6 +176,8 @@ export function parseIndexerServiceConfig(
     parsed.CPREDICT_INDEXER_CORE_ADDRESSES,
   );
   return {
+    ...(parsed.CPREDICT_INDEXER_PUBLIC_CONFIG_FILE?{publicConfigFile:parsed.CPREDICT_INDEXER_PUBLIC_CONFIG_FILE}:{}),
+    ...(parsed.CPREDICT_INDEXER_METADATA_URL?{metadataUrl:parsed.CPREDICT_INDEXER_METADATA_URL}:{}),
     host: parsed.CPREDICT_INDEXER_HOST,
     containerMode: parsed.CPREDICT_INDEXER_CONTAINER_MODE === "true",
     port: parsed.CPREDICT_INDEXER_PORT,

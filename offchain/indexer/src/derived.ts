@@ -61,6 +61,7 @@ export type DerivedMutation =
       outcomeId: bigint;
       filledUnits: bigint;
       payment: bigint;
+      earlyBirdWeight: bigint;
       totalPrincipal: bigint;
     }
   | {
@@ -94,6 +95,9 @@ export type DerivedMutation =
       seller: Address;
       filledUnits: bigint;
       gross: bigint;
+      sellerProceeds: bigint;
+      platformFee: bigint;
+      creatorFee: bigint;
       remainingUnits: bigint;
     }
   | {
@@ -226,6 +230,7 @@ export function deriveMutations(
           outcomeId: bigint(args.outcomeId),
           filledUnits: bigint(args.filledUnits),
           payment: bigint(args.payment),
+          earlyBirdWeight: bigint(args.earlyBirdWeight),
           totalPrincipal: bigint(args.totalPrincipal),
         },
       ];
@@ -277,6 +282,9 @@ export function deriveMutations(
           seller: address(args.seller),
           filledUnits: bigint(args.filledUnits),
           gross: bigint(args.gross),
+          sellerProceeds: bigint(args.sellerProceeds),
+          platformFee: bigint(args.platformFee),
+          creatorFee: bigint(args.creatorFee),
           remainingUnits: bigint(args.remainingUnits),
         },
       ];

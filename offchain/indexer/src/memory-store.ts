@@ -573,6 +573,9 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
           seller: mutation.seller,
           filledUnits: mutation.filledUnits,
           gross: mutation.gross,
+          sellerProceeds: mutation.sellerProceeds,
+          platformFee: mutation.platformFee,
+          creatorFee: mutation.creatorFee,
           blockNumber: event.blockNumber,
           confirmationStatus: event.confirmationStatus,
         });

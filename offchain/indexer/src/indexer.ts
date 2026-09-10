@@ -1,4 +1,5 @@
-import { getAddress, type Address, type Log, type PublicClient } from "viem";
+import { getAddress, type Address, type Hex, type Log, type PublicClient } from "viem";
+import { scopedAccountLogs } from "./scoped-logs.js";
 import { confirmationFor, discoverMarketAddresses } from "./derived.js";
 import {
   normalizeLog,
@@ -17,6 +18,7 @@ export interface IndexerOptions {
   addresses: readonly Address[];
   /** Enables atomic, same-block discovery of Factory-created market vaults. */
   factoryAddress?: Address;
+  financial?: {paymentToken: Address; accounts(): Promise<readonly Address[]>; scanned(accounts: readonly Address[], from: bigint, to: bigint, hash: Hex): Promise<void>; backfill(): Promise<void>};
 }
 
 export interface BatchResult {
@@ -56,6 +58,7 @@ export class ChainIndexer {
 
   async runBatch(): Promise<BatchResult | undefined> {
     await syncStage("reconcile", () => this.reconcileCheckpoint());
+    if (this.options.financial) await syncStage("event-logs",()=>this.options.financial!.backfill());
     const checkpoint = await syncStage("checkpoint-read", () =>
       this.store.checkpoint(this.options.chainId),
     );
@@ -94,7 +97,9 @@ export class ChainIndexer {
         toBlock,
       }),
     );
-    const events = deduplicateLogs([...discoveryLogs, ...logs])
+    const tracked = this.options.financial ? await this.options.financial.accounts() : [];
+    const scoped = this.options.financial ? await syncStage("event-logs",()=>scopedAccountLogs(this.client,this.options.financial!.paymentToken,tracked,fromBlock,toBlock)) : [];
+    const events = deduplicateLogs([...discoveryLogs, ...logs, ...scoped])
       .map((log) => normalizeLog(this.options.chainId, log, confirmationStatus))
       .sort(compareEvents);
     const blocks = await syncStage("canonical-blocks", () =>
@@ -112,6 +117,7 @@ export class ChainIndexer {
     await syncStage("batch-write", () =>
       this.store.applyBatch(events, blocks, next),
     );
+    if (this.options.financial) await syncStage("batch-write",()=>this.options.financial!.scanned(tracked,fromBlock,toBlock,endBlock.blockHash));
     return {
       fromBlock,
       toBlock,

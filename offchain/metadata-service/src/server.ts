@@ -10,6 +10,7 @@ import {
   toBytes,
   type Address,
   type Hex,
+  type PublicClient,
 } from "viem";
 import { z } from "zod";
 import {
@@ -26,7 +27,10 @@ const bytes32Schema = z
   .transform((value) => value as Hex);
 const signatureSchema = z
   .string()
-  .regex(/^0x[0-9a-fA-F]{130}$/)
+  // ERC-1271 / ERC-6492 signatures contain validator and deployment data.
+  // Keep a byte-aligned, bounded envelope rather than accepting arbitrary JSON.
+  .max(2 + 8_192 * 2)
+  .regex(/^0x(?:[0-9a-fA-F]{2})+$/)
   .transform((value) => value as Hex);
 const addressSchema = z
   .string()
@@ -38,6 +42,7 @@ export interface MetadataServerOptions {
   store: MetadataStore;
   now?: (() => number) | undefined;
   nonce?: (() => Hex) | undefined;
+  signatureClient?: Pick<PublicClient, "verifyTypedData"> | undefined;
 }
 
 export async function createMetadataServer(
@@ -53,11 +58,11 @@ export async function createMetadataServer(
             level: options.config.logLevel,
             redact: ["req.body.signature"],
           },
-    bodyLimit: 32 * 1_024,
+    bodyLimit: 64 * 1_024,
     requestTimeout: 5_000,
     connectionTimeout: 5_000,
     maxRequestsPerSocket: 100,
-    trustProxy: false,
+    trustProxy: options.config.trustedProxies?.length ? options.config.trustedProxies : false,
   });
   await app.register(helmet, {
     contentSecurityPolicy: {
@@ -142,11 +147,31 @@ export async function createMetadataServer(
       const encoded = encodeMarketRules(body.rules);
       if (encoded.rulesHash.toLowerCase() !== challenge.rulesHash.toLowerCase())
         return reply.code(400).send({ error: "rules do not match challenge" });
-      const signer = await recoverTypedDataAddress({
-        ...buildMetadataTypedData(challenge),
-        signature: body.signature,
-      });
-      if (getAddress(signer) !== challenge.creator)
+      const typedData = buildMetadataTypedData(challenge);
+      let valid: boolean;
+      if (options.signatureClient !== undefined) {
+        try {
+          // viem performs EOA, deployed ERC-1271 and counterfactual ERC-6492
+          // validation against the configured chain, without sending a transaction.
+          valid = await options.signatureClient.verifyTypedData({
+            ...typedData,
+            address: challenge.creator,
+            signature: body.signature,
+          });
+        } catch {
+          return reply.code(503).send({ error: "signature verification unavailable" });
+        }
+      } else {
+        // Backwards-compatible EOA-only mode for existing deployments.
+        try {
+          valid = getAddress(await recoverTypedDataAddress({
+            ...typedData, signature: body.signature,
+          })) === challenge.creator;
+        } catch {
+          valid = false;
+        }
+      }
+      if (!valid)
         return reply.code(401).send({ error: "invalid signature" });
       const metadataUri = `${options.config.publicBaseUrl}/v1/markets/${challenge.rulesHash}/outcomes/{id}.json`;
       const resolutionSourceHash = keccak256(

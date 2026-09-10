@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { getAddress, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import {
@@ -132,6 +132,46 @@ describe("wallet-authorized metadata service", () => {
     });
     expect(response.statusCode).toBe(401);
     expect(response.json()).toEqual({ error: "invalid signature" });
+    await app.close();
+  });
+
+  it("validates bounded smart-account signatures on the configured chain and preserves one-time challenges", async () => {
+    const store = new MemoryMetadataStore();
+    const verifyTypedData = vi.fn().mockResolvedValue(true);
+    const app = await createMetadataServer({
+      config: configuration(), store, now: () => 1_800_000_000,
+      nonce: sequenceHex(), signatureClient: { verifyTypedData },
+    });
+    const smartAccount = getAddress("0x00000000000000000000000000000000000000a1");
+    const encoded = encodeMarketRules(rules);
+    const issued = await app.inject({method: "POST", url: "/v1/challenges", payload: {
+      chainId: 421614, factory, creator: smartAccount, rulesHash: encoded.rulesHash,
+    }});
+    const challengeId = issued.json().challengeId as Hex;
+    const signature = `0x${"ab".repeat(512)}`;
+    const published = await app.inject({method: "POST", url: "/v1/markets", payload: { challengeId, signature, rules }});
+    expect(published.statusCode).toBe(201);
+    expect(verifyTypedData).toHaveBeenCalledWith(expect.objectContaining({address: smartAccount, signature, domain: expect.objectContaining({chainId: 421614, verifyingContract: factory})}));
+    const replay = await app.inject({method: "POST", url: "/v1/markets", payload: { challengeId, signature, rules }});
+    expect(replay.statusCode).toBe(409);
+    expect(verifyTypedData).toHaveBeenCalledTimes(1);
+    await app.close();
+  });
+
+  it("fails closed on verifier outage, leaves challenge usable, and bounds signature bytes", async () => {
+    const store = new MemoryMetadataStore();
+    const verifyTypedData = vi.fn().mockRejectedValue(new Error("RPC unavailable"));
+    const app = await createMetadataServer({config: configuration(), store, now: () => 1_800_000_000, nonce: sequenceHex(), signatureClient: {verifyTypedData}});
+    const issued = await app.inject({method: "POST", url: "/v1/challenges", payload: {chainId: 421614, factory, creator: account.address, rulesHash: encodeMarketRules(rules).rulesHash}});
+    const challengeId = issued.json().challengeId as Hex;
+    const unavailable = await app.inject({method: "POST", url: "/v1/markets", payload: {challengeId, signature: `0x${"ab".repeat(512)}`, rules}});
+    expect(unavailable.statusCode).toBe(503);
+    expect((await store.challenge(challengeId))?.consumedAt).toBeNull();
+    for (const signature of ["0xabc", `0x${"ab".repeat(8193)}`, "0x", "signed"]) {
+      const rejected = await app.inject({method: "POST", url: "/v1/markets", payload: {challengeId, signature, rules}});
+      expect(rejected.statusCode).toBe(400);
+    }
+    expect(verifyTypedData).toHaveBeenCalledTimes(1);
     await app.close();
   });
 });
