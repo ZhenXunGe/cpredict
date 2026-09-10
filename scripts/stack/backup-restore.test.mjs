@@ -5,6 +5,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { backupColumnsSql, backupDatabaseInventory, buildBackupManifest, buildSnapshotSql, createStackBackup } from "./backup.mjs";
 import { compareSnapshots, snapshotTables, validateBackupFiles } from "./restore-drill.mjs";
+import { readSourceRevision } from "./source-revision.mjs";
 
 const sha = "a".repeat(64);
 
@@ -53,12 +54,17 @@ test("v2 backup covers all five databases and actual application tables", async 
   const columns = { app_operations: ["id", "record"], chain_events: ["chain_id", "data"] };
   const snapshot = { rows: { app_operations: "1", chain_events: "2" }, columns, contentSha256: { app_operations: sha, chain_events: sha } };
   const databases = [];
+  const revision = "b".repeat(40);
   const result = await createStackBackup({
     outputRoot: root,
     usdc: true,
-    configuration: { runtimeRoot: root, environment: {}, secret: { CPREDICT_STACK_BACKUP_PASSWORD: "test" }, secretPath: join(root, "test.env"), publicPath: join(root, "public.env") },
-    run: async (_command, args) => ({ code: 0, stderr: "", stdout: args.includes("--version") ? "postgres (PostgreSQL) 17.10" : JSON.stringify(args.includes(backupColumnsSql) ? columns : snapshot) }),
-    stream: async (_command, args, { outputPath }) => {
+    configuration: { runtimeRoot: root, environment: { CPREDICT_IMAGE_REVISION: revision }, secret: { CPREDICT_STACK_BACKUP_PASSWORD: "test" }, secretPath: join(root, "test.env"), publicPath: join(root, "public.env") },
+    run: async (_command, args, { env }) => {
+      assert.equal(env.CPREDICT_IMAGE_REVISION, revision);
+      return { code: 0, stderr: "", stdout: args.includes("--version") ? "postgres (PostgreSQL) 17.10" : JSON.stringify(args.includes(backupColumnsSql) ? columns : snapshot) };
+    },
+    stream: async (_command, args, { outputPath, env }) => {
+      assert.equal(env.CPREDICT_IMAGE_REVISION, revision);
       databases.push(args.find((arg) => arg.startsWith("--dbname=")));
       await writeFile(outputPath, "test archive bytes");
     },
@@ -72,6 +78,27 @@ test("v2 backup covers all five databases and actual application tables", async 
   assert.match(await readFile(join(result.directory, "SHA256SUMS"), "utf8"), /usdc-indexer.dump/);
   delete result.manifest.dumps["usdc-metadata"];
   await assert.rejects(validateBackupFiles(result.directory, result.manifest), /inventory/);
+});
+
+test("standalone backup resolves the source revision before its first Compose query", async (t) => {
+  const root = await mkdtemp(join(tmpdir(), "cpredict-backup-revision-"));
+  t.after(() => rm(root, { recursive: true }));
+  let revision;
+  await assert.rejects(createStackBackup({
+    outputRoot: root,
+    configuration: {
+      runtimeRoot: root,
+      environment: { CPREDICT_IMAGE_REVISION: undefined },
+      secret: { CPREDICT_STACK_BACKUP_PASSWORD: "test" },
+      secretPath: join(root, "test.env"),
+      publicPath: join(root, "public.env"),
+    },
+    run: async (_command, _args, { env }) => {
+      revision = env.CPREDICT_IMAGE_REVISION;
+      throw new Error("query inspected without database access");
+    },
+  }), /query inspected without database access/);
+  assert.equal(revision, readSourceRevision());
 });
 
 test("restore comparison catches content and operation changes even with unchanged row counts", () => {

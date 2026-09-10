@@ -6,6 +6,7 @@ import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadStackConfiguration } from "./config.mjs";
+import { parseSourceRevision, readSourceRevision } from "./source-revision.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 export async function createStackBackup({
@@ -21,7 +22,14 @@ export async function createStackBackup({
   const directory = resolve(outputRoot, id);
   await mkdir(directory, { recursive: false, mode: 0o700 });
   const base = composeBase(config);
-  const env = { ...process.env, ...config.environment, PGPASSWORD: config.secret.CPREDICT_STACK_BACKUP_PASSWORD };
+  const env = {
+    ...process.env,
+    ...config.environment,
+    CPREDICT_IMAGE_REVISION: parseSourceRevision(
+      config.environment.CPREDICT_IMAGE_REVISION ?? readSourceRevision(),
+    ),
+    PGPASSWORD: config.secret.CPREDICT_STACK_BACKUP_PASSWORD,
+  };
   const dumps = {};
   const snapshots = {};
   for (const { name, database, kind } of backupDatabaseInventory({ usdc })) {

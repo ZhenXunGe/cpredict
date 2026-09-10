@@ -247,11 +247,12 @@ export async function execute({ root, config, mode }) {
   });
   const c = await loadStackConfiguration();
   const publicStack = await loadPublicSiteStack(c);
-  Object.assign(c.environment, publicStack.environment);
+  Object.assign(c.environment, publicStack.environment, {
+    CPREDICT_IMAGE_REVISION: sourceCommit,
+  });
   const env = {
     ...process.env,
     ...c.environment,
-    CPREDICT_IMAGE_REVISION: sourceCommit,
   };
   const base = [
     "compose",
