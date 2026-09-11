@@ -203,10 +203,8 @@ export function rollbackCompose(containers) {
       // Preserve explicitly requested addresses, not Docker's current dynamic
       // assignment. The gateway's trusted-proxy configuration relies on this.
       const ipam = network.IPAMConfig;
-      if (ipam?.IPv4Address)
-        networks[name].ipv4_address = ipam.IPv4Address;
-      if (ipam?.IPv6Address)
-        networks[name].ipv6_address = ipam.IPv6Address;
+      if (ipam?.IPv4Address) networks[name].ipv4_address = ipam.IPv4Address;
+      if (ipam?.IPv6Address) networks[name].ipv6_address = ipam.IPv6Address;
       if (ipam?.LinkLocalIPs?.length)
         networks[name].link_local_ips = [...ipam.LinkLocalIPs];
     }
@@ -284,12 +282,19 @@ export async function refreshProxyUpstreams(
   docker,
   { pause = (ms) => new Promise((done) => setTimeout(done, ms)) } = {},
 ) {
-  const proxies = containers.filter((c) => c.State.Running &&
-    ["web-demo", "public-site-preview"].includes(
-      c.Config.Labels?.["com.docker.compose.service"],
-    ));
-  ensure(proxies.some((c) => c.Config.Labels["com.docker.compose.service"] === "web-demo"),
-    "The public gateway is not running");
+  const proxies = containers.filter(
+    (c) =>
+      c.State.Running &&
+      ["web-demo", "public-site-preview"].includes(
+        c.Config.Labels?.["com.docker.compose.service"],
+      ),
+  );
+  ensure(
+    proxies.some(
+      (c) => c.Config.Labels["com.docker.compose.service"] === "web-demo",
+    ),
+    "The public gateway is not running",
+  );
   const checks = [];
   for (const proxy of proxies) {
     const service = proxy.Config.Labels["com.docker.compose.service"];
@@ -307,11 +312,24 @@ export async function refreshProxyUpstreams(
     for (let attempt = 0; attempt < 10 && Date.now() < deadline; attempt++) {
       try {
         for (const path of paths) {
-          const body = await docker([
-            "exec", proxy.Id, "wget", "-q", "-T", "5", "-O", "-",
-            `http://127.0.0.1:8080${path}`,
-          ], { timeout: 10000, label: `Verify ${service} upstream readiness` });
-          ensure(JSON.parse(body).status === "ok", "Proxy upstream is not ready");
+          const body = await docker(
+            [
+              "exec",
+              proxy.Id,
+              "wget",
+              "-q",
+              "-T",
+              "5",
+              "-O",
+              "-",
+              `http://127.0.0.1:8080${path}`,
+            ],
+            { timeout: 10000, label: `Verify ${service} upstream readiness` },
+          );
+          ensure(
+            JSON.parse(body).status === "ok",
+            "Proxy upstream is not ready",
+          );
         }
         ready = true;
         break;
@@ -364,20 +382,31 @@ export async function createManifest(directory, sourceCommit) {
     files: files.sort((a, b) => a.path.localeCompare(b.path)),
   };
 }
-export async function fetchBytes(origin, path) {
-  const r = await fetch(origin + path, {
-    redirect: "manual",
-    headers: { "cache-control": "no-cache" },
-    signal: AbortSignal.timeout(35000),
-  });
-  const data = Buffer.from(await r.arrayBuffer());
-  return {
-    status: r.status,
-    sha256: sha256(data),
-    bytes: data.length,
-    location: r.headers.get("location"),
-    data,
-  };
+export async function fetchBytes(origin, path, { timeoutMs = 120000 } = {}) {
+  try {
+    const r = await fetch(origin + path, {
+      redirect: "manual",
+      headers: { "cache-control": "no-cache" },
+      // Include the complete response body: larger wallet chunks can take more
+      // than 35 seconds over the public connection during release verification.
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    const data = Buffer.from(await r.arrayBuffer());
+    return {
+      status: r.status,
+      sha256: sha256(data),
+      bytes: data.length,
+      location: r.headers.get("location"),
+      data,
+    };
+  } catch (error) {
+    // An unadorned DOMException code 23 hid which public download had failed.
+    // Paths here are public verification targets; never expose connection data.
+    throw new Error(
+      `Public read failed: ${path} (${error.name ?? "request error"})`,
+      { cause: error },
+    );
+  }
 }
 export async function verifyAssets(origin, manifest) {
   let next = 0;

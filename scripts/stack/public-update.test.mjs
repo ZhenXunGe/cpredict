@@ -8,6 +8,7 @@ import { createServer } from "node:http";
 import {
   createManifest,
   escapeCompose,
+  fetchBytes,
   refreshProxyUpstreams,
   rollbackCompose,
   sha256,
@@ -30,6 +31,39 @@ const config = {
   },
   composeOverrides: [],
 };
+test("public downloads verify the complete delayed body and identify body timeouts", async () => {
+  const body = Buffer.from("complete public asset");
+  const server = createServer((_req, res) => {
+    res.writeHead(200, {
+      "content-type": "application/javascript",
+      "content-length": body.length,
+    });
+    res.flushHeaders();
+    setTimeout(() => res.end(body), 60);
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const complete = await fetchBytes(origin, "/assets/delayed.js");
+    assert.equal(complete.status, 200);
+    assert.equal(complete.bytes, body.length);
+    assert.equal(complete.sha256, sha256(body));
+    await assert.rejects(
+      fetchBytes(origin, "/assets/delayed.js", { timeoutMs: 10 }),
+      (error) => {
+        assert.match(
+          error.message,
+          /Public read failed: \/assets\/delayed.js \(TimeoutError\)/,
+        );
+        assert.equal(error.cause.name, "TimeoutError");
+        return true;
+      },
+    );
+  } finally {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
 test("publisher enforces archive, immutability, command and rollback boundaries", () => {
   execFileSync(
     "python3",
@@ -120,11 +154,14 @@ test("rollback comes from running image IDs, preserves runtime isolation, never 
           Aliases: [name],
           IPAddress: `172.25.0.${i + 2}`,
           GlobalIPv6Address: `2001:db8::${i + 2}`,
-          IPAMConfig: name === "web-demo" ? {
-            IPv4Address: "172.25.0.5",
-            IPv6Address: "2001:db8::5",
-            LinkLocalIPs: ["169.254.2.5"],
-          } : null,
+          IPAMConfig:
+            name === "web-demo"
+              ? {
+                  IPv4Address: "172.25.0.5",
+                  IPv6Address: "2001:db8::5",
+                  LinkLocalIPs: ["169.254.2.5"],
+                }
+              : null,
         },
       },
     },
@@ -158,44 +195,67 @@ test("proxy refresh retries stale upstreams after one reload without recreating 
   const calls = [];
   const pauses = [];
   let stalePreview = true;
-  const checks = await refreshProxyUpstreams([
-    gateway, preview, proxyContainer("indexer", "c"),
-  ], async (args) => {
-    calls.push(args);
-    assert.equal(args[0], "exec");
-    if (args[2] === "wget") {
-      if (args[1] === preview.Id && stalePreview) {
-        stalePreview = false;
-        throw new Error("Old Nginx worker returned 502");
+  const checks = await refreshProxyUpstreams(
+    [gateway, preview, proxyContainer("indexer", "c")],
+    async (args) => {
+      calls.push(args);
+      assert.equal(args[0], "exec");
+      if (args[2] === "wget") {
+        if (args[1] === preview.Id && stalePreview) {
+          stalePreview = false;
+          throw new Error("Old Nginx worker returned 502");
+        }
+        return '{"status":"ok"}';
       }
-      return '{"status":"ok"}';
-    }
-    return "";
-  }, { pause: async (ms) => pauses.push(ms) });
-  assert.deepEqual(checks.map(({ service, ready }) => ({ service, ready })), [
-    { service: "web-demo", ready: true },
-    { service: "public-site-preview", ready: true },
-  ]);
+      return "";
+    },
+    { pause: async (ms) => pauses.push(ms) },
+  );
+  assert.deepEqual(
+    checks.map(({ service, ready }) => ({ service, ready })),
+    [
+      { service: "web-demo", ready: true },
+      { service: "public-site-preview", ready: true },
+    ],
+  );
   assert.deepEqual(pauses, [1000]);
   for (const proxy of [gateway, preview]) {
     const proxyCalls = calls.filter((args) => args[1] === proxy.Id);
     assert.deepEqual(proxyCalls[0], ["exec", proxy.Id, "nginx", "-t"]);
-    assert.deepEqual(proxyCalls[1], ["exec", proxy.Id, "nginx", "-s", "reload"]);
-    assert.equal(proxyCalls.filter((args) => args.includes("reload")).length, 1);
-    assert.ok(proxyCalls.some((args) => args.at(-1) ===
-      "http://127.0.0.1:8080/ctusd/metadata/healthz"));
+    assert.deepEqual(proxyCalls[1], [
+      "exec",
+      proxy.Id,
+      "nginx",
+      "-s",
+      "reload",
+    ]);
+    assert.equal(
+      proxyCalls.filter((args) => args.includes("reload")).length,
+      1,
+    );
+    assert.ok(
+      proxyCalls.some(
+        (args) =>
+          args.at(-1) === "http://127.0.0.1:8080/ctusd/metadata/healthz",
+      ),
+    );
   }
   assert.ok(calls.every((args) => [gateway.Id, preview.Id].includes(args[1])));
 });
 test("proxy refresh leaves stopped previews alone and rejects unhealthy responses", async () => {
   const gateway = proxyContainer("web-demo", "a");
   const calls = [];
-  await assert.rejects(refreshProxyUpstreams([
-    gateway, proxyContainer("public-site-preview", "b", false),
-  ], async (args) => {
-    calls.push(args);
-    return args[2] === "wget" ? '{"status":"error"}' : "";
-  }, { pause: async () => {} }), /web-demo upstreams did not become ready/);
+  await assert.rejects(
+    refreshProxyUpstreams(
+      [gateway, proxyContainer("public-site-preview", "b", false)],
+      async (args) => {
+        calls.push(args);
+        return args[2] === "wget" ? '{"status":"error"}' : "";
+      },
+      { pause: async () => {} },
+    ),
+    /web-demo upstreams did not become ready/,
+  );
   assert.equal(calls.filter((args) => args.includes("reload")).length, 1);
   assert.equal(calls.filter((args) => args[2] === "wget").length, 10);
   assert.ok(calls.every((args) => args[1] === gateway.Id));
@@ -206,16 +266,23 @@ test("invalid proxy configuration prevents reload and a stopped gateway prevents
     calls.push(args);
     throw new Error("nginx configuration is invalid");
   };
-  await assert.rejects(refreshProxyUpstreams([
-    proxyContainer("web-demo", "a"),
-  ], docker), /configuration is invalid/);
+  await assert.rejects(
+    refreshProxyUpstreams([proxyContainer("web-demo", "a")], docker),
+    /configuration is invalid/,
+  );
   assert.equal(calls.length, 1);
   assert.equal(calls[0].at(-1), "-t");
   calls.length = 0;
-  await assert.rejects(refreshProxyUpstreams([
-    proxyContainer("web-demo", "a", false),
-    proxyContainer("public-site-preview", "b"),
-  ], docker), /gateway is not running/);
+  await assert.rejects(
+    refreshProxyUpstreams(
+      [
+        proxyContainer("web-demo", "a", false),
+        proxyContainer("public-site-preview", "b"),
+      ],
+      docker,
+    ),
+    /gateway is not running/,
+  );
   assert.deepEqual(calls, []);
 });
 test("asset manifest binds every file and HTML reference to the source revision", async () => {
