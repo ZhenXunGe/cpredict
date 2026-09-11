@@ -130,6 +130,86 @@ const send = (u: WireUserOperation = wire) => ({
 });
 
 describe("authenticated sponsorship and single submission", () => {
+  it("routes a self-funded operation without a paymaster and denies every sponsorship path", async () => {
+    const { gateway, store, request } = setup();
+    store.records.get(operation.id)!.operation.gasPayment = "self-funded";
+    const {
+      paymaster: _p,
+      paymasterData: _d,
+      paymasterVerificationGasLimit: _v,
+      paymasterPostOpGasLimit: _g,
+      ...selfFunded
+    } = wire;
+    expect(
+      await gateway.policy({
+        projectId: "zd-test",
+        chainId: 421614,
+        userOp: wire,
+      }),
+    ).toEqual({ proceed: false, logicalOperator: "and" });
+    await expect(
+      gateway.request(identity, operation.id, {
+        ...send(),
+        method: "zd_sponsorUserOperation",
+        params: [],
+      }),
+    ).rejects.toMatchObject({ code: "self_funded_paymaster_forbidden" });
+    await expect(
+      gateway.request(identity, operation.id, send()),
+    ).rejects.toMatchObject({ code: "self_funded_paymaster_forbidden" });
+    expect(request).not.toHaveBeenCalled();
+    await gateway.request(identity, operation.id, send(selfFunded));
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(request.mock.calls[0]![1][0]).not.toHaveProperty("paymaster");
+    expect((await store.operation(operation.id))!.operation.gasPayment).toBe(
+      "self-funded",
+    );
+  });
+
+  it("certifies cancellation only before sponsorship can escape, and keeps grants reserved during a racing cancellation", async () => {
+    const first = setup();
+    first.store.records.get(operation.id)!.operation.sponsorshipAttempted =
+      false;
+    const cancelled = await first.service.cancel(identity, operation.id);
+    expect(cancelled.sponsorshipAttempted).toBe(false);
+    expect(cancelled.gasReleasedAt).toBeDefined();
+    expect(
+      await first.gateway.policy({
+        projectId: "zd-test",
+        chainId: 421614,
+        userOp: wire,
+      }),
+    ).toEqual({ proceed: false, logicalOperator: "and" });
+    const second = setup();
+    second.store.records.get(operation.id)!.operation.sponsorshipAttempted =
+      false;
+    let resolveProvider!: (value: unknown) => void;
+    second.request.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProvider = resolve;
+        }),
+    );
+    const pending = second.gateway.request(identity, operation.id, {
+      ...send(),
+      method: "zd_sponsorUserOperation",
+      params: [
+        {
+          chainId: 421614,
+          userOp: wire,
+          entryPointAddress: ENTRY_POINT.address,
+          shouldOverrideFee: false,
+          shouldConsume: true,
+        },
+      ],
+    });
+    await vi.waitFor(() => expect(second.request).toHaveBeenCalledTimes(1));
+    const raced = await second.service.cancel(identity, operation.id);
+    expect(raced.sponsorshipAttempted).toBe(true);
+    expect(raced.gasReleasedAt).toBeUndefined();
+    resolveProvider(wire);
+    await pending;
+  });
   it("submits exactly once across simultaneous tabs and returns the original hash", async () => {
     const { gateway, store, request } = setup();
     const hashes = await Promise.all([

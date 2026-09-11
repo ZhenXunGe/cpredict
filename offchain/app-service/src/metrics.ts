@@ -97,7 +97,7 @@ export class ApplicationMetrics {
   });
   private readonly reserved = new Gauge({
     name: "cpredict_app_weekly_reserved_eth",
-    help: "Conservative weekly gas reservation, approximate ETH units",
+    help: "Weekly finalized gas plus outstanding reservations, approximate ETH units",
     labelNames: ["lane"],
     registers: [this.registry],
   });

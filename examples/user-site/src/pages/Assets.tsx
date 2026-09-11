@@ -44,7 +44,7 @@ export function AssetsPage() {
           { label: "接收地址", value: target },
         ],
         feeNote:
-          "仅转出当前环境的测试支付资产。项目代付准入通过后承担本次网络 Gas；不会自动扣取 USDC 作为 Gas。",
+          "仅转出当前环境的测试支付资产。网络 Gas 可选择项目代付或自行支付 ETH，不会扣取 USDC 作为 Gas。",
       });
     } catch (e) {
       setError(e);
@@ -111,7 +111,7 @@ export function AssetsPage() {
                         { label: "到账账户", value: session.account!.address },
                       ],
                       feeNote:
-                        "每个应用账户每 24 小时可获项目代付领取一次。首次账户部署一并申请赞助；不限制代币合约本身的公开铸造能力。",
+                        "每个应用账户每 24 小时可通过本站领取一次，Gas 可选择项目代付或自付 ETH。首次使用时一起部署智能账户；不限制代币合约本身的公开铸造能力。",
                     })
                   }
                 >
@@ -166,8 +166,7 @@ export function AssetsPage() {
                 核对转出
               </Button>
               <p className="small">
-                网络 Gas
-                将单独申请项目代付。代付不可用时，请查看账户与帮助中的独立退出说明。
+                网络 Gas 可在确认页选择项目代付或自行支付 ETH。
               </p>
             </form>
           </section>

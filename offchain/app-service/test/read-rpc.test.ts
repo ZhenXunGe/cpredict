@@ -92,6 +92,31 @@ function upstreamResponse(body: unknown) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public read RPC compatibility", () => {
+  it("maps a self-funded prefund rejection to a safe actionable code without exposing provider payloads", async () => {
+    upstreamResponse({
+      error: {
+        code: -32500,
+        message: "AA21 didn't pay prefund; " + providerMessage,
+      },
+    });
+    const { rpc, server } = await setup();
+    try {
+      await expect(
+        rpc.request("eth_estimateUserOperationGas", [
+          { sender: appAccount.address },
+          ENTRY_POINT.address,
+        ]),
+      ).rejects.toMatchObject({ code: "self_funded_balance_insufficient" });
+      await expect(
+        rpc.request("eth_estimateUserOperationGas", [
+          { sender: appAccount.address, paymaster: appAccount.address },
+          ENTRY_POINT.address,
+        ]),
+      ).rejects.toMatchObject({ code: "provider_rejected" });
+    } finally {
+      await server.close();
+    }
+  });
   it.each([
     "eth_chainId",
     "eth_blockNumber",

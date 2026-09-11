@@ -293,6 +293,8 @@ export const intentSchema = z.discriminatedUnion("kind", [
 export type BusinessIntent = z.infer<typeof intentSchema>;
 export type OperationKind = BusinessIntent["kind"];
 export type BudgetLane = "exposure" | "exit";
+export const gasPaymentSchema = z.enum(["sponsored", "self-funded"]);
+export type GasPayment = z.infer<typeof gasPaymentSchema>;
 export function budgetLane(kind: OperationKind): BudgetLane {
   return [
     "faucet",
@@ -331,6 +333,7 @@ export const registerOperationSchema = z.strictObject({
   callData: bytes,
   factory: address.nullable(),
   factoryData: bytes.nullable(),
+  gasPayment: gasPaymentSchema.optional(),
 });
 export const operationStateSchema = z.enum([
   "preparing",
@@ -392,6 +395,11 @@ export const operationSchema = z.strictObject({
   maxGasCost: positive,
   lane: z.enum(["exposure", "exit"]),
   reason: z.string().max(128).nullable(),
+  gasPayment: gasPaymentSchema.optional(),
+  // Server-owned accounting evidence. Absence on historical records is unknown.
+  sponsorshipAttempted: z.boolean().optional(),
+  gasSettledAt: z.string().datetime().optional(),
+  gasReleasedAt: z.string().datetime().optional(),
 });
 export type Operation = z.infer<typeof operationSchema>;
 export const depositSchema = z.strictObject({

@@ -17,6 +17,7 @@ import type { SponsorConfig } from "./config.js";
 import { quotaHistoryStart } from "./budget.js";
 import {
   assertAccountUnchanged,
+  applyOperationPatch,
   assertQuota,
   assertDepositRegistration,
   depositView,
@@ -26,6 +27,26 @@ import {
   type StoredOperation,
   type StoredDeposit,
 } from "./store.js";
+
+// Extra fields stay in a separate column; old releases can parse record on rollback.
+function splitBilling(o: Operation) {
+  const {
+    gasPayment,
+    sponsorshipAttempted,
+    gasSettledAt,
+    gasReleasedAt,
+    ...record
+  } = o;
+  return {
+    record,
+    billing: {
+      ...(gasPayment === undefined ? {} : { gasPayment }),
+      ...(sponsorshipAttempted === undefined ? {} : { sponsorshipAttempted }),
+      ...(gasSettledAt === undefined ? {} : { gasSettledAt }),
+      ...(gasReleasedAt === undefined ? {} : { gasReleasedAt }),
+    },
+  };
+}
 
 type OperationRow = {
   record: unknown;
@@ -57,6 +78,7 @@ const fromDepositRow = (r: DepositRow, now: string): StoredDeposit => ({
 /** One database/schema is permanently bound to one environment + deployment manifest. */
 export class PostgresApplicationStore implements ApplicationStore {
   private readonly sql: Sql;
+  private accountingInitialization?: Promise<unknown>;
   constructor(
     url: string,
     private readonly environmentIdentity: string,
@@ -85,6 +107,13 @@ export class PostgresApplicationStore implements ApplicationStore {
     if (rows[0]?.identity !== this.environmentIdentity)
       throw new Error("application database belongs to another deployment");
     await this.sql`SELECT id FROM app_operations LIMIT 0`;
+    // A restart may follow an older release that did not record grant attempts.
+    // Existing unproven records fail closed; certified cancellations stay free.
+    await (this.accountingInitialization ??= this
+      .sql`UPDATE app_operations SET billing=jsonb_set(billing,'{sponsorshipAttempted}','true'::jsonb)
+      WHERE billing->'sponsorshipAttempted'='false'::jsonb AND billing->>'gasReleasedAt' IS NULL`.then(
+      () => undefined,
+    ));
     if (this.trackingFromBlock !== undefined) {
       await this.sql`SELECT address FROM ledger_tracked_accounts LIMIT 0`;
       const ledger = await this.sql<
@@ -180,13 +209,13 @@ export class PostgresApplicationStore implements ApplicationStore {
   ): Promise<StoredOperation | undefined> {
     const rows = await this.sql<
       OperationRow[]
-    >`SELECT record,subject,idempotency_key,request_hash FROM app_operations WHERE subject=${subject} AND idempotency_key=${key}`;
+    >`SELECT record || billing AS record,subject,idempotency_key,request_hash FROM app_operations WHERE subject=${subject} AND idempotency_key=${key}`;
     return rows[0] ? fromRow(rows[0]) : undefined;
   }
   async deposit(id: string, now: string): Promise<StoredDeposit | undefined> {
     const rows = await this.sql<
       DepositRow[]
-    >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,o.record AS operation_record
+    >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,(o.record || o.billing) AS operation_record
       FROM app_deposits d LEFT JOIN app_operations o ON o.id=d.operation_id WHERE d.id=${id}`;
     return rows[0] ? fromDepositRow(rows[0], now) : undefined;
   }
@@ -197,7 +226,7 @@ export class PostgresApplicationStore implements ApplicationStore {
   ): Promise<StoredDeposit | undefined> {
     const rows = await this.sql<
       DepositRow[]
-    >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,o.record AS operation_record
+    >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,(o.record || o.billing) AS operation_record
       FROM app_deposits d LEFT JOIN app_operations o ON o.id=d.operation_id WHERE d.subject=${subject} AND d.idempotency_key=${key}`;
     return rows[0] ? fromDepositRow(rows[0], now) : undefined;
   }
@@ -206,7 +235,7 @@ export class PostgresApplicationStore implements ApplicationStore {
       await tx`SELECT pg_advisory_xact_lock(hashtextextended(${this.environmentIdentity},0))`;
       const prior = await tx<
         DepositRow[]
-      >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,o.record AS operation_record
+      >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,(o.record || o.billing) AS operation_record
         FROM app_deposits d LEFT JOIN app_operations o ON o.id=d.operation_id WHERE d.subject=${value.subject} AND d.idempotency_key=${value.idempotencyKey}`;
       if (prior[0]) {
         if (prior[0].request_hash !== value.requestHash)
@@ -303,7 +332,7 @@ export class PostgresApplicationStore implements ApplicationStore {
     }
     const rows = await this.sql<
       DepositRow[]
-    >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,o.record AS operation_record
+    >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,(o.record || o.billing) AS operation_record
       FROM app_deposits d LEFT JOIN app_operations o ON o.id=d.operation_id
       WHERE (${subject}::text IS NULL OR d.subject=${subject}) AND (${accountId}::uuid IS NULL OR d.account_id=${accountId})
       AND (${report?.start ?? null}::timestamptz IS NULL OR d.created_at>=${report?.start ?? null}::timestamptz)
@@ -369,7 +398,7 @@ export class PostgresApplicationStore implements ApplicationStore {
       await tx`SELECT pg_advisory_xact_lock(hashtextextended(${this.environmentIdentity},0))`;
       const prior = await tx<
         OperationRow[]
-      >`SELECT record,subject,idempotency_key,request_hash FROM app_operations WHERE subject=${value.subject} AND idempotency_key=${value.idempotencyKey}`;
+      >`SELECT record || billing AS record,subject,idempotency_key,request_hash FROM app_operations WHERE subject=${value.subject} AND idempotency_key=${value.idempotencyKey}`;
       if (prior[0]) {
         if (prior[0].request_hash !== value.requestHash)
           throw new AppError("idempotency_conflict", 409);
@@ -387,13 +416,13 @@ export class PostgresApplicationStore implements ApplicationStore {
       }
       const rows = await tx<
         OperationRow[]
-      >`SELECT record,subject,idempotency_key,request_hash FROM app_quota_operations
+      >`SELECT record || billing AS record,subject,idempotency_key,request_hash FROM app_quota_operations
         WHERE created_at >= ${quotaHistoryStart(o.createdAt)}
         OR updated_at >= ${quotaHistoryStart(o.createdAt)}
         OR state IN ('preparing','awaiting-signature','submitted','confirming','unknown')`;
       assertQuota(rows.map(fromRow), value, limits);
-      await tx`INSERT INTO app_operations(id,subject,idempotency_key,request_hash,account_id,sender,nonce,call_hash,state,kind,lane,created_at,updated_at,expires_at,max_gas_cost,record)
-        VALUES(${o.id},${value.subject},${value.idempotencyKey},${value.requestHash},${o.accountId},${o.account.toLowerCase()},${o.nonce},${keccak256(o.callData)},${o.state},${o.kind},${o.lane},${o.createdAt},${o.updatedAt},${o.expiresAt},${o.maxGasCost},${tx.json(o)})`;
+      await tx`INSERT INTO app_operations(id,subject,idempotency_key,request_hash,account_id,sender,nonce,call_hash,state,kind,lane,created_at,updated_at,expires_at,max_gas_cost,record,billing)
+        VALUES(${o.id},${value.subject},${value.idempotencyKey},${value.requestHash},${o.accountId},${o.account.toLowerCase()},${o.nonce},${keccak256(o.callData)},${o.state},${o.kind},${o.lane},${o.createdAt},${o.updatedAt},${o.expiresAt},${o.maxGasCost},${tx.json(splitBilling(o).record)},${tx.json(splitBilling(o).billing)})`;
       if (o.intent.kind === "deposit-usdc") {
         await tx`UPDATE app_deposits SET operation_id=${o.id},state='awaiting-signature',
           record=record || ${tx.json({ operationId: o.id, state: "awaiting-signature", updatedAt: o.updatedAt })}::jsonb WHERE id=${o.intent.depositId}`;
@@ -404,7 +433,7 @@ export class PostgresApplicationStore implements ApplicationStore {
   async operation(id: string): Promise<StoredOperation | undefined> {
     const rows = await this.sql<
       OperationRow[]
-    >`SELECT record,subject,idempotency_key,request_hash FROM app_operations WHERE id=${id}`;
+    >`SELECT record || billing AS record,subject,idempotency_key,request_hash FROM app_operations WHERE id=${id}`;
     return rows[0] ? fromRow(rows[0]) : undefined;
   }
   async operations(
@@ -414,14 +443,14 @@ export class PostgresApplicationStore implements ApplicationStore {
   ): Promise<Operation[]> {
     const rows = await this.sql<
       OperationRow[]
-    >`SELECT o.record,o.subject,o.idempotency_key,o.request_hash FROM app_operations o JOIN app_account_subjects s ON s.account_id=o.account_id
+    >`SELECT o.record || o.billing AS record,o.subject,o.idempotency_key,o.request_hash FROM app_operations o JOIN app_account_subjects s ON s.account_id=o.account_id
       WHERE s.subject=${subject} AND (${before ?? null}::uuid IS NULL OR o.id < ${before ?? null}::uuid) ORDER BY o.id DESC LIMIT ${limit}`;
     return rows.map((r) => fromRow(r).operation);
   }
   async pending(limit: number): Promise<StoredOperation[]> {
     const rows = await this.sql<
       OperationRow[]
-    >`SELECT record,subject,idempotency_key,request_hash FROM app_operations WHERE state IN ('submitted','confirming','unknown') OR (state IN ('preparing','awaiting-signature') AND expires_at <= now()) OR (state IN ('confirmed','reverted') AND record->>'finality' <> 'finalized') ORDER BY updated_at,id LIMIT ${limit}`;
+    >`SELECT record || billing AS record,subject,idempotency_key,request_hash FROM app_operations WHERE state IN ('submitted','confirming','unknown') OR (state IN ('preparing','awaiting-signature') AND expires_at <= now()) OR (state IN ('confirmed','reverted') AND record->>'finality' <> 'finalized') ORDER BY updated_at,id LIMIT ${limit}`;
     return rows.map(fromRow);
   }
   async operationPage(
@@ -461,7 +490,7 @@ export class PostgresApplicationStore implements ApplicationStore {
       )[0]!.sequence;
     const rows = await this.sql<
       OperationRow[]
-    >`SELECT o.record,o.subject,o.idempotency_key,o.request_hash FROM app_operations o
+    >`SELECT o.record || o.billing AS record,o.subject,o.idempotency_key,o.request_hash FROM app_operations o
       JOIN app_account_subjects s ON s.account_id=o.account_id
       WHERE s.subject=${subject} AND o.account_id=${accountId} AND o.admission_sequence <= ${snapshot}
       AND (${parsed?.at ?? null}::timestamptz IS NULL OR (o.created_at,o.id) < (${parsed?.at ?? null}::timestamptz,${parsed?.id ?? null}::uuid))
@@ -490,7 +519,7 @@ export class PostgresApplicationStore implements ApplicationStore {
   ): Promise<StoredOperation | undefined> {
     const rows = await this.sql<
       OperationRow[]
-    >`SELECT record,subject,idempotency_key,request_hash FROM app_operations WHERE sender=${sender.toLowerCase()} AND nonce=${nonce} AND call_hash=${keccak256(callData)} AND state IN ('awaiting-signature','submitted','confirming','unknown') ORDER BY created_at DESC LIMIT 1`;
+    >`SELECT record || billing AS record,subject,idempotency_key,request_hash FROM app_operations WHERE sender=${sender.toLowerCase()} AND nonce=${nonce} AND call_hash=${keccak256(callData)} AND state IN ('awaiting-signature','submitted','confirming','unknown') ORDER BY created_at DESC LIMIT 1`;
     return rows[0] ? fromRow(rows[0]) : undefined;
   }
   async transition(
@@ -501,13 +530,15 @@ export class PostgresApplicationStore implements ApplicationStore {
     return this.sql.begin(async (tx) => {
       const rows = await tx<
         OperationRow[]
-      >`SELECT record,subject,idempotency_key,request_hash FROM app_operations WHERE id=${id} FOR UPDATE`;
+      >`SELECT record || billing AS record,subject,idempotency_key,request_hash FROM app_operations WHERE id=${id} FOR UPDATE`;
       if (!rows[0]) throw new AppError("operation_not_found", 404);
       const old = fromRow(rows[0]);
       if (!from.includes(old.operation.state))
         return { changed: false, record: old };
-      const operation = operationSchema.parse({ ...old.operation, ...patch });
-      await tx`UPDATE app_operations SET state=${operation.state},updated_at=${operation.updatedAt},record=${tx.json(operation)} WHERE id=${id}`;
+      const operation = operationSchema.parse(
+        applyOperationPatch(old.operation, patch),
+      );
+      await tx`UPDATE app_operations SET state=${operation.state},updated_at=${operation.updatedAt},record=${tx.json(splitBilling(operation).record)},billing=${tx.json(splitBilling(operation).billing)} WHERE id=${id}`;
       if (
         Object.entries(patch).some(
           ([key, value]) =>
@@ -523,7 +554,7 @@ export class PostgresApplicationStore implements ApplicationStore {
   async report(start: string, end: string): Promise<StoredOperation[]> {
     const rows = await this.sql<
       OperationRow[]
-    >`SELECT record,subject,idempotency_key,request_hash FROM app_operations WHERE created_at >= ${start} AND created_at < ${end} ORDER BY created_at,id`;
+    >`SELECT record || billing AS record,subject,idempotency_key,request_hash FROM app_operations WHERE created_at >= ${start} AND created_at < ${end} ORDER BY created_at,id`;
     return rows.map(fromRow);
   }
 }

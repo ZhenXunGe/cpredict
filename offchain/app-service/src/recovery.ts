@@ -133,6 +133,9 @@ export class OperationRecovery {
           blockNumber: receipt.blockNumber.toString(),
           blockHash: receipt.blockHash,
           actualGasCost: event.actualGasCost.toString(),
+          ...(finality === "finalized" && depositVerified
+            ? { gasSettledAt: o.gasSettledAt ?? this.now().toISOString() }
+            : {}),
           reason: !depositVerified
             ? "deposit_transfer_unverified"
             : enough && !event.success

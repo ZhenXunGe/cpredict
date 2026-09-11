@@ -421,7 +421,7 @@ export function CreateMarketPage() {
           },
         ],
         feeNote:
-          "发布规则签名只授权保存规则。接下来确认链上创建；创建费是协议费用，押金按终局规则结算，网络 Gas 单独申请项目代付。",
+          "发布规则签名只授权保存规则。接下来确认链上创建；创建费是协议费用，押金按终局规则结算，网络 Gas 可选择项目代付或自行支付 ETH。",
       });
     } catch (e) {
       if (e instanceof z.ZodError)
@@ -666,7 +666,7 @@ function CreatorMarket({ market }: { market: Address }) {
         { label: "证据哈希", value: evidenceHash },
       ],
       feeNote:
-        "终局操作不可撤回。合约按现有规则结算收益或退款，网络 Gas 申请项目代付。请自行保存并公开证据原文；链上只保存其哈希。",
+        "终局操作不可撤回。合约按现有规则结算收益或退款，网络 Gas 可选择项目代付或自行支付 ETH。请自行保存并公开证据原文；链上只保存其哈希。",
     });
   };
   return (

@@ -11,6 +11,7 @@ import {
 import type { SponsorConfig } from "./config.js";
 import {
   countsTowardWeek,
+  budgetCharges,
   weeklyBudgetWindow,
   weeklyLaneLimit,
 } from "./budget.js";
@@ -119,8 +120,26 @@ export type OperationPatch = Partial<
     | "updatedAt"
     | "reason"
     | "finality"
+    | "sponsorshipAttempted"
+    | "gasSettledAt"
   >
 >;
+/** Only the atomic cancellation writer can certify a grant-free cancellation. */
+export function applyOperationPatch(
+  old: Operation,
+  patch: OperationPatch,
+): Operation {
+  const next = { ...old, ...patch };
+  if (
+    next.state === "cancelled" &&
+    old.sponsorshipAttempted === false &&
+    next.userOperationHash === null &&
+    next.providerOperationId === null &&
+    next.transactionHash === null
+  )
+    next.gasReleasedAt = next.gasReleasedAt ?? next.updatedAt;
+  return next;
+}
 export interface ApplicationStore {
   ready(): Promise<void>;
   close(): Promise<void>;
@@ -224,20 +243,26 @@ export function assertQuota(
     )
   )
     throw new AppError("faucet_cooldown", 429);
-  const sameDay = existing.filter(
+  // Self-funded operations keep ownership, nonce and faucet restrictions, but
+  // never consume the project's sponsorship money or sponsorship count quotas.
+  if (o.gasPayment === "self-funded") return;
+  const sponsored = existing.filter(
+    (v) => v.operation.gasPayment !== "self-funded",
+  );
+  const charges = budgetCharges(existing.map((v) => v.operation));
+  const sameDay = sponsored.filter(
     (v) =>
       v.operation.createdAt.slice(0, 10) === day && v.operation.lane === o.lane,
   );
   const cap = limits[o.lane],
     reserved = BigInt(o.maxGasCost);
   const week = weeklyBudgetWindow(o.createdAt);
-  const weeklyReserved = existing
+  const weeklyReserved = sponsored
     .filter(
       (v) => v.operation.lane === o.lane && countsTowardWeek(v.operation, week),
     )
-    .reduce((sum, v) => sum + BigInt(v.operation.maxGasCost), 0n);
-  // Reserve the maximum before sponsorship; unknown/reverted/cancelled records
-  // never release it automatically. The exit allocation cannot fund exposure.
+    .reduce((sum, v) => sum + charges.get(v.operation.id)!, 0n);
+  // Reserve before issuing sponsorship. The exit allocation cannot fund exposure.
   if (weeklyReserved + reserved > weeklyLaneLimit(limits, o.lane))
     throw new AppError("sponsorship_weekly_budget_exhausted", 429);
   for (const [records, cost, count] of [
@@ -255,7 +280,7 @@ export function assertQuota(
   ] as const) {
     if (
       records.length >= count ||
-      records.reduce((sum, v) => sum + BigInt(v.operation.maxGasCost), 0n) +
+      records.reduce((sum, v) => sum + charges.get(v.operation.id)!, 0n) +
         reserved >
         BigInt(cost)
     )

@@ -256,26 +256,41 @@ const messages: Record<string, string> = {
   account_implementation_changed:
     "此账户版本已变化，请使用恢复说明核对控制方式。",
   rules_unverified: "市场规则暂时无法验证，请稍后重试。已持有资产仍可退出。",
-  sponsorship_disabled: "当前暂停项目代付。请查看账户与帮助中的独立退出说明。",
+  sponsorship_disabled: "当前暂停项目代付，可选择自行支付 ETH Gas。",
   operation_preparation_changed:
     "余额、账户或交易数据已变化，请重新核对并确认。",
   operation_result_unknown: "提交结果未知。请查询原操作，勿重复提交。",
   operation_already_submitted: "该操作已提交，请继续查询原操作。",
   operation_in_progress: "此账户还有正在进行的操作，请先查看交易历史。",
-  gas_cost_exceeds_limit: "预计网络费用超出本次代付上限。",
+  gas_cost_exceeds_limit: "预计网络费用超出本次操作的 Gas 上限。",
+  self_funded_balance_insufficient:
+    "智能账户的 ETH Gas 余额不足，请补充后重新估算。",
+  self_funded_paymaster_forbidden: "自付交易不能使用项目代付，请重新核对。",
+  gas_payment_mismatch: "Gas 支付方式已变化，请重新核对。",
+  gas_confirmation_required: "请先核对并确认本次 ETH Gas 费用。",
+  invalid_gas_funding_amount: "请输入大于零的 ETH 转入金额，最多 18 位小数。",
+  gas_funding_reverted: "ETH 转入交易已回滚，请查看链上记录。",
+  gas_funding_query_required:
+    "ETH 转入未完成确认。请检查钱包和已有转账记录，避免重复转入。",
   operation_admission_expired: "本次确认已过期，请重新核对交易。",
   snapshot_invalidated: "历史快照已变化，正在等待重新查询。",
   faucet_cooldown: "该账户每 24 小时可领取一次测试资产。",
   quota_exceeded: "当前代付额度已用尽，请稍后重试。",
   sponsorship_budget_exhausted:
-    "当前操作类别的代付额度已用尽，请查看独立退出说明或稍后重试。",
+    "当前操作类别的代付额度已用尽，可在 Gas 支付方式中选择自行支付 ETH。",
   sponsorship_weekly_budget_exhausted:
-    "当前操作类别的本周代付额度已用尽。新增交易与退出分别保留额度；可查看独立退出说明。",
+    "当前操作类别的本周代付额度已用尽，可在 Gas 支付方式中选择自行支付 ETH。新增交易与退出分别保留额度。",
   method_quota_exhausted: "此类操作今日已达到代付次数限制，请稍后重试。",
   ops_forbidden: "此账号没有查看运营报表的权限。",
   new_exposure_disabled: "当前暂停新增交易，已有资产的领取和退出仍可使用。",
 };
 export function errorCopy(error: unknown): string {
+  if (
+    error instanceof AppError &&
+    error.code === "self_funded_balance_insufficient" &&
+    error.message !== error.code
+  )
+    return safeErrorDetail(error.message);
   if (error instanceof ServiceResponseError) {
     const detail = error.message || "响应内容为空";
     return `${messages[error.code] ?? "服务请求失败。"}（HTTP ${error.status}；${detail}）${

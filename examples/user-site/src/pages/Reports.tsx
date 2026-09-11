@@ -347,7 +347,7 @@ export function OpsPage() {
             <DataTable
               headers={[
                 "每日防滥用额度",
-                "已预留（ETH）",
+                "已花费及待结算（ETH）",
                 "剩余额度（ETH）",
                 "剩余操作数",
                 "业务预算重置",
@@ -378,11 +378,16 @@ export function OpsPage() {
                   })}
                   。
                 </p>
+                <p className="small">
+                  已花费及待结算包含最终确认的实际 Gas
+                  和仍未结算的预留上限。取消操作仅在核实无代付费用后释放；用户自付
+                  ETH 不占项目预算。
+                </p>
                 <DataTable
                   headers={[
                     "周预算",
                     "限额（ETH）",
-                    "已预留（ETH）",
+                    "已花费及待结算（ETH）",
                     "剩余（ETH）",
                   ]}
                 >

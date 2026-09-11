@@ -53,6 +53,19 @@ export class ProviderRpc implements RpcTransport {
     // provider. Business rejection counters are separate from availability.
     this.observed?.(true);
     if ("error" in data) {
+      const message = z
+        .object({ message: z.string().max(4096) })
+        .safeParse(data.error);
+      if (
+        method === "eth_estimateUserOperationGas" &&
+        message.success &&
+        /AA21|did(?:n['’]t| not) pay prefund|insufficient funds/i.test(
+          message.data.message,
+        ) &&
+        z.object({ paymaster: z.undefined().optional() }).safeParse(params[0])
+          .success
+      )
+        throw new AppError("self_funded_balance_insufficient", 409);
       if (method === "eth_call" && !("result" in data)) {
         const error = callErrorSchema.safeParse(data.error);
         if (error.success)

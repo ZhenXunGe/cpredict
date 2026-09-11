@@ -194,8 +194,10 @@ export async function rolloverDeployment(
     const source = hasCarryover ? "app_quota_operations" : "app_operations";
     const cutoff = quotaHistoryStart(new Date().toISOString());
     await tx`INSERT INTO ${tx(staging)}.app_quota_carryover
-      SELECT id,subject,idempotency_key,request_hash,created_at,updated_at,state,lane,max_gas_cost,record
-      FROM ${tx(source)} WHERE created_at>=${cutoff} OR updated_at>=${cutoff}`;
+      (id,subject,idempotency_key,request_hash,created_at,updated_at,state,lane,max_gas_cost,record,billing)
+      SELECT id,subject,idempotency_key,request_hash,created_at,updated_at,state,lane,max_gas_cost,record,
+        COALESCE(to_jsonb(source_row)->'billing','{}'::jsonb)
+      FROM ${tx(source)} source_row WHERE created_at>=${cutoff} OR updated_at>=${cutoff}`;
     await tx`INSERT INTO ${tx(staging)}.app_provider_invoice_lines SELECT * FROM app_provider_invoice_lines`;
     await tx`INSERT INTO ${tx(staging)}.app_deployment_rollover(singleton,previous_identity,current_identity,archive_schema)
       VALUES(true,${oldIdentity},${newIdentity},${archive})`;

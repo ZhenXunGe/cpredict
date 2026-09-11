@@ -15,6 +15,7 @@ import {
 import {
   AppError,
   type Deposit,
+  type Operation,
 } from "../../../../offchain/app-core/src/contracts.js";
 import { RECEIVE_TYPEHASH } from "../../../../offchain/app-core/src/usdc.js";
 import {
@@ -36,6 +37,8 @@ import {
   type WalletSession,
 } from "../../src/wallets.js";
 import { OperationProvider } from "../../src/operations.js";
+import { UserOperationClient } from "../../src/operation-client.js";
+import { ENTRY_POINT } from "../../../../offchain/app-core/src/kernel.js";
 import { MarketsPage } from "../../src/pages/Markets.js";
 import { MarketDetailPage } from "../../src/pages/MarketDetail.js";
 import { AssetsPage } from "../../src/pages/Assets.js";
@@ -62,6 +65,42 @@ const appAccount = usdc
   : ctAccount;
 const controllerWallet = fixtureWallet(appAccount.controller, "metamask"),
   fundingWallet = fixtureWallet(A(30), "rabby");
+
+let gasFixtureOperation: Operation | null = null;
+if (new URLSearchParams(location.search).has("gas-test")) {
+  // Test-only simulation of the client boundary. No provider, signing or chain send.
+  document.documentElement.dataset.testGasSignatures = "0";
+  UserOperationClient.prototype.submit = async function (
+    intent,
+    onRecord,
+    onStage,
+    gas,
+  ) {
+    onStage("preparing");
+    if (gas?.payment !== "self-funded")
+      throw new AppError("sponsorship_weekly_budget_exhausted", 429);
+    gasFixtureOperation = {
+      ...operation,
+      id: crypto.randomUUID(),
+      intent,
+      kind: intent.kind,
+      gasPayment: "self-funded",
+    };
+    onRecord(gasFixtureOperation);
+    onStage("reviewing-gas");
+    await gas.confirm!({ cost: 80000000000000n, balance: 5000000000000000n });
+    onStage("awaiting-signature");
+    document.documentElement.dataset.testGasSignatures = "1";
+    onStage("submitting");
+    gasFixtureOperation = {
+      ...gasFixtureOperation,
+      state: "submitted",
+      userOperationHash: H(200),
+    };
+    onRecord(gasFixtureOperation);
+    return gasFixtureOperation;
+  };
+}
 
 const now = Math.floor(Date.now() / 1000),
   close = now + 86400;
@@ -163,7 +202,11 @@ class FixtureApi extends SiteApi {
       p = url.pathname;
     if (this.slow) await new Promise((r) => setTimeout(r, 600));
     let result: unknown;
-    if (p === "/v1/deposits/prepare") {
+    if (p.startsWith("/v1/operations/") && gasFixtureOperation) {
+      if (p.endsWith("/cancel"))
+        gasFixtureOperation = { ...gasFixtureOperation, state: "cancelled" };
+      result = { operation: gasFixtureOperation };
+    } else if (p === "/v1/deposits/prepare") {
       const input = z
         .object({
           accountId: z.string(),
@@ -333,9 +376,11 @@ class FixtureApi extends SiteApi {
   }
   override publicClient(): PublicClient {
     const readContract = async ({
+      address,
       functionName,
       args,
     }: {
+      address?: string;
       functionName: string;
       args?: unknown[];
     }) => {
@@ -371,6 +416,11 @@ class FixtureApi extends SiteApi {
         maxCreatorRakeBps: 1000,
         maxCreatorC2CFeeBps: 1000,
       };
+      if (
+        functionName === "balanceOf" &&
+        address?.toLowerCase() === ENTRY_POINT.address.toLowerCase()
+      )
+        return 0n;
       if (functionName === "balanceOf")
         return String(args?.[0]).toLowerCase() === A(21).toLowerCase()
           ? 2000000000n
@@ -380,6 +430,7 @@ class FixtureApi extends SiteApi {
     };
     return {
       readContract,
+      getBalance: async () => 5000000000000000n,
       getChainId: async () => 421614,
       getCode: async () => "0x6000",
       getBlock: async () => ({

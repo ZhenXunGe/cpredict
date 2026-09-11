@@ -2,7 +2,12 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { H, operation } from "../../app-core/test/fixtures.js";
 import { sponsorConfigSchema } from "../src/config.js";
-import { quotaHistoryStart, weeklyBudgetWindow } from "../src/budget.js";
+import {
+  budgetCharges,
+  budgetTotals,
+  quotaHistoryStart,
+  weeklyBudgetWindow,
+} from "../src/budget.js";
 import { assertQuota, type StoredOperation } from "../src/store.js";
 
 const lane = {
@@ -173,5 +178,146 @@ describe("per-environment weekly sponsorship budget", () => {
         weekly: { ...rawLimits.weekly, projectWei: "CONFIGURE_WEEKLY_BUDGET" },
       }).success,
     ).toBe(false);
+  });
+
+  it("settles finalized successful and reverted receipts, retaining pending or incomplete evidence", () => {
+    const row = record("2026-09-11T14:00:00.000Z", "5000000000000000", "exit");
+    Object.assign(row.operation, {
+      userOperationHash: H(10),
+      transactionHash: H(11),
+      blockHash: H(12),
+      blockNumber: "100",
+      actualGasCost: "50000000000000",
+      finality: "finalized",
+    });
+    for (const state of ["confirmed", "reverted"] as const) {
+      row.operation.state = state;
+      expect(budgetCharges([row.operation]).get(row.operation.id)).toBe(
+        50000000000000n,
+      );
+    }
+    row.operation.finality = "application-confirmed";
+    expect(budgetCharges([row.operation]).get(row.operation.id)).toBe(
+      5000000000000000n,
+    );
+    row.operation.finality = "finalized";
+    row.operation.blockHash = null;
+    expect(budgetCharges([row.operation]).get(row.operation.id)).toBe(
+      5000000000000000n,
+    );
+  });
+
+  it("releases certified grant-free cancellations and reconciles a historical cancelled nonce exactly once", () => {
+    const cancelled = record(
+      "2026-09-11T14:00:00.000Z",
+      "5000000000000000",
+      "exit",
+    ).operation;
+    cancelled.state = "cancelled";
+    expect(budgetCharges([cancelled]).get(cancelled.id)).toBe(
+      5000000000000000n,
+    );
+    cancelled.sponsorshipAttempted = false;
+    // A legacy process may have issued a grant; an explicit cancellation certificate is required.
+    expect(budgetCharges([cancelled]).get(cancelled.id)).toBe(
+      5000000000000000n,
+    );
+    cancelled.gasReleasedAt = cancelled.updatedAt;
+    expect(budgetCharges([cancelled]).get(cancelled.id)).toBe(0n);
+    delete cancelled.gasReleasedAt;
+    delete cancelled.sponsorshipAttempted;
+    const final = {
+      ...cancelled,
+      id: randomUUID(),
+      state: "confirmed" as const,
+      finality: "finalized" as const,
+      actualGasCost: "20000000000000",
+      userOperationHash: H(20),
+      transactionHash: H(21),
+      blockHash: H(22),
+      blockNumber: "100",
+    };
+    expect([...budgetCharges([cancelled, final]).values()]).toEqual([
+      0n,
+      20000000000000n,
+    ]);
+    expect(
+      budgetCharges([
+        cancelled,
+        { ...final, nonce: String(BigInt(final.nonce) + 1n) },
+      ]).get(cancelled.id),
+    ).toBe(5000000000000000n);
+    expect(
+      budgetCharges([cancelled, { ...final, deploymentId: "another" }]).get(
+        cancelled.id,
+      ),
+    ).toBe(5000000000000000n);
+  });
+
+  it("uses settled costs in weekly and daily admission and reports, while retaining count quotas", () => {
+    const at = "2026-09-11T14:00:00.000Z";
+    const rows = Array.from({ length: 4 }, (_, i) => {
+      const r = record(at, "5000000000000000", "exit");
+      Object.assign(r.operation, {
+        finality: "finalized",
+        actualGasCost: "100000000000000",
+        userOperationHash: H(i + 1),
+        transactionHash: H(11),
+        blockHash: H(12),
+        blockNumber: "100",
+      });
+      return r;
+    });
+    const next = record(at, "5000000000000000", "exit");
+    expect(() => assertQuota(rows, next, limits)).not.toThrow();
+    const totals = budgetTotals(
+      rows.map((r) => r.operation),
+      new Date(at),
+    ).find((b) => b.lane === "exit")!;
+    expect(totals).toMatchObject({
+      dailyWei: 400000000000000n,
+      weeklyWei: 400000000000000n,
+      dailyOperations: 4,
+    });
+    expect(() =>
+      assertQuota(rows, next, { ...limits, methodDailyOperations: 4 }),
+    ).toThrowError(expect.objectContaining({ code: "method_quota_exhausted" }));
+  });
+
+  it("admits self-funded requests above sponsorship caps without spending project funds or bypassing nonce and faucet rules", () => {
+    const at = "2026-09-11T14:00:00.000Z",
+      full = record(at, "20000000000000000", "exit"),
+      next = record(at, "5000000000000000", "exit");
+    next.operation.gasPayment = "self-funded";
+    expect(() =>
+      assertQuota([full], next, { ...limits, methodDailyOperations: 1 }),
+    ).not.toThrow();
+    expect(budgetCharges([next.operation]).get(next.operation.id)).toBe(0n);
+    full.operation.state = "unknown";
+    next.operation.nonce = full.operation.nonce;
+    expect(() => assertQuota([full], next, limits)).toThrowError(
+      expect.objectContaining({ code: "operation_in_progress" }),
+    );
+    full.operation.state = "confirmed";
+    full.operation.kind = "faucet";
+    next.operation.kind = "faucet";
+    expect(() => assertQuota([full], next, limits)).toThrowError(
+      expect.objectContaining({ code: "faucet_cooldown" }),
+    );
+  });
+
+  it("does not recharge a final settlement in later weeks due to routine polling timestamps", () => {
+    const old = record(
+      "2026-09-01T01:00:00.000Z",
+      "1000000000000000",
+    ).operation;
+    Object.assign(old, {
+      finality: "finalized",
+      gasSettledAt: "2026-09-02T01:00:00.000Z",
+      updatedAt: "2026-09-11T01:00:00.000Z",
+    });
+    expect(
+      budgetTotals([old], new Date("2026-09-11T02:00:00.000Z"))[0]!.weeklyWei,
+    ).toBe(0n);
   });
 });

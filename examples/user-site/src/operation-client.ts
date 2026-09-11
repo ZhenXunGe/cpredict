@@ -19,6 +19,7 @@ import {
   sameAddress,
   type AppAccount,
   type BusinessIntent,
+  type GasPayment,
   type Operation,
 } from "../../../offchain/app-core/src/contracts.js";
 import { buildBusinessCalls } from "../../../offchain/app-core/src/calls.js";
@@ -29,6 +30,7 @@ import {
   ENTRY_POINT,
 } from "../../../offchain/app-core/src/kernel.js";
 import { SiteApi } from "./api.js";
+import { gasBalance, requireGasBalance } from "./gas-payment.js";
 const operationResponse = z.object({ operation: operationSchema });
 const rpcResponse = z.object({
   jsonrpc: z.literal("2.0"),
@@ -42,7 +44,16 @@ const rpcResponse = z.object({
     })
     .optional(),
 });
-export type OperationStage = "preparing" | "awaiting-signature" | "submitting";
+export type OperationStage =
+  | "preparing"
+  | "reviewing-gas"
+  | "awaiting-signature"
+  | "submitting";
+export type GasQuote = { cost: bigint; balance: bigint };
+export type GasOptions = {
+  payment: GasPayment;
+  confirm?: (quote: GasQuote) => Promise<void>;
+};
 export class UserOperationClient {
   constructor(
     private readonly api: SiteApi,
@@ -58,6 +69,7 @@ export class UserOperationClient {
     intent: BusinessIntent,
     onRecord: (operation: Operation) => void,
     onStage: (stage: OperationStage) => void,
+    gas: GasOptions = { payment: "sponsored" },
   ): Promise<Operation> {
     const run = async () => {
       let recorded: Operation | undefined;
@@ -90,6 +102,12 @@ export class UserOperationClient {
           env = api.environment,
           account = this.account,
           client = api.publicClient();
+        if (gas.payment === "self-funded") {
+          if (!gas.confirm)
+            throw new AppError("gas_confirmation_required", 409);
+          requireGasBalance(await gasBalance(client, account), 1n);
+          this.current();
+        }
         const provider = await this.controller();
         this.current();
         const kernel = await createAppKernel(client, provider, env);
@@ -119,7 +137,10 @@ export class UserOperationClient {
         const prepared = await api.request(
           "/v1/operations/prepare",
           preparedOperationSchema,
-          { auth: true, body: { accountId: account.id, intent } },
+          {
+            auth: true,
+            body: { accountId: account.id, intent, gasPayment: gas.payment },
+          },
         );
         this.current();
         const calls = expected.map((c) => ({ ...c, value: 0n })),
@@ -150,6 +171,7 @@ export class UserOperationClient {
             callData,
             factory: prepared.factory,
             factoryData: prepared.factoryData,
+            gasPayment: gas.payment,
           });
         // Only a non-executable operation key is retained. The server owns durable recovery across devices.
         sessionStorage.setItem(recoveryKey, key);
@@ -164,6 +186,8 @@ export class UserOperationClient {
         sessionStorage.removeItem(recoveryKey);
         if (recorded.state !== "awaiting-signature") return recorded;
         const operation = recorded;
+        if ((operation.gasPayment ?? "sponsored") !== gas.payment)
+          throw new AppError("gas_payment_mismatch", 409);
         const transport = custom(
           {
             request: async ({ method, params }) => {
@@ -194,19 +218,27 @@ export class UserOperationClient {
           },
           { retryCount: 0 },
         );
-        const paymaster = createZeroDevPaymasterClient({
-          chain: arbitrumSepolia,
-          transport,
-        });
+        const paymaster =
+          gas.payment === "self-funded"
+            ? undefined
+            : createZeroDevPaymasterClient({
+                chain: arbitrumSepolia,
+                transport,
+              });
         const accountClient = createKernelAccountClient({
           account: kernel,
           chain: arbitrumSepolia,
           client,
           bundlerTransport: transport,
-          paymaster: {
-            getPaymasterData: (parameters) =>
-              paymaster.sponsorUserOperation({ userOperation: parameters }),
-          },
+          paymaster:
+            gas.payment === "self-funded"
+              ? undefined
+              : {
+                  getPaymasterData: (parameters) =>
+                    paymaster!.sponsorUserOperation({
+                      userOperation: parameters,
+                    }),
+                },
         });
         const unsigned = await accountClient.prepareUserOperation({
           calls,
@@ -223,7 +255,9 @@ export class UserOperationClient {
           ].reduce<bigint>((sum, n) => sum + (n ?? 0n), 0n) *
           (unsigned.maxFeePerGas ?? 0n);
         if (
-          !unsigned.paymaster ||
+          (gas.payment === "sponsored"
+            ? !unsigned.paymaster
+            : !!unsigned.paymaster) ||
           cost === 0n ||
           cost > BigInt(operation.maxGasCost)
         )
@@ -238,6 +272,16 @@ export class UserOperationClient {
             (operation.factoryData?.toLowerCase() ?? undefined)
         )
           throw new AppError("operation_preparation_changed", 409);
+        if (gas.payment === "self-funded") {
+          const balance = await gasBalance(client, account);
+          requireGasBalance(balance, cost);
+          onStage("reviewing-gas");
+          await gas.confirm!({ cost, balance });
+          this.current();
+          // Recheck after the explicit confirmation, immediately before wallet signing.
+          requireGasBalance(await gasBalance(client, account), cost);
+          this.current();
+        }
         onStage("awaiting-signature");
         const signature = await kernel.signUserOperation(
           unsigned as UserOperation<"0.7">,

@@ -73,6 +73,7 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
       ),
     );
     await sql.unsafe(await readFile(new URL("../../app-service/migrations/004_deployment_carryover.sql", import.meta.url), "utf8"));
+    await sql.unsafe(await readFile(new URL("../../app-service/migrations/005_gas_accounting.sql", import.meta.url), "utf8"));
     store = new PostgresEventStore(scoped.toString(), 3, env);
     await store.ready();
     reports = new PostgresReports(scoped.toString(), env, null);
@@ -324,6 +325,17 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
         providerHardLimitPeriodSeconds: 604800,
         providerPolicyVerified: false,
       });
+      const [exitRow] = await sql`SELECT id FROM app_operations WHERE lane='exit' AND nonce=3`;
+      const id = String(exitRow!.id);
+      await operations.transition(id, ["awaiting-signature"], {
+        state: "confirmed", finality: "finalized", actualGasCost: "1000",
+        userOperationHash: H(50), transactionHash: H(51), blockHash: H(52), blockNumber: "100",
+        gasSettledAt: "2026-09-09T00:10:00.000Z", updatedAt: "2026-09-09T00:10:00.000Z",
+      });
+      const settled = await withBudget.report(new Date(150000), new Date(300000), new Date("2026-09-09T01:00:00.000Z"));
+      expect(settled.weeklyBudget!.lanes.find((b) => b.lane === "exit")!.reservedWei).toBe("1000");
+      expect(settled.budgets.find((b) => b.lane === "exit")!.reservedWei).toBe("1000");
+      expect((await withBudget.monitor(new Date("2026-09-09T01:00:00.000Z"))).budget).toEqual(settled.weeklyBudget!.lanes.map(({ lane, reservedWei, remainingWei }) => ({ lane, reservedWei, remainingWei })));
     } finally {
       await operations.close();
       await withBudget.close();
