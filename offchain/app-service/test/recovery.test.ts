@@ -61,6 +61,7 @@ function setup(patch: Partial<Operation> = {}, success = true) {
         if (args.blockTag === "finalized") throw new Error("tag unavailable");
         return { hash: H(3), number: 20n };
       }),
+    readContract: vi.fn().mockResolvedValue(BigInt(current.nonce)),
   };
   const bundler = {
     request: vi.fn().mockResolvedValue({
@@ -116,17 +117,33 @@ describe("operation recovery without replay", () => {
       ["eth_getUserOperationReceipt", [H(1)]],
     ]);
   });
-  it("continues querying an unknown accepted operation after its admission expires", async () => {
+  it("closes an expired unknown operation only when the provider has no receipt and the nonce is unchanged", async () => {
     const s = setup();
     s.bundler.request.mockResolvedValue(null);
     expect(await s.recovery.refresh(s.current)).toMatchObject({
-      state: "unknown",
+      state: "cancelled",
+      reason: "provider_unaccepted_after_expiry",
       userOperationHash: H(1),
     });
     expect(s.rpc.getTransactionReceipt).not.toHaveBeenCalled();
     expect(s.bundler.request.mock.calls).toEqual([
       ["eth_getUserOperationReceipt", [H(1)]],
     ]);
+    expect(s.rpc.readContract).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: ENTRY_POINT.address,
+        functionName: "getNonce",
+      }),
+    );
+  });
+  it("keeps an expired unknown operation recoverable when its nonce changed", async () => {
+    const s = setup();
+    s.bundler.request.mockResolvedValue(null);
+    s.rpc.readContract.mockResolvedValue(BigInt(s.current.nonce) + 1n);
+    expect(await s.recovery.refresh(s.current)).toMatchObject({
+      state: "unknown",
+      userOperationHash: H(1),
+    });
   });
   it("cancels an expired admission only when no operation has been submitted", async () => {
     const s = setup({ state: "awaiting-signature", userOperationHash: null });

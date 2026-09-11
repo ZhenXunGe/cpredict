@@ -3,6 +3,7 @@ import {
   type PublicClient,
   type Hex,
 } from "viem";
+import { entryPoint07Abi } from "viem/account-abstraction";
 import { z } from "zod";
 import {
   AppError,
@@ -13,6 +14,7 @@ import {
   operationEvent,
   assertDepositTransfer,
 } from "../../app-core/src/receipt.js";
+import { ENTRY_POINT } from "../../app-core/src/kernel.js";
 import type { RpcTransport } from "./http.js";
 import type { ApplicationStore } from "./store.js";
 
@@ -25,6 +27,31 @@ export class OperationRecovery {
     private readonly confirmations: number,
     private readonly now: () => Date = () => new Date(),
   ) {}
+  private async cancelExpiredUnaccepted(
+    o: Operation,
+  ): Promise<Operation | undefined> {
+    if (
+      o.state !== "unknown" ||
+      Date.parse(o.expiresAt) > this.now().getTime()
+    )
+      return undefined;
+    const onChainNonce = await this.client.readContract({
+      address: ENTRY_POINT.address,
+      abi: entryPoint07Abi,
+      functionName: "getNonce",
+      args: [o.account, BigInt(o.nonce) >> 64n],
+    });
+    // A changed nonce is evidence of an execution attempt. Keep querying the
+    // original hash in that case; only an unchanged nonce can be closed.
+    if (onChainNonce !== BigInt(o.nonce)) return undefined;
+    return (
+      await this.store.transition(o.id, ["unknown"], {
+        state: "cancelled",
+        reason: "provider_unaccepted_after_expiry",
+        updatedAt: this.now().toISOString(),
+      })
+    ).record.operation;
+  }
   async refresh(operation: Operation): Promise<Operation> {
     const o = operation;
     if (
@@ -47,6 +74,8 @@ export class OperationRecovery {
         o.userOperationHash,
       ]);
       if (result === null) {
+        const cancelled = await this.cancelExpiredUnaccepted(o);
+        if (cancelled) return cancelled;
         return (
           await this.store.transition(
             o.id,
