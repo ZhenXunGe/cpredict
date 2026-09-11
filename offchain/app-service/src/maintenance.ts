@@ -1,6 +1,7 @@
+import { applyPublicSiteMigrations } from "./migrations.js";
+import { rolloverDeployment } from "./deployment-rollover.js";
 import { chmod, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createHash } from "node:crypto";
 import { parseArgs } from "node:util";
 import postgres from "postgres";
 import { z } from "zod";
@@ -36,6 +37,7 @@ const { positionals, values } = parseArgs({
     to: { type: "string" },
     id: { type: "string" },
     batches: { type: "string", default: "1" },
+    apply: { type: "boolean", default: false },
   },
 });
 const command = positionals[0];
@@ -45,20 +47,6 @@ const required = (v: string | undefined, name: string) => {
 };
 const readJson = async (path: string) =>
   JSON.parse(await readFile(resolve(path), "utf8")) as unknown;
-const migrationPaths = [
-  ...[
-    "001_indexer.sql",
-    "002_settlement_evidence.sql",
-    "003_read_api_indexes.sql",
-    "004_market_metadata.sql",
-    "005_activity_catalog.sql",
-    "006_financial_facts.sql",
-    "007_legacy_deployment.sql",
-  ].map((n) => `offchain/indexer/migrations/${n}`),
-  "offchain/app-service/migrations/001_application.sql",
-  "offchain/app-service/migrations/002_operational_queries.sql",
-  "offchain/app-service/migrations/003_usdc_deposits.sql",
-];
 async function run() {
   if (command === "validate-site") {
     const paths = z.array(z.string()).min(1).max(8).parse(positionals.slice(1)),
@@ -101,6 +89,7 @@ async function run() {
   if (
     ![
       "migrate",
+      "rollover",
       "status",
       "replay",
       "backfill",
@@ -134,11 +123,39 @@ async function run() {
     throw new AppError("database_tls_required");
   const sql = postgres(databaseUrl, {
     max: 1,
+    prepare: command !== "rollover",
     connect_timeout: 5,
     onnotice: () => undefined,
   });
   let store: PostgresEventStore | undefined;
   try {
+    if (command === "rollover") {
+      const previous = appRuntimeSchema.parse(
+        await readJson(required(values.input, "previous_config")),
+      );
+      await verifyDeployment(
+        createPublicClient({
+          chain: arbitrumSepolia,
+          transport: http(
+            required(process.env.CPREDICT_MAINTENANCE_RPC_URL, "rpc_url"),
+          ),
+        }),
+        env,
+      );
+      console.log(
+        JSON.stringify(
+          await rolloverDeployment(
+            sql,
+            previous.environment,
+            env,
+            values.apply,
+          ),
+          null,
+          2,
+        ),
+      );
+      return;
+    }
     const exists = (
       await sql<
         { present: string | null }[]
@@ -154,28 +171,7 @@ async function run() {
         throw new AppError("database_environment_mismatch");
     }
     if (command === "migrate") {
-      await sql`SELECT pg_advisory_lock(hashtextextended('public-site-migrations',0))`;
-      try {
-        await sql`CREATE TABLE IF NOT EXISTS public_site_migrations(path text PRIMARY KEY,digest text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())`;
-        for (const path of migrationPaths) {
-          const source = await readFile(resolve(path), "utf8"),
-            digest = createHash("sha256").update(source).digest("hex"),
-            old = (
-              await sql<
-                { digest: string }[]
-              >`SELECT digest FROM public_site_migrations WHERE path=${path}`
-            )[0];
-          if (old) {
-            if (old.digest !== digest)
-              throw new AppError("applied_migration_changed", 409);
-            continue;
-          }
-          await sql.unsafe(source);
-          await sql`INSERT INTO public_site_migrations(path,digest) VALUES(${path},${digest})`;
-        }
-      } finally {
-        await sql`SELECT pg_advisory_unlock(hashtextextended('public-site-migrations',0))`;
-      }
+      await applyPublicSiteMigrations(sql);
     }
     store = new PostgresEventStore(databaseUrl, 2, env);
     await store.ready();

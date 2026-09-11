@@ -162,7 +162,7 @@
     },
     {
       "path": "deploy/public-site/update-policy.json",
-      "sha256": "c6e5ec383a09e8ecff87e73535e6f0906b7005ad92b3d57dad28df98acd013cd"
+      "sha256": "f977c0dc55986a4cdeb710d65fd2381f11d843751864fe599daf01f049cca2f3"
     },
     {
       "path": "deploy/public-site/update.example.json",
@@ -186,7 +186,7 @@
     },
     {
       "path": "deployments/arbitrum-sepolia/deploy.env.example",
-      "sha256": "0323396860e46db983a7b6869b59c5dc4154b08174b211453665bd178486fe79"
+      "sha256": "139dd8611ea1ae9e2cb8b10cb77c987348e94278376148425022090cdcad7294"
     },
     {
       "path": "deployments/arbitrum-sepolia/final-manifest.schema.json",
@@ -222,7 +222,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "c731f7f5a624217cc3910ab7e1cc4f07667303bbbcd9db3928cfe0941bdc4636"
+      "sha256": "90f6295dd5d32585984d322a7928b278f42332dfeec701156bcdbc51afee88f0"
     },
     {
       "path": "docs/usdc-gasless-deposit.md",
@@ -734,7 +734,7 @@
     },
     {
       "path": "manifests/sbom.spdx.json",
-      "sha256": "ce4708673b30e902ee44c621100f0017b07401e9070e1ca4b19a4b65304b54e1"
+      "sha256": "7f5d04346c10848a4679a279b3708bbdeaa99313783d2b664b4a79d399ab79dc"
     },
     {
       "path": "manifests/sdk-declaration-patches.json",
@@ -885,6 +885,10 @@
       "sha256": "36e4164520a3158dca4817995350df1cbd42500a855bf146d2e9a5a915283883"
     },
     {
+      "path": "offchain/app-service/migrations/004_deployment_carryover.sql",
+      "sha256": "744ed85e12f06ffcc3ba18661aca097f71b9ebeb5890aa90fffc537dfe885a58"
+    },
+    {
       "path": "offchain/app-service/src/auth.ts",
       "sha256": "3578d94e8f65a21d5f8fcb660605d10bfaa788e4c19f7f0e19984ed18fcf4ee2"
     },
@@ -899,6 +903,10 @@
     {
       "path": "offchain/app-service/src/config.ts",
       "sha256": "08901757cefc6b3a11a1d03ced06d81e394bf67abe1df7a46250f27ca14780f4"
+    },
+    {
+      "path": "offchain/app-service/src/deployment-rollover.ts",
+      "sha256": "6367209c96d404cfa3f5de150d9b2437ad2cedcd7067d9e477209ebb8ed73480"
     },
     {
       "path": "offchain/app-service/src/deposits.ts",
@@ -918,11 +926,15 @@
     },
     {
       "path": "offchain/app-service/src/maintenance.ts",
-      "sha256": "efcd06b0b3d27e771de6b538e7e18d2a4ec2f51cf0efb9b3591c3c2a268cf568"
+      "sha256": "8a6ea0affb30aa7c053071beebae6e3df0d880aed1c4c22373e123cad92fe590"
     },
     {
       "path": "offchain/app-service/src/metrics.ts",
       "sha256": "260eb589e8ebda3a4472714cfaa17ca38c7a218305d0bf4ec18ae3ecc489286b"
+    },
+    {
+      "path": "offchain/app-service/src/migrations.ts",
+      "sha256": "01ec4f8f8bcd90899493f7d6d9056684b952cdcd7a55e3933b291686cd94886e"
     },
     {
       "path": "offchain/app-service/src/operations.ts",
@@ -930,7 +942,7 @@
     },
     {
       "path": "offchain/app-service/src/postgres-store.ts",
-      "sha256": "c0d2660434a15472dedb6ee307e2a936576b6212c13e85287a5362e629a64591"
+      "sha256": "e190a18fed0c235cdbfc69600421637859756d4babcb90da9b928a43151ed7ce"
     },
     {
       "path": "offchain/app-service/src/provider-management.ts",
@@ -946,7 +958,7 @@
     },
     {
       "path": "offchain/app-service/src/reports.ts",
-      "sha256": "51cfbc85ec5f9268de028181fc0bac5d23a468994d59155329cb934fdec4d11a"
+      "sha256": "ffd16a0c769380f2d67e1304e2f4e2fc4c1a21fd0a1b5e31c356d8733520cf0e"
     },
     {
       "path": "offchain/app-service/src/server.ts",
@@ -969,6 +981,10 @@
       "sha256": "1af6c996d256796d35d02426d6ac8b7e73fcd9282f379aae7f428cf45362de9c"
     },
     {
+      "path": "offchain/app-service/test/deployment-rollover.integration.test.ts",
+      "sha256": "bd062239f91c5f7927812ee82674496df90aee5cd6f37817bc75595da464de9e"
+    },
+    {
       "path": "offchain/app-service/test/deposits.test.ts",
       "sha256": "813fe7a82686e9affc8acf2524c5b6e0d4cf9179ec667005c0172d8324a26e7e"
     },
@@ -986,7 +1002,7 @@
     },
     {
       "path": "offchain/app-service/test/postgres.integration.test.ts",
-      "sha256": "b47585892412e33e46c6adb89e3ca819f7659901a5fffd047d3dd52decd80568"
+      "sha256": "0278227d9f43426d3bd17ccb178ca4206d7c4179bb54b8e63e3aa5ebeaafe6a9"
     },
     {
       "path": "offchain/app-service/test/provider-management.test.ts",
@@ -1094,7 +1110,7 @@
     },
     {
       "path": "offchain/indexer/src/reconciliation.ts",
-      "sha256": "7b60884314338ef1dd69de03b7d27d377697dce3597462e7390d5a94e901f772"
+      "sha256": "0b192eac4793a3bd5e14e6c5b8f0e82a13479600c420e568d082d60961318075"
     },
     {
       "path": "offchain/indexer/src/rights-reader.ts",
@@ -1162,11 +1178,11 @@
     },
     {
       "path": "offchain/indexer/test/reconciliation.test.ts",
-      "sha256": "5ea7ad8dddb48223a03e406e50df01f8c325016ada9f0123666a01289f0ef4c6"
+      "sha256": "380c08ae93db994953e403442f2ba2ba6a76e6187754f2e0a408957ae276ec8c"
     },
     {
       "path": "offchain/indexer/test/reports-postgres.integration.test.ts",
-      "sha256": "26572b351aa33650f8e439ff0ab6c6703ce3a1e6d645e7721e400e7b1ca76577"
+      "sha256": "595cd484af049ee7f172915ba662ec3cdcb0c6d13712fe5fbe31e649f5663a3b"
     },
     {
       "path": "offchain/indexer/test/scheduler.test.ts",
@@ -1522,7 +1538,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "40d906cb016f916bec49bcef54267de520081ad128806098d8ca76df70bf956e"
+      "sha256": "51aba38afd8587c13d711da2698dcf58f6a617dce5fffa9854edfca69d2329e8"
     },
     {
       "path": "patches/@privy-io+react-auth++@privy-io+js-sdk-core+0.73.0.patch",
@@ -1550,7 +1566,7 @@
     },
     {
       "path": "script/DeployArbitrumSepolia.s.sol",
-      "sha256": "82d8d5d6c057f29c4876406e43339530330a5cc3bb7f322d0df43da80f9dfbaa"
+      "sha256": "1db3be7dc7b575b2db5cba21b31a7db9a95c183f0c91bf91506dbe66cfce3041"
     },
     {
       "path": "script/FinalizeBootstrap.s.sol",
@@ -1598,7 +1614,7 @@
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.mjs",
-      "sha256": "eba892d22d3c6aa923d71f1f3b33005683905cbab1ebf89b04cd920edbeb1d7f"
+      "sha256": "76df7a2f5b7056aea0c305037c24666e853147dd497b6ad8daeb729f665bcf49"
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.sh",
@@ -1606,7 +1622,7 @@
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.test.mjs",
-      "sha256": "2961e720f831c5aca5e9a30917e28551600c73d8ab927b792ceab0cb131fc16e"
+      "sha256": "8f66943045470f7b5f98e5aff1e4ca6fd0e56d902eef656c5baf74304aeea1ae"
     },
     {
       "path": "scripts/deployment/deployment-evidence.test.mjs",
@@ -1615,6 +1631,14 @@
     {
       "path": "scripts/deployment/evidence-lib.mjs",
       "sha256": "3e5806391ac7092f68f1ed3023f7ddc7f28be7570e29c7c6a274946b6fb75a53"
+    },
+    {
+      "path": "scripts/deployment/prepare-time-v2-site.mjs",
+      "sha256": "b22949f1116088a0bf2f5d5db1f4a8d8fe24922ccc1e55815f59d838605eddfb"
+    },
+    {
+      "path": "scripts/deployment/prepare-time-v2-site.test.mjs",
+      "sha256": "8daa9a3a060603e022e735c1acbdfec77a2e2b18d78c20c9d1c3622bd532f46c"
     },
     {
       "path": "scripts/deployment/sync-runtime.mjs",
@@ -1822,7 +1846,7 @@
     },
     {
       "path": "scripts/public-site/test-postgres.mjs",
-      "sha256": "e0f892ea6711ae7c046c39a919dd11ae399e4a039bbd78282f7aabd782596c1d"
+      "sha256": "177b383a67245243d399cda875a78a1d84d23715ab9e6e50e3e978e1f05361d5"
     },
     {
       "path": "scripts/public-site/test-usdc-deposit-fork.mjs",
@@ -1858,7 +1882,7 @@
     },
     {
       "path": "scripts/release/postgres-integration-runner.test.mjs",
-      "sha256": "4012890949c06e9c0f8ee508de78d40ca6d6d65b3f48e79c1533f3ae9d7c1254"
+      "sha256": "41485d2cd4958436aea0c42c60639ea0d3a48ab6ef3c7728c5a1b453e43e68ac"
     },
     {
       "path": "scripts/release/prepare-security-tools.sh",
@@ -1894,7 +1918,7 @@
     },
     {
       "path": "scripts/release/run-postgres-integration.mjs",
-      "sha256": "71129246f10fe018d8e65fd9ee419292314f376d2ced2877f3d26ea418cc0f95"
+      "sha256": "61c0c87dd599fb67d8fa318743fe7cfb8cfa3a82a18b3e3eea992c42474f0b8c"
     },
     {
       "path": "scripts/release/run-release-gate.mjs",
@@ -2350,7 +2374,7 @@
     },
     {
       "path": "test/deployment/DeployArbitrumSepolia.t.sol",
-      "sha256": "65e9b4f5078b5fe58b70e765e0a7bed42a82c7e99274d173e9626e651d87eca5"
+      "sha256": "5c688055d63c2beddebac0b2aa549be6b737809a114789b36a5a55c45a693d4c"
     },
     {
       "path": "test/gas/ProtocolGasGates.t.sol",

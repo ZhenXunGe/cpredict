@@ -86,6 +86,7 @@ describe.skipIf(!url)("public application PostgreSQL invariants", () => {
         "utf8",
       ),
     );
+    await sql.unsafe(await readFile(new URL("../migrations/004_deployment_carryover.sql", import.meta.url), "utf8"));
     await sql.end();
     store = new PostgresApplicationStore(scopedUrl, environmentKey(env));
     otherProcess = new PostgresApplicationStore(scopedUrl, environmentKey(env));
@@ -596,6 +597,7 @@ describe.skipIf(!url)("public application PostgreSQL invariants", () => {
               "utf8",
             ),
           );
+          await sql.unsafe(await readFile(new URL("../migrations/004_deployment_carryover.sql", import.meta.url), "utf8"));
         } finally {
           await sql.end();
         }

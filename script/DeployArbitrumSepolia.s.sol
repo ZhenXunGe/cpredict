@@ -51,6 +51,8 @@ contract DeployArbitrumSepolia is Script {
         address treasury;
         address sponsorSigner;
         bool sandboxTokenEnabled;
+        address existingSandboxToken;
+        bytes32 existingSandboxTokenCodehash;
         uint64 resolutionWindow;
     }
 
@@ -58,7 +60,7 @@ contract DeployArbitrumSepolia is Script {
         require(block.chainid == ARBITRUM_SEPOLIA_CHAIN_ID, "wrong chain");
         uint256 deployerKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         DeploymentInputs memory inputs = _loadDeploymentInputs(deployerKey);
-        _validateExternalDependencies(inputs.sandboxTokenEnabled);
+        _validateExternalDependencies(inputs);
 
         vm.startBroadcast(deployerKey);
         deployed = _deployContracts(inputs);
@@ -102,15 +104,34 @@ contract DeployArbitrumSepolia is Script {
         inputs.treasury = vm.envAddress("PROTOCOL_TREASURY");
         inputs.sponsorSigner = vm.envAddress("SPONSOR_SIGNER");
         inputs.sandboxTokenEnabled = vm.envOr("CPREDICT_SANDBOX_TOKEN_ENABLED", false);
+        inputs.existingSandboxToken = vm.envOr("CPREDICT_EXISTING_SANDBOX_TOKEN", address(0));
+        inputs.existingSandboxTokenCodehash =
+            vm.envOr("CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH", bytes32(0));
         uint256 resolutionWindow = vm.envOr("MARKET_RESOLUTION_WINDOW_SECONDS", uint256(24 hours));
         require(resolutionWindow <= type(uint64).max, "resolution window overflow");
         inputs.resolutionWindow = uint64(resolutionWindow);
     }
 
-    function _validateExternalDependencies(bool sandboxTokenEnabled) internal view {
+    function _validateExternalDependencies(DeploymentInputs memory inputs) internal view {
         require(CANONICAL_PERMIT2.code.length != 0, "Permit2 code missing");
         require(ENTRY_POINT_V08.code.length != 0, "EntryPoint code missing");
-        if (!sandboxTokenEnabled) {
+        if (inputs.existingSandboxToken != address(0)) {
+            require(inputs.sandboxTokenEnabled, "token reuse requires sandbox profile");
+            require(inputs.existingSandboxToken != ARBITRUM_SEPOLIA_USDC, "sandbox token is USDC");
+            require(inputs.existingSandboxToken.code.length != 0, "sandbox token code missing");
+            require(
+                inputs.existingSandboxTokenCodehash != bytes32(0)
+                    && inputs.existingSandboxToken.codehash == inputs.existingSandboxTokenCodehash,
+                "sandbox token codehash mismatch"
+            );
+            require(
+                IERC20Metadata(inputs.existingSandboxToken).decimals() == 6,
+                "sandbox decimals mismatch"
+            );
+        } else {
+            require(inputs.existingSandboxTokenCodehash == bytes32(0), "unexpected token codehash");
+        }
+        if (!inputs.sandboxTokenEnabled) {
             require(ARBITRUM_SEPOLIA_USDC.code.length != 0, "USDC code missing");
             require(IERC20Metadata(ARBITRUM_SEPOLIA_USDC).decimals() == 6, "USDC decimals mismatch");
         }
@@ -128,12 +149,13 @@ contract DeployArbitrumSepolia is Script {
 
         address paymentToken = ARBITRUM_SEPOLIA_USDC;
         if (inputs.sandboxTokenEnabled) {
-            deployed.sandboxToken = new CpredictSandboxToken();
+            deployed.sandboxToken = inputs.existingSandboxToken == address(0)
+                ? new CpredictSandboxToken()
+                : CpredictSandboxToken(inputs.existingSandboxToken);
             paymentToken = address(deployed.sandboxToken);
         }
-        deployed.timelock = new TimelockController(
-            _timelockDelay(inputs), proposers, executors, inputs.deployer
-        );
+        deployed.timelock =
+            new TimelockController(_timelockDelay(inputs), proposers, executors, inputs.deployer);
         address governance = address(deployed.timelock);
         deployed.config = new ProtocolConfigV1(governance, paymentToken, inputs.treasury);
         deployed.emergency = new EmergencyControllerV1(governance, inputs.emergencySafe);
@@ -170,9 +192,7 @@ contract DeployArbitrumSepolia is Script {
         Deployment memory deployed,
         DeploymentInputs memory inputs,
         bytes32 actualFactoryFingerprint
-    )
-        internal
-    {
+    ) internal {
         bytes32 expectedFactoryFingerprint =
             vm.envBytes32("EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT");
         require(
@@ -181,9 +201,10 @@ contract DeployArbitrumSepolia is Script {
         );
         (address[] memory targets, uint256[] memory values, bytes[] memory payloads) =
             _bootstrapBatch(deployed, expectedFactoryFingerprint);
-        deployed.timelock.scheduleBatch(
-            targets, values, payloads, bytes32(0), BOOTSTRAP_SALT, _timelockDelay(inputs)
-        );
+        deployed.timelock
+            .scheduleBatch(
+                targets, values, payloads, bytes32(0), BOOTSTRAP_SALT, _timelockDelay(inputs)
+            );
     }
 
     function _timelockDelay(DeploymentInputs memory inputs) internal view returns (uint256) {
@@ -251,6 +272,8 @@ contract DeployArbitrumSepolia is Script {
             "paymentTokenKind",
             inputs.sandboxTokenEnabled ? "sandbox-test-token" : "canonical-usdc"
         );
+        vm.serializeBool(root, "paymentTokenReused", inputs.existingSandboxToken != address(0));
+        vm.serializeBytes32(root, "paymentTokenRuntimeCodehash", paymentToken.codehash);
         vm.serializeAddress(root, "temporaryAdmin", inputs.deployer);
         vm.serializeAddress(root, "governanceSafe", inputs.governanceSafe);
         vm.serializeAddress(root, "emergencySafe", inputs.emergencySafe);
@@ -290,6 +313,11 @@ contract DeployArbitrumSepolia is Script {
         vm.serializeAddress(root, "usdc", paymentToken);
         vm.serializeAddress(root, "permit2", CANONICAL_PERMIT2);
         string memory json = vm.serializeAddress(root, "entryPoint", ENTRY_POINT_V08);
-        vm.writeJson(json, "deployments/arbitrum-sepolia/pending.json");
+        vm.writeJson(
+            json,
+            vm.envOr(
+                "CPREDICT_PENDING_MANIFEST", string("deployments/arbitrum-sepolia/pending.json")
+            )
+        );
     }
 }

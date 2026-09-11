@@ -72,6 +72,7 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
         "utf8",
       ),
     );
+    await sql.unsafe(await readFile(new URL("../../app-service/migrations/004_deployment_carryover.sql", import.meta.url), "utf8"));
     store = new PostgresEventStore(scoped.toString(), 3, env);
     await store.ready();
     reports = new PostgresReports(scoped.toString(), env, null);

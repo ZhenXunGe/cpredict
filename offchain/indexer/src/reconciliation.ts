@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { getAddress, parseAbi, type Address, type PublicClient } from "viem";
+import { erc20Abi, getAddress, parseAbi, type Address, type PublicClient } from "viem";
 import { z } from "zod";
 import {
   AppError,
@@ -26,6 +26,7 @@ export function reconciliationChecks(
   env: Environment,
   facts: readonly LedgerFact[],
   accounts: readonly Address[],
+  openingBalances: ReadonlyMap<string, bigint> = new Map(),
 ) {
   const values = new Map<
     string,
@@ -119,7 +120,7 @@ export function reconciliationChecks(
       env.deployment.paymentToken,
       "function balanceOf(address) view returns(uint256)",
       [a],
-      0n,
+      openingBalances.get(a.toLowerCase()) ?? 0n,
     );
   for (const contract of [env.deployment.feeVault, env.deployment.bondEscrow])
     scalar(contract, "totalCredits", 0n);
@@ -363,10 +364,39 @@ export async function reconcileLedger(
       };
     },
   );
+  // Reusing ctUSD preserves balances that predate this protocol deployment.
+  // Treat that chain state as the opening balance, never a new trade or mint.
+  const openingBlock = BigInt(ledger.environment.deployment.deploymentBlock) - 1n;
+  if (openingBlock < 0n)
+    throw new AppError("opening_balance_block_unavailable", 409);
+  const openingHash = (await client.getBlock({ blockNumber: openingBlock })).hash;
+  const openingCode = await client.getCode({
+    address: ledger.environment.deployment.paymentToken,
+    blockNumber: openingBlock,
+  });
+  const openingBalances = new Map<string, bigint>();
+  for (let offset = 0; offset < frozen.accounts.length; offset += 4) {
+    await Promise.all(
+      frozen.accounts.slice(offset, offset + 4).map(async (owner) => {
+        const balance =
+          !openingCode || openingCode === "0x"
+            ? 0n
+            : await client.readContract({
+                address: ledger.environment.deployment.paymentToken,
+                abi: erc20Abi,
+                functionName: "balanceOf",
+                args: [owner],
+                blockNumber: openingBlock,
+              });
+        openingBalances.set(owner.toLowerCase(), balance);
+      }),
+    );
+  }
   const checks = reconciliationChecks(
       ledger.environment,
       frozen.facts,
       frozen.accounts,
+      openingBalances,
     ),
     results = [];
   for (let offset = 0; offset < checks.length; offset += 4) {
@@ -412,6 +442,8 @@ export async function reconcileLedger(
     );
   }
   await ledger.assertSnapshot(frozen.snapshot);
+  if ((await client.getBlock({ blockNumber: openingBlock })).hash !== openingHash)
+    throw new AppError("opening_balance_snapshot_invalidated", 409);
   if (
     (
       await client.getBlock({
@@ -427,6 +459,16 @@ export async function reconcileLedger(
     createdAt: new Date().toISOString(),
     factCount: frozen.facts.length,
     accountCount: frozen.accounts.length,
+    openingState: {
+      blockNumber: openingBlock.toString(),
+      blockHash: openingHash,
+      balances: Object.fromEntries(
+        [...openingBalances].map(([owner, balance]) => [
+          owner,
+          balance.toString(),
+        ]),
+      ),
+    },
     passed: results.every((r) => r.passed),
     results,
   };

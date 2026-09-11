@@ -23,6 +23,42 @@ function checks(events: ReturnType<typeof purchase>) {
   );
 }
 describe("independent ledger conservation reconciliation", () => {
+  it("carries pre-deployment ctUSD into balance reconciliation without inventing historical trades", () => {
+    const facts = normalizeFinancialFacts(
+      [
+        raw(
+          "Transfer",
+          env.deployment.paymentToken,
+          { from: trader, to: A(90), value: 40n },
+          2,
+          0,
+        ),
+      ],
+      [block(2)],
+      {
+        environment: env,
+        markets: new Set(),
+        listings: new Map(),
+        trackedAccounts: new Set([trader.toLowerCase()]),
+      },
+    );
+    const result = reconciliationChecks(
+      env,
+      facts,
+      [trader],
+      new Map([[trader.toLowerCase(), 100n]]),
+    );
+    expect(
+      result.find(
+        (row) =>
+          row.contract.toLowerCase() ===
+            env.deployment.paymentToken.toLowerCase() &&
+          row.args[0] === trader,
+      )?.expected,
+    ).toBe("60");
+    expect(facts).toHaveLength(1);
+    expect(facts[0]!.kind).toBe("payment-transfer");
+  });
   it("compares physical shares, fee liabilities, test-token transfers and winner payouts without repeating a mint", () => {
     const result = checks([
       ...createMarket(),
