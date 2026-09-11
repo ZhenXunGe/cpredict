@@ -2194,11 +2194,11 @@
     },
     {
       "path": "scripts/stack/public-update-runtime.mjs",
-      "sha256": "e64884f6544feb0a397800e6dc17ce85269050c534edf7e7ba369e6447ae038b"
+      "sha256": "ad0c6563562d75db7f0111850969accc63d733c6207365eadd6ea521c32ea314"
     },
     {
       "path": "scripts/stack/public-update-selective.test.mjs",
-      "sha256": "40b07e584c1fca2dd0a71b0c62628d6b7a021bb1a0687ef601f2658841dd73e5"
+      "sha256": "6c16e4514cb82236839c30f1f19acfe24c1996b863901908179bf35777d48bc7"
     },
     {
       "path": "scripts/stack/public-update.mjs",

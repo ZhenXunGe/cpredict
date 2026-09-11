@@ -461,14 +461,66 @@ test("rollback only restores recorded touched services; legacy journals remain s
     compose,
   );
   assert.deepEqual(
-    commands[1].args.filter((arg) => SERVICES.includes(arg)),
+    commands
+      .slice(1)
+      .flatMap((command) =>
+        command.args.filter((arg) => SERVICES.includes(arg)),
+      ),
     SERVICES,
   );
   await assert.rejects(
     restoreSelectedServices({ version: 2, servicesTouched: true }, compose),
     /missing touched/,
   );
-  assert.equal(commands.length, 2);
+  assert.equal(commands.length, 5);
+});
+
+test("update and rollback keep the fixed gateway address occupied during dynamic backend replacement", async () => {
+  for (const mode of ["update", "rollback"]) {
+    let gatewayAddressOccupied = true;
+    const completed = [];
+    const composeFile = async (_file, args) => {
+      const targets = args.filter((arg) => SERVICES.includes(arg));
+      if (targets.includes("web-demo")) gatewayAddressOccupied = false;
+      // Reproduce Docker allocating the newly freed fixed gateway address to a
+      // dynamic backend when several services are recreated in the same call.
+      if (targets.some((s) => s !== "web-demo") && !gatewayAddressOccupied)
+        throw new Error("dynamic backend claimed the gateway address");
+      if (targets.includes("web-demo")) gatewayAddressOccupied = true;
+      completed.push(...targets);
+    };
+    const selected = ["web-demo", "app-service", "metadata"];
+    if (mode === "update") {
+      const plan = {
+        updateServices: selected,
+        stopWriters: [],
+        backupDatabases: [],
+        migrationServices: [],
+      };
+      await applySelectedServices({
+        plan,
+        journal: {},
+        containers: containers(),
+        candidateFile: "candidate",
+        composeFile,
+        docker: async () => {},
+        save: async () => {},
+        backup: async () => {},
+      });
+    } else {
+      await restoreSelectedServices(
+        {
+          version: 2,
+          rollbackFile: "previous",
+          servicesTouched: true,
+          touchedServices: selected,
+        },
+        composeFile,
+      );
+    }
+    assert.deepEqual(completed, ["metadata", "app-service", "web-demo"]);
+    assert.equal(gatewayAddressOccupied, true);
+  }
 });
 test("chain source changes are reported separately; ABI, history and unreviewed SQL require maintenance", async () => {
   const before = tree(),
