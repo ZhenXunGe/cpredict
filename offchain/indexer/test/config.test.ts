@@ -35,9 +35,21 @@ describe("parseIndexerServiceConfig", () => {
       chainId: 421614,
       deploymentBlock: 123n,
       batchSize: 500n,
+      blockConcurrency: 4,
       databasePoolSize: 10,
     });
     expect(config.coreAddresses).toHaveLength(2);
+  });
+
+  it("accepts bounded header concurrency and rejects unsafe values", () => {
+    for (const value of ["1", "16", "32"])
+      expect(parseIndexerServiceConfig({
+        ...valid, CPREDICT_INDEXER_BLOCK_CONCURRENCY: value,
+      }).blockConcurrency).toBe(Number(value));
+    for (const value of ["", "0", "33", "1.5", "-1", "Infinity"])
+      expect(() => parseIndexerServiceConfig({
+        ...valid, CPREDICT_INDEXER_BLOCK_CONCURRENCY: value,
+      })).toThrow();
   });
 
   it("rejects unknown names and insecure remote transports", () => {

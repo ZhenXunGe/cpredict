@@ -109,6 +109,51 @@ describe("ChainIndexer canonical ingestion", () => {
     expect(client.maximumBlockConcurrency).toBeLessThanOrEqual(4);
   });
 
+  it("uses configured concurrency while preserving every block and reorg recovery", async () => {
+    const client = new FakeClient(48n, [], 2);
+    const store = new MemoryEventStore();
+    const indexer = createIndexer(client, store, 16);
+    await indexer.runBatch();
+    expect(client.maximumBlockConcurrency).toBe(16);
+    expect(store.blockCount(CHAIN_ID)).toBe(48);
+    for (let number = 1n; number <= 48n; number++)
+      expect(await store.canonicalBlock(CHAIN_ID, number)).toMatchObject({ blockNumber: number });
+    client.replaceFrom(40n, []);
+    expect(await indexer.runBatch()).toMatchObject({ fromBlock: 40n, toBlock: 48n, blockCount: 9 });
+    expect(store.blockCount(CHAIN_ID)).toBe(48);
+    expect(await store.checkpoint(CHAIN_ID)).toMatchObject({ blockNumber: 48n, blockHash: hash(2_048n) });
+  });
+
+  it("drains failed header reads without advancing the checkpoint or launching the rest", async () => {
+    const client = new FakeClient(48n, [], 2);
+    const original = client.getBlock.bind(client);
+    let active = 0;
+    let started = 0;
+    client.getBlock = async (input) => {
+      started++;
+      active++;
+      try {
+        if (input.blockNumber === 1n) throw new Error("provider unavailable");
+        return await original(input);
+      } finally {
+        active--;
+      }
+    };
+    const store = new MemoryEventStore();
+    await expect(createIndexer(client, store, 16).runBatch()).rejects.toThrow("canonical-blocks");
+    expect(active).toBe(0);
+    expect(started).toBeLessThanOrEqual(16);
+    expect(await store.checkpoint(CHAIN_ID)).toBeUndefined();
+    expect(store.blockCount(CHAIN_ID)).toBe(0);
+    client.getBlock = original;
+    expect(await createIndexer(client, store, 16).runBatch()).toMatchObject({ fromBlock: 1n, toBlock: 48n });
+  });
+
+  it("rejects unbounded concurrency even when constructed outside the service config", () => {
+    for (const value of [0, -1, 1.5, 33, Number.NaN, Number.POSITIVE_INFINITY])
+      expect(() => createIndexer(new FakeClient(1n, []), new MemoryEventStore(), value)).toThrow("blockConcurrency");
+  });
+
   it("removes a one-block orphan and replays the replacement without duplicate rows", async () => {
     const client = new FakeClient(4n, [
       marketCreatedLog(4n, MARKET_A),
@@ -424,12 +469,14 @@ describe("ChainIndexer canonical ingestion", () => {
 function createIndexer(
   client: FakeClient,
   store: MemoryEventStore,
+  blockConcurrency?: number,
 ): ChainIndexer {
   return new ChainIndexer(client as unknown as PublicClient, store, {
     chainId: CHAIN_ID,
     deploymentBlock: 1n,
     confirmations: 0n,
     batchSize: 100n,
+    ...(blockConcurrency === undefined ? {} : { blockConcurrency }),
     addresses: [FACTORY, MARKETPLACE],
     factoryAddress: FACTORY,
   });

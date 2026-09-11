@@ -14,6 +14,8 @@ export interface IndexerOptions {
   deploymentBlock: bigint;
   confirmations: bigint;
   batchSize: bigint;
+  /** Maximum concurrent canonical-block reads. Defaults to 4 for existing providers. */
+  blockConcurrency?: number;
   /** Core contracts that must always be scanned, such as Factory and Marketplace. */
   addresses: readonly Address[];
   /** Enables atomic, same-block discovery of Factory-created market vaults. */
@@ -48,6 +50,13 @@ export class ChainIndexer {
     }
     if (options.confirmations < 0n)
       throw new RangeError("confirmations must be non-negative");
+    const blockConcurrency = options.blockConcurrency ?? 4;
+    if (
+      !Number.isInteger(blockConcurrency) ||
+      blockConcurrency < 1 ||
+      blockConcurrency > 32
+    )
+      throw new RangeError("blockConcurrency must be an integer within [1, 32]");
     if (
       options.addresses.length === 0 &&
       options.factoryAddress === undefined
@@ -177,8 +186,10 @@ export class ChainIndexer {
     const numbers: bigint[] = [];
     for (let number = fromBlock; number <= toBlock; number += 1n)
       numbers.push(number);
-    const blocks = await mapConcurrent(numbers, 4, (blockNumber) =>
-      this.client.getBlock({ blockNumber }),
+    const blocks = await mapConcurrent(
+      numbers,
+      this.options.blockConcurrency ?? 4,
+      (blockNumber) => this.client.getBlock({ blockNumber }),
     );
     return blocks.map((block, index) => {
       const blockNumber = numbers[index];
@@ -208,15 +219,24 @@ async function mapConcurrent<Input, Output>(
 ): Promise<readonly Output[]> {
   const outputs = new Array<Output>(inputs.length);
   let cursor = 0;
+  let failed = false;
+  let failure: unknown;
   await Promise.all(
     Array.from({ length: Math.min(concurrency, inputs.length) }, async () => {
-      while (cursor < inputs.length) {
+      while (!failed && cursor < inputs.length) {
         const index = cursor++;
         const input = inputs[index];
-        if (input !== undefined) outputs[index] = await action(input);
+        try {
+          if (input !== undefined) outputs[index] = await action(input);
+        } catch (error) {
+          if (!failed) failure = error;
+          failed = true;
+        }
       }
     }),
   );
+  // Drain in-flight reads before the scheduler may retry this uncommitted batch.
+  if (failed) throw failure;
   return outputs;
 }
 

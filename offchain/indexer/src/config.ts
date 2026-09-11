@@ -62,6 +62,10 @@ const schema = z
     CPREDICT_INDEXER_MAX_BATCHES_PER_TICK: safeInteger.refine(
       (value) => value >= 1 && value <= 100,
     ),
+    CPREDICT_INDEXER_BLOCK_CONCURRENCY: safeInteger.default(4).refine(
+      (value) => value >= 1 && value <= 32,
+      "must be within [1, 32]",
+    ),
     CPREDICT_INDEXER_POLL_INTERVAL_MS: safeInteger.refine(
       (value) => value >= 250 && value <= 60_000,
     ),
@@ -164,6 +168,7 @@ export interface IndexerServiceConfig {
   deploymentBlock: bigint;
   confirmations: bigint;
   batchSize: bigint;
+  blockConcurrency: number;
   maxBatchesPerTick: number;
   pollIntervalMs: number;
   rpcTimeoutMs: number;
@@ -207,6 +212,7 @@ export function parseIndexerServiceConfig(
     deploymentBlock: parsed.CPREDICT_INDEXER_DEPLOYMENT_BLOCK,
     confirmations: parsed.CPREDICT_INDEXER_CONFIRMATIONS,
     batchSize: parsed.CPREDICT_INDEXER_BATCH_SIZE,
+    blockConcurrency: parsed.CPREDICT_INDEXER_BLOCK_CONCURRENCY,
     maxBatchesPerTick: parsed.CPREDICT_INDEXER_MAX_BATCHES_PER_TICK,
     pollIntervalMs: parsed.CPREDICT_INDEXER_POLL_INTERVAL_MS,
     rpcTimeoutMs: parsed.CPREDICT_INDEXER_RPC_TIMEOUT_MS,
