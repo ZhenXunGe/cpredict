@@ -98,6 +98,29 @@ export const rpcRequestSchema = z.strictObject({
   params: z.array(z.unknown()).max(2),
 });
 
+/**
+ * The upstream response cannot be returned to a client because it can include
+ * UserOperation or provider details. Preserve only its stable error code for
+ * the server audit log.
+ */
+export class OperationSubmissionUnknownError extends AppError {
+  constructor(
+    operationId: string,
+    readonly upstreamCode: string,
+  ) {
+    super(
+      "operation_result_unknown",
+      503,
+      "提交结果未知，请继续查询原操作",
+      operationId,
+    );
+  }
+}
+
+function upstreamFailureCode(error: unknown): string {
+  return error instanceof AppError ? error.code : "upstream_request_failed";
+}
+
 export function assertOperationBinding(
   o: Operation,
   u: WireUserOperation,
@@ -311,17 +334,15 @@ export class AuthenticatedAAGateway {
         if (returnedHash.toLowerCase() !== userOperationHash.toLowerCase())
           throw new AppError("provider_hash_mismatch", 503);
         return userOperationHash;
-      } catch {
+      } catch (error) {
         await this.service.store.transition(o.id, ["submitted"], {
           state: "unknown",
           reason: "provider_result_unknown",
           updatedAt: this.service.now().toISOString(),
         });
-        throw new AppError(
-          "operation_result_unknown",
-          503,
-          "提交结果未知，请继续查询原操作",
+        throw new OperationSubmissionUnknownError(
           o.id,
+          upstreamFailureCode(error),
         );
       }
     }
