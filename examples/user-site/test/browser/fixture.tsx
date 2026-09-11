@@ -152,6 +152,13 @@ class FixtureApi extends SiteApi {
     schema: z.ZodType<T>,
     _options: Parameters<SiteApi["request"]>[2] = {},
   ): Promise<T> {
+    // Exercise the real HTTP/error boundary with intercepted local responses only.
+    // This fixture still cannot sign or submit transactions.
+    if (
+      _options.service === "metadata" &&
+      new URLSearchParams(location.search).has("rules-error")
+    )
+      return super.request(path, schema, _options);
     const url = new URL(path, "http://fixture.invalid"),
       p = url.pathname;
     if (this.slow) await new Promise((r) => setTimeout(r, 600));

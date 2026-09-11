@@ -7,6 +7,113 @@ import {
   type Environment,
 } from "../../../offchain/app-core/src/contracts.js";
 export type TokenGetter = () => Promise<string | null>;
+
+const metadataCodes: Record<string, string> = {
+  "invalid challenge request": "invalid_factory",
+  "invalid factory": "invalid_factory",
+  "challenge unavailable": "challenge_unavailable",
+  "challenge expired": "challenge_expired",
+  "challenge not found": "challenge_not_found",
+  "challenge already consumed": "challenge_consumed",
+  "invalid signature": "invalid_signature",
+  "signature verification unavailable": "signature_verification_unavailable",
+  "rules do not match challenge": "rules_challenge_mismatch",
+  "invalid request": "metadata_invalid_request",
+  "internal error": "metadata_internal_error",
+};
+
+/** Bounded, plain-text diagnostics; never include credentials or signed payloads. */
+export function safeErrorDetail(text: string): string {
+  return text
+    .replace(/(?:postgres(?:ql)?:\/\/|https?:\/\/)[^\s"<>]+/gi, (value) => {
+      try {
+        const url = new URL(value);
+        return url.protocol.startsWith("postgres")
+          ? "[连接信息已隐藏]"
+          : `${url.origin}${url.pathname.replace(/\/api\/.*$/i, "/[已隐藏]")}`;
+      } catch {
+        return "[连接信息已隐藏]";
+      }
+    })
+    .replace(
+      /(?:Bearer\s+\S+|privy_app_secret_\S+|0x[0-9a-fA-F]{128,})/gi,
+      "[已隐藏]",
+    )
+    .replace(
+      /((?:secret|password|token|signature|authorization|cookie|privateKey)["']?\s*[:=]\s*["']?)[^\s,}"']+/gi,
+      "$1[已隐藏]",
+    )
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 512);
+}
+
+export class ServiceResponseError extends AppError {
+  readonly responseBody: string;
+  constructor(
+    readonly service: "app" | "indexer" | "metadata",
+    status: number,
+    readonly contentType: string,
+    body: string,
+    code: string,
+    message: string,
+    operationId?: string,
+    readonly requestId?: string,
+  ) {
+    super(code, status, safeErrorDetail(message), operationId);
+    this.responseBody = safeErrorDetail(body);
+  }
+}
+
+function responseError(
+  service: ServiceResponseError["service"],
+  response: Response,
+  body: string,
+  value: unknown,
+) {
+  const object = z
+    .object({
+      error: z.union([
+        z.string(),
+        z.object({
+          code: z.string(),
+          message: z.string().optional(),
+          operationId: z.string().uuid().optional(),
+        }),
+      ]),
+      code: z.string().optional(),
+      requestId: z
+        .string()
+        .regex(/^[\w-]{1,128}$/)
+        .optional(),
+    })
+    .safeParse(value);
+  const error = object.success ? object.data.error : undefined;
+  const message =
+    typeof error === "string" ? error : (error?.message ?? error?.code ?? body);
+  const code =
+    typeof error === "object"
+      ? error.code
+      : object.success && object.data.code
+        ? object.data.code
+        : service === "metadata" && typeof error === "string"
+          ? (metadataCodes[error] ?? "metadata_request_failed")
+          : response.ok
+            ? "service_response_invalid"
+            : "service_http_error";
+  return new ServiceResponseError(
+    service,
+    response.status,
+    response.headers.get("content-type") ?? "unknown",
+    body,
+    code,
+    message,
+    typeof error === "object" ? error.operationId : undefined,
+    object.success ? object.data.requestId : undefined,
+  );
+}
+
 export class SiteApi {
   constructor(
     readonly environment: Environment,
@@ -72,26 +179,12 @@ export class SiteApi {
     try {
       value = JSON.parse(text);
     } catch {
-      throw new AppError("service_response_invalid", 503);
+      throw responseError(service, response, text, undefined);
     }
-    if (!response.ok) {
-      const parsed = z
-        .object({
-          error: z.object({
-            code: z.string(),
-            message: z.string().optional(),
-            operationId: z.string().optional(),
-          }),
-        })
-        .safeParse(value);
-      throw new AppError(
-        parsed.success ? parsed.data.error.code : "service_unavailable",
-        response.status,
-        undefined,
-        parsed.success ? parsed.data.error.operationId : undefined,
-      );
-    }
-    return schema.parse(value);
+    if (!response.ok) throw responseError(service, response, text, value);
+    const parsed = schema.safeParse(value);
+    if (!parsed.success) throw responseError(service, response, text, value);
+    return parsed.data;
   }
   publicClient(): PublicClient {
     return createPublicClient({
@@ -105,6 +198,22 @@ export class SiteApi {
   }
 }
 const messages: Record<string, string> = {
+  invalid_factory: "规则服务的 Factory 与当前环境不一致，请联系维护者。",
+  challenge_expired: "规则签名挑战已过期，请重新发布规则并再次签名。",
+  challenge_unavailable:
+    "规则签名挑战不可用（可能已过期或已使用），请重新发布规则并签名。",
+  challenge_not_found: "未找到这次规则签名挑战，请重新发布规则并签名。",
+  challenge_consumed: "这次规则签名挑战已使用，请重新发布规则并签名。",
+  invalid_signature: "规则签名无效，请核对控制钱包后重新签名。",
+  rules_signature_rejected: "已取消规则签名，可以重新发布规则并签名。",
+  rules_signature_expired: "钱包签名已过期，请重新发布规则并签名。",
+  signature_verification_unavailable:
+    "暂时无法验证规则签名，请稍后重新发布规则。",
+  rules_challenge_mismatch: "规则内容与签名挑战不一致，请重新发布规则。",
+  metadata_storage_incompatible:
+    "规则服务的签名存储格式不兼容，请联系维护者更新服务。",
+  metadata_internal_error: "规则服务内部错误，请联系维护者核查。",
+  metadata_invalid_request: "规则服务拒绝了请求，请核对规则字段与当前环境。",
   gasless_deposit_disabled: "当前暂停 USDC 免 Gas 入金，已有记录仍可查询。",
   deposit_source_not_eoa:
     "请选择普通 EOA 资金钱包；本次不支持合约钱包或已委托的账户。",
@@ -167,10 +276,16 @@ const messages: Record<string, string> = {
   new_exposure_disabled: "当前暂停新增交易，已有资产的领取和退出仍可使用。",
 };
 export function errorCopy(error: unknown): string {
+  if (error instanceof ServiceResponseError) {
+    const detail = error.message || "响应内容为空";
+    return `${messages[error.code] ?? "服务请求失败。"}（HTTP ${error.status}；${detail}）${
+      error.requestId ? ` 服务请求号：${error.requestId}。` : ""
+    }${error.operationId ? ` 操作编号：${error.operationId}。` : ""}`;
+  }
   if (error instanceof AppError)
     return (
       messages[error.code] ??
-      `暂时无法完成请求（${error.code}）。请重试或通过反馈入口提供操作编号。`
+      `暂时无法完成请求（${error.code}${error.message !== error.code ? `：${safeErrorDetail(error.message)}` : ""}）。${error.operationId ? `请通过反馈入口提供操作编号 ${error.operationId}。` : "请稍后重试。"}`
     );
   if (error instanceof DOMException && error.name === "AbortError")
     return "请求已取消。";

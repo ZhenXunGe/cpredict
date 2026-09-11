@@ -28,6 +28,110 @@ const rules: MarketRules = {
 };
 
 describe("wallet-authorized metadata service", () => {
+  it("distinguishes invalid factory and expired challenges without invoking signature verification", async () => {
+    const store = new MemoryMetadataStore(),
+      verifyTypedData = vi.fn();
+    let now = 1_800_000_000;
+    const app = await createMetadataServer({
+      config: configuration(),
+      store,
+      now: () => now,
+      nonce: sequenceHex(),
+      signatureClient: { verifyTypedData },
+    });
+    try {
+      const payload = {
+        chainId: 421614,
+        factory,
+        creator: account.address,
+        rulesHash: encodeMarketRules(rules).rulesHash,
+      };
+      const invalid = await app.inject({
+        method: "POST",
+        url: "/v1/challenges",
+        payload: { ...payload, factory: account.address },
+      });
+      expect(invalid.statusCode).toBe(400);
+      expect(invalid.json()).toMatchObject({
+        error: "invalid factory",
+        code: "invalid_factory",
+      });
+      const issued = await app.inject({
+        method: "POST",
+        url: "/v1/challenges",
+        payload,
+      });
+      now += 300;
+      const expired = await app.inject({
+        method: "POST",
+        url: "/v1/markets",
+        payload: {
+          challengeId: issued.json().challengeId,
+          signature: `0x${"ab".repeat(512)}`,
+          rules,
+        },
+      });
+      expect(expired.statusCode).toBe(409);
+      expect(expired.json()).toMatchObject({
+        error: "challenge expired",
+        code: "challenge_expired",
+      });
+      expect(verifyTypedData).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("exposes a safe storage reason and request ID without the PostgreSQL row or signed payload", async () => {
+    const store = new MemoryMetadataStore();
+    vi.spyOn(store, "publish").mockRejectedValue(
+      Object.assign(new Error("private row and connection details"), {
+        code: "23514",
+        constraint_name: "market_publication_signature",
+        detail: "private signed payload",
+      }),
+    );
+    const app = await createMetadataServer({
+      config: configuration(),
+      store,
+      now: () => 1_800_000_000,
+      nonce: sequenceHex(),
+      signatureClient: { verifyTypedData: vi.fn().mockResolvedValue(true) },
+    });
+    try {
+      const issued = await app.inject({
+        method: "POST",
+        url: "/v1/challenges",
+        payload: {
+          chainId: 421614,
+          factory,
+          creator: account.address,
+          rulesHash: encodeMarketRules(rules).rulesHash,
+        },
+      });
+      const response = await app.inject({
+        method: "POST",
+        url: "/v1/markets",
+        payload: {
+          challengeId: issued.json().challengeId,
+          signature: `0x${"ab".repeat(512)}`,
+          rules,
+        },
+      });
+      expect(response.statusCode).toBe(500);
+      expect(response.json()).toMatchObject({
+        error: "metadata signature storage is incompatible",
+        code: "metadata_storage_incompatible",
+        requestId: expect.any(String),
+      });
+      expect(response.body).not.toMatch(/private|connection|payload/);
+      expect(
+        (await store.challenge(issued.json().challengeId))?.consumedAt,
+      ).toBeNull();
+    } finally {
+      await app.close();
+    }
+  });
   it("publishes immutable canonical rules and ERC-1155 outcome metadata", async () => {
     const store = new MemoryMetadataStore();
     const app = await createMetadataServer({
@@ -139,20 +243,49 @@ describe("wallet-authorized metadata service", () => {
     const store = new MemoryMetadataStore();
     const verifyTypedData = vi.fn().mockResolvedValue(true);
     const app = await createMetadataServer({
-      config: configuration(), store, now: () => 1_800_000_000,
-      nonce: sequenceHex(), signatureClient: { verifyTypedData },
+      config: configuration(),
+      store,
+      now: () => 1_800_000_000,
+      nonce: sequenceHex(),
+      signatureClient: { verifyTypedData },
     });
-    const smartAccount = getAddress("0x00000000000000000000000000000000000000a1");
+    const smartAccount = getAddress(
+      "0x00000000000000000000000000000000000000a1",
+    );
     const encoded = encodeMarketRules(rules);
-    const issued = await app.inject({method: "POST", url: "/v1/challenges", payload: {
-      chainId: 421614, factory, creator: smartAccount, rulesHash: encoded.rulesHash,
-    }});
+    const issued = await app.inject({
+      method: "POST",
+      url: "/v1/challenges",
+      payload: {
+        chainId: 421614,
+        factory,
+        creator: smartAccount,
+        rulesHash: encoded.rulesHash,
+      },
+    });
     const challengeId = issued.json().challengeId as Hex;
     const signature = `0x${"ab".repeat(512)}`;
-    const published = await app.inject({method: "POST", url: "/v1/markets", payload: { challengeId, signature, rules }});
+    const published = await app.inject({
+      method: "POST",
+      url: "/v1/markets",
+      payload: { challengeId, signature, rules },
+    });
     expect(published.statusCode).toBe(201);
-    expect(verifyTypedData).toHaveBeenCalledWith(expect.objectContaining({address: smartAccount, signature, domain: expect.objectContaining({chainId: 421614, verifyingContract: factory})}));
-    const replay = await app.inject({method: "POST", url: "/v1/markets", payload: { challengeId, signature, rules }});
+    expect(verifyTypedData).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: smartAccount,
+        signature,
+        domain: expect.objectContaining({
+          chainId: 421614,
+          verifyingContract: factory,
+        }),
+      }),
+    );
+    const replay = await app.inject({
+      method: "POST",
+      url: "/v1/markets",
+      payload: { challengeId, signature, rules },
+    });
     expect(replay.statusCode).toBe(409);
     expect(verifyTypedData).toHaveBeenCalledTimes(1);
     await app.close();
@@ -160,15 +293,45 @@ describe("wallet-authorized metadata service", () => {
 
   it("fails closed on verifier outage, leaves challenge usable, and bounds signature bytes", async () => {
     const store = new MemoryMetadataStore();
-    const verifyTypedData = vi.fn().mockRejectedValue(new Error("RPC unavailable"));
-    const app = await createMetadataServer({config: configuration(), store, now: () => 1_800_000_000, nonce: sequenceHex(), signatureClient: {verifyTypedData}});
-    const issued = await app.inject({method: "POST", url: "/v1/challenges", payload: {chainId: 421614, factory, creator: account.address, rulesHash: encodeMarketRules(rules).rulesHash}});
+    const verifyTypedData = vi
+      .fn()
+      .mockRejectedValue(new Error("RPC unavailable"));
+    const app = await createMetadataServer({
+      config: configuration(),
+      store,
+      now: () => 1_800_000_000,
+      nonce: sequenceHex(),
+      signatureClient: { verifyTypedData },
+    });
+    const issued = await app.inject({
+      method: "POST",
+      url: "/v1/challenges",
+      payload: {
+        chainId: 421614,
+        factory,
+        creator: account.address,
+        rulesHash: encodeMarketRules(rules).rulesHash,
+      },
+    });
     const challengeId = issued.json().challengeId as Hex;
-    const unavailable = await app.inject({method: "POST", url: "/v1/markets", payload: {challengeId, signature: `0x${"ab".repeat(512)}`, rules}});
+    const unavailable = await app.inject({
+      method: "POST",
+      url: "/v1/markets",
+      payload: { challengeId, signature: `0x${"ab".repeat(512)}`, rules },
+    });
     expect(unavailable.statusCode).toBe(503);
     expect((await store.challenge(challengeId))?.consumedAt).toBeNull();
-    for (const signature of ["0xabc", `0x${"ab".repeat(8193)}`, "0x", "signed"]) {
-      const rejected = await app.inject({method: "POST", url: "/v1/markets", payload: {challengeId, signature, rules}});
+    for (const signature of [
+      "0xabc",
+      `0x${"ab".repeat(8193)}`,
+      "0x",
+      "signed",
+    ]) {
+      const rejected = await app.inject({
+        method: "POST",
+        url: "/v1/markets",
+        payload: { challengeId, signature, rules },
+      });
       expect(rejected.statusCode).toBe(400);
     }
     expect(verifyTypedData).toHaveBeenCalledTimes(1);

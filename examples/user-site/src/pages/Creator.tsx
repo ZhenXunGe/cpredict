@@ -42,7 +42,7 @@ import {
   PageTitle,
 } from "../ui.js";
 import { parseAssetAmount } from "../amounts.js";
-import { publishRules } from "../metadata.js";
+import { publishRules, rulesPublicationErrorCopy } from "../metadata.js";
 const factoryAbi = parseAbi([
   "function config() view returns(address)",
   "function resolutionWindow() view returns(uint64)",
@@ -434,12 +434,7 @@ export function CreateMarketPage() {
         !(e instanceof AppError)
       )
         setValidation(e.message);
-      else
-        setError(
-          e instanceof AppError
-            ? e
-            : new AppError("rules_publication_failed", 503),
-        );
+      else setError(e);
     } finally {
       setBusy(false);
     }
@@ -451,9 +446,7 @@ export function CreateMarketPage() {
           title="创建测试市场"
           description="当前 ctUSD 部署使用原有市场规则。"
         />
-        <Notice>
-          当前部署暂不支持在本站创建市场，已创建的市场仍可浏览。
-        </Notice>
+        <Notice>当前部署暂不支持在本站创建市场，已创建的市场仍可浏览。</Notice>
       </section>
     );
   return (
@@ -466,7 +459,13 @@ export function CreateMarketPage() {
       <Notice tone="warning">
         创建者可决定终局结果，也承担按时结算责任。超时可导致押金罚没。请提供清楚、可验证的公开结果来源。
       </Notice>
-      <ErrorNotice error={error ?? config.error} />
+      {error ? (
+        <div role="alert">
+          <Notice tone="warning">{rulesPublicationErrorCopy(error)}</Notice>
+        </div>
+      ) : (
+        <ErrorNotice error={config.error} />
+      )}
       {validation && (
         <p role="alert" className="notice notice-warning">
           {validation}
