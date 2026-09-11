@@ -82,5 +82,7 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO cpredict_backup;
 GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO cpredict_backup;
 ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA public GRANT SELECT ON TABLES TO cpredict_backup;
 ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA public GRANT SELECT ON SEQUENCES TO cpredict_backup;
-SELECT format('REVOKE INSERT,UPDATE,DELETE ON public_site_migrations FROM %I', :'runtime_role') \gexec
+SELECT format('REVOKE INSERT,UPDATE,DELETE ON %I FROM %I', name, :'runtime_role')
+FROM unnest(ARRAY['public_site_migrations','app_quota_carryover','app_deployment_rollover']) AS protected(name)
+WHERE to_regclass(name) IS NOT NULL \gexec
 SQL

@@ -78,9 +78,16 @@ account transfer tracking starts at that block; the payment-token balance is
 read directly from the chain. Reconciliation anchors each account's opening
 balance to the preceding block and records that block hash in its report, then
 adds only new transfers. An unavailable historical balance or changed block hash
-blocks reconciliation rather than assuming a zero balance. Historical ctUSD transfers are not invented as
+blocks reconciliation rather than assuming a zero balance. Historical ctUSD
+transfers are not invented as
 new trading activity. Old operation records retained solely for quotas do not
 appear in activity, recovery or PnL; provider budget consumption is preserved.
+
+The user-approved ctUSD per-operation cap is 0.005 ETH
+(`sponsor.maxCostPerOperation = "5000000000000000"`). Apply it to the actual
+service runtime, preserving the weekly 0.1 ETH total and 0.02 ETH exit reserve.
+Check the daily account/subject limits and outstanding reservations before
+claiming that a freshly funded account can immediately create a full market.
 
 ## Acceptance and recovery
 

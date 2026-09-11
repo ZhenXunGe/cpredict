@@ -70,6 +70,11 @@ export async function verifyInPlaceUpgrade({ root, pg, directory, port }) {
   checks.push("repeat migrations preserve unknown operation identity, hashes, amounts and migration records");
   sql("cpredict_indexer", "DELETE FROM public_site_migrations", "cpredict_indexer", 1);
   checks.push("runtime cannot rewrite migration history");
+  for (const table of ["app_quota_carryover", "app_deployment_rollover"]) {
+    sql("cpredict_indexer", `DELETE FROM ${table}`, "cpredict_indexer", 1);
+    assert.equal(sql("cpredict_indexer", `SELECT count(*) FROM ${table}`, "cpredict_indexer").stdout.trim(), "0");
+  }
+  checks.push("repeat migrations keep retired quota and deployment cutover records read-only to the runtime");
   const altered = resolve(directory, "altered-migrations");
   await cp(resolve(root, "offchain/indexer/migrations"), altered, { recursive: true });
   const changed = resolve(altered, "006_financial_facts.sql");
