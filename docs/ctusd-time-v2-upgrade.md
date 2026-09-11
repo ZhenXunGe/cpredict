@@ -56,6 +56,12 @@ the new package, since `deploy:sync` selects its generated package locally.
    npm run site:maintain -- rollover --config <new-ctusd.runtime.json> --input <old-ctusd.runtime.json> --environment ctusd-public-test --apply
    ```
 
+   When running the maintenance command inside the existing Compose network,
+   add `--container` and use the internal `postgres:5432` endpoint with
+   `sslmode=disable`. This mode accepts only that endpoint and no additional
+   database URL options. Keep PostgreSQL unpublished on the host. Host-local
+   commands and remote TLS connections continue to run without this flag.
+
    Submitted, unknown and nonfinal operations block the switch. Resolve them
    through the original recovery flow; never delete records to pass this check.
    Rollover builds fresh tables using the normal migration registry in a private
@@ -88,6 +94,13 @@ The user-approved ctUSD per-operation cap is 0.005 ETH
 service runtime, preserving the weekly 0.1 ETH total and 0.02 ETH exit reserve.
 Check the daily account/subject limits and outstanding reservations before
 claiming that a freshly funded account can immediately create a full market.
+
+For this demo the user also approved daily `projectWei`, `accountWei` and
+`subjectWei` of `"80000000000000000"` in the exposure lane and
+`"20000000000000000"` in the exit lane. Keep the weekly allocation, provider hard
+limit and operation-count limits unchanged. With the current full-reservation
+accounting, these limits allow at most 16 exposure and 4 exit admissions per
+week before carried-over usage; they do not represent actual gas spent.
 
 ## Acceptance and recovery
 

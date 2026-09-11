@@ -1,5 +1,6 @@
 import { applyPublicSiteMigrations } from "./migrations.js";
 import { rolloverDeployment } from "./deployment-rollover.js";
+import { maintenanceDatabaseUrl } from "./maintenance-database.js";
 import { chmod, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -38,6 +39,7 @@ const { positionals, values } = parseArgs({
     id: { type: "string" },
     batches: { type: "string", default: "1" },
     apply: { type: "boolean", default: false },
+    container: { type: "boolean", default: false },
   },
 });
 const command = positionals[0];
@@ -108,19 +110,13 @@ async function run() {
     env = runtime.environment;
   if (values.environment !== env.id)
     throw new AppError("environment_confirmation_required");
-  const databaseUrl = required(
+  const databaseUrl = maintenanceDatabaseUrl(
+    required(
       process.env.CPREDICT_MAINTENANCE_DATABASE_URL,
       "maintenance_database_url",
     ),
-    dbUrl = new URL(databaseUrl);
-  if (
-    !["postgres:", "postgresql:"].includes(dbUrl.protocol) ||
-    (!["localhost", "127.0.0.1", "[::1]"].includes(dbUrl.hostname) &&
-      !["require", "verify-full"].includes(
-        dbUrl.searchParams.get("sslmode") ?? "",
-      ))
-  )
-    throw new AppError("database_tls_required");
+    values.container,
+  );
   const sql = postgres(databaseUrl, {
     max: 1,
     prepare: command !== "rollover",
