@@ -22,7 +22,7 @@
     },
     {
       "path": ".env.example",
-      "sha256": "8d42d2372a51f76d44b2b57b1c33ce37fc45a52a8496fce99bac5b0d76993ed1"
+      "sha256": "8bac5159864fdb9446503a52ec4911f47637e4cb295bc5b92183147af3f0da21"
     },
     {
       "path": ".github/dependabot.yml",
@@ -222,7 +222,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "7c4e36522af1fdf02f7da7fc0936a15b722b907750434afb97d6c0ba0bffd209"
+      "sha256": "c731f7f5a624217cc3910ab7e1cc4f07667303bbbcd9db3928cfe0941bdc4636"
     },
     {
       "path": "docs/usdc-gasless-deposit.md",
@@ -303,6 +303,10 @@
     {
       "path": "examples/react/test/components.test.tsx",
       "sha256": "3a62442350bb4d5ec1a94a7df527dcdb2139156d1b4e1c393562f8420d4000ed"
+    },
+    {
+      "path": "examples/user-site/dev-proxy.ts",
+      "sha256": "2ac3b15b494349c7de2d65c51b0b628aa54acaa5db99dc25ba4503c566334a11"
     },
     {
       "path": "examples/user-site/index.html",
@@ -461,12 +465,16 @@
       "sha256": "94509fdc06da9b6329bd20d7b65c310d09d2f62c4f4b50292079012cb2b4cc7a"
     },
     {
+      "path": "examples/user-site/test/dev-proxy.test.ts",
+      "sha256": "97582deb1214bbc878d1b71f3694cb6057046c0a80ddb5925b6c41ac912fd401"
+    },
+    {
       "path": "examples/user-site/tsconfig.json",
       "sha256": "7fada2bc55fced83278ef4eec91e34419e6b3c62988524bac37b01a608638029"
     },
     {
       "path": "examples/user-site/vite.config.ts",
-      "sha256": "5303aee433e7ab12d3982bf8072ce9e191d9704279bd7be29b65f604b397bc00"
+      "sha256": "940cf36ba8c640d541198e2ff471673cc026f73063de183fb811c3d93d6e0ddd"
     },
     {
       "path": "foundry.toml",
@@ -630,7 +638,7 @@
     },
     {
       "path": "manifests/licenses.json",
-      "sha256": "a4398973364d2c6ae12f0a544095598084a7699a16e55e4fb0eec78a0ba45c90"
+      "sha256": "07f71148e4ce50d03d2afb430e8250a879f26dcbfba0f1808225dc4efe8db4c5"
     },
     {
       "path": "manifests/load-tools.lock",
@@ -726,7 +734,7 @@
     },
     {
       "path": "manifests/sbom.spdx.json",
-      "sha256": "a1879f81cb997fd3a832faa8db2b17d7a5ec4314c3c6779c1ceb244fd28cd45c"
+      "sha256": "ce4708673b30e902ee44c621100f0017b07401e9070e1ca4b19a4b65304b54e1"
     },
     {
       "path": "manifests/sdk-declaration-patches.json",
@@ -746,7 +754,7 @@
     },
     {
       "path": "manifests/third-party-notices.md",
-      "sha256": "11a431b25366a09afeabf90ef917010f2707af2ed9f38be0ca2e0f27b7d3662b"
+      "sha256": "f689da3dc91383213dcf079f3386f2014aa3bdc7b83446d2aa34751128b9c617"
     },
     {
       "path": "monitoring/README.md",
@@ -1510,11 +1518,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "df09be13b20914c471d4fbbba72684cf010eda809534730fffa5cb6295348c7b"
+      "sha256": "cf4e89bd433787a0b665b6508e6ed6ddbe19caf3769b3b9a0e5a60c1c0f6749b"
     },
     {
       "path": "package.json",
-      "sha256": "55136ff7eaf425e9108607c55eeba0c5576c60e339cc9eb850af9270fc730371"
+      "sha256": "40d906cb016f916bec49bcef54267de520081ad128806098d8ca76df70bf956e"
     },
     {
       "path": "patches/@privy-io+react-auth++@privy-io+js-sdk-core+0.73.0.patch",

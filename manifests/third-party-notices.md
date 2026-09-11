@@ -558,7 +558,8 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:abitype@1.2.3:node_modules/abitype
 - npm:abort-controller@3.0.0:node_modules/abort-controller
 - npm:abstract-logging@2.0.1:node_modules/abstract-logging
-- npm:agent-base@6.0.2:node_modules/agent-base
+- npm:agent-base@6.0.2:node_modules/axios/node_modules/agent-base
+- npm:agent-base@9.0.0:node_modules/agent-base
 - npm:agentkeepalive@4.6.0:node_modules/agentkeepalive
 - npm:ajv-formats@3.0.1:node_modules/ajv-formats
 - npm:ajv@8.20.0:node_modules/ajv
@@ -695,7 +696,8 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:helmet@8.3.0:node_modules/helmet
 - npm:help-me@5.0.0:node_modules/help-me
 - npm:hono@4.13.7:node_modules/hono
-- npm:https-proxy-agent@5.0.1:node_modules/https-proxy-agent
+- npm:https-proxy-agent@5.0.1:node_modules/axios/node_modules/https-proxy-agent
+- npm:https-proxy-agent@9.1.0:node_modules/https-proxy-agent
 - npm:humanize-ms@1.2.1:node_modules/humanize-ms
 - npm:ip-address@10.4.0:node_modules/ip-address
 - npm:ipaddr.js@2.5.0:node_modules/ipaddr.js
@@ -819,6 +821,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:process-warning@4.0.1:node_modules/light-my-request/node_modules/process-warning
 - npm:process-warning@5.1.0:node_modules/process-warning
 - npm:process@0.11.10:node_modules/process
+- npm:proxy-agent-negotiate@1.1.0:node_modules/proxy-agent-negotiate
 - npm:proxy-compare@3.0.1:node_modules/proxy-compare
 - npm:proxy-from-env@2.1.0:node_modules/proxy-from-env
 - npm:pump@3.0.4:node_modules/pump

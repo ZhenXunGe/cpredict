@@ -201,6 +201,16 @@ npm run stack:status -- --public-site
 
 ## 本地验证入口
 
+本机调试前端、沿用已部署的后端时，在仓库根目录的 `.env.local` 配置
+`CPREDICT_SITE_REMOTE_ORIGIN=https://现有测试站地址`，执行 `npm run site:dev`，
+打开 `http://127.0.0.1:4198`。Vite 同时代理公开的 `/site-config.json` 和 API；
+页面及源码仍从本地加载。兼容已有 `CPREDICT_DEMO_REMOTE_ORIGIN`，新变量优先。
+Node 需要通过本机网络代理访问公网时，可配置
+`CPREDICT_SITE_HTTPS_PROXY=http://127.0.0.1:实际代理端口`；保持 TLS 证书校验。
+这两个变量只用于开发服务器，生产构建仍使用部署时的公开配置和网关。
+后端 `allowedOrigins` 应允许该本地地址；收到 `origin_not_allowed` 时检查运行配置，
+不要在代理中伪造 Origin。未设置远端地址时，仍使用本机后端和默认空环境配置。
+
 ```sh
 npm run check:offchain
 npm run site:check
