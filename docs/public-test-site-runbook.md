@@ -238,8 +238,14 @@ npm run site:test:kernel-fork -- --rpc-url https://sepolia-rollup.arbitrum.io/rp
 
 ## Existing ctUSD deployments using the original ABI
 
+The current public-site release is moving to a separate **time-v2** protocol
+deployment while reusing ctUSD and the existing account derivation. Follow the
+[ctUSD time-v2 cutover](ctusd-time-v2-upgrade.md). Legacy contracts and market
+history remain archived and are not the new site's catalog or creation target.
+The compatibility details below apply only to that retained old deployment.
+
 Set `environment.deployment.protocolVersion` to `legacy-v1` only after verifying the original deployment manifest and runtime code hashes. Omission retains the time-v2 model. This selects the original initialization/metadata event signatures, legacy rules commitments, and explicit terminal-state translation at the public-site boundary. Original database state values and stored event JSON remain unchanged. Migration `007_legacy_deployment.sql` adds missing fields; unknown new time commitments stay null. The metadata service serves both immutable rules formats.
 
-The retired Demo is no longer built or mounted. `CPREDICT_STACK_LEGACY_DEMO_DIR` is no longer required or used. Original-ABI market reading and indexing remain supported; the creation page explicitly reports that creation is unavailable for this deployment until a separate original-ABI form is accepted. Never submit the time-v2 create tuple to the old factory.
+The retired Demo is no longer built or mounted. `CPREDICT_STACK_LEGACY_DEMO_DIR` is no longer required or used. Original-ABI market reading and indexing remain available for archival maintenance; the creation page explicitly rejects this deployment. The public site uses time-v2 rather than introducing a separate original-ABI creation form. Never submit the time-v2 create tuple to the old factory.
 
 Rehearse against restored database backups before switching services. Verify original market/position values after migration and reorg replay, and preserve the original runtime package and container images for rollback. Replaying historical financial facts does not establish full scanner coverage, payment-token coverage, or reconciled PnL. Keep sponsorship disabled until the supplier's actual hard cap and policy composition are verified.

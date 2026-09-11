@@ -141,6 +141,7 @@ export function parseArgs(argv) {
     envFile: resolve(ROOT, ".env.arbitrum-sepolia.local"),
     envFileExplicit: false,
     stateDir: DEFAULT_STATE_DIR,
+    pendingPath: STATIC_PENDING,
     profile: undefined,
     yes: false,
     resume: false,
@@ -163,6 +164,7 @@ export function parseArgs(argv) {
       options.envFile = resolve(take());
       options.envFileExplicit = true;
     } else if (flag === "--state-dir") options.stateDir = resolve(take());
+    else if (flag === "--pending-manifest") options.pendingPath = resolve(take());
     else if (flag === "--profile") options.profile = take();
     else if (flag === "--manifest") options.manifest = resolve(take());
     else if (flag === "--canary-evidence")
@@ -219,6 +221,18 @@ async function fileExists(path) {
   } catch {
     return false;
   }
+}
+
+export function existingSandboxTokenConfig(env, profile) {
+  const value = env.CPREDICT_EXISTING_SANDBOX_TOKEN;
+  const hash = env.CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH;
+  if (!value && !hash) return undefined;
+  if (profile !== "sandbox") fail("existing token reuse requires sandbox profile", 2);
+  const address = normalizeAddress(value, "CPREDICT_EXISTING_SANDBOX_TOKEN");
+  if (address.toLowerCase() === USDC.toLowerCase()) fail("sandbox token must not be canonical USDC", 2);
+  if (!HASH_RE.test(hash ?? "") || hash.toLowerCase() === ZERO_HASH)
+    fail("CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH must be a nonzero bytes32", 2);
+  return { address, runtimeCodehash: hash.toLowerCase() };
 }
 
 async function loadConfig(
@@ -284,6 +298,8 @@ async function loadConfig(
     expectedFingerprint: expectedFingerprint?.toLowerCase(),
     minimumBalance,
     resolutionWindowSeconds,
+    existingSandboxToken: existingSandboxTokenConfig(env, profile),
+    pendingPath: options.pendingPath,
     stateDir: options.stateDir,
     statePath: resolve(options.stateDir, "state.json"),
   };
@@ -415,6 +431,21 @@ export async function preflight(config) {
     fail(`deployer balance ${balance} is below minimum ${config.minimumBalance}`);
   if (externalB && JSON.stringify(externalA) !== JSON.stringify(externalB))
     fail("canonical external contract codehash differs across RPC providers");
+  let reusedToken;
+  if (config.existingSandboxToken) {
+    const expected = config.existingSandboxToken;
+    const inspect = async (rpc) => {
+      const [code, decimals] = await Promise.all([
+        rpc.getBytecode({ address: expected.address }),
+        rpc.readContract({ address: expected.address, abi: ERC20_METADATA_ABI, functionName: "decimals" }),
+      ]);
+      if (codehash(code) !== expected.runtimeCodehash || decimals !== 6)
+        fail("existing sandbox token codehash or decimals mismatch");
+    };
+    await inspect(primary);
+    if (secondary) await inspect(secondary);
+    reusedToken = { ...expected, decimals: 6 };
+  }
   let safeEvidence;
   if (config.profile === "formal") {
     assertFormalRoleSeparation(config);
@@ -456,10 +487,11 @@ export async function preflight(config) {
     deployerBalanceWei: balance.toString(),
     source,
     externalContracts: externalA,
+    reusedToken,
     safes: safeEvidence,
     warning:
       config.profile === "sandbox"
-        ? "SANDBOX profile deploys an unrestricted-mint ctUSD token and can never produce FINALIZED_VERIFIED evidence"
+        ? "SANDBOX profile uses an unrestricted-mint ctUSD token and can never produce FINALIZED_VERIFIED evidence"
         : config.profile === "debug"
           ? "DEBUG profile permits EOA/reused roles and cannot produce FINALIZED_VERIFIED evidence"
           : undefined,
@@ -575,6 +607,13 @@ export function validatePendingManifest(value, { profile } = {}) {
     value.paymentTokenKind === SANDBOX_TOKEN_KIND &&
     value.usdc.toLowerCase() === USDC.toLowerCase()
   ) fail("pending sandbox payment token must not equal canonical USDC");
+  if (value.paymentTokenReused !== undefined && typeof value.paymentTokenReused !== "boolean")
+    fail("pending.paymentTokenReused must be boolean");
+  if (value.paymentTokenReused && (
+    value.paymentTokenKind !== SANDBOX_TOKEN_KIND ||
+    !HASH_RE.test(value.paymentTokenRuntimeCodehash ?? "") ||
+    value.paymentTokenRuntimeCodehash.toLowerCase() === ZERO_HASH
+  )) fail("reused sandbox token requires runtime codehash evidence");
   if (value.permit2.toLowerCase() !== PERMIT2.toLowerCase()) fail("pending.permit2 mismatch");
   if (value.entryPoint.toLowerCase() !== ENTRY_POINT.toLowerCase())
     fail("pending.entryPoint mismatch");
@@ -668,6 +707,9 @@ export function forgeEnvironment(config, extra = {}) {
     CPREDICT_SANDBOX_TOKEN_ENABLED: config.profile === "sandbox" ? "true" : "false",
     // The selected CLI profile owns the Timelock policy; an env file cannot weaken formal deployments.
     CPREDICT_DEPLOYMENT_PROFILE: config.profile,
+    CPREDICT_EXISTING_SANDBOX_TOKEN: config.existingSandboxToken?.address ?? ZERO_ADDRESS,
+    CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH: config.existingSandboxToken?.runtimeCodehash ?? ZERO_HASH,
+    CPREDICT_PENDING_MANIFEST: config.pendingPath ?? STATIC_PENDING,
   };
 }
 
@@ -773,9 +815,9 @@ async function broadcastEvidence(path, minimumReceipts) {
 }
 
 async function finishDeployment(config, plan, logRoot) {
-  if (!(await fileExists(STATIC_PENDING)))
+  if (!(await fileExists(config.pendingPath)))
     fail("broadcast returned success but pending.json was not written");
-  const pending = validatePendingManifest(await readJson(STATIC_PENDING), {
+  const pending = validatePendingManifest(await readJson(config.pendingPath), {
     profile: config.profile,
   });
   if (pending.temporaryAdmin.toLowerCase() !== config.deployer.toLowerCase())
@@ -784,17 +826,22 @@ async function finishDeployment(config, plan, logRoot) {
     fail("pending fingerprint does not match reviewed plan");
   if (pending.marketResolutionWindowSeconds !== config.resolutionWindowSeconds)
     fail("pending market resolution window does not match reviewed config");
+  if (config.existingSandboxToken && (
+    pending.paymentTokenReused !== true ||
+    pending.usdc.toLowerCase() !== config.existingSandboxToken.address.toLowerCase() ||
+    pending.paymentTokenRuntimeCodehash.toLowerCase() !== config.existingSandboxToken.runtimeCodehash
+  )) fail("pending reused payment token does not match reviewed config");
   const broadcastPath = resolve(
     config.stateDir,
     "foundry/broadcast/DeployArbitrumSepolia.s.sol/421614/run-latest.json",
   );
   const broadcast = await broadcastEvidence(
     broadcastPath,
-    config.profile === "sandbox" ? 13 : 12,
+    config.profile === "sandbox" && !config.existingSandboxToken ? 13 : 12,
   );
   await persistState(config, {
     status: "BOOTSTRAP_SCHEDULED_NOT_FINAL",
-    pendingManifest: STATIC_PENDING,
+    pendingManifest: config.pendingPath,
     paymentTokenKind: pending.paymentTokenKind,
     paymentToken: pending.usdc,
     factoryDependencyFingerprint: plan.fingerprint,
@@ -802,7 +849,7 @@ async function finishDeployment(config, plan, logRoot) {
     logs: { root: logRoot },
   });
   process.stdout.write(`\nDeployment transactions succeeded (${broadcast.receipts} receipts).\n`);
-  process.stdout.write(`Pending manifest: ${STATIC_PENDING}\n`);
+  process.stdout.write(`Pending manifest: ${config.pendingPath}\n`);
   process.stdout.write(
     `Next: scripts/deployment/deploy-arbitrum-sepolia.sh finalize --env-file <file>\n`,
   );
@@ -810,7 +857,7 @@ async function finishDeployment(config, plan, logRoot) {
 }
 
 async function runDeploy(options, config) {
-  if ((await fileExists(STATIC_PENDING)) && !options.resume)
+  if ((await fileExists(config.pendingPath)) && !options.resume)
     fail("pending.json already exists; use status/finalize, or --resume only after a partial broadcast");
   if (options.resume) {
     const state = await readJson(config.statePath);
@@ -963,10 +1010,10 @@ async function bootstrapStatus(publicClient, pending) {
 }
 
 async function publicStatus(config) {
-  if (!(await fileExists(STATIC_PENDING))) {
+  if (!(await fileExists(config.pendingPath))) {
     return { status: "NOT_DEPLOYED", chainId: CHAIN_ID, network: NETWORK };
   }
-  const pending = validatePendingManifest(await readJson(STATIC_PENDING), {
+  const pending = validatePendingManifest(await readJson(config.pendingPath), {
     profile: config.profile,
   });
   const publicClient = client(config.rpcA);
@@ -992,7 +1039,7 @@ async function publicStatus(config) {
     profile: (await fileExists(config.statePath))
       ? (await readJson(config.statePath)).profile
       : undefined,
-    pendingManifest: STATIC_PENDING,
+    pendingManifest: config.pendingPath,
     missingCode,
     bootstrap,
     addresses: Object.fromEntries(
@@ -1002,8 +1049,8 @@ async function publicStatus(config) {
 }
 
 async function runFinalize(options, config) {
-  if (!(await fileExists(STATIC_PENDING))) fail("pending.json is required before finalize");
-  const pending = validatePendingManifest(await readJson(STATIC_PENDING), {
+  if (!(await fileExists(config.pendingPath))) fail("pending.json is required before finalize");
+  const pending = validatePendingManifest(await readJson(config.pendingPath), {
     profile: config.profile,
   });
   if (pending.temporaryAdmin.toLowerCase() !== config.deployer.toLowerCase())
@@ -1111,7 +1158,7 @@ async function runFinalize(options, config) {
 }
 
 async function waitUntilReady(config) {
-  const pending = validatePendingManifest(await readJson(STATIC_PENDING), {
+  const pending = validatePendingManifest(await readJson(config.pendingPath), {
     profile: config.profile,
   });
   const publicClient = client(config.rpcA);
@@ -1185,7 +1232,7 @@ Commands:
   preflight  Validate config, chain, balance, roles, dependencies and local gates
   plan       Simulate deployment and derive the address-bound Factory fingerprint
   deploy     Preflight + plan + exact simulation + confirmed broadcast
-  finalize   After the 1h Timelock, simulate + confirmed broadcast + revoke deployer roles
+  finalize   When the Timelock is ready, simulate + broadcast + revoke temporary roles
   status     Read-only live deployment/bootstrap status
   verify     Validate final manifest and compare it through two RPC providers
   all        Deploy; optionally wait and finalize with --wait-for-timelock
@@ -1193,11 +1240,12 @@ Commands:
 Options:
   --env-file <path>          Default: .env.arbitrum-sepolia.local (safe KEY=VALUE parser)
   --profile formal|debug|sandbox
-                              Default: formal; sandbox deploys unrestricted-mint ctUSD
+                              Default: formal; sandbox uses unrestricted-mint ctUSD
   --state-dir <path>         Default: deployments/arbitrum-sepolia/runtime
+  --pending-manifest <path>  Default: deployments/arbitrum-sepolia/pending.json
   --yes                      Non-interactive; requires CPREDICT_DEPLOYMENT_ACKNOWLEDGEMENT
   --resume                   Resume only a recorded partial deployment broadcast
-  --wait-for-timelock        With all, poll and finalize after the one-hour delay
+  --wait-for-timelock        With all, finalize when ready (sandbox/debug: zero delay)
   --poll-seconds <n>         Timelock polling interval, minimum 5, default 30
   --manifest <path>          Required by verify
   --canary-evidence <path>   Optional strict canary evidence for verify
@@ -1240,7 +1288,7 @@ export async function main(argv = process.argv.slice(2)) {
   if (options.command === "deploy") return await runDeploy(options, config);
   if (options.command === "finalize") return await runFinalize(options, config);
   if (options.command === "all") {
-    if (!(await fileExists(STATIC_PENDING))) await runDeploy(options, config);
+    if (!(await fileExists(config.pendingPath))) await runDeploy(options, config);
     const current = await publicStatus(config);
     if (current.bootstrap?.factoryActive) {
       process.stdout.write(`${JSON.stringify(current, null, 2)}\n`);

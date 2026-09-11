@@ -10,6 +10,14 @@ import { FeeVaultV1 } from "../../src/core/FeeVaultV1.sol";
 import { BondEscrowV1 } from "../../src/core/BondEscrowV1.sol";
 import { FullMarketDeployerV1 } from "../../src/core/FullMarketDeployerV1.sol";
 import { MarketFactoryV1 } from "../../src/core/MarketFactoryV1.sol";
+import { CpredictSandboxToken } from "../../src/testnet/CpredictSandboxToken.sol";
+
+contract SandboxTokenDeploymentHarness is DeployArbitrumSepolia {
+    function deployWithInputs(DeploymentInputs memory inputs) external returns (Deployment memory) {
+        _validateExternalDependencies(inputs);
+        return _deployContracts(inputs);
+    }
+}
 
 contract DeployArbitrumSepoliaBehaviorTest is Test {
     uint256 internal constant ARBITRUM_SEPOLIA_CHAIN_ID = 421_614;
@@ -39,6 +47,8 @@ contract DeployArbitrumSepoliaBehaviorTest is Test {
         vm.setEnv("CPREDICT_SANDBOX_TOKEN_ENABLED", "true");
         vm.setEnv("CPREDICT_DEPLOYMENT_PROFILE", "sandbox");
         vm.setEnv("MARKET_RESOLUTION_WINDOW_SECONDS", "900");
+        vm.setEnv("CPREDICT_EXISTING_SANDBOX_TOKEN", vm.toString(address(0)));
+        vm.setEnv("CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH", vm.toString(bytes32(0)));
     }
 
     function testRejectsWrongChainBeforeReadingDeploymentInputs() public {
@@ -90,6 +100,53 @@ contract DeployArbitrumSepoliaBehaviorTest is Test {
         assertTrue(deployed.timelock.isOperationReady(operationId));
         assertEq(deployed.timelock.getTimestamp(operationId), block.timestamp);
         assertFalse(deployed.factory.active());
+    }
+
+    function testReusesExactSandboxTokenAndPreservesBalances() public {
+        CpredictSandboxToken token = new CpredictSandboxToken();
+        token.mint(treasury, 123e6);
+        DeployArbitrumSepolia.Deployment memory deployed =
+            new SandboxTokenDeploymentHarness().deployWithInputs(_reuseInputs(token));
+        assertEq(address(deployed.sandboxToken), address(token));
+        assertEq(deployed.config.paymentToken(), address(token));
+        assertEq(token.balanceOf(treasury), 123e6);
+        assertEq(deployed.timelock.getMinDelay(), 0);
+    }
+
+    function testRejectsReusedTokenWithWrongCodehash() public {
+        CpredictSandboxToken token = new CpredictSandboxToken();
+        SandboxTokenDeploymentHarness harness = new SandboxTokenDeploymentHarness();
+        DeployArbitrumSepolia.DeploymentInputs memory inputs = _reuseInputs(token);
+        inputs.existingSandboxTokenCodehash = bytes32(uint256(1));
+        vm.expectRevert(bytes("sandbox token codehash mismatch"));
+        harness.deployWithInputs(inputs);
+    }
+
+    function testRejectsTokenReuseOutsideSandbox() public {
+        SandboxTokenDeploymentHarness harness = new SandboxTokenDeploymentHarness();
+        DeployArbitrumSepolia.DeploymentInputs memory inputs =
+            _reuseInputs(new CpredictSandboxToken());
+        inputs.sandboxTokenEnabled = false;
+        vm.expectRevert(bytes("token reuse requires sandbox profile"));
+        harness.deployWithInputs(inputs);
+    }
+
+    function _reuseInputs(CpredictSandboxToken token)
+        internal
+        view
+        returns (DeployArbitrumSepolia.DeploymentInputs memory)
+    {
+        return DeployArbitrumSepolia.DeploymentInputs({
+            deployer: vm.addr(DEPLOYER_KEY),
+            governanceSafe: governanceSafe,
+            emergencySafe: emergencySafe,
+            treasury: treasury,
+            sponsorSigner: sponsorSigner,
+            sandboxTokenEnabled: true,
+            existingSandboxToken: address(token),
+            existingSandboxTokenCodehash: address(token).codehash,
+            resolutionWindow: 900
+        });
     }
 
     function _configureSandbox() internal {

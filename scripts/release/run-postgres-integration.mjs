@@ -28,6 +28,10 @@ export const POSTGRES_INTEGRATION_FILES = Object.freeze(
   POSTGRES_INTEGRATION_INVENTORY.map((entry) => entry.path),
 );
 export const PUBLIC_SITE_POSTGRES_INVENTORY = Object.freeze([
+  Object.freeze({
+    path: "offchain/app-service/test/deployment-rollover.integration.test.ts",
+    tests: 4,
+  }),
   ...POSTGRES_INTEGRATION_INVENTORY,
   Object.freeze({
     path: "offchain/app-service/test/postgres.integration.test.ts",

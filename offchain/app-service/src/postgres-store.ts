@@ -387,7 +387,7 @@ export class PostgresApplicationStore implements ApplicationStore {
       }
       const rows = await tx<
         OperationRow[]
-      >`SELECT record,subject,idempotency_key,request_hash FROM app_operations
+      >`SELECT record,subject,idempotency_key,request_hash FROM app_quota_operations
         WHERE created_at >= ${quotaHistoryStart(o.createdAt)}
         OR updated_at >= ${quotaHistoryStart(o.createdAt)}
         OR state IN ('preparing','awaiting-signature','submitted','confirming','unknown')`;

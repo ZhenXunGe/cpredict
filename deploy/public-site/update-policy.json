@@ -13,7 +13,8 @@
     "offchain/metadata-service/migrations/001_metadata.sql": "7d322251d2f4d3e630d3aee566933fdc28de568254b4f41fd20da06e4daf53ba",
     "offchain/app-service/migrations/001_application.sql": "1711ccbc3450f3e71b0fd223ed33c85839088fa1731971b18c1a8f8c5b98e07c",
     "offchain/app-service/migrations/002_operational_queries.sql": "b6cc36d028d61609e473644ae3cc55da8f912502055526b7febb6d8c0956cb24",
-    "offchain/app-service/migrations/003_usdc_deposits.sql": "36e4164520a3158dca4817995350df1cbd42500a855bf146d2e9a5a915283883"
+    "offchain/app-service/migrations/003_usdc_deposits.sql": "36e4164520a3158dca4817995350df1cbd42500a855bf146d2e9a5a915283883",
+    "offchain/app-service/migrations/004_deployment_carryover.sql": "744ed85e12f06ffcc3ba18661aca097f71b9ebeb5890aa90fffc537dfe885a58"
   },
   "projectionInputs": [
     "offchain/indexer/src/derived.ts",

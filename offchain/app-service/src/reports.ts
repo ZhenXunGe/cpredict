@@ -116,7 +116,7 @@ export class PostgresReports implements ReportingStore {
         FROM app_operations WHERE state IN ('submitted','confirming','unknown')`;
       const [index] = await db<{ indexed_block: string | null }[]>`SELECT indexed_block::text FROM ledger_environment WHERE singleton=true`;
       const reserved = this.sponsor ? await db<{ lane: "exposure" | "exit"; cost: string }[]>`
-        SELECT lane,sum(max_gas_cost)::text AS cost FROM app_operations
+        SELECT lane,sum(max_gas_cost)::text AS cost FROM app_quota_operations
         WHERE (created_at>=${week.start} AND created_at<${week.end})
           OR (created_at<${week.start} AND (state IN ('preparing','awaiting-signature','submitted','confirming','unknown') OR updated_at>=${week.start}))
         GROUP BY lane` : [];
@@ -268,12 +268,12 @@ export class PostgresReports implements ReportingStore {
           reset = new Date(midnight.getTime() + 86400000).toISOString();
         const budgets = await db<
           { lane: "exposure" | "exit"; cost: string; count: string }[]
-        >`SELECT lane,sum(max_gas_cost)::text AS cost,count(*)::text AS count FROM app_operations WHERE created_at>=${midnight} GROUP BY lane`;
+        >`SELECT lane,sum(max_gas_cost)::text AS cost,count(*)::text AS count FROM app_quota_operations WHERE created_at>=${midnight} GROUP BY lane`;
         const week = weeklyBudgetWindow(now);
         const weeklyBudgets = this.sponsor
           ? await db<
               { lane: "exposure" | "exit"; cost: string }[]
-            >`SELECT lane,sum(max_gas_cost)::text AS cost FROM app_operations
+            >`SELECT lane,sum(max_gas_cost)::text AS cost FROM app_quota_operations
           WHERE (created_at>=${week.start} AND created_at<${week.end})
             OR (created_at<${week.start} AND (
               state IN ('preparing','awaiting-signature','submitted','confirming','unknown')

@@ -9,6 +9,7 @@ import {
   SANDBOX_TOKEN_KIND,
   USDC,
   extractFingerprint,
+  existingSandboxTokenConfig,
   forgeEnvironment,
   parseArgs,
   parseEnvText,
@@ -139,6 +140,19 @@ test("pending manifest binds canonical Arbitrum Sepolia dependencies", () => {
     () => validatePendingManifest(sandbox, { profile: "debug" }),
     /does not match debug profile/,
   );
+});
+
+test("existing ctUSD reuse is explicit, hash-bound and sandbox-only", () => {
+  const env = { CPREDICT_EXISTING_SANDBOX_TOKEN: address(99), CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH: hash(123) };
+  assert.equal(existingSandboxTokenConfig(env, "sandbox").address.toLowerCase(), address(99));
+  assert.equal(existingSandboxTokenConfig({}, "sandbox"), undefined);
+  for (const profile of ["formal", "debug"]) assert.throws(() => existingSandboxTokenConfig(env, profile), /sandbox profile/);
+  assert.throws(() => existingSandboxTokenConfig({ ...env, CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH: undefined }, "sandbox"), /bytes32/);
+  assert.throws(() => existingSandboxTokenConfig({ ...env, CPREDICT_EXISTING_SANDBOX_TOKEN: USDC }, "sandbox"), /canonical USDC/);
+  assert.throws(() => validatePendingManifest({ ...pendingManifest(), paymentTokenReused: true }), /codehash evidence/);
+  const pending = { ...pendingManifest(), paymentTokenKind: SANDBOX_TOKEN_KIND, usdc: address(99), paymentTokenReused: true, paymentTokenRuntimeCodehash: hash(123) };
+  assert.equal(validatePendingManifest(pending).paymentTokenReused, true);
+  assert.equal(parseArgs(["deploy", "--pending-manifest", "/tmp/new-pending.json"]).pendingPath, "/tmp/new-pending.json");
 });
 
 test("broadcast evidence requires enough successful transaction receipts", () => {

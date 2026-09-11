@@ -13,6 +13,7 @@ import { verifyInPlaceUpgrade } from "../stack/in-place-upgrade-proof.mjs";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const pg = resolve(root, ".tools/postgresql-17.10/bin");
 const inventory = [
+  "offchain/app-service/test/deployment-rollover.integration.test.ts",
   "offchain/app-service/test/postgres.integration.test.ts",
   "offchain/indexer/test/financial-postgres.integration.test.ts",
   "offchain/indexer/test/postgres.integration.test.ts",
@@ -116,11 +117,11 @@ try {
     !report.success ||
     report.numPendingTests !== 0 ||
     report.numTodoTests !== 0 ||
-    report.numTotalTests !== 27 ||
-    report.numPassedTests !== 27
+    report.numTotalTests !== 31 ||
+    report.numPassedTests !== 31
   )
     throw new Error(
-      "public-site PostgreSQL tests must all execute and pass (27 expected)",
+      "public-site PostgreSQL tests must all execute and pass (31 expected)",
     );
   process.stdout.write(
     `Public-site PostgreSQL: ${report.numPassedTests}/${report.numTotalTests} passed, no skipped tests.\n`,
