@@ -94,7 +94,7 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high"
   },
   "dependencies": {
-    "@fastify/helmet": "13.1.0",
+    "@fastify/helmet": "13.1.1",
     "@fastify/rate-limit": "11.2.0",
     "@privy-io/react-auth": "3.40.0",
     "@radix-ui/react-dialog": "1.1.23",
