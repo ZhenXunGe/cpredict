@@ -925,8 +925,12 @@
       "sha256": "a6240e88ad9592cf30cc8ea70df8ce44cc33d0af038a946294294a894a0eea07"
     },
     {
+      "path": "offchain/app-service/src/maintenance-database.ts",
+      "sha256": "c53dd3ab39c9f46ae0f8ee96dd292ccea7407d3696012130aeca4505d7c40d63"
+    },
+    {
       "path": "offchain/app-service/src/maintenance.ts",
-      "sha256": "8a6ea0affb30aa7c053071beebae6e3df0d880aed1c4c22373e123cad92fe590"
+      "sha256": "c8a2aadd87dd32db7840bee3996a2e25df62de18fed4799918636b7f51616137"
     },
     {
       "path": "offchain/app-service/src/metrics.ts",
@@ -991,6 +995,10 @@
     {
       "path": "offchain/app-service/test/gateway.test.ts",
       "sha256": "9bfe0b04b744f63f55c71fc6a8ca967819e56ba1c02c4d14e8bc1b4aa4228d96"
+    },
+    {
+      "path": "offchain/app-service/test/maintenance-database.test.ts",
+      "sha256": "4e30fe1f3486436c900f16519b41f512d8b2ff7781c1a0d06d0c57a3058dbc38"
     },
     {
       "path": "offchain/app-service/test/memory-store.ts",
