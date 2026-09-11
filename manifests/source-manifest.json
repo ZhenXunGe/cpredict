@@ -2182,7 +2182,7 @@
     },
     {
       "path": "scripts/stack/public-update-core.mjs",
-      "sha256": "131b427ec4fc2e2a9b27dd759aff0e211341b3282e1c38390f8f683b2550d20a"
+      "sha256": "68a6b07b0f752bd88ad4d8c67c5b32be534553433f71c394cc58bcacf068691e"
     },
     {
       "path": "scripts/stack/public-update-plan.mjs",
@@ -2206,7 +2206,7 @@
     },
     {
       "path": "scripts/stack/public-update.test.mjs",
-      "sha256": "0bf1fcb7e7a95ac846b88f0d15a76c94b1cdb31a587fad835d14abcba2eb2068"
+      "sha256": "74465ff18ddff29da8377db5c2cee7bd2e44b4f0c1210eef020191eca8a87b68"
     },
     {
       "path": "scripts/stack/redact.mjs",
