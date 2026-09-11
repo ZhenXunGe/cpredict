@@ -902,7 +902,7 @@
     },
     {
       "path": "offchain/app-service/src/http.ts",
-      "sha256": "e587cee968ba2c26e26c161acbef8cdc0c6cc1f5a52fbc7a3f4899236a074ee5"
+      "sha256": "eb06abe847f153a847e3f310e805176db3389c228eb60ba630c4f9ad1c6f3906"
     },
     {
       "path": "offchain/app-service/src/main.ts",
@@ -942,7 +942,7 @@
     },
     {
       "path": "offchain/app-service/src/server.ts",
-      "sha256": "1656055e41adac069a922490f2df939e3cef3128c7c13090b2dde1121e2ca8ea"
+      "sha256": "0d1bb5c554b992b52e7e59836d4a312afaaed5e0569c97dd1469f75dcf629d11"
     },
     {
       "path": "offchain/app-service/src/store.ts",
@@ -983,6 +983,10 @@
     {
       "path": "offchain/app-service/test/provider-management.test.ts",
       "sha256": "fdc50dbf9a36ca489eb835dc2882c4f77289a496e6ce6006a0398c550f33674d"
+    },
+    {
+      "path": "offchain/app-service/test/read-rpc.test.ts",
+      "sha256": "a4da88718cccb82283c8248e4aaf6a43b7b6935faf036d13d4c6f0e37f5fcf4c"
     },
     {
       "path": "offchain/app-service/test/recovery.test.ts",

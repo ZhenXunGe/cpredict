@@ -15,7 +15,7 @@ import {
 import type { IdentityVerifier } from "./auth.js";
 import type { AuthenticatedAAGateway } from "./gateway.js";
 import { rpcRequestSchema } from "./gateway.js";
-import type { RpcTransport } from "./http.js";
+import { ProviderCallError, type RpcTransport } from "./http.js";
 import type { OperationService } from "./operations.js";
 import { readRpc } from "./read-rpc.js";
 import type { OperationRecovery } from "./recovery.js";
@@ -382,13 +382,28 @@ export async function createApplicationServer(options: {
   );
   app.post("/v1/rpc", async (request) => {
     const rpc = rpcRequestSchema
-      .extend({ params: z.array(z.unknown()).max(3) })
+      .extend({ params: z.array(z.unknown()).max(3).default([]) })
       .parse(request.body);
-    return {
-      jsonrpc: "2.0",
-      id: rpc.id,
-      result: await readRpc(options.chainRpc, rpc.method, rpc.params),
-    };
+    try {
+      return {
+        jsonrpc: "2.0",
+        id: rpc.id,
+        result: await readRpc(options.chainRpc, rpc.method, rpc.params),
+      };
+    } catch (error) {
+      if (!(error instanceof ProviderCallError)) throw error;
+      // EntryPoint.getSenderAddress returns the address via a custom error.
+      // The SDK needs a JSON-RPC error, not HTTP 503; never forward diagnostics.
+      return {
+        jsonrpc: "2.0",
+        id: rpc.id,
+        error: {
+          code: error.rpcCode,
+          message: "execution reverted",
+          data: error.data,
+        },
+      };
+    }
   });
   app.setErrorHandler(async (error, _request, reply) => {
     const e =
