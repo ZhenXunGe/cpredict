@@ -18,6 +18,7 @@ export const migrationPaths = [
   "offchain/app-service/migrations/002_operational_queries.sql",
   "offchain/app-service/migrations/003_usdc_deposits.sql",
   "offchain/app-service/migrations/004_deployment_carryover.sql",
+  "offchain/app-service/migrations/005_gas_accounting.sql",
 ];
 
 /** Existing migration registry and checksums, shared by maintenance commands. */

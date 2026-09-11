@@ -543,6 +543,12 @@ function OperationDetail({
                   ? "已达到应用确认数"
                   : "等待链上确认"}
             </dd>
+            <dt>Gas 支付方式</dt>
+            <dd>
+              {scoped.gasPayment === "self-funded"
+                ? "智能账户自行支付 ETH"
+                : "项目代付"}
+            </dd>
             <dt>实际 Gas 成本（ETH）</dt>
             <dd>
               {scoped.actualGasCost === null

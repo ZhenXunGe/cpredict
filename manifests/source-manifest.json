@@ -162,7 +162,7 @@
     },
     {
       "path": "deploy/public-site/update-policy.json",
-      "sha256": "eb3179697e08663ed4d0b4f5afb5f74be8bd0379a0e43b45d6063420ab82b2f3"
+      "sha256": "2cd3d8e8faf928fd3e65f9cc2392d95f96a8b3c1771da11c17d94b10afb5f786"
     },
     {
       "path": "deploy/public-site/update.example.json",
@@ -210,7 +210,7 @@
     },
     {
       "path": "docs/public-test-site-contract.md",
-      "sha256": "7eb2dac66d4c6267a1891b799a99dd149c181fb78574a519105a7bab343fb6c8"
+      "sha256": "9a13ff97c41a9bb29929ebc9c04d6d7c765197d56d8af8df1453f08f595efb45"
     },
     {
       "path": "docs/public-test-site-license-review.md",
@@ -222,7 +222,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "62f0587301f311ed4dc15cf701b64fd0b8132c44f70c71dd0cd9e7ff834303e4"
+      "sha256": "45b7f3ce04cabd2a51b1ad7ee1c000d05e322485120955026b456a759d125955"
     },
     {
       "path": "docs/usdc-gasless-deposit.md",
@@ -333,6 +333,10 @@
       "sha256": "96e80fc83b56bb6f09b1fa33aeef8fcd93868d671fa80588ef995ecf1ea6e5d7"
     },
     {
+      "path": "examples/user-site/src/GasPayment.tsx",
+      "sha256": "e225cb73118816b6196a3088365eead0033fa7c7d967a2eab56a91cb7505550b"
+    },
+    {
       "path": "examples/user-site/src/GaslessDeposit.tsx",
       "sha256": "222fc3a8cc931352b2e8c7b67428ad0ccb1d5ef6aad3bd283f931eb459e387a0"
     },
@@ -342,7 +346,7 @@
     },
     {
       "path": "examples/user-site/src/api.ts",
-      "sha256": "eb2ce2cfa0943c2c13f859498bcd3410b6cb325cda83c93c8f1788ab35852332"
+      "sha256": "48a510c9ef0450d01b7874f91b303efce27bd0b6030d67b7456b5db97bca0874"
     },
     {
       "path": "examples/user-site/src/connected-wallets.tsx",
@@ -357,6 +361,10 @@
       "sha256": "6d687f9eb25720f5931152d43a824b9ada0b030f7ac56c647d73bdb471de97b9"
     },
     {
+      "path": "examples/user-site/src/gas-payment.ts",
+      "sha256": "70233c7d0108debeec0217c98b60bd1d5788904f18190076877022cadc4e2768"
+    },
+    {
       "path": "examples/user-site/src/main.tsx",
       "sha256": "ad5454b6e69879d1237a2475c2838f176e1e796667f7f4d5e5ae919a569e185d"
     },
@@ -366,23 +374,23 @@
     },
     {
       "path": "examples/user-site/src/operation-client.ts",
-      "sha256": "4fa16263a56e01ffb37353df143fcd412b0689635d7279960ecf880d50bdcc76"
+      "sha256": "002a2b2074d71420fafd9597e1bb08f4bed3f9e45e6a489ee2fd8c71a70c71fd"
     },
     {
       "path": "examples/user-site/src/operations.tsx",
-      "sha256": "f3024e566171a0dc89a308449707c5fc53360351a3f434439e5b5fb0f522c6ac"
+      "sha256": "16308c35e78d30294007b6072ebcd010254753db894e8a335221608d9673be5e"
     },
     {
       "path": "examples/user-site/src/pages/Assets.tsx",
-      "sha256": "6cebec2d7d308997f57665a34730927c0e91723a2e9b88ea075e96dac11379d2"
+      "sha256": "4f9ae4199a8c4a83510e115925e8396738c27d01d521dca2d84dffb8fb0d463a"
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "3230891f6c14ab0231c55f7c0fd4fe27d7740647fc6409c31bde075f93f1090e"
+      "sha256": "19118d1b4ca8d02a6a2a19802aac03ffb61d4a8443ef56f3757cbdcf0755e934"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
-      "sha256": "167afb279f151bfbc4593ff4a8b71b50daf75103b30243ac989a4b80acd23d02"
+      "sha256": "757a1c9a00ad6224b2ee006c407767cff83cbe47ac95ec0c6e1c95c8a02a0663"
     },
     {
       "path": "examples/user-site/src/pages/FeedbackInbox.tsx",
@@ -390,15 +398,15 @@
     },
     {
       "path": "examples/user-site/src/pages/Help.tsx",
-      "sha256": "3fc257500d9910ee07223c3550de195ec676b3bd67c2541c4c0551a77c92ce94"
+      "sha256": "b3c77d1b3a06f6587e6bd0f5e0341b6174a22bdac7b8f8d4af674cfccf4832e6"
     },
     {
       "path": "examples/user-site/src/pages/History.tsx",
-      "sha256": "46aeadd87a7b1c2d05811593cd4a41eb3e2dc232cf1bab155df51a811f3451b0"
+      "sha256": "a4cf0fec9488e02478bce4b9dd139039a77fb08015c77ef783b961d7ffe4338d"
     },
     {
       "path": "examples/user-site/src/pages/MarketDetail.tsx",
-      "sha256": "bc70f123abb956136718f32220bd9b0615b8d6fa638e11497dae642d4e57467d"
+      "sha256": "d95c726f76a044351f5c40776e1fda3e9b3d62ef5ce54bf0d82493dec999ff28"
     },
     {
       "path": "examples/user-site/src/pages/Markets.tsx",
@@ -410,7 +418,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Reports.tsx",
-      "sha256": "0406c45194e87310d5f211677377994ad8df347799a80277f75f3ac3dda264eb"
+      "sha256": "6e52f2c9e1dc4a548fd4f11ca89247b7bf77af071edb046d8e159d0ef10b6f8f"
     },
     {
       "path": "examples/user-site/src/recovery.tsx",
@@ -454,7 +462,11 @@
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "97b10b3a1774a8b6347d83835961c31447d427efae8dcdf402daa61327b0af8d"
+      "sha256": "1da16d3b43bf3ac746cdc7d65b41d2f120532bbcd9661aee56a82f16519f70e3"
+    },
+    {
+      "path": "examples/user-site/test/browser/gas-payment.spec.ts",
+      "sha256": "afae32056b009019596cb8c06166e0ad8d304098e1480a6a1fc6531f2c565e22"
     },
     {
       "path": "examples/user-site/test/browser/playwright.config.ts",
@@ -477,8 +489,16 @@
       "sha256": "97582deb1214bbc878d1b71f3694cb6057046c0a80ddb5925b6c41ac912fd401"
     },
     {
+      "path": "examples/user-site/test/gas-payment.test.ts",
+      "sha256": "df41ee96c79e209583faa685184e3d056b3a26781d99eed13d71127bd3eb2a10"
+    },
+    {
       "path": "examples/user-site/test/metadata.test.ts",
       "sha256": "934a92ed5387140d7700894b9f83f79cd09f5d14926d30feb9bbd5e76a35ad35"
+    },
+    {
+      "path": "examples/user-site/test/operation-client.test.ts",
+      "sha256": "4f8ecc73ec96a44b24ec2f122b1c811ce2e905be5c445cf990ab051e99b53320"
     },
     {
       "path": "examples/user-site/tsconfig.json",
@@ -494,7 +514,7 @@
     },
     {
       "path": "generated/public-site/contracts.json",
-      "sha256": "3670db1e5f39e05895770690f6c75bc5c0512456e0a9d663594e80e57b3a1ef1"
+      "sha256": "e675c506076b055c82833d32b4247e950cdfd0bf1bdb4c681263d1a1477d0e11"
     },
     {
       "path": "load/README.md",
@@ -798,7 +818,7 @@
     },
     {
       "path": "offchain/app-core/src/contracts.ts",
-      "sha256": "19f10663f043ee18fe83c012946269a8def4cae7ffec821b713c6e396519c4a7"
+      "sha256": "50eae09e5d0b24543962d70f720d0dfe3e79bd70b81b7a2ac8d8d103819315b1"
     },
     {
       "path": "offchain/app-core/src/entitlements.ts",
@@ -901,12 +921,16 @@
       "sha256": "744ed85e12f06ffcc3ba18661aca097f71b9ebeb5890aa90fffc537dfe885a58"
     },
     {
+      "path": "offchain/app-service/migrations/005_gas_accounting.sql",
+      "sha256": "0b2fe4e8edc5584090341a7a41c22a622ec88653813558a4f0e9494e06f6db25"
+    },
+    {
       "path": "offchain/app-service/src/auth.ts",
       "sha256": "3578d94e8f65a21d5f8fcb660605d10bfaa788e4c19f7f0e19984ed18fcf4ee2"
     },
     {
       "path": "offchain/app-service/src/budget.ts",
-      "sha256": "d766e7c6198b19c03e4131ce4b475e42977fe105e62e62f3d7a27b0539009094"
+      "sha256": "86e4934efd6d0703b725fcd3a021a787f084d3316e033f256862527f5cea54c2"
     },
     {
       "path": "offchain/app-service/src/chain.ts",
@@ -918,7 +942,7 @@
     },
     {
       "path": "offchain/app-service/src/deployment-rollover.ts",
-      "sha256": "6367209c96d404cfa3f5de150d9b2437ad2cedcd7067d9e477209ebb8ed73480"
+      "sha256": "07e50ec3c762308cbb0d2413c1cfd34c05d894ca737299424bd1ebdc68a34796"
     },
     {
       "path": "offchain/app-service/src/deposits.ts",
@@ -926,11 +950,11 @@
     },
     {
       "path": "offchain/app-service/src/gateway.ts",
-      "sha256": "0d84297da8e947d8c62c1cd4077b275e6e0ae869f26e55ae99a25f3e94f814c2"
+      "sha256": "f2cdd0f3d8fd65f8437e741c30b5582221a2b544d84992673ab1c4db7afca69f"
     },
     {
       "path": "offchain/app-service/src/http.ts",
-      "sha256": "eb06abe847f153a847e3f310e805176db3389c228eb60ba630c4f9ad1c6f3906"
+      "sha256": "bb372010db812d9ab38d3e3882e877e5ad6240a93f6354358bf09a133f58515e"
     },
     {
       "path": "offchain/app-service/src/main.ts",
@@ -946,19 +970,19 @@
     },
     {
       "path": "offchain/app-service/src/metrics.ts",
-      "sha256": "260eb589e8ebda3a4472714cfaa17ca38c7a218305d0bf4ec18ae3ecc489286b"
+      "sha256": "1d03fa51db18027d9eab1819b4c3cd1f65c89b323fe57c88c6dfbc5eed370b9a"
     },
     {
       "path": "offchain/app-service/src/migrations.ts",
-      "sha256": "01ec4f8f8bcd90899493f7d6d9056684b952cdcd7a55e3933b291686cd94886e"
+      "sha256": "36efc6fc4450a9112ec681ae394d7dca5e0a8448097e826e18b059d1a100cbf0"
     },
     {
       "path": "offchain/app-service/src/operations.ts",
-      "sha256": "d384f57d1a5e7880037efb8665332f59e841fb58d608fb4f2524f13f882f9635"
+      "sha256": "7bbbcd617f0eab9ad3680f2f56e5428e81494e02171a258115ae2fa4bf853dfa"
     },
     {
       "path": "offchain/app-service/src/postgres-store.ts",
-      "sha256": "e190a18fed0c235cdbfc69600421637859756d4babcb90da9b928a43151ed7ce"
+      "sha256": "6bc329b698a2283be57f5aae1ab8e6d0a2876471fa3280e666d97479a7bf12d8"
     },
     {
       "path": "offchain/app-service/src/provider-management.ts",
@@ -970,19 +994,19 @@
     },
     {
       "path": "offchain/app-service/src/recovery.ts",
-      "sha256": "cbdf07f2aab6942ad8a65406f9cc19a554d2bbc39c328b63f4575951281fc3d8"
+      "sha256": "d140d346c0bd59fc9f0f24af4acd0f6ff289fbeae183f47606ca47b8f7f4964d"
     },
     {
       "path": "offchain/app-service/src/reports.ts",
-      "sha256": "ffd16a0c769380f2d67e1304e2f4e2fc4c1a21fd0a1b5e31c356d8733520cf0e"
+      "sha256": "7c486b7b3da2c5b42aadae132006a2e481b89293065d80d1cd2946a3e4804d3d"
     },
     {
       "path": "offchain/app-service/src/server.ts",
-      "sha256": "0d1bb5c554b992b52e7e59836d4a312afaaed5e0569c97dd1469f75dcf629d11"
+      "sha256": "6787b649ad241eb61e39e262eee1df26cf4272b0a906fa489939aa09d2c1b5d0"
     },
     {
       "path": "offchain/app-service/src/store.ts",
-      "sha256": "08055c90f81f4f9e859d4f48f7ad9c128dad6b23c8950d04fe7898d526a9272b"
+      "sha256": "7f2876b8076d12f72c01089e8c3d83f0aa6ef91dd13303417bdc57586f6e14d3"
     },
     {
       "path": "offchain/app-service/test/auth.test.ts",
@@ -990,7 +1014,7 @@
     },
     {
       "path": "offchain/app-service/test/budget.test.ts",
-      "sha256": "d013d3aa371109be589025aea91299df6b3cd616971c316a52f78de871f0ca04"
+      "sha256": "2b7b1065d4defa9080cf74ae70b0b2223ed5a7db89e126a5be84cfc1f014676b"
     },
     {
       "path": "offchain/app-service/test/config.test.ts",
@@ -1006,7 +1030,7 @@
     },
     {
       "path": "offchain/app-service/test/gateway.test.ts",
-      "sha256": "9bfe0b04b744f63f55c71fc6a8ca967819e56ba1c02c4d14e8bc1b4aa4228d96"
+      "sha256": "77aa2974faeb33f53761b9f9e7ccf42260fe9d577250361393506d4d7247f54a"
     },
     {
       "path": "offchain/app-service/test/maintenance-database.test.ts",
@@ -1014,7 +1038,7 @@
     },
     {
       "path": "offchain/app-service/test/memory-store.ts",
-      "sha256": "330de0b9d56aa23300b0ce2beeebac6ee34b365a7e5aa5d814bae49bf93c2464"
+      "sha256": "adfc951c6181f53440a34fb007981e819235855d91f57e9f10fdea6ff7c80632"
     },
     {
       "path": "offchain/app-service/test/metrics.test.ts",
@@ -1022,7 +1046,7 @@
     },
     {
       "path": "offchain/app-service/test/postgres.integration.test.ts",
-      "sha256": "0278227d9f43426d3bd17ccb178ca4206d7c4179bb54b8e63e3aa5ebeaafe6a9"
+      "sha256": "b0c3c4e95cbae6f138ac475cf03714c69870b57bfc58bc5cd414bd13b0854732"
     },
     {
       "path": "offchain/app-service/test/provider-management.test.ts",
@@ -1030,7 +1054,7 @@
     },
     {
       "path": "offchain/app-service/test/read-rpc.test.ts",
-      "sha256": "a4da88718cccb82283c8248e4aaf6a43b7b6935faf036d13d4c6f0e37f5fcf4c"
+      "sha256": "332b086771b499666395beb9ac3556e9c5342ccf149f5a17c818adea4f62e096"
     },
     {
       "path": "offchain/app-service/test/recovery.test.ts",
@@ -1202,7 +1226,7 @@
     },
     {
       "path": "offchain/indexer/test/reports-postgres.integration.test.ts",
-      "sha256": "595cd484af049ee7f172915ba662ec3cdcb0c6d13712fe5fbe31e649f5663a3b"
+      "sha256": "5cbd7d408ac747e1cc366a9ec79603190c6cab3019d0552d90e4c0f41a850baf"
     },
     {
       "path": "offchain/indexer/test/scheduler.test.ts",

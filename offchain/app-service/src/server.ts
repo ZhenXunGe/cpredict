@@ -7,6 +7,7 @@ import {
   address,
   bytes,
   intentSchema,
+  gasPaymentSchema,
   registerOperationSchema,
   depositPrepareSchema,
   depositReportQuerySchema,
@@ -281,9 +282,18 @@ export async function createApplicationServer(options: {
   app.post("/v1/operations/prepare", async (request) => {
     const identity = await authenticate(request);
     const body = z
-      .strictObject({ accountId: z.string().uuid(), intent: intentSchema })
+      .strictObject({
+        accountId: z.string().uuid(),
+        intent: intentSchema,
+        gasPayment: gasPaymentSchema.optional(),
+      })
       .parse(request.body);
-    return service.prepare(identity, body.accountId, body.intent);
+    return service.prepare(
+      identity,
+      body.accountId,
+      body.intent,
+      body.gasPayment,
+    );
   });
   for (const path of ["/v1/operations", "/v1/faucet/claims"])
     app.post(path, async (request, reply) => {

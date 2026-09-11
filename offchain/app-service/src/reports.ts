@@ -1,6 +1,10 @@
 import postgres from "postgres";
 import { z } from "zod";
-import { AppError, type Environment } from "../../app-core/src/contracts.js";
+import {
+  AppError,
+  operationSchema,
+  type Environment,
+} from "../../app-core/src/contracts.js";
 import { financialOrder } from "../../app-core/src/pnl.js";
 import { ledgerFactSchema } from "../../app-core/src/ledger-contracts.js";
 import { feeCategory } from "../../app-core/src/fees.js";
@@ -14,7 +18,12 @@ import {
   type telemetrySchema,
 } from "../../app-core/src/report-contracts.js";
 import type { SponsorConfig } from "./config.js";
-import { weeklyBudgetWindow, weeklyLaneLimit } from "./budget.js";
+import {
+  budgetTotals,
+  quotaHistoryStart,
+  weeklyBudgetWindow,
+  weeklyLaneLimit,
+} from "./budget.js";
 import type { ApplicationMonitorState } from "./metrics.js";
 export interface ReportingStore {
   telemetry(
@@ -25,7 +34,9 @@ export interface ReportingStore {
     input: z.infer<typeof feedbackSchema>,
     subject: string,
   ): Promise<void>;
-  feedbackPage(query: z.infer<typeof feedbackQuerySchema>): Promise<FeedbackPage>;
+  feedbackPage(
+    query: z.infer<typeof feedbackQuerySchema>,
+  ): Promise<FeedbackPage>;
   serviceEvent(code: string): Promise<void>;
   report(start: Date, end: Date, now?: Date): Promise<OpsReport>;
 }
@@ -44,6 +55,18 @@ export class PostgresReports implements ReportingStore {
   }
   async close() {
     await this.sql.end({ timeout: 5 });
+  }
+  private async budgetUsage(db: Pick<postgres.Sql, "unsafe">, now: Date) {
+    const rows = await db.unsafe<{ record: unknown }[]>(
+      `SELECT record || billing AS record FROM app_quota_operations
+       WHERE created_at >= $1 OR updated_at >= $1
+       OR state IN ('preparing','awaiting-signature','submitted','confirming','unknown')`,
+      [quotaHistoryStart(now.toISOString())],
+    );
+    return budgetTotals(
+      rows.map((r) => operationSchema.parse(r.record)),
+      now,
+    );
   }
   async telemetry(
     input: z.infer<typeof telemetrySchema>,
@@ -80,19 +103,45 @@ export class PostgresReports implements ReportingStore {
     if (!/^[a-z_]{1,64}$/.test(code)) return;
     await this.sql`INSERT INTO app_service_events(code) VALUES(${code})`;
   }
-  async feedbackPage(query: z.infer<typeof feedbackQuerySchema>): Promise<FeedbackPage> {
+  async feedbackPage(
+    query: z.infer<typeof feedbackQuerySchema>,
+  ): Promise<FeedbackPage> {
     const q = feedbackQuerySchema.parse(query);
-    const scope = JSON.stringify([this.environment.id, this.environment.deployment.id, q.id ?? null, q.operationId ?? null]);
-    const cursorSchema = z.strictObject({ scope: z.literal(scope), snapshot: z.string().datetime(), before: z.string().datetime(), id: z.string().uuid() });
+    const scope = JSON.stringify([
+      this.environment.id,
+      this.environment.deployment.id,
+      q.id ?? null,
+      q.operationId ?? null,
+    ]);
+    const cursorSchema = z.strictObject({
+      scope: z.literal(scope),
+      snapshot: z.string().datetime(),
+      before: z.string().datetime(),
+      id: z.string().uuid(),
+    });
     let cursor: z.infer<typeof cursorSchema> | undefined;
     if (q.cursor) {
-      try { cursor = cursorSchema.parse(JSON.parse(Buffer.from(q.cursor, "base64url").toString("utf8"))); }
-      catch { throw new AppError("invalid_cursor", 400); }
+      try {
+        cursor = cursorSchema.parse(
+          JSON.parse(Buffer.from(q.cursor, "base64url").toString("utf8")),
+        );
+      } catch {
+        throw new AppError("invalid_cursor", 400);
+      }
     }
     // Feedback records are immutable and timestamped by the database. Bind every
     // page to the first query's upper time bound, filters and deployment.
     const snapshotAt = cursor?.snapshot ?? new Date().toISOString();
-    const rows = await this.sql<{ id: string; account_id: string | null; operation_id: string | null; message: string; received_at: Date; received_precise: string }[]>`
+    const rows = await this.sql<
+      {
+        id: string;
+        account_id: string | null;
+        operation_id: string | null;
+        message: string;
+        received_at: Date;
+        received_precise: string;
+      }[]
+    >`
       SELECT id,account_id,operation_id,message,received_at,
         to_char(received_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS received_precise
       FROM app_feedback WHERE received_at<=${snapshotAt}
@@ -100,35 +149,67 @@ export class PostgresReports implements ReportingStore {
         ${q.operationId ? this.sql`AND operation_id=${q.operationId}` : this.sql``}
         ${cursor ? this.sql`AND (received_at,id)<(${cursor.before}::text::timestamptz,${cursor.id}::uuid)` : this.sql``}
       ORDER BY received_at DESC,id DESC LIMIT ${q.limit + 1}`;
-    const page = rows.slice(0, q.limit), last = page.at(-1);
+    const page = rows.slice(0, q.limit),
+      last = page.at(-1);
     return feedbackPageSchema.parse({
-      environment: this.environment.id, deploymentId: this.environment.deployment.id, snapshotAt,
-      items: page.map((row) => ({ id: row.id, accountId: row.account_id, operationId: row.operation_id, message: row.message, receivedAt: row.received_at.toISOString() })),
-      nextCursor: rows.length > q.limit && last ? Buffer.from(JSON.stringify({ scope, snapshot: snapshotAt, before: last.received_precise, id: last.id })).toString("base64url") : null,
+      environment: this.environment.id,
+      deploymentId: this.environment.deployment.id,
+      snapshotAt,
+      items: page.map((row) => ({
+        id: row.id,
+        accountId: row.account_id,
+        operationId: row.operation_id,
+        message: row.message,
+        receivedAt: row.received_at.toISOString(),
+      })),
+      nextCursor:
+        rows.length > q.limit && last
+          ? Buffer.from(
+              JSON.stringify({
+                scope,
+                snapshot: snapshotAt,
+                before: last.received_precise,
+                id: last.id,
+              }),
+            ).toString("base64url")
+          : null,
     });
   }
   async monitor(now = new Date()): Promise<ApplicationMonitorState> {
     const week = weeklyBudgetWindow(now);
-    return this.sql.begin("isolation level repeatable read read only", async (db) => {
-      const [pending] = await db<{ pending: string; unknown: string; oldest: string }[]>`
+    return this.sql.begin(
+      "isolation level repeatable read read only",
+      async (db) => {
+        const [pending] = await db<
+          { pending: string; unknown: string; oldest: string }[]
+        >`
         SELECT count(*)::text AS pending,count(*) FILTER (WHERE state='unknown')::text AS unknown,
         GREATEST(COALESCE(EXTRACT(EPOCH FROM (${now}::timestamptz-min(created_at))),0),0)::text AS oldest
         FROM app_operations WHERE state IN ('submitted','confirming','unknown')`;
-      const [index] = await db<{ indexed_block: string | null }[]>`SELECT indexed_block::text FROM ledger_environment WHERE singleton=true`;
-      const reserved = this.sponsor ? await db<{ lane: "exposure" | "exit"; cost: string }[]>`
-        SELECT lane,sum(max_gas_cost)::text AS cost FROM app_quota_operations
-        WHERE (created_at>=${week.start} AND created_at<${week.end})
-          OR (created_at<${week.start} AND (state IN ('preparing','awaiting-signature','submitted','confirming','unknown') OR updated_at>=${week.start}))
-        GROUP BY lane` : [];
-      return {
-        pending: Number(pending?.pending ?? 0), unknown: Number(pending?.unknown ?? 0), oldestPendingSeconds: Number(pending?.oldest ?? 0), indexedBlock: index?.indexed_block ?? null,
-        budget: this.sponsor ? (["exposure", "exit"] as const).map((lane) => {
-          const cost = BigInt(reserved.find((r) => r.lane === lane)?.cost ?? "0");
-          const limit = weeklyLaneLimit(this.sponsor!, lane);
-          return { lane, reservedWei: cost.toString(), remainingWei: (limit > cost ? limit - cost : 0n).toString() };
-        }) : [],
-      };
-    });
+        const [index] = await db<
+          { indexed_block: string | null }[]
+        >`SELECT indexed_block::text FROM ledger_environment WHERE singleton=true`;
+        const reserved = this.sponsor ? await this.budgetUsage(db, now) : [];
+        return {
+          pending: Number(pending?.pending ?? 0),
+          unknown: Number(pending?.unknown ?? 0),
+          oldestPendingSeconds: Number(pending?.oldest ?? 0),
+          indexedBlock: index?.indexed_block ?? null,
+          budget: this.sponsor
+            ? (["exposure", "exit"] as const).map((lane) => {
+                const cost =
+                  reserved.find((r) => r.lane === lane)?.weeklyWei ?? 0n;
+                const limit = weeklyLaneLimit(this.sponsor!, lane);
+                return {
+                  lane,
+                  reservedWei: cost.toString(),
+                  remainingWei: (limit > cost ? limit - cost : 0n).toString(),
+                };
+              })
+            : [],
+        };
+      },
+    );
   }
   async report(start: Date, end: Date, now = new Date()): Promise<OpsReport> {
     if (
@@ -266,20 +347,8 @@ export class PostgresReports implements ReportingStore {
             now.toISOString().slice(0, 10) + "T00:00:00.000Z",
           ),
           reset = new Date(midnight.getTime() + 86400000).toISOString();
-        const budgets = await db<
-          { lane: "exposure" | "exit"; cost: string; count: string }[]
-        >`SELECT lane,sum(max_gas_cost)::text AS cost,count(*)::text AS count FROM app_quota_operations WHERE created_at>=${midnight} GROUP BY lane`;
+        const budgets = this.sponsor ? await this.budgetUsage(db, now) : [];
         const week = weeklyBudgetWindow(now);
-        const weeklyBudgets = this.sponsor
-          ? await db<
-              { lane: "exposure" | "exit"; cost: string }[]
-            >`SELECT lane,sum(max_gas_cost)::text AS cost FROM app_quota_operations
-          WHERE (created_at>=${week.start} AND created_at<${week.end})
-            OR (created_at<${week.start} AND (
-              state IN ('preparing','awaiting-signature','submitted','confirming','unknown')
-              OR updated_at>=${week.start}))
-          GROUP BY lane`
-          : [];
         const invoices = await db<
           {
             reference: string;
@@ -362,16 +431,16 @@ export class PostgresReports implements ReportingStore {
             ? (["exposure", "exit"] as const).map((lane) => {
                 const used = budgets.find((b) => b.lane === lane),
                   cap = this.sponsor![lane],
-                  cost = BigInt(used?.cost ?? "0"),
+                  cost = used?.dailyWei ?? 0n,
                   remaining = BigInt(cap.projectWei) - cost;
                 return {
                   lane,
                   reservedWei: cost.toString(),
                   remainingWei: (remaining > 0n ? remaining : 0n).toString(),
-                  operations: Number(used?.count ?? 0),
+                  operations: used?.dailyOperations ?? 0,
                   remainingOperations: Math.max(
                     0,
-                    cap.projectOperations - Number(used?.count ?? 0),
+                    cap.projectOperations - (used?.dailyOperations ?? 0),
                   ),
                   resetsAt: reset,
                 };
@@ -385,9 +454,8 @@ export class PostgresReports implements ReportingStore {
                 weekStartsOn: "monday",
                 projectLimitWei: this.sponsor.weekly.projectWei,
                 lanes: (["exposure", "exit"] as const).map((lane) => {
-                  const cost = BigInt(
-                    weeklyBudgets.find((b) => b.lane === lane)?.cost ?? "0",
-                  );
+                  const cost =
+                    budgets.find((b) => b.lane === lane)?.weeklyWei ?? 0n;
                   const limit = weeklyLaneLimit(this.sponsor!, lane);
                   return {
                     lane,

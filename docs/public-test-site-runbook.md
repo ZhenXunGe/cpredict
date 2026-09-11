@@ -87,7 +87,13 @@ npm run site:maintain -- validate-site runtime/public-site/ctusd.runtime.json --
 }
 ```
 
-上例只是 sponsor 的预算字段片段。现有每日防滥用限额继续按 UTC 重置，与周限额同时生效。每次登记在数据库事务内按最大 Gas 费用预留；本周的取消、回滚、未知状态不自动释放额度。跨周未决操作、以及本周才恢复结果的旧操作，继续保守占用本周预留。实际 Gas 费用由回执单独统计，因此预留额度可能高于已花费费用。新增操作不能借用退出专用额度。
+上例只是 sponsor 的预算字段片段。每环境周总额保持 0.1 ETH，其中 0.02 ETH 专留退出。现有每日代付金额及次数限制按 UTC 重置，与周限额同时生效。
+
+登记代付操作时在数据库事务内预留单笔 Gas 上限；有完整链上回执并达到 `finalized` 后，成功及回滚交易均按 `actualGasCost` 结算。应用确认数尚未达到最终确认、结果未知、回执缺失时继续保留上限。取消操作仅在服务原子确认从未申请代付，或同账户同部署的相同 nonce 已有另一次最终确认执行时释放；可能已发出的代付授权、无证据的旧取消记录不会按零费用处理。跨周未决负债继续占额，迟到的最终结算计入结算周；日常轮询不会重复移动结算时间。新增操作不能借用退出专用额度。
+
+达到代付限额后，用户可以在同一业务确认页选择“自行支付 ETH Gas”。该模式仍核验身份、账户派生、交易调用、nonce、单笔 Gas 上限和领币冷却；不占代付金额或代付次数，且服务端拒绝其 Paymaster 请求与代付回调。用户可显式从控制钱包向智能账户补充 Arbitrum Sepolia ETH（这笔转账也由用户支付 Gas），在估算后再次确认最大费用才签名。结果未知或已提交的旧操作只能查询，不能自动改为自付重发。
+
+`005_gas_accounting.sql` 只增加默认空的记账列并扩展额度视图，原操作 JSON 保持旧版可读，数据库原数据保留。首次启动会把无取消证明的历史“未申请代付”标记视为未知，避免曾运行旧版时遗漏授权记录；已证实释放的取消记录保持释放。运营报表和准入使用同一费用计算，自付 ETH 与供应商账单分别统计。
 
 ZeroDev 控制台为各项目设置独立 Project Gas Policy，核对原生 ETH 的 Amount 上限与 7 天周期，以及其窗口起点；供应商窗口不自动假定与本地自然周对齐。Custom Policy 的回调路径为当前环境 app 服务下的 `/v1/sponsorship/policy`，需使用已确认的 HTTPS 域名；关闭 Policy Pass on Error，回调返回 AND。URL 尚未确定前不启用公开赞助。[Gas Policies](https://docs.zerodev.app/api-and-toolings/infrastructure/gas-policies)、[Custom Gas Policies](https://docs.zerodev.app/api-and-toolings/infrastructure/custom-gas-policies)。
 

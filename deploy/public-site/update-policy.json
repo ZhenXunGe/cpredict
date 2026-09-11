@@ -15,7 +15,8 @@
     "offchain/app-service/migrations/002_operational_queries.sql": "b6cc36d028d61609e473644ae3cc55da8f912502055526b7febb6d8c0956cb24",
     "offchain/app-service/migrations/003_usdc_deposits.sql": "36e4164520a3158dca4817995350df1cbd42500a855bf146d2e9a5a915283883",
     "offchain/app-service/migrations/004_deployment_carryover.sql": "744ed85e12f06ffcc3ba18661aca097f71b9ebeb5890aa90fffc537dfe885a58",
-    "offchain/metadata-service/migrations/002_smart_account_signatures.sql": "966a7bc538ec685039bf73ef61cd7d014663de66ad584d1eff9035295a824c71"
+    "offchain/metadata-service/migrations/002_smart_account_signatures.sql": "966a7bc538ec685039bf73ef61cd7d014663de66ad584d1eff9035295a824c71",
+    "offchain/app-service/migrations/005_gas_accounting.sql": "0b2fe4e8edc5584090341a7a41c22a622ec88653813558a4f0e9494e06f6db25"
   },
   "projectionInputs": [
     "offchain/indexer/src/derived.ts",

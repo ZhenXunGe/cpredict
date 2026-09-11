@@ -9,19 +9,24 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { formatEther } from "viem";
 import {
   intentSchema,
+  AppError,
   isRecoverable,
   operationSchema,
   type BusinessIntent,
   type Operation,
   type OperationKind,
+  type GasPayment,
 } from "../../../offchain/app-core/src/contracts.js";
 import { useSession } from "./wallets.js";
 import {
   UserOperationClient,
   type OperationStage,
+  type GasQuote,
 } from "./operation-client.js";
+import { GasPaymentPanel } from "./GasPayment.js";
 import {
   AddressText,
   Button,
@@ -147,6 +152,31 @@ export function OperationProvider({ children }: { children: ReactNode }) {
   const [record, setRecord] = useState<Operation | null>(null),
     [stage, setStage] = useState<OperationStage | null>(null),
     [error, setError] = useState<unknown>(null);
+  const [gasPayment, setGasPayment] = useState<GasPayment>(
+      session.api.environment.features.sponsorship
+        ? "sponsored"
+        : "self-funded",
+    ),
+    [gasQuote, setGasQuote] = useState<GasQuote | null>(null);
+  const gasApproval = useRef<{
+    resolve: () => void;
+    reject: (e: AppError) => void;
+  } | null>(null);
+  const discardGasApproval = () => {
+    gasApproval.current?.reject(
+      new AppError("confirmation_context_changed", 409),
+    );
+    gasApproval.current = null;
+    setGasQuote(null);
+  };
+  useEffect(
+    () => () => {
+      gasApproval.current?.reject(
+        new AppError("confirmation_context_changed", 409),
+      );
+    },
+    [],
+  );
   const current = useRef({
     draftId: draft?.id,
     account: session.account?.id,
@@ -180,6 +210,7 @@ export function OperationProvider({ children }: { children: ReactNode }) {
       setDraft(null);
       setRecord(null);
       setStage(null);
+      discardGasApproval();
       sessionStorage.removeItem(storageKey);
     }
   }, [
@@ -234,12 +265,19 @@ export function OperationProvider({ children }: { children: ReactNode }) {
     setRecord(null);
     setError(null);
     setStage(null);
+    discardGasApproval();
+    setGasPayment(
+      session.api.environment.features.sponsorship
+        ? "sponsored"
+        : "self-funded",
+    );
     // A USDC authorization is executable by the recipient; never persist its signature in the browser.
     if (next.intent.kind === "deposit-usdc")
       sessionStorage.removeItem(storageKey);
     else sessionStorage.setItem(storageKey, JSON.stringify(next));
   };
   const close = () => {
+    discardGasApproval();
     current.current.draftId = undefined;
     setDraft(null);
     setStage(null);
@@ -273,6 +311,22 @@ export function OperationProvider({ children }: { children: ReactNode }) {
         (value) => {
           if (current.current.draftId === id) setStage(value);
         },
+        {
+          payment: gasPayment,
+          confirm: (quote) =>
+            new Promise<void>((resolve, reject) => {
+              if (
+                current.current.draftId !== id ||
+                current.current.account !== account.id ||
+                current.current.identity !== identity
+              ) {
+                reject(new AppError("confirmation_context_changed", 409));
+                return;
+              }
+              setGasQuote(quote);
+              gasApproval.current = { resolve, reject };
+            }),
+        },
       );
     } catch (e) {
       if (current.current.draftId === id) setError(e);
@@ -280,7 +334,7 @@ export function OperationProvider({ children }: { children: ReactNode }) {
       if (current.current.draftId === id) setStage(null);
     }
   };
-  const cancel = async () => {
+  const cancel = async (retry = false) => {
     if (!latest) return;
     setError(null);
     try {
@@ -293,7 +347,12 @@ export function OperationProvider({ children }: { children: ReactNode }) {
       await cache.invalidateQueries({
         queryKey: [session.api.key, "operation"],
       });
-      close();
+      if (retry) {
+        discardGasApproval();
+        setRecord(null);
+        setError(null);
+        setStage(null);
+      } else close();
     } catch (e) {
       setError(e);
     }
@@ -311,7 +370,36 @@ export function OperationProvider({ children }: { children: ReactNode }) {
         footer={
           session.account ? (
             <>
-              {latest ? (
+              {stage === "reviewing-gas" && gasQuote ? (
+                <div className="stack" style={{ width: "100%", gap: 12 }}>
+                  <p className="small" style={{ margin: 0 }}>
+                    本次最多支付{" "}
+                    <strong>{formatEther(gasQuote.cost)} ETH</strong>；可用 Gas
+                    余额 {formatEther(gasQuote.balance)} ETH
+                  </p>
+                  <div className="row">
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        discardGasApproval();
+                        void cancel(true);
+                      }}
+                    >
+                      取消签名
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        const approval = gasApproval.current;
+                        gasApproval.current = null;
+                        setStage("awaiting-signature");
+                        approval?.resolve();
+                      }}
+                    >
+                      确认自付 ETH 并签名
+                    </Button>
+                  </div>
+                </div>
+              ) : latest ? (
                 <>
                   <Link
                     className="button button-secondary"
@@ -321,9 +409,17 @@ export function OperationProvider({ children }: { children: ReactNode }) {
                     查看原操作
                   </Link>
                   {latest.state === "awaiting-signature" && !stage ? (
-                    <Button variant="quiet" onClick={() => void cancel()}>
-                      取消本次操作
-                    </Button>
+                    <>
+                      <Button
+                        variant="secondary"
+                        onClick={() => void cancel(true)}
+                      >
+                        取消并重新核对
+                      </Button>
+                      <Button variant="quiet" onClick={() => void cancel()}>
+                        取消本次操作
+                      </Button>
+                    </>
                   ) : (
                     <Button onClick={close}>关闭</Button>
                   )}
@@ -334,7 +430,11 @@ export function OperationProvider({ children }: { children: ReactNode }) {
                     取消
                   </Button>
                   <Button disabled={!!stage} onClick={() => void submit()}>
-                    {stage ? "处理中" : "确认并继续"}
+                    {stage
+                      ? "处理中"
+                      : gasPayment === "self-funded"
+                        ? "估算自付 Gas"
+                        : "确认并继续"}
                   </Button>
                 </>
               )}
@@ -368,8 +468,32 @@ export function OperationProvider({ children }: { children: ReactNode }) {
                   <dt>当前环境</dt>
                   <dd>{session.api.environment.label}</dd>
                   <dt>网络 Gas</dt>
-                  <dd>{latest ? "已登记项目代付" : "等待代付准入"}</dd>
+                  <dd>
+                    {(latest?.gasPayment ?? gasPayment) === "self-funded"
+                      ? "自行支付 ETH"
+                      : latest
+                        ? "已登记项目代付"
+                        : "等待代付准入"}
+                  </dd>
                 </dl>
+                {!gasQuote && (
+                  <GasPaymentPanel
+                    key={`${session.api.key}:${session.identityKey}:${session.account.id}`}
+                    payment={gasPayment}
+                    onChange={(v) => {
+                      setGasPayment(v);
+                      setError(null);
+                    }}
+                    disabled={!!stage || !!latest}
+                  />
+                )}
+                {gasQuote && (
+                  <Notice tone="warning">
+                    本次最多支付 {formatEther(gasQuote.cost)} ETH；智能账户可用
+                    Gas 余额 {formatEther(gasQuote.balance)}{" "}
+                    ETH。请确认后再签名。
+                  </Notice>
+                )}
                 <Notice tone="warning">
                   所有金额均为测试资产。网络 Gas
                   与协议费用、创建费及押金分别核算。
@@ -380,10 +504,14 @@ export function OperationProvider({ children }: { children: ReactNode }) {
               <div className="step-status" role="status">
                 <span className="spinner" />
                 {stage === "preparing"
-                  ? "重新核对交易并申请代付"
-                  : stage === "awaiting-signature"
-                    ? "请在钱包中确认签名"
-                    : "正在提交，请勿重复操作"}
+                  ? gasPayment === "self-funded"
+                    ? "重新核对交易并估算自付 Gas"
+                    : "重新核对交易并申请代付"
+                  : stage === "reviewing-gas"
+                    ? "请核对 ETH Gas 费用"
+                    : stage === "awaiting-signature"
+                      ? "请在钱包中确认签名"
+                      : "正在提交，请勿重复操作"}
               </div>
             )}
             {latest && (

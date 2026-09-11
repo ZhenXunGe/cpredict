@@ -12,13 +12,15 @@ The default-disabled USDC `deposit-usdc` extension, deposit APIs, transaction bo
 | POST /v1/me/accounts/challenge and POST /v1/me/accounts | Linked wallet + one-use signed control proof | Fixed Kernel 0.3.1 / EP 0.7 / index binding; mismatch rejected |
 | POST /v1/operations | Authenticated account, UUID idempotency key, typed business intent, nonce, SDK encoded call/factory data | Durable sanitized operation; same key returns original; different intent conflicts |
 | GET /v1/operations and /:id | Subject ownership and environment | Recover original hashes; query outage never turns a successful operation into failure |
-| POST /v1/aa/:operationId | Auth + registered operation + permitted SDK JSON-RPC method | Exact canonical SDK call encoding, factory and nonce checked; only one send |
+| POST /v1/aa/:operationId | Auth + registered operation + permitted SDK JSON-RPC method | Exact canonical SDK call encoding, factory and nonce checked; sponsored or explicit self-funded ETH; only one send |
 | POST /v1/faucet/claims | Same operation registration, faucet intent only | Same operation record, 1,000 ctUSD per account / 24 hours; public mint itself is unrestricted |
 | POST /v1/sponsorship/policy | Expected provider project/chain and existing admitted operation | Strict AND policy; unknown, expired or excessive operation denied |
 | /v2/activity/:owner, /v2/entitlements/:owner, /v2/pnl/:owner | Deployment-bound, cursor/filter/snapshot validation | Public confirmed facts, explicit completeness and unknown reasons; stale snapshot => 409 |
 | /v2/leaderboards | Published period, frozen market roster, common canonical block | Versioned test-only complete-cost realized PnL, ties, creator exclusions, corrections |
 | /v1/ops/reports | Server admin allowlist | Readonly event-time aggregate; no user-fund action |
 | GET /v1/ops/feedback | Server admin allowlist | Environment-bound snapshot cursor; filters by feedback or operation ID, immutable original text, no login subject returned |
+
+Operation prepare/register accept optional `gasPayment: "sponsored" | "self-funded"` (legacy requests default to sponsored). Self-funded calls retain the same authenticated business admission and exact UserOperation binding, prohibit all paymaster fields/callbacks, and do not consume sponsorship quotas. The browser requires a separate ETH fee confirmation before signing. Finalized receipt costs replace maximum reservations; unresolved liabilities retain their ceilings, and cancellation refunds require recorded evidence. Accounting extensions are stored separately from legacy operation JSON for readable rollback.
 
 Errors use `{error:{code,message,operationId?}}`; display stable user copy by code with a generic fallback. SDK/RPC exception bodies are never stored or returned as financial truth. Unconfigured services fail closed. User-facing calls use query cancellation and keys that include full environment/deployment/account identity.
 

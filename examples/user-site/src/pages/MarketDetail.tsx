@@ -249,7 +249,8 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
                 </Button>
               )}
             <p className="small">
-              创建费、押金和协议费用由测试资产支付。网络 Gas 单独申请项目代付。
+              创建费、押金和协议费用由测试资产支付。网络 Gas
+              可在确认页选择项目代付或自行支付 ETH。
             </p>
           </section>
         </aside>
@@ -319,7 +320,7 @@ function TradePanel({
             { label: "最多支付", value: `${amount} ${env.asset}` },
             { label: "最少获得份额", value: formatUnits(minUnits, 6) },
           ],
-          feeNote: `一级投入按 1 ${env.asset} 对应 1 份本金记账。结算时创作者抽成 ${live.data.economics.creatorRakeBps / 100}%，协议分成为该抽成的 ${live.data.economics.protocolShareBps / 100}%。项目单独承担通过准入的网络 Gas。`,
+          feeNote: `一级投入按 1 ${env.asset} 对应 1 份本金记账。结算时创作者抽成 ${live.data.economics.creatorRakeBps / 100}%，协议分成为该抽成的 ${live.data.economics.protocolShareBps / 100}%。网络 Gas 按确认页选择的方式支付。`,
         });
       else {
         if (!session.account) {

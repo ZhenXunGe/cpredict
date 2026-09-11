@@ -86,7 +86,18 @@ describe.skipIf(!url)("public application PostgreSQL invariants", () => {
         "utf8",
       ),
     );
-    await sql.unsafe(await readFile(new URL("../migrations/004_deployment_carryover.sql", import.meta.url), "utf8"));
+    await sql.unsafe(
+      await readFile(
+        new URL("../migrations/004_deployment_carryover.sql", import.meta.url),
+        "utf8",
+      ),
+    );
+    await sql.unsafe(
+      await readFile(
+        new URL("../migrations/005_gas_accounting.sql", import.meta.url),
+        "utf8",
+      ),
+    );
     await sql.end();
     store = new PostgresApplicationStore(scopedUrl, environmentKey(env));
     otherProcess = new PostgresApplicationStore(scopedUrl, environmentKey(env));
@@ -597,7 +608,21 @@ describe.skipIf(!url)("public application PostgreSQL invariants", () => {
               "utf8",
             ),
           );
-          await sql.unsafe(await readFile(new URL("../migrations/004_deployment_carryover.sql", import.meta.url), "utf8"));
+          await sql.unsafe(
+            await readFile(
+              new URL(
+                "../migrations/004_deployment_carryover.sql",
+                import.meta.url,
+              ),
+              "utf8",
+            ),
+          );
+          await sql.unsafe(
+            await readFile(
+              new URL("../migrations/005_gas_accounting.sql", import.meta.url),
+              "utf8",
+            ),
+          );
         } finally {
           await sql.end();
         }
@@ -667,6 +692,100 @@ describe.skipIf(!url)("public application PostgreSQL invariants", () => {
       await expect(
         secondProcess!.admit(make("207", "2026-09-21T00:00:00.000Z"), weekly),
       ).rejects.toMatchObject({ code: "sponsorship_weekly_budget_exhausted" });
+      // Actual finalized costs free budget atomically across processes.
+      const admitted = await stores[0]!.operations(subject, 100);
+      for (const o of admitted.filter((o) => o.lane === "exposure"))
+        await stores[0]!.transition(o.id, ["awaiting-signature"], {
+          state: "confirmed",
+          finality: "finalized",
+          actualGasCost: "10",
+          userOperationHash: H(Number(o.nonce)),
+          transactionHash: H(900),
+          blockHash: H(901),
+          blockNumber: "100",
+          gasSettledAt: "2026-09-12T01:00:00.000Z",
+          updatedAt: "2026-09-12T01:00:00.000Z",
+        });
+      const funded = make("208", "2026-09-12T02:00:00.000Z");
+      funded.operation.maxGasCost = "2000000000000000";
+      await secondProcess!.admit(funded, weekly);
+      const over = {
+        ...make("209", "2026-09-12T02:00:00.000Z"),
+        operation: { ...funded.operation, id: randomUUID(), nonce: "209" },
+      };
+      await expect(stores[0]!.admit(over, weekly)).rejects.toMatchObject({
+        code: "sponsorship_weekly_budget_exhausted",
+      });
+      const self = {
+        ...over,
+        operation: {
+          ...over.operation,
+          gasPayment: "self-funded" as const,
+          sponsorshipAttempted: false,
+        },
+      };
+      await stores[0]!.admit(self, weekly);
+      expect(
+        (await secondProcess!.operation(self.operation.id))!.operation
+          .gasPayment,
+      ).toBe("self-funded");
+      const scoped = new URL(url!);
+      scoped.searchParams.set("options", `-csearch_path=${schemas[0]}`);
+      const sql = postgres(scoped.toString(), {
+        max: 1,
+        onnotice: () => undefined,
+      });
+      try {
+        const [raw] =
+          await sql`SELECT record,billing FROM app_operations WHERE id=${self.operation.id}`;
+        expect(raw!.record).not.toHaveProperty("gasPayment");
+        expect(raw!.billing.gasPayment).toBe("self-funded");
+        operationSchema
+          .omit({
+            gasPayment: true,
+            sponsorshipAttempted: true,
+            gasSettledAt: true,
+            gasReleasedAt: true,
+          })
+          .parse(raw!.record);
+        const cancelled = await stores[0]!.transition(
+          self.operation.id,
+          ["awaiting-signature"],
+          { state: "cancelled" },
+        );
+        expect(cancelled.record.operation.gasReleasedAt).toBeDefined();
+        const legacyPending = {
+          ...make("210", "2026-09-12T02:00:00.000Z"),
+          operation: { ...self.operation, id: randomUUID(), nonce: "210" },
+        };
+        await stores[0]!.admit(legacyPending, weekly);
+        const reopened = new PostgresApplicationStore(
+          scoped.toString(),
+          `${environmentKey(env)}-weekly-0`,
+        );
+        try {
+          await reopened.ready();
+          const oldCancellation = await reopened.transition(
+            legacyPending.operation.id,
+            ["awaiting-signature"],
+            { state: "cancelled" },
+          );
+          expect(oldCancellation.record.operation.sponsorshipAttempted).toBe(
+            true,
+          );
+          expect(
+            oldCancellation.record.operation.gasReleasedAt,
+          ).toBeUndefined();
+          expect(
+            (await reopened.operation(self.operation.id))!.operation
+              .gasReleasedAt,
+          ).toBeDefined();
+        } finally {
+          await reopened.close();
+        }
+      } finally {
+        await sql.end();
+      }
     } finally {
       await secondProcess?.close();
       for (const s of stores) await s.close();

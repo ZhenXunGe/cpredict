@@ -14,6 +14,7 @@ import {
   registerOperationSchema,
   sameAddress,
   type BusinessIntent,
+  type GasPayment,
   type Operation,
   type VerifiedIdentity,
 } from "../../app-core/src/contracts.js";
@@ -140,9 +141,13 @@ export class OperationService {
     identity: VerifiedIdentity,
     accountId: string,
     intent: BusinessIntent,
+    gasPayment: GasPayment = "sponsored",
   ) {
     const env = this.runtime.environment;
-    if (!env.features.sponsorship || !this.runtime.sponsor)
+    if (
+      !this.runtime.sponsor ||
+      (gasPayment === "sponsored" && !env.features.sponsorship)
+    )
       throw new AppError("sponsorship_disabled", 503);
     const account = await this.controlledAccount(identity, accountId);
     if (intent.kind === "deposit-usdc")
@@ -206,6 +211,7 @@ export class OperationService {
       identity,
       input.accountId,
       input.intent,
+      input.gasPayment,
     );
     if (
       input.callData.toLowerCase() !== prepared.callData.toLowerCase() ||
@@ -243,6 +249,8 @@ export class OperationService {
         now.getTime() + limits.validitySeconds * 1000,
       ).toISOString(),
       maxGasCost: limits.maxCostPerOperation,
+      gasPayment: input.gasPayment ?? "sponsored",
+      sponsorshipAttempted: false,
       lane: budgetLane(input.intent.kind),
       reason: null,
     });

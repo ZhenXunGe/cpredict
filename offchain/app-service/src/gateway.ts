@@ -47,10 +47,6 @@ export const wireUserOperationSchema = z.strictObject({
 export type WireUserOperation = z.infer<typeof wireUserOperationSchema>;
 const completeSchema = wireUserOperationSchema.extend({
   ...gasFields,
-  paymaster: address,
-  paymasterData: bytes,
-  paymasterVerificationGasLimit: quantity,
-  paymasterPostOpGasLimit: quantity,
   signature: bytes,
 });
 const callbackSchema = wireUserOperationSchema.extend({
@@ -121,6 +117,24 @@ export function assertGasCeiling(
   complete: boolean,
 ): void {
   if (complete) completeSchema.parse(u);
+  if (o.gasPayment === "self-funded") {
+    if (
+      [
+        u.paymaster,
+        u.paymasterData,
+        u.paymasterVerificationGasLimit,
+        u.paymasterPostOpGasLimit,
+      ].some((v) => v !== undefined)
+    )
+      throw new AppError("self_funded_paymaster_forbidden", 403);
+  } else if (complete) {
+    z.object({
+      paymaster: address,
+      paymasterData: bytes,
+      paymasterVerificationGasLimit: quantity,
+      paymasterPostOpGasLimit: quantity,
+    }).parse(u);
+  }
   const fields = [
     u.callGasLimit,
     u.verificationGasLimit,
@@ -148,8 +162,14 @@ function toUserOperation(u: WireUserOperation): UserOperation<"0.7"> {
     preVerificationGas: BigInt(v.preVerificationGas),
     maxFeePerGas: BigInt(v.maxFeePerGas),
     maxPriorityFeePerGas: BigInt(v.maxPriorityFeePerGas),
-    paymasterVerificationGasLimit: BigInt(v.paymasterVerificationGasLimit),
-    paymasterPostOpGasLimit: BigInt(v.paymasterPostOpGasLimit),
+    paymasterVerificationGasLimit:
+      v.paymasterVerificationGasLimit === undefined
+        ? undefined
+        : BigInt(v.paymasterVerificationGasLimit),
+    paymasterPostOpGasLimit:
+      v.paymasterPostOpGasLimit === undefined
+        ? undefined
+        : BigInt(v.paymasterPostOpGasLimit),
   };
 }
 
@@ -175,7 +195,10 @@ export class AuthenticatedAAGateway {
         throw new AppError("operation_hash_mismatch", 403);
       return this.bundler.request(rpc.method, [queryHash]);
     }
-    if (!env.features.sponsorship || !this.service.runtime.sponsor)
+    if (
+      !this.service.runtime.sponsor ||
+      (o.gasPayment !== "self-funded" && !env.features.sponsorship)
+    )
       throw new AppError("sponsorship_disabled", 503);
     if (rpc.method === "zd_getUserOperationGasPrice") {
       if (rpc.params.length !== 0) throw new AppError("invalid_rpc_params");
@@ -190,6 +213,8 @@ export class AuthenticatedAAGateway {
     )
       throw new AppError("rpc_method_not_allowed", 403);
     const isSponsor = rpc.method === "zd_sponsorUserOperation";
+    if (isSponsor && o.gasPayment === "self-funded")
+      throw new AppError("self_funded_paymaster_forbidden", 403);
     const u = isSponsor
       ? (() => {
           const [p] = z
@@ -300,6 +325,20 @@ export class AuthenticatedAAGateway {
         );
       }
     }
+    if (isSponsor) {
+      // Serialize with cancellation before any provider request can issue a grant.
+      const marked = await this.service.store.transition(
+        o.id,
+        ["awaiting-signature"],
+        {
+          sponsorshipAttempted: true,
+          updatedAt: this.service.now().toISOString(),
+        },
+      );
+      if (!marked.changed)
+        throw new AppError("operation_admission_expired", 409);
+      o = marked.record.operation;
+    }
     const result = await (isSponsor ? this.paymaster : this.bundler).request(
       rpc.method,
       rpc.params,
@@ -341,6 +380,7 @@ export class AuthenticatedAAGateway {
       );
       if (!admitted) return deny;
       const o = admitted.operation;
+      if (o.gasPayment === "self-funded") return deny;
       if (
         Date.parse(o.expiresAt) <= this.service.now().getTime() ||
         o.createdAt.slice(0, 10) !==
@@ -362,6 +402,16 @@ export class AuthenticatedAAGateway {
       // Paymaster data can still be absent while the provider is deciding whether to issue it.
       // Enforce all supplied costs here; the gateway requires the complete sponsored fields before returning or sending.
       assertGasCeiling(o, p.userOp, false);
+      // Direct provider callbacks must also serialize possible issuance with cancellation.
+      const marked = await this.service.store.transition(
+        o.id,
+        ["awaiting-signature", "submitted", "confirming", "unknown"],
+        {
+          sponsorshipAttempted: true,
+          updatedAt: this.service.now().toISOString(),
+        },
+      );
+      if (!marked.changed) return deny;
       return { proceed: true, logicalOperator: "and" };
     } catch {
       return deny;

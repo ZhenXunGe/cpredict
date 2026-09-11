@@ -10,6 +10,7 @@ import {
 import type { SponsorConfig } from "../src/config.js";
 import {
   assertAccountUnchanged,
+  applyOperationPatch,
   assertQuota,
   assertDepositRegistration,
   depositView,
@@ -287,7 +288,7 @@ export class MemoryApplicationStore implements ApplicationStore {
     if (!r) throw new AppError("operation_not_found", 404);
     if (!from.includes(r.operation.state))
       return { changed: false, record: structuredClone(r) };
-    r.operation = { ...r.operation, ...patch };
+    r.operation = applyOperationPatch(r.operation, patch);
     return { changed: true, record: structuredClone(r) };
   }
   async report(start: string, end: string) {
