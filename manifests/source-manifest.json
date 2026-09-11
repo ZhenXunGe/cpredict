@@ -94,7 +94,7 @@
     },
     {
       "path": "deploy/compose/postgres/run-migrations.sh",
-      "sha256": "ea581186da32aa5e08b09159211efde50d0d21c282444890fa965dcfed5ffa68"
+      "sha256": "b3f6ef31d513ae9d31514adc7301173baec1b6b9deb7f743b7549ebad9eb8e28"
     },
     {
       "path": "deploy/host/bootstrap-node.sh",
@@ -222,7 +222,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "90f6295dd5d32585984d322a7928b278f42332dfeec701156bcdbc51afee88f0"
+      "sha256": "62f0587301f311ed4dc15cf701b64fd0b8132c44f70c71dd0cd9e7ff834303e4"
     },
     {
       "path": "docs/usdc-gasless-deposit.md",
@@ -2126,7 +2126,7 @@
     },
     {
       "path": "scripts/stack/in-place-upgrade-proof.mjs",
-      "sha256": "a0f2fdc5da2409eaa409d9e781fc8c34f5342d33291d6874cd520b07783e29c0"
+      "sha256": "66effd58ea70cd2872f4dc9a89e2cdc8ac77c366418d9455aa98fb5b029f947c"
     },
     {
       "path": "scripts/stack/install-cloud-publisher.py",

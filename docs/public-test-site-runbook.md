@@ -71,8 +71,11 @@ npm run site:maintain -- validate-site runtime/public-site/ctusd.runtime.json --
 
 用户确认每环境每周各 `100000000000000000` wei（0.1 ETH），按 Asia/Shanghai 周一 00:00 的 `[start,end)` 自然周计算，0.08 ETH 用于新增交易、0.02 ETH 专留退出。两个环境各自计额，不共享 0.2 ETH 总池。对应 sponsor 字段：
 
+2026-09-11，用户将本轮 ctUSD 的单笔上限确定为 `5000000000000000` wei（0.005 ETH）。设置 `sponsor.maxCostPerOperation`，周总额及退出预留不变；这不代表运行配置已经更新。切换时必须核查账户、主体及项目的每日限额，避免另一层低上限阻止领币后的创建。独立 USDC 验收仍后移。
+
 ```json
 {
+  "maxCostPerOperation": "5000000000000000",
   "providerHardLimitUsd": null,
   "providerHardLimitWei": "100000000000000000",
   "providerHardLimitPeriodSeconds": 604800,
