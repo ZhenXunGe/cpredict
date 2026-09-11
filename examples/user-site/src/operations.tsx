@@ -83,6 +83,10 @@ const draftSchema = z.object({
 });
 type Draft = z.infer<typeof draftSchema>;
 const Operations = createContext<((request: Request) => void) | null>(null);
+const CurrentOperation = createContext<Operation | null>(null);
+export function useCurrentOperation() {
+  return useContext(CurrentOperation);
+}
 export function useOperation() {
   const value = useContext(Operations);
   if (!value) throw new Error("operation context unavailable");
@@ -359,7 +363,9 @@ export function OperationProvider({ children }: { children: ReactNode }) {
   };
   return (
     <Operations.Provider value={begin}>
-      {children}
+      <CurrentOperation.Provider value={latest}>
+        {children}
+      </CurrentOperation.Provider>
       <Modal
         open={draft !== null}
         onOpenChange={(open) => {

@@ -14,6 +14,7 @@ import {
 } from "../../../../offchain/app-core/test/fixtures.js";
 import {
   AppError,
+  operationSchema,
   type Deposit,
   type Operation,
 } from "../../../../offchain/app-core/src/contracts.js";
@@ -65,6 +66,25 @@ const appAccount = usdc
   : ctAccount;
 const controllerWallet = fixtureWallet(appAccount.controller, "metamask"),
   fundingWallet = fixtureWallet(A(30), "rabby");
+
+if (new URLSearchParams(location.search).has("entitlements-test")) {
+  // The regression test intercepts this local endpoint; no wallet is involved.
+  UserOperationClient.prototype.submit = async function (
+    intent,
+    onRecord,
+    onStage,
+  ) {
+    onStage("preparing");
+    const response = await fetch("/test/entitlement-submit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ intent }),
+    });
+    const record = operationSchema.parse(await response.json());
+    onRecord(record);
+    return record;
+  };
+}
 
 let gasFixtureOperation: Operation | null = null;
 if (new URLSearchParams(location.search).has("gas-test")) {
@@ -196,6 +216,11 @@ class FixtureApi extends SiteApi {
     if (
       _options.service === "metadata" &&
       new URLSearchParams(location.search).has("rules-error")
+    )
+      return super.request(path, schema, _options);
+    if (
+      new URLSearchParams(location.search).has("entitlements-test") &&
+      /^\/v(?:1\/operations|2\/(?:entitlements|pnl))\b/.test(path)
     )
       return super.request(path, schema, _options);
     const url = new URL(path, "http://fixture.invalid"),
@@ -452,6 +477,10 @@ function Fixture() {
                 deployment: { ...env.deployment, protocolVersion: "legacy-v1" },
               }
             : env,
+          async () =>
+            new URLSearchParams(location.search).has("entitlements-test")
+              ? "fixture-token"
+              : null,
         ),
     ),
     [logged, setLogged] = useState(true),

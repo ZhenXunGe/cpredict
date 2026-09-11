@@ -222,7 +222,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "45b7f3ce04cabd2a51b1ad7ee1c000d05e322485120955026b456a759d125955"
+      "sha256": "9bd041d92fbe50f2c9e9cbfa24be4ee6904ee08c368d4ddfd8081a42d8394ba5"
     },
     {
       "path": "docs/usdc-gasless-deposit.md",
@@ -361,6 +361,10 @@
       "sha256": "6d687f9eb25720f5931152d43a824b9ada0b030f7ac56c647d73bdb471de97b9"
     },
     {
+      "path": "examples/user-site/src/entitlements-sync.ts",
+      "sha256": "c8719984b6bed5224e95a119c3bd0edd8d27cb180f0ec6ca41efcc155b978e90"
+    },
+    {
       "path": "examples/user-site/src/gas-payment.ts",
       "sha256": "70233c7d0108debeec0217c98b60bd1d5788904f18190076877022cadc4e2768"
     },
@@ -378,7 +382,7 @@
     },
     {
       "path": "examples/user-site/src/operations.tsx",
-      "sha256": "16308c35e78d30294007b6072ebcd010254753db894e8a335221608d9673be5e"
+      "sha256": "d580775d148d5a064d1541beb4d3edeabc85c6ff7ce063878d9efbfa6608c318"
     },
     {
       "path": "examples/user-site/src/pages/Assets.tsx",
@@ -390,7 +394,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
-      "sha256": "757a1c9a00ad6224b2ee006c407767cff83cbe47ac95ec0c6e1c95c8a02a0663"
+      "sha256": "3022185b6ea61e926a02cc1d242c237a939bf6984d7351aa72922ee44af5bbab"
     },
     {
       "path": "examples/user-site/src/pages/FeedbackInbox.tsx",
@@ -457,12 +461,16 @@
       "sha256": "78b000719747970b7f29b757305c8bfa766c0f0a1ca989120217c17af6276166"
     },
     {
+      "path": "examples/user-site/test/browser/entitlements-sync.spec.ts",
+      "sha256": "804f381e3942015042b83a7425661bb1d01269b0cdb56e73fc4baec482f52dcd"
+    },
+    {
       "path": "examples/user-site/test/browser/fixture.html",
       "sha256": "eec6eaea5ebd506ed508da03a3cd62096da86eef78d348bd594dac1b4c1726c4"
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "1da16d3b43bf3ac746cdc7d65b41d2f120532bbcd9661aee56a82f16519f70e3"
+      "sha256": "dfe6e79bb93091a1971a04f7515d8b5886b7c6d7c9725cf35037bd2456c7c736"
     },
     {
       "path": "examples/user-site/test/browser/gas-payment.spec.ts",
@@ -487,6 +495,10 @@
     {
       "path": "examples/user-site/test/dev-proxy.test.ts",
       "sha256": "97582deb1214bbc878d1b71f3694cb6057046c0a80ddb5925b6c41ac912fd401"
+    },
+    {
+      "path": "examples/user-site/test/entitlements-sync.test.ts",
+      "sha256": "730038cdbeca045c0beeda5346a39b2b772951e69310ae71ad40212e8427b43d"
     },
     {
       "path": "examples/user-site/test/gas-payment.test.ts",
@@ -950,7 +962,7 @@
     },
     {
       "path": "offchain/app-service/src/gateway.ts",
-      "sha256": "f2cdd0f3d8fd65f8437e741c30b5582221a2b544d84992673ab1c4db7afca69f"
+      "sha256": "420fa254c822359d1f2fe58086ff290948125a24d5cb4532161945a05cc89520"
     },
     {
       "path": "offchain/app-service/src/http.ts",
@@ -994,7 +1006,7 @@
     },
     {
       "path": "offchain/app-service/src/recovery.ts",
-      "sha256": "d140d346c0bd59fc9f0f24af4acd0f6ff289fbeae183f47606ca47b8f7f4964d"
+      "sha256": "c3c7361f0003885a0a98dad57a182006d53a9a88361981f2b0cbd983826039b1"
     },
     {
       "path": "offchain/app-service/src/reports.ts",
@@ -1002,7 +1014,7 @@
     },
     {
       "path": "offchain/app-service/src/server.ts",
-      "sha256": "6787b649ad241eb61e39e262eee1df26cf4272b0a906fa489939aa09d2c1b5d0"
+      "sha256": "9b97cf0ad6a5bc1c9cc1c1498b22284215549bc41a3da22d8bea37936bf27db3"
     },
     {
       "path": "offchain/app-service/src/store.ts",
@@ -1030,7 +1042,7 @@
     },
     {
       "path": "offchain/app-service/test/gateway.test.ts",
-      "sha256": "77aa2974faeb33f53761b9f9e7ccf42260fe9d577250361393506d4d7247f54a"
+      "sha256": "e746b3012a30a913aeb3d7e39c2876640fbc0cdd5ae326a0e39dfde249af8e4a"
     },
     {
       "path": "offchain/app-service/test/maintenance-database.test.ts",
@@ -1058,7 +1070,7 @@
     },
     {
       "path": "offchain/app-service/test/recovery.test.ts",
-      "sha256": "9dc89d79e40b8be078e41b3382159e0a0d525a19a5c31110380f7a9c6860c425"
+      "sha256": "f64b0f70645ff79541d07ec527605ceb8cfbbba69d2090d16722a5d9f482d09e"
     },
     {
       "path": "offchain/app-service/test/server.test.ts",

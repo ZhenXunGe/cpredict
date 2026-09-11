@@ -6,12 +6,20 @@ import {
   pnlResponseSchema,
   type Entitlement,
 } from "../../../../offchain/app-core/src/ledger-contracts.js";
-import {
-  operationSchema,
-  type BusinessIntent,
-} from "../../../../offchain/app-core/src/contracts.js";
+import { operationSchema } from "../../../../offchain/app-core/src/contracts.js";
 import { useSession } from "../wallets.js";
-import { AccountGate, useOperation } from "../operations.js";
+import {
+  AccountGate,
+  useCurrentOperation,
+  useOperation,
+} from "../operations.js";
+import {
+  entitlementIntent,
+  entitlementOperations,
+  entitlementProgress,
+  entitlementRefreshInterval,
+  snapshotIncludesOperation,
+} from "../entitlements-sync.js";
 import {
   AddressText,
   Amount,
@@ -51,33 +59,27 @@ const reasons: Record<string, string> = {
   cancel_listing_to_recover_shares: "撤单取回未成交份额，不产生已实现收益。",
   return_terminal_listing: "市场已终局，先取回托管份额再领取权益。",
 };
-export function entitlementIntent(e: Entitlement): BusinessIntent | null {
-  if (e.status !== "claimable") return null;
-  if (e.kind === "escrow" && e.listingId)
-    return {
-      kind:
-        e.reason === "return_terminal_listing"
-          ? "return-listing"
-          : "cancel-listing",
-      listingId: e.listingId,
-    };
-  if (e.kind === "bond")
-    return e.market
-      ? { kind: "settle-bond", market: e.market }
-      : { kind: "claim-bond" };
-  if (e.kind === "fees") return { kind: "claim-fees" };
-  if (!e.market) return null;
-  if (e.kind === "winner") return { kind: "claim-winner", market: e.market };
-  if (e.kind === "early-bird")
-    return { kind: "claim-early-bird", market: e.market };
-  if (e.kind === "refund") return { kind: "refund", market: e.market };
-  if (e.kind === "timeout-bonus")
-    return { kind: "claim-timeout-bonus", market: e.market };
-  return null;
-}
 export function EntitlementsPage() {
   const { api, account } = useSession(),
-    request = useOperation();
+    request = useOperation(),
+    currentOperation = useCurrentOperation();
+  const pending = useQuery({
+    queryKey: [api.key, "entitlement-operations", account?.id],
+    enabled: !!account,
+    queryFn: ({ signal }) =>
+      api.request(
+        `/v1/operations?accountId=${account!.id}&limit=100`,
+        z.object({ items: z.array(operationSchema) }),
+        { auth: true, signal },
+      ),
+    refetchInterval: 5000,
+    refetchOnWindowFocus: true,
+  });
+  const operations = entitlementOperations(
+    account,
+    pending.data?.items,
+    currentOperation,
+  );
   const pnl = useQuery({
     queryKey: [api.key, "pnl", account?.address],
     enabled: !!account,
@@ -86,6 +88,9 @@ export function EntitlementsPage() {
         service: "indexer",
         signal,
       }),
+    refetchInterval: (q) =>
+      entitlementRefreshInterval(operations, [q.state.data?.snapshot]),
+    refetchOnWindowFocus: true,
   });
   const rights = useInfiniteQuery({
     queryKey: [api.key, "entitlements", account?.address],
@@ -98,20 +103,26 @@ export function EntitlementsPage() {
         { service: "indexer", signal },
       ),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
+    refetchInterval: (q) =>
+      entitlementRefreshInterval(
+        operations,
+        q.state.data?.pages.map((p) => p.snapshot) ?? [],
+      ),
+    refetchOnWindowFocus: true,
   });
   const snapshot = rights.data?.pages[0]?.snapshot,
-    items = rights.data?.pages.flatMap((p) => p.items) ?? [];
-  const pending = useQuery({
-    queryKey: [api.key, "entitlement-operations", account?.id],
-    enabled: !!account,
-    queryFn: ({ signal }) =>
-      api.request(
-        `/v1/operations?accountId=${account!.id}&limit=100`,
-        z.object({ items: z.array(operationSchema) }),
-        { auth: true, signal },
-      ),
-    refetchInterval: 5000,
-  });
+    items =
+      rights.data?.pages.flatMap((p) =>
+        p.items.map((item) => ({ item, snapshot: p.snapshot })),
+      ) ?? [],
+    syncing = operations.some(
+      (o) =>
+        o.state === "confirmed" &&
+        (!snapshotIncludesOperation(pnl.data?.snapshot, o) ||
+          !rights.data?.pages.every((p) =>
+            snapshotIncludesOperation(p.snapshot, o),
+          )),
+    );
   return (
     <>
       <PageTitle
@@ -147,6 +158,11 @@ export function EntitlementsPage() {
               <strong>{snapshot?.blockNumber ?? "等待同步"}</strong>
             </div>
           </div>
+          {syncing && (
+            <Notice>
+              交易已确认，权益与收益正在等待同步。页面会自动更新，请勿重复领取。
+            </Notice>
+          )}
           {pnl.data && !pnl.data.pnl.complete && (
             <Notice tone="warning">
               成本或历史覆盖不完整，暂不提供完整净收益，也不以已知部分参与排名。
@@ -168,10 +184,11 @@ export function EntitlementsPage() {
             </Notice>
           )}
           <ErrorNotice
-            error={pnl.error ?? rights.error}
+            error={pnl.error ?? rights.error ?? pending.error}
             retry={() => {
               void rights.refetch();
               void pnl.refetch();
+              void pending.refetch();
             }}
           />
           {rights.isPending && <Loading />}
@@ -190,29 +207,13 @@ export function EntitlementsPage() {
                 "操作",
               ]}
             >
-              {items.map((e) => {
+              {items.map(({ item: e, snapshot: rowSnapshot }) => {
                 const intent = entitlementIntent(e);
-                const executing =
-                  intent &&
-                  pending.data?.items.some(
-                    (o) =>
-                      [
-                        "preparing",
-                        "awaiting-signature",
-                        "submitted",
-                        "confirming",
-                        "unknown",
-                      ].includes(o.state) &&
-                      o.intent.kind === intent.kind &&
-                      ("market" in intent
-                        ? "market" in o.intent &&
-                          o.intent.market.toLowerCase() ===
-                            intent.market.toLowerCase()
-                        : "listingId" in intent
-                          ? "listingId" in o.intent &&
-                            o.intent.listingId === intent.listingId
-                          : true),
-                  );
+                const progress = entitlementProgress(
+                  e,
+                  operations,
+                  rowSnapshot,
+                );
                 return (
                   <tr key={e.id}>
                     <td>
@@ -242,17 +243,33 @@ export function EntitlementsPage() {
                       <span
                         className={`badge ${e.status === "claimable" ? "badge-blue" : ""}`}
                       >
-                        {executing ? states.executing : states[e.status]}
+                        {progress?.phase === "syncing"
+                          ? "已确认，等待同步"
+                          : progress
+                            ? progress.operation.state === "unknown"
+                              ? "结果待核对"
+                              : states.executing
+                            : states[e.status]}
                       </span>
                     </td>
                     <td>
-                      {executing ? (
-                        <Link to={`/${api.environment.id}/history`}>
-                          查询原操作
-                        </Link>
+                      {progress ? (
+                        <div className="stack">
+                          <Button variant="secondary" disabled>
+                            {progress.phase === "syncing"
+                              ? "等待同步"
+                              : "核对原操作中"}
+                          </Button>
+                          <Link
+                            to={`/${api.environment.id}/history?operation=${progress.operation.id}`}
+                          >
+                            查询原操作
+                          </Link>
+                        </div>
                       ) : intent ? (
                         <Button
                           variant="secondary"
+                          disabled={!pending.isSuccess}
                           onClick={() =>
                             request({
                               intent,
@@ -272,11 +289,15 @@ export function EntitlementsPage() {
                             })
                           }
                         >
-                          {e.kind === "escrow"
-                            ? "取回份额"
-                            : e.kind === "bond" && e.market
-                              ? "结算押金"
-                              : "领取"}
+                          {!pending.isSuccess
+                            ? pending.error
+                              ? "暂不可领取"
+                              : "正在核对操作"
+                            : e.kind === "escrow"
+                              ? "取回份额"
+                              : e.kind === "bond" && e.market
+                                ? "结算押金"
+                                : "领取"}
                         </Button>
                       ) : e.kind === "holding" && e.market ? (
                         <Link to={`/${api.environment.id}/markets/${e.market}`}>
