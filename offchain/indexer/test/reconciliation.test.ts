@@ -23,6 +23,20 @@ function checks(events: ReturnType<typeof purchase>) {
   );
 }
 describe("independent ledger conservation reconciliation", () => {
+  it("persists an opening-balance report without leaking internal bigint accumulators", () => {
+    const result = reconciliationChecks(
+      env,
+      [],
+      [trader],
+      new Map([[trader.toLowerCase(), 1000n]]),
+    );
+    expect(() => JSON.stringify({ results: result })).not.toThrow();
+    const saved = JSON.parse(JSON.stringify({ results: result }));
+    expect(
+      saved.results.find((row: { args: string[] }) => row.args[0] === trader)
+        ?.expected,
+    ).toBe("1000");
+  });
   it("carries pre-deployment ctUSD into balance reconciliation without inventing historical trades", () => {
     const facts = normalizeFinancialFacts(
       [

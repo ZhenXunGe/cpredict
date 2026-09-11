@@ -284,7 +284,9 @@ export function reconciliationChecks(
     }
   }
   const checks: Check[] = [...values.values()].map((v) => ({
-    ...v,
+    contract: v.contract,
+    signature: v.signature,
+    args: v.args,
     expected: v.value.toString(),
     comparison: "equal",
   }));
