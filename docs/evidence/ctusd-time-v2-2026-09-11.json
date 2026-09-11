@@ -1,0 +1,605 @@
+{
+  "schemaVersion": 1,
+  "evidenceClass": "operator-observed-testnet-deployment",
+  "preparedAt": "2026-09-11T11:51:21.281Z",
+  "environment": "ctusd-public-test",
+  "chainId": 421614,
+  "scope": "ctUSD time-v2 in-place upgrade and indexer-only catch-up optimization",
+  "deployment": {
+    "protocolVersion": "time-v2",
+    "sourceCommit": "83b41967ce78a1edab65b741c9c7965047485c31",
+    "id": "ctusd-421614-a62eed107a5aa0924ee0ba5a915f4b9b832c3913",
+    "factory": "0xA62eEd107a5aa0924ee0Ba5a915f4B9B832C3913",
+    "manifestHash": "0x69f1869e736ee761b0f4a706eeb68d53e674086b759041b2c8a8dc370f4a4921",
+    "deploymentBlock": "307719826",
+    "paymentTokenRetained": true,
+    "decimals": 6
+  },
+  "account": {
+    "kernelVersion": "0.3.1",
+    "entryPointVersion": "0.7",
+    "index": "1001",
+    "preservedAccounts": 4,
+    "preservedSubjectLinks": 4,
+    "onlyDeploymentIdChanged": true,
+    "openingBlock": "307719825",
+    "openingBlockHash": "0x5b4965b2cb434cc97703bf8137b53a93bdff842f3b16bb775476b3e2f4485051",
+    "openingBalancesMatchBefore": true,
+    "openingBalanceUnits": [
+      "0",
+      "1000000000",
+      "0",
+      "0"
+    ]
+  },
+  "budgetsWei": {
+    "maxCostPerOperation": "5000000000000000",
+    "weekly": {
+      "window": "shanghai-monday",
+      "projectWei": "100000000000000000",
+      "exitReserveWei": "20000000000000000"
+    },
+    "exposure": {
+      "projectWei": "80000000000000000",
+      "accountWei": "80000000000000000",
+      "subjectWei": "80000000000000000",
+      "projectOperations": 200,
+      "accountOperations": 30,
+      "subjectOperations": 50
+    },
+    "exit": {
+      "projectWei": "20000000000000000",
+      "accountWei": "20000000000000000",
+      "subjectWei": "20000000000000000",
+      "projectOperations": 200,
+      "accountOperations": 30,
+      "subjectOperations": 50
+    },
+    "methodDailyOperations": 20,
+    "providerHardLimitWei": "100000000000000000",
+    "providerHardLimitPeriodSeconds": 604800,
+    "carryoverCount": 1,
+    "carryoverMaxGasCost": "1000000000000000",
+    "historicalActualGasCost": "100683396450693"
+  },
+  "backup": {
+    "verifiedAt": "2026-09-11T10:38:07.881Z",
+    "consistentOnlineSnapshots": true,
+    "sourceWritersStopped": false,
+    "files": {
+      "indexer": {
+        "file": "indexer.dump",
+        "bytes": 162690259,
+        "sha256": "466aeb1cb85111cb594730e9799526bb96012fc2dc00a3f18f6be909f18a4c6c"
+      },
+      "paymaster": {
+        "file": "paymaster.dump",
+        "bytes": 12325,
+        "sha256": "48c45819cd1f97a3b1f9ccd263b791deea9d6e8c8c9fbfac370486f8cf308239"
+      },
+      "metadata": {
+        "file": "metadata.dump",
+        "bytes": 15482,
+        "sha256": "4fe6eb1fbb64a9cb2bd073335df19978062aa58f4294b73385f7ad933f393118"
+      }
+    },
+    "manifestSha256": "a255ff51d352dc8b6c2bff23320944485396a61a40c0698d02f043a1d9997a7c",
+    "restoreDrill": {
+      "status": "PASS",
+      "generatedAt": "2026-09-11T10:38:06.924Z",
+      "reportSha256": "33b1e3823703186ea32efc807bb70a761411548d287c77bb3f5f18bca5d581aa",
+      "isolatedDisposableDatabase": true,
+      "beforeAndAfterMigrationFingerprintsMatched": true
+    }
+  },
+  "preservation": {
+    "checksPassed": 28,
+    "originalDatabaseContainerImageAndVolumeRetained": true,
+    "archivedMarkets": 27,
+    "archivedOperations": 1,
+    "oldMarketsExcludedFromNewPublicCatalog": true,
+    "archivedSchemaRuntimeRoleAccessible": false,
+    "carryoverRuntimeRoleCanWrite": false,
+    "metadataDatabaseRetained": true,
+    "paymasterDatabaseRetained": true,
+    "cacheContentComparison": {
+      "rows": 27,
+      "onlyRefreshTimestampsChanged": 6
+    }
+  },
+  "financial": {
+    "status": "active",
+    "complete": true,
+    "maintenanceSourceCommit": "053acc3d2e69b97570d935c3978fa866da5c5e4c",
+    "snapshotBlock": "307732725",
+    "checksPassed": 9,
+    "reconciliationId": "a3d2bde6-771c-4d0c-affd-d9bd8467e42d",
+    "openingAnchorMatchesBefore": true,
+    "reportSha256": "7f180427062f5bb4e6b2d8a41e6119f6b297c75d97a3460678137a5dad37ec15"
+  },
+  "publicCutover": {
+    "verifiedAt": "2026-09-11T10:55:40.373Z",
+    "frontendSourceCommit": "b563f0410ee8b1a45c49c0784d3c7346eb6931ba",
+    "release": "4f78d6543f121a4703de2ed9f39fec4a166986486214b4a809a93af6abb07a37",
+    "routesPassed": 16,
+    "assetsPassed": 316,
+    "htmlSha256": "3cf9b94c20b889a758bd508dd72eded7e4228f9dc851a65361ab78414085a722",
+    "siteConfigSha256": "b136d17398fa44b30a8427ce16d414097bb528055bc4f96ad90d032c2f6cce64",
+    "demoRedirectStatus": 308,
+    "finalCheckBeforeOptimization": "2026-09-11T11:22:17.239Z"
+  },
+  "rpcSample": {
+    "startedAt": "2026-09-11T11:33:52.855Z",
+    "finishedAt": "2026-09-11T11:33:54.433Z",
+    "concurrency": 16,
+    "maxInFlight": 16,
+    "requests": 32,
+    "successes": 32,
+    "failures": 0,
+    "http429": 0,
+    "timeouts": 0,
+    "rateLimited": 0,
+    "timeoutMs": 5000,
+    "retryCount": 0,
+    "fromBlock": "307749811",
+    "toBlock": "307749842",
+    "latencyMs": {
+      "minimum": 317.15,
+      "median": 350.36,
+      "p95": 595.84,
+      "maximum": 610.58,
+      "mean": 446.61
+    },
+    "totalMs": 966.53,
+    "allHeadersLinked": true,
+    "allRequestsSettled": true
+  },
+  "remaining": {
+    "providerPerOperationPolicyFreshlyVerified": false,
+    "historicalProviderPerOperationWei": "1000000000000000",
+    "requestedProviderPerOperationWei": "5000000000000000",
+    "realWalletCreation": "Not accepted by this deployment task. Source task reported no broadcast while waiting for MetaMask signature after rule challenges expired; a fresh browser/wallet acceptance is still required.",
+    "zeroEthControllerAndNewFundsInOut": "not yet accepted",
+    "independentUSDCAndMobile": "deferred"
+  },
+  "redaction": {
+    "credentialValues": false,
+    "providerProjectIdentifiers": false,
+    "personalAccountAddresses": false,
+    "hostnamesAndAbsolutePrivatePaths": false
+  },
+  "operatorChainTransactionsBroadcast": 0,
+  "features": {
+    "newExposure": true,
+    "faucet": true,
+    "leaderboard": true,
+    "sponsorship": true
+  },
+  "verifiedAt": "2026-09-11T12:01:40.245Z",
+  "services": [
+    {
+      "name": "indexer",
+      "sourceCommit": "3a11cc058488938d672c60482afd1b604d7c1f90",
+      "image": "sha256:8f21e92e996071fc1912f550b4210d15c46b2b22b75bb19583ccf6bcf472e0ec",
+      "healthy": true,
+      "containerAndStartRetainedDuringIndexerUpdate": false
+    },
+    {
+      "name": "public-site-preview",
+      "sourceCommit": "b563f0410ee8b1a45c49c0784d3c7346eb6931ba",
+      "image": "sha256:3a3cbc439a65f257c908b7db8b7b9dab2d4c5c95ee36a3a5b7e9e62662d79253",
+      "healthy": true,
+      "containerAndStartRetainedDuringIndexerUpdate": true
+    },
+    {
+      "name": "web-demo",
+      "sourceCommit": "b563f0410ee8b1a45c49c0784d3c7346eb6931ba",
+      "image": "sha256:3a3cbc439a65f257c908b7db8b7b9dab2d4c5c95ee36a3a5b7e9e62662d79253",
+      "healthy": true,
+      "containerAndStartRetainedDuringIndexerUpdate": true
+    },
+    {
+      "name": "app-service",
+      "sourceCommit": "b563f0410ee8b1a45c49c0784d3c7346eb6931ba",
+      "image": "sha256:555e5babe8a3c4265b5336ea17867061809a6ae5dd2f564f6475dc6f4bb4fefd",
+      "healthy": true,
+      "containerAndStartRetainedDuringIndexerUpdate": true
+    },
+    {
+      "name": "metadata",
+      "sourceCommit": "b563f0410ee8b1a45c49c0784d3c7346eb6931ba",
+      "image": "sha256:7a4a9fa25a34cee37c453864e50fd386cd8576e1be01007ced913584dcf4713e",
+      "healthy": true,
+      "containerAndStartRetainedDuringIndexerUpdate": true
+    },
+    {
+      "name": "postgres",
+      "sourceCommit": null,
+      "image": "sha256:8164afa59e26be9f78959e538d6c9da8553d67e601d8ebd0d5e9cbf558c3986e",
+      "healthy": true,
+      "containerAndStartRetainedDuringIndexerUpdate": true
+    }
+  ],
+  "indexerOptimization": {
+    "sourceCommit": "3a11cc058488938d672c60482afd1b604d7c1f90",
+    "image": "sha256:8f21e92e996071fc1912f550b4210d15c46b2b22b75bb19583ccf6bcf472e0ec",
+    "selectedServices": [
+      "indexer"
+    ],
+    "completedAt": "2026-09-11T11:53:52.199Z",
+    "otherFiveServicesUnchanged": true,
+    "configuration": {
+      "CPREDICT_INDEXER_DEPLOYMENT_BLOCK": "307719826",
+      "CPREDICT_INDEXER_CONFIRMATIONS": "2",
+      "CPREDICT_INDEXER_MAX_BATCHES_PER_TICK": "1",
+      "CPREDICT_INDEXER_POLL_INTERVAL_MS": "1000",
+      "CPREDICT_INDEXER_BATCH_SIZE": "100",
+      "CPREDICT_INDEXER_BLOCK_CONCURRENCY": "16"
+    },
+    "onlyEnvironmentChange": [
+      "CPREDICT_INDEXER_BLOCK_CONCURRENCY"
+    ],
+    "sqlMigrations": false,
+    "contractBroadcast": false,
+    "checkpointDidNotRegress": true,
+    "beforeSelection": {
+      "status": "ready",
+      "chainId": 421614,
+      "indexedBlock": "307750225",
+      "safeBlock": "307754533",
+      "lagBlocks": "4308",
+      "checkedAt": "2026-09-11T11:53:24.699Z"
+    },
+    "afterSelection": {
+      "status": "ready",
+      "chainId": 421614,
+      "indexedBlock": "307750525",
+      "safeBlock": "307754627",
+      "lagBlocks": "4102",
+      "checkedAt": "2026-09-11T11:53:50.395Z"
+    },
+    "observation": {
+      "sampleCount": 16,
+      "firstCaughtUp": {
+        "checkedAt": "2026-09-11T11:59:22.171Z",
+        "indexedBlock": "307755953",
+        "safeBlock": "307755953",
+        "lagBlocks": "0",
+        "outcomes": {
+          "committed": 58,
+          "failed": 1,
+          "idle": 1
+        },
+        "readyHttp": 200,
+        "requestMs": 337,
+        "intervalSeconds": 268.5,
+        "observedIndexedBlocksPerSecond": 16.12
+      },
+      "lastThree": [
+        {
+          "checkedAt": "2026-09-11T11:59:22.171Z",
+          "indexedBlock": "307755953",
+          "safeBlock": "307755953",
+          "lagBlocks": "0",
+          "outcomes": {
+            "committed": 58,
+            "failed": 1,
+            "idle": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 337,
+          "intervalSeconds": 268.5,
+          "observedIndexedBlocksPerSecond": 16.12
+        },
+        {
+          "checkedAt": "2026-09-11T11:59:42.553Z",
+          "indexedBlock": "307756032",
+          "safeBlock": "307756032",
+          "lagBlocks": "0",
+          "outcomes": {
+            "committed": 62,
+            "failed": 1,
+            "idle": 5
+          },
+          "readyHttp": 200,
+          "requestMs": 350,
+          "intervalSeconds": 288.89,
+          "observedIndexedBlocksPerSecond": 15.26
+        },
+        {
+          "checkedAt": "2026-09-11T12:00:02.693Z",
+          "indexedBlock": "307756094",
+          "safeBlock": "307756114",
+          "lagBlocks": "20",
+          "outcomes": {
+            "committed": 65,
+            "failed": 1,
+            "idle": 9
+          },
+          "readyHttp": 200,
+          "requestMs": 136,
+          "intervalSeconds": 309.03,
+          "observedIndexedBlocksPerSecond": 14.46
+        }
+      ],
+      "finishedAt": "2026-09-11T12:00:02.696Z",
+      "observedIndexedBlocksPerSecondUntilFirstCatchup": 16.36,
+      "elapsedSecondsUntilFirstCatchup": 331.78,
+      "failedBatchCount": 1,
+      "failureRecovered": true,
+      "zeroFailedBatchObservation": false,
+      "failureCause": "not retained by current telemetry; no HTTP status or timeout cause can be inferred",
+      "samples": [
+        {
+          "checkedAt": "2026-09-11T11:54:53.666Z",
+          "indexedBlock": "307751625",
+          "safeBlock": "307754886",
+          "lagBlocks": "3261",
+          "outcomes": {
+            "committed": 13
+          },
+          "readyHttp": 200,
+          "requestMs": 992,
+          "intervalSeconds": 63.27,
+          "observedIndexedBlocksPerSecond": 17.39
+        },
+        {
+          "checkedAt": "2026-09-11T11:55:14.175Z",
+          "indexedBlock": "307752025",
+          "safeBlock": "307754968",
+          "lagBlocks": "2943",
+          "outcomes": {
+            "committed": 17
+          },
+          "readyHttp": 200,
+          "requestMs": 506,
+          "intervalSeconds": 20.51,
+          "observedIndexedBlocksPerSecond": 19.5
+        },
+        {
+          "checkedAt": "2026-09-11T11:55:34.575Z",
+          "indexedBlock": "307752425",
+          "safeBlock": "307755052",
+          "lagBlocks": "2627",
+          "outcomes": {
+            "committed": 21
+          },
+          "readyHttp": 200,
+          "requestMs": 398,
+          "intervalSeconds": 40.91,
+          "observedIndexedBlocksPerSecond": 19.56
+        },
+        {
+          "checkedAt": "2026-09-11T11:55:55.237Z",
+          "indexedBlock": "307752825",
+          "safeBlock": "307755134",
+          "lagBlocks": "2309",
+          "outcomes": {
+            "committed": 25
+          },
+          "readyHttp": 200,
+          "requestMs": 660,
+          "intervalSeconds": 61.57,
+          "observedIndexedBlocksPerSecond": 19.49
+        },
+        {
+          "checkedAt": "2026-09-11T11:56:16.549Z",
+          "indexedBlock": "307753125",
+          "safeBlock": "307755206",
+          "lagBlocks": "2081",
+          "outcomes": {
+            "committed": 28
+          },
+          "readyHttp": 200,
+          "requestMs": 1307,
+          "intervalSeconds": 82.88,
+          "observedIndexedBlocksPerSecond": 18.1
+        },
+        {
+          "checkedAt": "2026-09-11T11:56:36.916Z",
+          "indexedBlock": "307753325",
+          "safeBlock": "307755298",
+          "lagBlocks": "1973",
+          "outcomes": {
+            "committed": 30,
+            "failed": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 364,
+          "intervalSeconds": 103.25,
+          "observedIndexedBlocksPerSecond": 16.46
+        },
+        {
+          "checkedAt": "2026-09-11T11:56:57.335Z",
+          "indexedBlock": "307753625",
+          "safeBlock": "307755378",
+          "lagBlocks": "1753",
+          "outcomes": {
+            "committed": 33,
+            "failed": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 415,
+          "intervalSeconds": 123.67,
+          "observedIndexedBlocksPerSecond": 16.17
+        },
+        {
+          "checkedAt": "2026-09-11T11:57:18.021Z",
+          "indexedBlock": "307754025",
+          "safeBlock": "307755462",
+          "lagBlocks": "1437",
+          "outcomes": {
+            "committed": 36,
+            "failed": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 683,
+          "intervalSeconds": 144.35,
+          "observedIndexedBlocksPerSecond": 16.63
+        },
+        {
+          "checkedAt": "2026-09-11T11:57:39.336Z",
+          "indexedBlock": "307754325",
+          "safeBlock": "307755546",
+          "lagBlocks": "1221",
+          "outcomes": {
+            "committed": 40,
+            "failed": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 1237,
+          "intervalSeconds": 165.67,
+          "observedIndexedBlocksPerSecond": 16.3
+        },
+        {
+          "checkedAt": "2026-09-11T11:58:00.186Z",
+          "indexedBlock": "307754625",
+          "safeBlock": "307755631",
+          "lagBlocks": "1006",
+          "outcomes": {
+            "committed": 43,
+            "failed": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 786,
+          "intervalSeconds": 186.52,
+          "observedIndexedBlocksPerSecond": 16.08
+        },
+        {
+          "checkedAt": "2026-09-11T11:58:20.718Z",
+          "indexedBlock": "307754825",
+          "safeBlock": "307755701",
+          "lagBlocks": "876",
+          "outcomes": {
+            "committed": 45,
+            "failed": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 527,
+          "intervalSeconds": 207.05,
+          "observedIndexedBlocksPerSecond": 15.46
+        },
+        {
+          "checkedAt": "2026-09-11T11:58:41.297Z",
+          "indexedBlock": "307755225",
+          "safeBlock": "307755789",
+          "lagBlocks": "564",
+          "outcomes": {
+            "committed": 49,
+            "failed": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 576,
+          "intervalSeconds": 227.63,
+          "observedIndexedBlocksPerSecond": 15.82
+        },
+        {
+          "checkedAt": "2026-09-11T11:59:01.831Z",
+          "indexedBlock": "307755625",
+          "safeBlock": "307755871",
+          "lagBlocks": "246",
+          "outcomes": {
+            "committed": 53,
+            "failed": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 533,
+          "intervalSeconds": 248.16,
+          "observedIndexedBlocksPerSecond": 16.12
+        },
+        {
+          "checkedAt": "2026-09-11T11:59:22.171Z",
+          "indexedBlock": "307755953",
+          "safeBlock": "307755953",
+          "lagBlocks": "0",
+          "outcomes": {
+            "committed": 58,
+            "failed": 1,
+            "idle": 1
+          },
+          "readyHttp": 200,
+          "requestMs": 337,
+          "intervalSeconds": 268.5,
+          "observedIndexedBlocksPerSecond": 16.12
+        },
+        {
+          "checkedAt": "2026-09-11T11:59:42.553Z",
+          "indexedBlock": "307756032",
+          "safeBlock": "307756032",
+          "lagBlocks": "0",
+          "outcomes": {
+            "committed": 62,
+            "failed": 1,
+            "idle": 5
+          },
+          "readyHttp": 200,
+          "requestMs": 350,
+          "intervalSeconds": 288.89,
+          "observedIndexedBlocksPerSecond": 15.26
+        },
+        {
+          "checkedAt": "2026-09-11T12:00:02.693Z",
+          "indexedBlock": "307756094",
+          "safeBlock": "307756114",
+          "lagBlocks": "20",
+          "outcomes": {
+            "committed": 65,
+            "failed": 1,
+            "idle": 9
+          },
+          "readyHttp": 200,
+          "requestMs": 136,
+          "intervalSeconds": 309.03,
+          "observedIndexedBlocksPerSecond": 14.46
+        }
+      ]
+    }
+  },
+  "finalStatus": {
+    "checkedAt": "2026-09-11T12:01:40.245Z",
+    "allSixServicesHealthy": true,
+    "financialSnapshot": {
+      "environment": "ctusd-public-test",
+      "deploymentId": "ctusd-421614-a62eed107a5aa0924ee0ba5a915f4b9b832c3913",
+      "version": 1,
+      "epoch": "1",
+      "blockNumber": "307756503",
+      "blockHash": "0xd67c38701d7d24322b89ef2e352976ef1496ed05677ebf69b9220fb84740cbd5",
+      "timestamp": "1789128096",
+      "coverageStart": "307719826",
+      "complete": true,
+      "status": "active"
+    },
+    "sync": {
+      "status": "ready",
+      "chainId": 421614,
+      "indexedBlock": "307756503",
+      "safeBlock": "307756503",
+      "lagBlocks": "0"
+    },
+    "publicCheckPassed": true,
+    "publicCheckVerifiedAt": "2026-09-11T11:57:47.252Z",
+    "newPublicMarketsInSample": 0
+  },
+  "provenance": {
+    "codeOnlyOptimizationCommit": "3a11cc058488938d672c60482afd1b604d7c1f90",
+    "maintenanceExecutionCommit": "053acc3d2e69b97570d935c3978fa866da5c5e4c",
+    "operatorValidation": "Actual Docker build, running container provenance, public check, RPC sampling, retained-service identity and financial API checks",
+    "sourceTaskValidationReported": {
+      "indexerConfigSchedulerReconciliationTestsPassed": 27,
+      "composeSelectiveUpdatePublicConfigurationTestsPassed": 34,
+      "typescriptBuild": true,
+      "generatedInventory": true,
+      "secretScan": true
+    }
+  },
+  "privateEvidenceDigests": {
+    "backupResult": "59725952e0a7e08f3c1ac4500b7140c4fd8e9280cc721153287954c9b95ea517",
+    "preservationResult": "ed51d31c3fd985e05aac865fa1df20179b4ad3ba668f895ae38a021ef808e7f3",
+    "financialActivation": "b18da8ea13df22ec07916baf693ebc4c59222f802a8cc5412a9d4ac5aa9d8730",
+    "selectiveIndexerUpdate": "fe2addf16cdc721c81a91b24be45f24b93522f2b83c00e50132530e4a08a7683",
+    "rpcSample": "7b55b6ff4b3bcb3cbfc69b29919ce1bf886bf3019071f39fe897ae04fc494df8",
+    "catchupObservation": "78720ccb5ff87c16ccded099254304b804ee047ea647ead53b5d3d2b62ca8e8b",
+    "publicCheck": "1f045b2e5940776f9214eecee378ad8f8a2e84c1cd0058233f220a51446b3aa9"
+  }
+}
