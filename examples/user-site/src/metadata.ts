@@ -13,6 +13,19 @@ import {
   type MarketRules,
 } from "../../../offchain/sdk/src/market-rules.js";
 import type { WalletSession } from "./wallets.js";
+import { errorCopy, safeErrorDetail } from "./api.js";
+
+export function rulesPublicationErrorCopy(error: unknown): string {
+  const reason =
+    error instanceof AppError
+      ? errorCopy(error)
+      : error instanceof DOMException && error.name === "TimeoutError"
+        ? "规则请求超时，请重试。"
+        : error instanceof Error
+          ? safeErrorDetail(error.message)
+          : "规则请求未完成，请检查连接后重试。";
+  return `规则发布未完成：${reason} 尚未提交链上创建交易。表单已保留，可重新发布规则。`;
+}
 
 export async function publishRules(
   session: WalletSession,
@@ -41,10 +54,9 @@ export async function publishRules(
       },
     },
   );
-  if (
-    challenge.expiresAt <= Date.now() / 1000 ||
-    challenge.expiresAt > Date.now() / 1000 + 900
-  )
+  if (challenge.expiresAt <= Date.now() / 1000)
+    throw new AppError("challenge_expired", 409);
+  if (challenge.expiresAt > Date.now() / 1000 + 900)
     throw new AppError("invalid_challenge");
   const provider = await session.controller(account);
   assertScope();
@@ -52,17 +64,44 @@ export async function publishRules(
   assertScope();
   if (kernel.address.toLowerCase() !== account.address.toLowerCase())
     throw new AppError("account_derivation_mismatch");
-  const signature = await kernel.signTypedData(
-    buildMetadataTypedData({
-      chainId: env.deployment.chainId,
-      factory: env.deployment.factory,
-      creator: account.address,
-      rulesHash: encoded.rulesHash,
-      nonce: challenge.nonce,
-      expiresAt: challenge.expiresAt,
-    }),
-  );
+  let signature;
+  try {
+    signature = await kernel.signTypedData(
+      buildMetadataTypedData({
+        chainId: env.deployment.chainId,
+        factory: env.deployment.factory,
+        creator: account.address,
+        rulesHash: encoded.rulesHash,
+        nonce: challenge.nonce,
+        expiresAt: challenge.expiresAt,
+      }),
+    );
+  } catch (error) {
+    // Wallet errors may nest provider codes and contain the full signed request.
+    let current: unknown = error;
+    for (
+      let depth = 0;
+      depth < 5 && current && typeof current === "object";
+      depth++
+    ) {
+      const candidate = current as { code?: unknown; cause?: unknown };
+      if (candidate.code === 4001 || candidate.code === "ACTION_REJECTED")
+        throw new AppError("rules_signature_rejected");
+      current = candidate.cause;
+    }
+    if (Date.now() / 1000 >= challenge.expiresAt)
+      throw new AppError("rules_signature_expired", 409);
+    throw new AppError(
+      "rules_signature_failed",
+      400,
+      error instanceof Error
+        ? safeErrorDetail(error.message)
+        : "钱包未返回有效签名",
+    );
+  }
   assertScope();
+  if (Date.now() / 1000 >= challenge.expiresAt)
+    throw new AppError("challenge_expired", 409);
   const result = await api.request(
     "/v1/markets",
     z.object({

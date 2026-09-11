@@ -56,6 +56,62 @@ suite("PostgresMetadataStore integration", () => {
     });
     expect(publication.canonicalJson).toBe(encoded.canonicalJson);
     expect(publication.rules).toEqual(rules);
+
+    // Reproduce the deployed EOA-only constraint, then upgrade the same database
+    // with the additive migration and retry the rolled-back publication.
+    const smartRules = {
+      ...rules,
+      question:
+        "Will smart-account rule publication preserve its full signature?",
+    };
+    const smartEncoded = encodeMarketRules(smartRules);
+    const smartChallenge = challengeFor(smartEncoded.rulesHash, 100);
+    const smartSignature = `0x${"ab".repeat(512)}` as Hex;
+    await store.createChallenge(smartChallenge);
+    const input = {
+      challengeId: smartChallenge.challengeId,
+      signature: smartSignature,
+      canonicalJson: smartEncoded.canonicalJson,
+      rules: smartRules,
+      metadataUri: `https://metadata.example/v1/markets/${smartEncoded.rulesHash}/outcomes/{id}.json`,
+      resolutionSourceHash: hash(3),
+      now: 1_800_000_001,
+    };
+    await expect(store.publish(input)).rejects.toMatchObject({
+      code: "23514",
+      constraint_name: "market_publication_signature",
+    });
+    expect(
+      (await store.challenge(smartChallenge.challengeId))?.consumedAt,
+    ).toBeNull();
+    const migrationSql = postgres(scopedUrl, { max: 1 });
+    try {
+      await migrationSql.unsafe(
+        await readFile(
+          new URL(
+            "../migrations/002_smart_account_signatures.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      expect((await store.publish(input)).signature).toBe(smartSignature);
+      expect(await store.publication(encoded.rulesHash)).toEqual(publication);
+      const maximum = `0x${"ab".repeat(8192)}`;
+      await migrationSql`UPDATE market_publications SET signature=${maximum} WHERE rules_hash=${smartEncoded.rulesHash}`;
+      expect((await store.publication(smartEncoded.rulesHash))?.signature).toBe(
+        maximum,
+      );
+      for (const invalid of ["0x", "0xabc", "0xzz", `0x${"ab".repeat(8193)}`])
+        await expect(
+          migrationSql`UPDATE market_publications SET signature=${invalid} WHERE rules_hash=${smartEncoded.rulesHash}`,
+        ).rejects.toMatchObject({ code: "23514" });
+      expect((await store.publication(smartEncoded.rulesHash))?.signature).toBe(
+        maximum,
+      );
+    } finally {
+      await migrationSql.end();
+    }
     await expect(
       store.publish({
         challengeId: challenge.challengeId,

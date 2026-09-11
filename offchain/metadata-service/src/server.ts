@@ -96,7 +96,7 @@ export async function createMetadataServer(
         .strict()
         .parse(request.body);
       if (body.factory !== options.config.factory)
-        return reply.code(400).send({ error: "invalid challenge request" });
+        return metadataError(reply, 400, "invalid_factory", "invalid factory");
       const issuedAt = now();
       const challenge = {
         challengeId: nonce(),
@@ -139,13 +139,27 @@ export async function createMetadataServer(
         .parse(request.body);
       const challenge = await options.store.challenge(body.challengeId);
       const currentTime = now();
-      if (
-        challenge === undefined ||
-        challenge.consumedAt !== null ||
-        challenge.expiresAt <= currentTime
-      ) {
-        return reply.code(409).send({ error: "challenge unavailable" });
-      }
+      if (challenge === undefined)
+        return metadataError(
+          reply,
+          409,
+          "challenge_not_found",
+          "challenge not found",
+        );
+      if (challenge.consumedAt !== null)
+        return metadataError(
+          reply,
+          409,
+          "challenge_consumed",
+          "challenge already consumed",
+        );
+      if (challenge.expiresAt <= currentTime)
+        return metadataError(
+          reply,
+          409,
+          "challenge_expired",
+          "challenge expired",
+        );
       const encoded = encodePublishedMarketRules(body.rules);
       if (encoded.rulesHash.toLowerCase() !== challenge.rulesHash.toLowerCase())
         return reply.code(400).send({ error: "rules do not match challenge" });
@@ -266,16 +280,51 @@ export async function createMetadataServer(
     }
     if (error instanceof ChallengeUnavailableError)
       return reply.code(409).send({ error: "challenge unavailable" });
+    // PostgreSQL messages/details can contain the signed row and connection data.
+    // Record only a bounded SQLSTATE and this known constraint, never the error object.
+    const databaseError = z
+      .object({
+        code: z.string().regex(/^[0-9A-Z]{5}$/),
+        constraint_name: z.string().optional(),
+      })
+      .safeParse(error);
+    const signatureConstraint =
+      databaseError.success &&
+      databaseError.data.code === "23514" &&
+      databaseError.data.constraint_name === "market_publication_signature";
     request.log.error(
       {
         requestId: request.id,
         errorName: error instanceof Error ? error.name : "UnknownError",
+        ...(databaseError.success
+          ? { databaseErrorCode: databaseError.data.code }
+          : {}),
+        ...(signatureConstraint
+          ? { constraint: "market_publication_signature" }
+          : {}),
       },
       "metadata request failed",
     );
+    if (signatureConstraint)
+      return metadataError(
+        reply,
+        500,
+        "metadata_storage_incompatible",
+        "metadata signature storage is incompatible",
+      );
     return reply.code(500).send({ error: "internal error" });
   });
   return app;
+}
+
+function metadataError(
+  reply: FastifyReply,
+  status: number,
+  code: string,
+  error: string,
+) {
+  // Keep the legacy string envelope for SDK consumers, with a precise reason for new clients.
+  return reply.code(status).send({ error, code, requestId: reply.request.id });
 }
 
 function immutableJson(reply: FastifyReply, rulesHash: Hex): void {
