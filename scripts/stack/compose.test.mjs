@@ -6,6 +6,24 @@ const compose = JSON.parse(
   await readFile(new URL("../../compose.yaml", import.meta.url), "utf8"),
 );
 
+test("canonical header concurrency defaults are bounded and isolated by environment", async () => {
+  const usdc = JSON.parse(await readFile(
+    new URL("../../compose.usdc.yaml", import.meta.url), "utf8",
+  ));
+  assert.equal(
+    compose.services.indexer.environment.CPREDICT_INDEXER_BLOCK_CONCURRENCY,
+    "${CPREDICT_INDEXER_BLOCK_CONCURRENCY:-4}",
+  );
+  const indexer = Object.values(usdc.services).find((service) =>
+    service.environment?.CPREDICT_INDEXER_HOST,
+  );
+  assert.ok(indexer);
+  assert.equal(
+    indexer.environment.CPREDICT_INDEXER_BLOCK_CONCURRENCY,
+    "${CPREDICT_USDC_INDEXER_BLOCK_CONCURRENCY:-4}",
+  );
+});
+
 test("Compose exposes only application services on loopback", () => {
   assert.equal(compose.services.postgres.ports, undefined);
   assert.deepEqual(compose.services.paymaster.profiles, ["sponsorship"]);

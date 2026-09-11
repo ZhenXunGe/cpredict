@@ -36,6 +36,7 @@ CPREDICT_INDEXER_CORE_ADDRESSES=0xFactory,0xMarketplace
 CPREDICT_INDEXER_DEPLOYMENT_BLOCK=...
 CPREDICT_INDEXER_CONFIRMATIONS=2
 CPREDICT_INDEXER_BATCH_SIZE=500
+CPREDICT_INDEXER_BLOCK_CONCURRENCY=4
 CPREDICT_INDEXER_MAX_BATCHES_PER_TICK=4
 CPREDICT_INDEXER_POLL_INTERVAL_MS=1000
 CPREDICT_INDEXER_RPC_TIMEOUT_MS=5000
@@ -57,8 +58,15 @@ accepted only on loopback for local development. Factory is configured separatel
 contract whose events are indexed, normally Factory and Marketplace.
 
 Each scheduler tick commits at most `MAX_BATCHES_PER_TICK`, each event batch is capped at 10,000
-blocks, block RPC concurrency remains capped at 50, and ticks never overlap. SIGINT/SIGTERM stops new
-polls, drains the active transaction, closes HTTP and then closes PostgreSQL.
+blocks, and ticks never overlap. Canonical header reads default to 4 concurrent requests;
+`CPREDICT_INDEXER_BLOCK_CONCURRENCY` accepts integers from 1 to 32. For a large catch-up,
+first sample the actual RPC at 16 concurrent reads and check latency, 429s and timeouts.
+Only raise the setting when the provider supports it; lower it on rate limiting.
+Compose uses the independent `CPREDICT_USDC_INDEXER_BLOCK_CONCURRENCY` override for USDC.
+This changes read throughput, not the deployment start block, event coverage or confirmation depth.
+Every block and parent hash is still checked and persisted. A failed batch stops scheduling
+new reads, drains requests already in flight and leaves its checkpoint unchanged.
+SIGINT/SIGTERM stops new polls, drains the active transaction, closes HTTP and then closes PostgreSQL.
 
 ## Operations
 

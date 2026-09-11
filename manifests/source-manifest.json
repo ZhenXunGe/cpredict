@@ -18,11 +18,11 @@
     },
     {
       "path": ".env.compose.example",
-      "sha256": "4643ac3f6e77094449e8cd8d76ba45cc1f3690916c6c2cdf857f80427c2b2f9e"
+      "sha256": "30fa0f022792961daa614372da608b1dc682e8e21f8478a19df846fa645f4e15"
     },
     {
       "path": ".env.example",
-      "sha256": "8bac5159864fdb9446503a52ec4911f47637e4cb295bc5b92183147af3f0da21"
+      "sha256": "0021e9af8096335d8ed629d4daec448d529bcc663fabbfbf663087178f261c54"
     },
     {
       "path": ".github/dependabot.yml",
@@ -66,11 +66,11 @@
     },
     {
       "path": "compose.usdc.yaml",
-      "sha256": "95e71ec4b6831637f22d8e8a29e9f55fbb5f6e480d35221fc679db43914f5de4"
+      "sha256": "a620396b817fde21b3e8eb92af02d29b60825febd0c746913b8ca13a575cc28a"
     },
     {
       "path": "compose.yaml",
-      "sha256": "bededa801c533dee2a742545cfa1eb09e12e89ad01cb3791c949c1d055a48bab"
+      "sha256": "ef309b21f6eb72a69f818a5d16fb6f3925c6f898c8c76dade30b33ba277eb65a"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
@@ -1030,7 +1030,7 @@
     },
     {
       "path": "offchain/indexer/README.md",
-      "sha256": "a06e5e73f86f3241b12101a93158858536823da85bb4d1b84d788c609df8f085"
+      "sha256": "a91177661df75a11076eb9315f0b421c6c3d3a34840746341681f52f6e1f94ed"
     },
     {
       "path": "offchain/indexer/migrations/001_indexer.sql",
@@ -1070,7 +1070,7 @@
     },
     {
       "path": "offchain/indexer/src/config.ts",
-      "sha256": "fd8c1d790c56235e832640bfb67f292102de99a3cee207bc4936a67b869bcf17"
+      "sha256": "1d5adacfc6568492664af22719262f94e86e632a4dcb5827c6b7f8c68ef03d9e"
     },
     {
       "path": "offchain/indexer/src/derived.ts",
@@ -1090,7 +1090,7 @@
     },
     {
       "path": "offchain/indexer/src/indexer.ts",
-      "sha256": "21fd37f4014fcc7ed53cd42ee5698e0e59f0b7af9b92090e779d88fc1116ea05"
+      "sha256": "f202618d374f9d701d3626fe797450afde041f0b588369d1a2230cb31d3d8214"
     },
     {
       "path": "offchain/indexer/src/instrumented-store.ts",
@@ -1118,7 +1118,7 @@
     },
     {
       "path": "offchain/indexer/src/reconciliation.ts",
-      "sha256": "0b192eac4793a3bd5e14e6c5b8f0e82a13479600c420e568d082d60961318075"
+      "sha256": "cec9dab27c4b17275eadc72af541e13aa886707cead7e9affd1d04ec51caad91"
     },
     {
       "path": "offchain/indexer/src/rights-reader.ts",
@@ -1126,7 +1126,7 @@
     },
     {
       "path": "offchain/indexer/src/runtime.ts",
-      "sha256": "2b273fe4abb4cb339dc6f6439a8e60e934b55e33bdc3b419fd582193ab5f28ce"
+      "sha256": "386a1f657922cd9faf34c8685ba85bbf3a69a2e0995ee31ab10ab7a05c062978"
     },
     {
       "path": "offchain/indexer/src/scheduler.ts",
@@ -1154,7 +1154,7 @@
     },
     {
       "path": "offchain/indexer/test/config.test.ts",
-      "sha256": "87589297a133196de77630140a2c023e0b5284108e17eb803329c384ba516f4f"
+      "sha256": "e05d7fbda4ce82b8c010e4fe56eaa0924cba598cc1cfc1560ba804984bd8d837"
     },
     {
       "path": "offchain/indexer/test/financial-facts.test.ts",
@@ -1170,7 +1170,7 @@
     },
     {
       "path": "offchain/indexer/test/indexer.test.ts",
-      "sha256": "8366f36c3319a5319b49dbc7e14d2c0cc14d9cae6a4145704586ae3a54d57a03"
+      "sha256": "c5d2a14a5c43a35f7f2e414650ca173a0174a355711fabde58e231a06b663daf"
     },
     {
       "path": "offchain/indexer/test/instrumented-store.test.ts",
@@ -1186,7 +1186,7 @@
     },
     {
       "path": "offchain/indexer/test/reconciliation.test.ts",
-      "sha256": "380c08ae93db994953e403442f2ba2ba6a76e6187754f2e0a408957ae276ec8c"
+      "sha256": "a4c26c87f2eccd077ea43c67f9d4047a9928576693163fa5e5434bb941124aef"
     },
     {
       "path": "offchain/indexer/test/reports-postgres.integration.test.ts",
@@ -2098,7 +2098,7 @@
     },
     {
       "path": "scripts/stack/compose.test.mjs",
-      "sha256": "eb8bfdad8d8709b4d850171daa1671ef0335a73d2ef03514020668fc44af96cd"
+      "sha256": "80f113330b5d2e2ce0a8aa20c1c3e6138239d692340cf7d61e97398653f56e9a"
     },
     {
       "path": "scripts/stack/config.mjs",
