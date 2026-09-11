@@ -3308,12 +3308,20 @@
       "sourceScope": "Node runtime dependency"
     },
     {
-      "identity": "npm:agent-base@6.0.2:node_modules/agent-base",
+      "identity": "npm:agent-base@6.0.2:node_modules/axios/node_modules/agent-base",
       "kind": "runtime",
       "declared": "MIT",
       "concluded": "NOASSERTION",
-      "provenance": "package-lock.json#packages[\"node_modules/agent-base\"]",
+      "provenance": "package-lock.json#packages[\"node_modules/axios/node_modules/agent-base\"]",
       "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:agent-base@9.0.0:node_modules/agent-base",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/agent-base\"]",
+      "sourceScope": "Node development dependency"
     },
     {
       "identity": "npm:agentkeepalive@4.6.0:node_modules/agentkeepalive",
@@ -4580,12 +4588,20 @@
       "sourceScope": "Node runtime dependency"
     },
     {
-      "identity": "npm:https-proxy-agent@5.0.1:node_modules/https-proxy-agent",
+      "identity": "npm:https-proxy-agent@5.0.1:node_modules/axios/node_modules/https-proxy-agent",
       "kind": "runtime",
       "declared": "MIT",
       "concluded": "NOASSERTION",
-      "provenance": "package-lock.json#packages[\"node_modules/https-proxy-agent\"]",
+      "provenance": "package-lock.json#packages[\"node_modules/axios/node_modules/https-proxy-agent\"]",
       "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:https-proxy-agent@9.1.0:node_modules/https-proxy-agent",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/https-proxy-agent\"]",
+      "sourceScope": "Node development dependency"
     },
     {
       "identity": "npm:humanize-ms@1.2.1:node_modules/humanize-ms",
@@ -5866,6 +5882,14 @@
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/prom-client\"]",
       "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:proxy-agent-negotiate@1.1.0:node_modules/proxy-agent-negotiate",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/proxy-agent-negotiate\"]",
+      "sourceScope": "Node development dependency"
     },
     {
       "identity": "npm:proxy-compare@3.0.1:node_modules/proxy-compare",

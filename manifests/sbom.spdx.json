@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "cpredict-protocol-sbom",
-  "documentNamespace": "https://cpredict.example.invalid/spdx/732018c1c5e4826cc183a6c225de7a5fcfd8f36cabb84d1b6e675436ab5456b2",
+  "documentNamespace": "https://cpredict.example.invalid/spdx/6556c8f593dd1a1a89ef0b0a2c3fb1462ea0dc7c493ac57e21052964613aa692",
   "creationInfo": {
     "created": "1970-01-01T00:00:00Z",
     "creators": [
@@ -7049,7 +7049,7 @@
       "comment": "Locked npm path node_modules/abstract-logging; integrity verified against package-lock.json."
     },
     {
-      "SPDXID": "SPDXRef-Package-d2e1df77395f138de4c6ef17",
+      "SPDXID": "SPDXRef-Package-5659dae4346a3d377c8353da",
       "name": "agent-base",
       "versionInfo": "6.0.2",
       "downloadLocation": "https://registry.npmjs.org/agent-base/-/agent-base-6.0.2.tgz",
@@ -7058,6 +7058,23 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "45937035c945efe312ffc6c383bd1a9a0df6772799199c620ee42667128b025423af78c6c8bc7ee0a924e7c50eec3d90760148402a2fb92b991129dee911ba5d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/axios/node_modules/agent-base; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-bd22e5f7534331973562136f",
+      "name": "agent-base",
+      "versionInfo": "9.0.0",
+      "downloadLocation": "https://registry.npmjs.org/agent-base/-/agent-base-9.0.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "4d07f9f41b199f2b6df0674928b3df519e7883f89a50bd8e583485082bcc3a1b0776e0d0c4ef310b83cd7b222455c0392b02f6a613d2bf4768b82d1f816ce69c"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -9752,7 +9769,7 @@
       "comment": "Locked npm path node_modules/hono; integrity verified against package-lock.json."
     },
     {
-      "SPDXID": "SPDXRef-Package-13b64efb5e9952753f4def22",
+      "SPDXID": "SPDXRef-Package-a7525de8cceceaaf644b8ad5",
       "name": "https-proxy-agent",
       "versionInfo": "5.0.1",
       "downloadLocation": "https://registry.npmjs.org/https-proxy-agent/-/https-proxy-agent-5.0.1.tgz",
@@ -9761,6 +9778,23 @@
         {
           "algorithm": "SHA512",
           "checksumValue": "7457008e94d0160a0b3330b657053e0bf09b4bbb912f49569b10c84e6aa6ec2fbb17439d9a3eacf65e9a95973a0042d786b9e080cd827964971c639d5f662dc0"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/axios/node_modules/https-proxy-agent; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-26c49ee7f70568ff11e44a8f",
+      "name": "https-proxy-agent",
+      "versionInfo": "9.1.0",
+      "downloadLocation": "https://registry.npmjs.org/https-proxy-agent/-/https-proxy-agent-9.1.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "6a0f3bcbb70927dff7f86c45afc3b2e0ee5f683b064469c11ac263fd88ce4ac4b1ff979a74a2d84cc3e5cee47aa1b8280830e6d1a6c00198ad5d742430e3d2a4"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -12487,6 +12521,23 @@
       "licenseDeclared": "Apache-2.0",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/prom-client; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-b190b8fb89632a31c95073cd",
+      "name": "proxy-agent-negotiate",
+      "versionInfo": "1.1.0",
+      "downloadLocation": "https://registry.npmjs.org/proxy-agent-negotiate/-/proxy-agent-negotiate-1.1.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "37c20170cdd4802573cf62f62eabfc0d59ed0e79c2f3f8625789c40d43e4aaaef64cf5206168d073e6dd66504f64af4bccf02f398fff800b744b40c0a6839759"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/proxy-agent-negotiate; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-02a5ffe4902d9ac4f9b5efce",
@@ -16448,6 +16499,11 @@
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
     {
+      "spdxElementId": "SPDXRef-Package-26c49ee7f70568ff11e44a8f",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
       "spdxElementId": "SPDXRef-Package-2c2a9b2028467962270bee2c",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
@@ -16933,6 +16989,11 @@
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
     {
+      "spdxElementId": "SPDXRef-Package-b190b8fb89632a31c95073cd",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
       "spdxElementId": "SPDXRef-Package-b2991c696230926b5ff5e14c",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
@@ -16959,6 +17020,11 @@
     },
     {
       "spdxElementId": "SPDXRef-Package-bc46771fcf8fc65c2d00c9ef",
+      "relationshipType": "BUILD_DEPENDENCY_OF",
+      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-bd22e5f7534331973562136f",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
@@ -17341,11 +17407,6 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-12cd917de05be4973a5a50fa"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
-      "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-13b64efb5e9952753f4def22"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -18341,6 +18402,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-5632edb9cf1d3ddad1477327"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-5659dae4346a3d377c8353da"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -19520,6 +19586,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-a7525de8cceceaaf644b8ad5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-a76888a73cfe6f8cb20872d5"
     },
     {
@@ -20161,11 +20232,6 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-d29346b97112968d47a1efd9"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
-      "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-d2e1df77395f138de4c6ef17"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -21053,7 +21119,7 @@
       "annotationDate": "1970-01-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: cpredict-sbom-generator-1",
-      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/npm-license-evidence.json=757c2f1b76443b1431f05fd4348439f653cb67bfd1b790bb0a86a37a1364bb4d, manifests/npm-licenses/041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be.txt=041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be, manifests/npm-licenses/0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357.txt=0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357, manifests/npm-licenses/1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc.txt=1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc, manifests/npm-licenses/45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1.txt=45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1, manifests/npm-licenses/6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd.txt=6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd, manifests/npm-licenses/8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb.txt=8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb, manifests/npm-licenses/a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214.txt=a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214, manifests/npm-licenses/c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a.txt=c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a, manifests/npm-licenses/caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec.txt=caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec, manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt=d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41, manifests/npm-licenses/e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93.txt=e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=df09be13b20914c471d4fbbba72684cf010eda809534730fffa5cb6295348c7b, package.json=55136ff7eaf425e9108607c55eeba0c5576c60e339cc9eb850af9270fc730371"
+      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/npm-license-evidence.json=757c2f1b76443b1431f05fd4348439f653cb67bfd1b790bb0a86a37a1364bb4d, manifests/npm-licenses/041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be.txt=041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be, manifests/npm-licenses/0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357.txt=0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357, manifests/npm-licenses/1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc.txt=1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc, manifests/npm-licenses/45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1.txt=45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1, manifests/npm-licenses/6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd.txt=6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd, manifests/npm-licenses/8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb.txt=8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb, manifests/npm-licenses/a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214.txt=a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214, manifests/npm-licenses/c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a.txt=c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a, manifests/npm-licenses/caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec.txt=caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec, manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt=d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41, manifests/npm-licenses/e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93.txt=e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=cf4e89bd433787a0b665b6508e6ed6ddbe19caf3769b3b9a0e5a60c1c0f6749b, package.json=40d906cb016f916bec49bcef54267de520081ad128806098d8ca76df70bf956e"
     }
   ]
 }

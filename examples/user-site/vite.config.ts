@@ -1,9 +1,11 @@
 import { resolve } from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { developmentProxy } from "./dev-proxy.js";
 const root = resolve(import.meta.dirname, "../..");
-export default defineConfig({
+export default defineConfig(({ command, mode }) => ({
   root: import.meta.dirname,
+  envDir: root,
   plugins: [react()],
   server: {
     host: "127.0.0.1",
@@ -13,32 +15,15 @@ export default defineConfig({
       allow: [root],
       deny: [".env", ".env.*", "*.{crt,pem}", "**/.git/**", "**/runtime/**"],
     },
-    proxy: {
-      "/ctusd/app": {
-        target: "http://127.0.0.1:8795",
-        rewrite: (p) => p.replace(/^\/ctusd\/app/, ""),
-      },
-      "/ctusd/indexer": {
-        target: "http://127.0.0.1:8787",
-        rewrite: (p) => p.replace(/^\/ctusd\/indexer/, ""),
-      },
-      "/ctusd/metadata": {
-        target: "http://127.0.0.1:8790",
-        rewrite: (p) => p.replace(/^\/ctusd\/metadata/, ""),
-      },
-      "/usdc/app": {
-        target: "http://127.0.0.1:8895",
-        rewrite: (p) => p.replace(/^\/usdc\/app/, ""),
-      },
-      "/usdc/indexer": {
-        target: "http://127.0.0.1:8887",
-        rewrite: (p) => p.replace(/^\/usdc\/indexer/, ""),
-      },
-      "/usdc/metadata": {
-        target: "http://127.0.0.1:8890",
-        rewrite: (p) => p.replace(/^\/usdc\/metadata/, ""),
-      },
-    },
+    proxy:
+      command === "serve"
+        ? developmentProxy(
+            loadEnv(mode, root, [
+              "CPREDICT_SITE_",
+              "CPREDICT_DEMO_REMOTE_ORIGIN",
+            ]),
+          )
+        : {},
   },
   preview: { host: "127.0.0.1", port: 4199, strictPort: true },
   build: {
@@ -53,4 +38,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));
