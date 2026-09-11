@@ -383,49 +383,68 @@ export async function createManifest(directory, sourceCommit) {
   };
 }
 export async function fetchBytes(origin, path, { timeoutMs = 120000 } = {}) {
-  try {
-    const r = await fetch(origin + path, {
-      redirect: "manual",
-      headers: { "cache-control": "no-cache" },
-      // Include the complete response body: larger wallet chunks can take more
-      // than 35 seconds over the public connection during release verification.
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    const data = Buffer.from(await r.arrayBuffer());
-    return {
-      status: r.status,
-      sha256: sha256(data),
-      bytes: data.length,
-      location: r.headers.get("location"),
-      data,
-    };
-  } catch (error) {
-    // An unadorned DOMException code 23 hid which public download had failed.
-    // Paths here are public verification targets; never expose connection data.
-    throw new Error(
-      `Public read failed: ${path} (${error.name ?? "request error"})`,
-      { cause: error },
-    );
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const r = await fetch(origin + path, {
+        redirect: "manual",
+        headers: { "cache-control": "no-cache" },
+        // Include the complete response body: larger wallet chunks can take more
+        // than 35 seconds over the public connection during release verification.
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      const data = Buffer.from(await r.arrayBuffer());
+      return {
+        status: r.status,
+        sha256: sha256(data),
+        bytes: data.length,
+        location: r.headers.get("location"),
+        data,
+      };
+    } catch (error) {
+      const retryable =
+        error.name === "TimeoutError" ||
+        (error instanceof TypeError &&
+          ["terminated", "fetch failed"].includes(error.message));
+      if (retryable && attempt < 3) {
+        // These are read-only GETs. Retry the entire body, never accept partial
+        // bytes or turn an HTTP/content mismatch into a passing verification.
+        await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+        continue;
+      }
+      // An unadorned DOMException code 23 hid which public download had failed.
+      // Paths here are public verification targets; never expose connection data.
+      throw new Error(
+        `Public read failed: ${path} (${error.name ?? "request error"}); ${attempt} attempt(s)`,
+        { cause: error },
+      );
+    }
   }
 }
 export async function verifyAssets(origin, manifest) {
   let next = 0;
   const rows = [];
+  let failure;
   await Promise.all(
     Array.from({ length: 4 }, async () => {
-      while (next < manifest.files.length) {
-        const file = manifest.files[next++],
-          r = await fetchBytes(origin, "/" + file.path);
-        ensure(
-          r.status === 200 &&
-            r.sha256 === file.sha256 &&
-            r.bytes === file.bytes,
-          `Public asset verification failed: ${file.path}`,
-        );
-        rows.push({ path: file.path, sha256: r.sha256, bytes: r.bytes });
+      while (!failure && next < manifest.files.length) {
+        try {
+          const file = manifest.files[next++],
+            r = await fetchBytes(origin, "/" + file.path);
+          ensure(
+            r.status === 200 &&
+              r.sha256 === file.sha256 &&
+              r.bytes === file.bytes,
+            `Public asset verification failed: ${file.path}`,
+          );
+          rows.push({ path: file.path, sha256: r.sha256, bytes: r.bytes });
+        } catch (error) {
+          failure ??= error;
+        }
       }
     }),
   );
+  // Do not unlock or roll back while sibling workers are still downloading.
+  if (failure) throw failure;
   return rows;
 }
 export async function verifySite(origin, htmlSha256, configSha256) {

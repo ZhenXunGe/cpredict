@@ -71,6 +71,75 @@ test("publisher enforces archive, immutability, command and rollback boundaries"
     { stdio: "pipe" },
   );
 });
+
+test("public GET retries a truncated body but never retries an HTTP rejection", async () => {
+  const body = Buffer.from("complete immutable asset");
+  let downloads = 0,
+    rejections = 0;
+  const server = createServer((req, res) => {
+    if (req.url === "/missing") {
+      rejections++;
+      res.writeHead(404);
+      res.end("not found");
+      return;
+    }
+    downloads++;
+    res.writeHead(200, { "content-length": body.length });
+    res.flushHeaders();
+    if (downloads === 1) {
+      res.write(body.subarray(0, 1));
+      setTimeout(() => res.destroy(), 10);
+    } else res.end(body);
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const result = await fetchBytes(origin, "/asset");
+    assert.equal(result.bytes, body.length);
+    assert.equal(result.sha256, sha256(body));
+    assert.equal(downloads, 2);
+    assert.equal((await fetchBytes(origin, "/missing")).status, 404);
+    assert.equal(rejections, 1);
+  } finally {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("asset failure stops new downloads and drains in-flight reads before returning", async () => {
+  const requested = [],
+    finished = [];
+  const body = Buffer.from("expected asset");
+  const server = createServer((req, res) => {
+    requested.push(req.url);
+    setTimeout(
+      () => {
+        finished.push(req.url);
+        res.end(req.url === "/assets/0.js" ? "corrupt bytes" : body);
+      },
+      req.url === "/assets/0.js" ? 10 : 60,
+    );
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+  try {
+    await assert.rejects(
+      verifyAssets(origin, {
+        files: Array.from({ length: 8 }, (_, i) => ({
+          path: `assets/${i}.js`,
+          bytes: body.length,
+          sha256: sha256(body),
+        })),
+      }),
+      /Public asset verification failed: assets\/0.js/,
+    );
+    assert.equal(requested.length, 4);
+    assert.deepEqual([...finished].sort(), [...requested].sort());
+  } finally {
+    server.closeAllConnections();
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
 test("publishing uses pinned host keys, an explicit identity, no shell or forwarding", () => {
   const parsed = validateUpdateConfig(config, "/repository");
   const args = sshArgs(parsed, "status");
