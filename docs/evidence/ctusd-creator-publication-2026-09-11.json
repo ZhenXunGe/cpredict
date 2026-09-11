@@ -1,0 +1,344 @@
+{
+  "version": 1,
+  "investigatedAt": "2026-09-11T13:02:30.356Z",
+  "failure": {
+    "events": [
+      {
+        "time": "2026-09-11T12:37:58.320Z",
+        "level": 30,
+        "reqId": "req-hb",
+        "method": "POST",
+        "path": "/v1/challenges",
+        "msg": "incoming request"
+      },
+      {
+        "time": "2026-09-11T12:37:58.418Z",
+        "level": 30,
+        "reqId": "req-hb",
+        "status": 200,
+        "responseTime": 96.13071299996227,
+        "msg": "request completed"
+      },
+      {
+        "time": "2026-09-11T12:38:17.890Z",
+        "level": 30,
+        "reqId": "req-he",
+        "method": "POST",
+        "path": "/v1/markets",
+        "msg": "incoming request"
+      },
+      {
+        "time": "2026-09-11T12:38:20.025Z",
+        "level": 50,
+        "reqId": "req-he",
+        "msg": "metadata request failed",
+        "errorName": "PostgresError"
+      },
+      {
+        "time": "2026-09-11T12:38:20.026Z",
+        "level": 30,
+        "reqId": "req-he",
+        "status": 500,
+        "responseTime": 2135.971740999259,
+        "msg": "request completed"
+      }
+    ],
+    "postgres": [
+      "2026-09-11T12:38:20.020538040Z 2026-09-11 12:38:20.020 UTC [78995] ERROR:  new row for relation \"market_publications\" violates check constraint \"market_publication_signature\""
+    ],
+    "constraintBefore": "signature ~ '^0x[0-9a-fA-F]{130}$'",
+    "cause": "Verified smart-account signature rejected by the EOA-only database CHECK constraint",
+    "historicalResponseBodyCaptured": false
+  },
+  "routing": {
+    "checkedAt": "2026-09-11T12:47:16.899Z",
+    "probes": [
+      {
+        "url": "https://101.32.241.211/ctusd/metadata/v1/challenges",
+        "status": 400,
+        "contentType": "application/json; charset=utf-8",
+        "body": "{\"error\":\"invalid challenge request\"}"
+      },
+      {
+        "url": "https://101.32.241.211/ctusd/metadata/v1/markets",
+        "status": 400,
+        "contentType": "application/json; charset=utf-8",
+        "body": "{\"error\":\"invalid request\"}"
+      },
+      {
+        "url": "https://101.32.241.211/metadata/v1/markets/0x0000000000000000000000000000000000000000000000000000000000000000/rules.json",
+        "status": 404,
+        "contentType": "application/json; charset=utf-8",
+        "body": "{\"error\":\"metadata not found\"}"
+      },
+      {
+        "url": "https://101.32.241.211/ctusd/metadata/v1/markets/0x0000000000000000000000000000000000000000000000000000000000000000/rules.json",
+        "status": 404,
+        "contentType": "application/json; charset=utf-8",
+        "body": "{\"error\":\"metadata not found\"}"
+      },
+      {
+        "url": "http://127.0.0.1:8793/v1/markets",
+        "status": 400,
+        "contentType": "application/json; charset=utf-8",
+        "body": "{\"error\":\"invalid request\"}"
+      }
+    ]
+  },
+  "equivalentMetadataPrefixes": [
+    {
+      "prefix": "/metadata",
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "sha256": "a9d9abe9a6af91f2713f358457956adf986b83bd5e3352633f794c83806eb877"
+    },
+    {
+      "prefix": "/ctusd/metadata",
+      "status": 200,
+      "contentType": "application/json; charset=utf-8",
+      "sha256": "a9d9abe9a6af91f2713f358457956adf986b83bd5e3352633f794c83806eb877"
+    }
+  ],
+  "validation": {
+    "unitTests": 23,
+    "unitPassed": 23,
+    "postgresTests": 2,
+    "postgresPassed": 2,
+    "pcBrowserScenarios": [
+      400,
+      409,
+      500,
+      502
+    ],
+    "typeChecks": [
+      "site:check",
+      "check:offchain"
+    ],
+    "build": "site:build",
+    "realWalletCreation": "pending user retest",
+    "deploymentToolTests": 33,
+    "deploymentToolPassed": 33,
+    "privateValuesScan": {
+      "at": "2026-09-11T13:44:18.290Z",
+      "checkedTrackedFiles": 1015,
+      "privateValuesChecked": 8,
+      "findings": [],
+      "passed": true
+    },
+    "finalCheck": {
+      "command": "npm run stack:update:public -- check",
+      "exit": 0,
+      "sourceCommit": "cabee7b1236932832f4419e8eaebb5ddc5d8d826"
+    }
+  },
+  "privateEvidenceDigests": {
+    "metadata.private.log": "77d5184a5cdfb30e0d218d7cca54775bfaafcff0828a7f301b534b802690b82d",
+    "web-demo.private.log": "833de646423833cf51b9b62843d05d4c18e556bdefa3e94ecb77c4ccf3ab328f",
+    "postgres.private.log": "6c479a82a62d07e2b4b1a13a67b089d1ac0cae5ec4f25a5942f052103c26cb77",
+    "metadata-db-readonly.private.log": "7ac5959da48b5e8fbb33d76ba406999fafa1045428a919f89a56060f6a4a3d66",
+    "postgres-integration.private.log": "079590d5083776862d0c4d50c1c642c833103dc16bedd9c3cea1c3f70b7dfd38",
+    "unit-tests.private.log": "9dc79838faabbeb002dafbbcd941743c2e57d5d01d1122d56239e99a296071ed"
+  },
+  "deployment": {
+    "checkedAt": "2026-09-11T13:53:15.312Z",
+    "checks": {
+      "allSixHealthy": true,
+      "postgresPreserved": true,
+      "indexerPreserved": true,
+      "privateInputsUnchanged": true,
+      "originalRulesUnchanged": true,
+      "metadataFactoryMatchesRuntime": true,
+      "metadataFactoryMatchesPublicSite": true,
+      "signatureConstraintUpdated": true,
+      "metadataReady": true,
+      "publicHealthy": true,
+      "invalidFactoryExplained": true,
+      "expiredChallengeExplained": true
+    },
+    "metadata": {
+      "factory": "0xA62eEd107a5aa0924ee0Ba5a915f4B9B832C3913",
+      "chainId": "421614",
+      "challengeTtlSeconds": "300",
+      "publicBaseUrl": "https://101.32.241.211/metadata",
+      "constraint": "CHECK ((((octet_length(signature) >= 4) AND (octet_length(signature) <= 16386)) AND (signature ~ '^0x([0-9a-fA-F]{2})+$'::text)))"
+    },
+    "rules": {
+      "before": 25,
+      "after": 25
+    },
+    "publicProbes": {
+      "invalidFactory": {
+        "status": 400,
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "error": "invalid factory",
+          "code": "invalid_factory",
+          "requestId": "req-d"
+        }
+      },
+      "expiredChallenge": {
+        "status": 409,
+        "contentType": "application/json; charset=utf-8",
+        "body": {
+          "error": "challenge expired",
+          "code": "challenge_expired",
+          "requestId": "req-e"
+        }
+      }
+    },
+    "sync": {
+      "status": "ready",
+      "chainId": 421614,
+      "indexedBlock": "307783291",
+      "safeBlock": "307783309"
+    },
+    "services": [
+      {
+        "service": "web-demo",
+        "source": "cabee7b1236932832f4419e8eaebb5ddc5d8d826",
+        "image": "sha256:d93b62446505ea5f1b6a21e7f2408e8930dde1cc0b20859e9bb82ea8c0e12bdd",
+        "health": "healthy"
+      },
+      {
+        "service": "app-service",
+        "source": "cabee7b1236932832f4419e8eaebb5ddc5d8d826",
+        "image": "sha256:1cc338c279233fbcbb18efbeee1d9ce4ee027d30f7b8d784e22df9bc3452caf2",
+        "health": "healthy"
+      },
+      {
+        "service": "metadata",
+        "source": "cabee7b1236932832f4419e8eaebb5ddc5d8d826",
+        "image": "sha256:deed7675013bfc419ed30dd63fbda9dda1400ee1e28ac72e9948ec4038078e71",
+        "health": "healthy"
+      },
+      {
+        "service": "indexer",
+        "source": "3a11cc058488938d672c60482afd1b604d7c1f90",
+        "image": "sha256:8f21e92e996071fc1912f550b4210d15c46b2b22b75bb19583ccf6bcf472e0ec",
+        "health": "healthy"
+      },
+      {
+        "service": "public-site-preview",
+        "source": "b563f0410ee8b1a45c49c0784d3c7346eb6931ba",
+        "image": "sha256:3a3cbc439a65f257c908b7db8b7b9dab2d4c5c95ee36a3a5b7e9e62662d79253",
+        "health": "healthy"
+      },
+      {
+        "service": "postgres",
+        "image": "sha256:8164afa59e26be9f78959e538d6c9da8553d67e601d8ebd0d5e9cbf558c3986e",
+        "health": "healthy"
+      }
+    ],
+    "publicFrontendSource": "cabee7b1236932832f4419e8eaebb5ddc5d8d826",
+    "passed": true
+  },
+  "update": {
+    "at": "2026-09-11T13:55:44.712Z",
+    "status": "succeeded",
+    "sourceCommit": "cabee7b1236932832f4419e8eaebb5ddc5d8d826",
+    "publicChecks": 16,
+    "assetChecks": 316,
+    "backupDatabases": [],
+    "migrations": [],
+    "retainedServices": [
+      "indexer"
+    ]
+  },
+  "delivery": {
+    "phase": "finished",
+    "at": "2026-09-11T13:54:28.094Z",
+    "update": 0,
+    "check": 0,
+    "verification": 0
+  },
+  "migration": {
+    "at": "2026-09-11T13:27:40.530Z",
+    "constraint": "CHECK ((((octet_length(signature) >= 4) AND (octet_length(signature) <= 16386)) AND (signature ~ '^0x([0-9a-fA-F]{2})+$'::text)))",
+    "migrations": [
+      {
+        "path": "offchain/metadata-service/migrations/001_metadata.sql",
+        "digest": "7d322251d2f4d3e630d3aee566933fdc28de568254b4f41fd20da06e4daf53ba",
+        "appliedAt": "2026-09-10T11:55:21.812289+00:00"
+      },
+      {
+        "path": "offchain/metadata-service/migrations/002_smart_account_signatures.sql",
+        "digest": "966a7bc538ec685039bf73ef61cd7d014663de66ad584d1eff9035295a824c71",
+        "appliedAt": "2026-09-11T13:14:39.771477+00:00"
+      }
+    ],
+    "oldRuleCount": 25,
+    "currentRuleCount": 25,
+    "allOldRulesUnchanged": true,
+    "privateInputsUnchanged": true
+  },
+  "networkRecovery": {
+    "at": "2026-09-11T13:17:18.175Z",
+    "action": "Freed gateway fixed address from dynamically allocated app endpoint, started gateway, reconnected app with original aliases and dynamic allocation",
+    "configurationChanged": false
+  },
+  "downloadFailures": [
+    {
+      "at": "2026-09-11T13:23:09.066Z",
+      "path": "/assets/core-DwMk1lTJ.js",
+      "phase": "body",
+      "status": 200,
+      "elapsedMs": 35004,
+      "errorName": "TimeoutError",
+      "errorCode": 23
+    },
+    {
+      "at": "2026-09-11T13:23:36.803Z",
+      "path": "/assets/index.es-BTnC0x7o.js",
+      "phase": "body",
+      "status": 200,
+      "elapsedMs": 35002,
+      "errorName": "TimeoutError",
+      "errorCode": 23
+    },
+    {
+      "at": "2026-09-11T13:23:56.319Z",
+      "path": "/assets/localBatchGatewayRequest-CzC2JplI.js",
+      "phase": "headers",
+      "elapsedMs": 35002,
+      "errorName": "TimeoutError",
+      "errorCode": 23
+    },
+    {
+      "at": "2026-09-11T13:36:47.468Z",
+      "path": "/assets/index-rkoxGjIC-CJNoSGjj.js",
+      "phase": "body",
+      "status": 200,
+      "elapsedMs": 75581,
+      "errorName": "TypeError"
+    },
+    {
+      "at": "2026-09-11T13:49:24.508Z",
+      "path": "/assets/index-rkoxGjIC-CJNoSGjj.js",
+      "phase": "body",
+      "status": 200,
+      "elapsedMs": 120042,
+      "errorName": "TimeoutError",
+      "errorCode": 23
+    },
+    {
+      "at": "2026-09-11T13:51:24.812Z",
+      "path": "/assets/index-rkoxGjIC-CJNoSGjj.js",
+      "phase": "body",
+      "status": 200,
+      "elapsedMs": 120036,
+      "errorName": "TimeoutError",
+      "errorCode": 23
+    }
+  ],
+  "downloadRetryProof": {
+    "at": "2026-09-11T13:52:00.293Z",
+    "exit": 0,
+    "stats": "200 601477 36217 16.607434",
+    "bytes": 601477,
+    "sha256": "608d55f34e6a6099231fb669a8b7f8052fe020add18b0da5159a74298bb157fe"
+  },
+  "operationalLimitations": [
+    "Public resource reads experienced timeouts or interrupted bodies; complete verification ultimately passed with bounded retries.",
+    "Actual MetaMask market creation remains for user retest; no create-market transaction was broadcast by this task."
+  ]
+}
