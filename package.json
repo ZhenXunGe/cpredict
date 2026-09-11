@@ -136,7 +136,7 @@
     "@simplewebauthn/types": "9.0.1",
     "@solana/web3.js": "1.98.4",
     "@types/js-cookie": "3.0.6",
-    "@types/node": "22.20.1",
+    "@types/node": "26.4.1",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.4",
     "@types/ws": "8.18.1",
