@@ -227,9 +227,23 @@ export async function pinMigrationInputs(
 
 export async function restoreSelectedServices(journal, composeFile) {
   const touched = touchedServices(journal);
-  if (touched.length)
+  await startSelectedServices(
+    journal.rollbackFile,
+    touched,
+    composeFile,
+    "Restore previous selected service image",
+  );
+  return touched;
+}
+
+async function startSelectedServices(file, touched, composeFile, label) {
+  // Backends use dynamic Docker addresses; the gateway can have a fixed address
+  // trusted by the application. Keep that address occupied while replacing each
+  // backend, then replace the gateway last. A parallel Compose up can release
+  // the gateway address and allocate it to a backend before restarting nginx.
+  for (const service of SERVICES.filter((name) => touched.includes(name)))
     await composeFile(
-      journal.rollbackFile,
+      file,
       [
         "up",
         "-d",
@@ -240,11 +254,10 @@ export async function restoreSelectedServices(journal, composeFile) {
         "--wait",
         "--wait-timeout",
         "180",
-        ...touched,
+        service,
       ],
-      { timeout: 300000, label: "Restore previous selected service images" },
+      { timeout: 300000, label: `${label}: ${service}` },
     );
-  return touched;
 }
 
 /** The sole ordinary-update mutation sequence, also exercised with a command recorder. */
@@ -299,21 +312,11 @@ export async function applySelectedServices({
     journal.touchedServices = touched;
     journal.servicesTouched = true;
     await save("switching-selected-services");
-    await composeFile(
+    await startSelectedServices(
       candidateFile,
-      [
-        "up",
-        "-d",
-        "--no-deps",
-        "--no-build",
-        "--pull",
-        "never",
-        "--wait",
-        "--wait-timeout",
-        "180",
-        ...touched,
-      ],
-      { timeout: 300000, label: "Update selected ctUSD services" },
+      touched,
+      composeFile,
+      "Update selected ctUSD service",
     );
   }
 }
