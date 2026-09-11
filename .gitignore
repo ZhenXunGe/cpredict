@@ -21,6 +21,9 @@ runtime/
 crytic-export/
 scripts/security/crytic-export/
 
+# Local working files and debugging artifacts
+/work/
+
 # Node / TypeScript
 node_modules/
 dist/
