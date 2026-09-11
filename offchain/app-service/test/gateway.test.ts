@@ -232,13 +232,26 @@ describe("authenticated sponsorship and single submission", () => {
     });
     await expect(
       gateway.request(identity, operation.id, send()),
-    ).rejects.toMatchObject({ code: "operation_result_unknown" });
+    ).rejects.toMatchObject({
+      code: "operation_result_unknown",
+      upstreamCode: "upstream_request_failed",
+    });
     expect((await store.operation(operation.id))!.operation.state).toBe(
       "unknown",
     );
     const retry = await gateway.request(identity, operation.id, send());
     expect(retry).toMatch(/^0x[\da-f]{64}$/);
     expect(request).toHaveBeenCalledTimes(1);
+  });
+  it("keeps a safe upstream AppError code for the server audit log", async () => {
+    const { gateway, request } = setup();
+    request.mockRejectedValue(new AppError("upstream_rejected", 503));
+    await expect(gateway.request(identity, operation.id, send())).rejects.toEqual(
+      expect.objectContaining({
+        code: "operation_result_unknown",
+        upstreamCode: "upstream_rejected",
+      }),
+    );
   });
   it.each([
     { sender: A(999) },

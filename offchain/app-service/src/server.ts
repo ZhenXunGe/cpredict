@@ -15,7 +15,10 @@ import {
 } from "../../app-core/src/contracts.js";
 import type { IdentityVerifier } from "./auth.js";
 import type { AuthenticatedAAGateway } from "./gateway.js";
-import { rpcRequestSchema } from "./gateway.js";
+import {
+  OperationSubmissionUnknownError,
+  rpcRequestSchema,
+} from "./gateway.js";
 import { ProviderCallError, type RpcTransport } from "./http.js";
 import type { OperationService } from "./operations.js";
 import { readRpc } from "./read-rpc.js";
@@ -364,6 +367,14 @@ export async function createApplicationServer(options: {
         result: await options.gateway.request(identity, id, rpc),
       };
     } catch (error) {
+      if (error instanceof OperationSubmissionUnknownError)
+        request.log.warn(
+          {
+            operationId: error.operationId,
+            upstreamCode: error.upstreamCode,
+          },
+          "user operation submission outcome unknown",
+        );
       const e =
         error instanceof AppError
           ? error
