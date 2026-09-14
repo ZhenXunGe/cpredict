@@ -95,7 +95,7 @@ payment token 和 Factory 永不改变。配置治理只影响以后创建的市
 
 ## 7. 结算会计
 
-设本金 P、creator rake bps 为 r、协议分成 q、早鸟分成为 e：
+设本金 P、creator rake bps 为 r、平台抽成 q（默认 20%，可由治理在新市场创建前调整）、早鸟分成为 e：
 
 ```text
 R = floor(P*r/10000)

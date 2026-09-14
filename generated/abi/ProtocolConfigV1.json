@@ -22,6 +22,19 @@
   },
   {
     "type": "function",
+    "name": "DEFAULT_PLATFORM_RAKE_SHARE_BPS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "HARD_MAX_C2C_FEE_BPS",
     "inputs": [],
     "outputs": [
@@ -370,6 +383,19 @@
   },
   {
     "type": "function",
+    "name": "setPlatformRakeShareBps",
+    "inputs": [
+      {
+        "name": "newBps",
+        "type": "uint16",
+        "internalType": "uint16"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setProtocolShareBps",
     "inputs": [
       {
@@ -548,6 +574,25 @@
   {
     "type": "event",
     "name": "PlatformC2CFeeUpdated",
+    "inputs": [
+      {
+        "name": "previousBps",
+        "type": "uint16",
+        "indexed": false,
+        "internalType": "uint16"
+      },
+      {
+        "name": "newBps",
+        "type": "uint16",
+        "indexed": false,
+        "internalType": "uint16"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PlatformRakeShareUpdated",
     "inputs": [
       {
         "name": "previousBps",

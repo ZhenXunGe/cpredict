@@ -53,6 +53,7 @@ export const operationLabels: Record<OperationKind, string> = {
   refund: "领取退款",
   "claim-timeout-bonus": "领取超时补偿",
   "settle-bond": "结算创作者押金",
+  "settle-bond-and-claim": "领取创作者押金",
   "claim-bond": "领取押金余额",
   "claim-fees": "领取费用收入",
   transfer: "转出测试资产",

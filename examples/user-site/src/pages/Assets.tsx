@@ -111,14 +111,14 @@ export function AssetsPage() {
                         { label: "到账账户", value: session.account!.address },
                       ],
                       feeNote:
-                        "每个应用账户每 24 小时可通过本站领取一次，Gas 可选择项目代付或自付 ETH。首次使用时一起部署智能账户；不限制代币合约本身的公开铸造能力。",
+                        "每个应用账户每 1 小时可通过本站领取一次，Gas 可选择项目代付或自付 ETH。首次使用时一起部署智能账户；不限制代币合约本身的公开铸造能力。",
                     })
                   }
                 >
                   领取 1,000 ctUSD
                 </Button>
                 <p className="small">
-                  每账户每 24 小时一次。测试币与排行榜均无奖励价值。
+                  每账户每 1 小时一次。测试币与排行榜均无奖励价值。
                 </p>
                 {(!env.features.faucet || !env.features.sponsorship) && (
                   <Notice>当前暂停项目代付领币，已有资产仍可查看。</Notice>

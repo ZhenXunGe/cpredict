@@ -345,6 +345,11 @@
     "selector": "0x15f21be8"
   },
   {
+    "contract": "ProtocolConfigV1",
+    "signature": "DEFAULT_PLATFORM_RAKE_SHARE_BPS()",
+    "selector": "0xf36ea9ce"
+  },
+  {
     "contract": "MarketFactoryV1",
     "signature": "dependencyFingerprint()",
     "selector": "0x07a6de57"
@@ -1518,6 +1523,11 @@
     "contract": "ProtocolConfigV1",
     "signature": "setPlatformC2CFeeBps(uint16)",
     "selector": "0xadd74c07"
+  },
+  {
+    "contract": "ProtocolConfigV1",
+    "signature": "setPlatformRakeShareBps(uint16)",
+    "selector": "0x3b715830"
   },
   {
     "contract": "ProtocolConfigV1",

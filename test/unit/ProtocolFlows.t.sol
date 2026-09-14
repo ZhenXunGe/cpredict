@@ -105,22 +105,50 @@ contract ProtocolFlowsTest is Test {
         ) = market.payoutBreakdown();
         assertEq(principal, 100e6);
         assertEq(rake, 5e6);
-        assertEq(protocolFee, 0);
-        assertEq(earlyPool, 1e6);
-        assertEq(creatorFee, 4e6);
+        assertEq(protocolFee, 1e6);
+        assertEq(earlyPool, 800_000);
+        assertEq(creatorFee, 3_200_000);
         assertEq(winnerPool, 95e6);
 
         uint256 aliceBefore = usdc.balanceOf(ALICE);
         market.claimWinningsFor(ALICE);
         market.claimEarlyBirdFor(ALICE);
         market.claimEarlyBirdFor(BOB);
-        assertEq(usdc.balanceOf(ALICE) - aliceBefore, 95_600_000);
-        assertEq(feeVault.creditOf(CREATOR_TREASURY), 4e6);
+        assertEq(usdc.balanceOf(ALICE) - aliceBefore, 95_480_000);
+        assertEq(feeVault.creditOf(PROTOCOL_TREASURY), 1e6);
+        assertEq(feeVault.creditOf(CREATOR_TREASURY), 3_200_000);
         assertEq(usdc.balanceOf(address(market)), 0);
 
         bondEscrow.settleBond(address(market));
         assertEq(bondEscrow.creditOf(CREATOR), 10e6);
         bondEscrow.claimFor(CREATOR);
+    }
+
+    function testPlatformRakeShareIsDeductedFromCreatorRake() public {
+        MarketVaultCoreV1 market = _create(ProtocolTypes.DeploymentMode.FULL, 100e6, 0);
+        _approveMarket(ALICE, market);
+
+        vm.prank(ALICE);
+        market.buy(0, 100e6, 100e6, 100e6, uint64(block.timestamp + 1 hours));
+        vm.warp(market.closeAt());
+        vm.prank(CREATOR);
+        market.resolve(0, bytes32(0));
+
+        (
+            uint256 principal,
+            uint256 rake,
+            uint256 platformFee,
+            uint256 earlyPool,
+            uint256 creatorFee,
+            uint256 winnerPool
+        ) = market.payoutBreakdown();
+        assertEq(principal, 100e6);
+        assertEq(rake, 5e6);
+        assertEq(platformFee, 1e6);
+        assertEq(earlyPool, 800_000);
+        assertEq(creatorFee, 3_200_000);
+        assertEq(winnerPool, 95e6);
+        assertEq(feeVault.creditOf(PROTOCOL_TREASURY), platformFee);
     }
 
     function testCreatorVoidRefundsCurrentHolders() public {

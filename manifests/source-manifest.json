@@ -210,7 +210,7 @@
     },
     {
       "path": "docs/public-test-site-contract.md",
-      "sha256": "9a13ff97c41a9bb29929ebc9c04d6d7c765197d56d8af8df1453f08f595efb45"
+      "sha256": "3fb8eea11bae8959e5fa9005f8f3c6f44851e7805fe2b22f35d02e245a9eb46c"
     },
     {
       "path": "docs/public-test-site-license-review.md",
@@ -346,7 +346,7 @@
     },
     {
       "path": "examples/user-site/src/api.ts",
-      "sha256": "48a510c9ef0450d01b7874f91b303efce27bd0b6030d67b7456b5db97bca0874"
+      "sha256": "bc97bc01b64295cbfedd50b08249697dab8eb9298da4641ff5853f812b90f322"
     },
     {
       "path": "examples/user-site/src/connected-wallets.tsx",
@@ -362,7 +362,7 @@
     },
     {
       "path": "examples/user-site/src/entitlements-sync.ts",
-      "sha256": "c8719984b6bed5224e95a119c3bd0edd8d27cb180f0ec6ca41efcc155b978e90"
+      "sha256": "f7221acc89031256b3afedb999957d85a52648a9ed120607ba7cf7400ee46172"
     },
     {
       "path": "examples/user-site/src/gas-payment.ts",
@@ -382,11 +382,11 @@
     },
     {
       "path": "examples/user-site/src/operations.tsx",
-      "sha256": "d580775d148d5a064d1541beb4d3edeabc85c6ff7ce063878d9efbfa6608c318"
+      "sha256": "08a43367eb6bcb0a6a2f1a07d290f157031dc271cfcd6ef8fb0d294431985704"
     },
     {
       "path": "examples/user-site/src/pages/Assets.tsx",
-      "sha256": "4f9ae4199a8c4a83510e115925e8396738c27d01d521dca2d84dffb8fb0d463a"
+      "sha256": "6059fadefcfc7ce512afd6273b8d5ed882f6a68dec69accca8aeb051fe83d508"
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
@@ -394,7 +394,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
-      "sha256": "3022185b6ea61e926a02cc1d242c237a939bf6984d7351aa72922ee44af5bbab"
+      "sha256": "59408cb021643cafb83cf31b1fa7e430b6a158981aa926286548be1e4969110a"
     },
     {
       "path": "examples/user-site/src/pages/FeedbackInbox.tsx",
@@ -410,7 +410,7 @@
     },
     {
       "path": "examples/user-site/src/pages/MarketDetail.tsx",
-      "sha256": "d95c726f76a044351f5c40776e1fda3e9b3d62ef5ce54bf0d82493dec999ff28"
+      "sha256": "079afdba646bb980b5ad3f3c109c97678befd5759d8650746d3612d988a9ce4d"
     },
     {
       "path": "examples/user-site/src/pages/Markets.tsx",
@@ -462,7 +462,7 @@
     },
     {
       "path": "examples/user-site/test/browser/entitlements-sync.spec.ts",
-      "sha256": "804f381e3942015042b83a7425661bb1d01269b0cdb56e73fc4baec482f52dcd"
+      "sha256": "e0021a48bac08949b00ecfd0ea2581321f4f9404ea57b0cc5e0d333ef837be85"
     },
     {
       "path": "examples/user-site/test/browser/fixture.html",
@@ -470,7 +470,7 @@
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "dfe6e79bb93091a1971a04f7515d8b5886b7c6d7c9725cf35037bd2456c7c736"
+      "sha256": "939aea2a6747a78ab2049031988ee7af70f901555593b99a055752447fbf9a5c"
     },
     {
       "path": "examples/user-site/test/browser/gas-payment.spec.ts",
@@ -482,7 +482,7 @@
     },
     {
       "path": "examples/user-site/test/browser/public-site.spec.ts",
-      "sha256": "6c96e893d0c70b06b795061274168a124e4210fcf54c840f857c99c679acf407"
+      "sha256": "ec1b724967e4bd0066ce24d2d8914df205c4a951b5c9ff9b4a20d247f9ae6b9f"
     },
     {
       "path": "examples/user-site/test/browser/report-fixture.ts",
@@ -498,7 +498,7 @@
     },
     {
       "path": "examples/user-site/test/entitlements-sync.test.ts",
-      "sha256": "730038cdbeca045c0beeda5346a39b2b772951e69310ae71ad40212e8427b43d"
+      "sha256": "dffe3e3bb1ae8168990e167e6a9fa94c0829d6ec9602bccdaf2545a0fea7ffcb"
     },
     {
       "path": "examples/user-site/test/gas-payment.test.ts",
@@ -822,7 +822,7 @@
     },
     {
       "path": "offchain/app-core/src/calls.ts",
-      "sha256": "0445b7618ecbcfc736cdf3fbb23c2ebafd0bd3c31bf5f4e647c5b05752acf660"
+      "sha256": "5626712bcf28d1ccdfc0c4004b021bc5bed415ec81c79e6d18e88c94b60c6670"
     },
     {
       "path": "offchain/app-core/src/catalog-contracts.ts",
@@ -830,11 +830,11 @@
     },
     {
       "path": "offchain/app-core/src/contracts.ts",
-      "sha256": "50eae09e5d0b24543962d70f720d0dfe3e79bd70b81b7a2ac8d8d103819315b1"
+      "sha256": "5c34a2d13f6a2667858186e9bb314861c9aa33414d2fdf7caed6a01bfa57b3fe"
     },
     {
       "path": "offchain/app-core/src/entitlements.ts",
-      "sha256": "0da4dd7727f46edc1f9ee1e56c1fda539dce572d83c075b080c683b20886c098"
+      "sha256": "4fb4da831dd6aac36375fb87250bdf79a6a82614cbf311e7f2791510d361d95b"
     },
     {
       "path": "offchain/app-core/src/fees.ts",
@@ -882,7 +882,7 @@
     },
     {
       "path": "offchain/app-core/test/calls.test.ts",
-      "sha256": "32d654f463257e85659c0912da23a97b3a2a3949327a6cd9720bc958c614fa8c"
+      "sha256": "b46896f316926f640f0f86ef6243f1f3646b8bd518720d503e7e8e38dc27250b"
     },
     {
       "path": "offchain/app-core/test/deposit-receipt.test.ts",
@@ -890,7 +890,7 @@
     },
     {
       "path": "offchain/app-core/test/entitlements.test.ts",
-      "sha256": "6a1649cb9143f802f386ddf1a6a885db50ed752a57914bbb5503d4fb883a86c7"
+      "sha256": "0318dc325c2117a13488bd49c0f23e1b07feee6ce3660127c4c7327a5c277db9"
     },
     {
       "path": "offchain/app-core/test/environment.test.ts",
@@ -942,7 +942,7 @@
     },
     {
       "path": "offchain/app-service/src/budget.ts",
-      "sha256": "86e4934efd6d0703b725fcd3a021a787f084d3316e033f256862527f5cea54c2"
+      "sha256": "f53928877e9c373f86e15ed129e2b124d27868cdb2f82494450c9514bf100322"
     },
     {
       "path": "offchain/app-service/src/chain.ts",
@@ -1018,7 +1018,7 @@
     },
     {
       "path": "offchain/app-service/src/store.ts",
-      "sha256": "7f2876b8076d12f72c01089e8c3d83f0aa6ef91dd13303417bdc57586f6e14d3"
+      "sha256": "ebcdc3bfc6af3b2f4c9a78b7ff8cf042702580ec7e7fdecb87829c70d1fa29ee"
     },
     {
       "path": "offchain/app-service/test/auth.test.ts",
@@ -1026,7 +1026,7 @@
     },
     {
       "path": "offchain/app-service/test/budget.test.ts",
-      "sha256": "2b7b1065d4defa9080cf74ae70b0b2223ed5a7db89e126a5be84cfc1f014676b"
+      "sha256": "05d915267081d326832e468c78e0175b5e1da8f31e08c1dd95a51a357605596f"
     },
     {
       "path": "offchain/app-service/test/config.test.ts",
@@ -1126,7 +1126,7 @@
     },
     {
       "path": "offchain/indexer/src/financial-api.ts",
-      "sha256": "07916e6b6ff7d9365a74aadbf2d0dc363efd4a88f250ac614dc56ed9530310c0"
+      "sha256": "9f1e250ded784aba4e70ed17d3c8fd777ec908f862da34cdd4a10497dde7a12a"
     },
     {
       "path": "offchain/indexer/src/financial-facts.ts",
@@ -1170,7 +1170,7 @@
     },
     {
       "path": "offchain/indexer/src/rights-reader.ts",
-      "sha256": "0ee964ce014db81103d6f3e70de3957bee60646f8be8b9cf885dac992ac757b2"
+      "sha256": "ca82aa73bc611a7d2a7cc68621a232b4fbd0d0cee109c9bc323cb9b77cdf6add"
     },
     {
       "path": "offchain/indexer/src/runtime.ts",
@@ -1203,6 +1203,10 @@
     {
       "path": "offchain/indexer/test/config.test.ts",
       "sha256": "e05d7fbda4ce82b8c010e4fe56eaa0924cba598cc1cfc1560ba804984bd8d837"
+    },
+    {
+      "path": "offchain/indexer/test/financial-api.test.ts",
+      "sha256": "f4ff1d6e6b006b329f4b4d8cfaf8ed8b9a0277838cfd1140175276cd4765ce5d"
     },
     {
       "path": "offchain/indexer/test/financial-facts.test.ts",
@@ -1239,6 +1243,10 @@
     {
       "path": "offchain/indexer/test/reports-postgres.integration.test.ts",
       "sha256": "5cbd7d408ac747e1cc366a9ec79603190c6cab3019d0552d90e4c0f41a850baf"
+    },
+    {
+      "path": "offchain/indexer/test/rights-reader.test.ts",
+      "sha256": "39cdc8297b3231db900968740dac623697dad6e17ed0bb5c6681ae5eb6247bf3"
     },
     {
       "path": "offchain/indexer/test/scheduler.test.ts",
@@ -2362,7 +2370,7 @@
     },
     {
       "path": "src/core/ProtocolConfigV1.sol",
-      "sha256": "ef354663cdafab05ba1ad3957dd418197774fb71098d2e6cd867cf3abf2179b5"
+      "sha256": "be46989ca0e84705cb32a38e5bcee7da9c5af60932229593df6ad4b0d974cbce"
     },
     {
       "path": "src/interfaces/IBondEscrowV1.sol",
@@ -2398,7 +2406,7 @@
     },
     {
       "path": "src/interfaces/IProtocolConfigV1.sol",
-      "sha256": "2a89d2c237a88cd609f54ffd6cfcaafa55f22ae298793665a7b38495ccdf837e"
+      "sha256": "cf900763df6bf11752d2a38e471d91c146f09373678161d5c98b207e01a4834b"
     },
     {
       "path": "src/libraries/ProtocolErrors.sol",
@@ -2510,11 +2518,11 @@
     },
     {
       "path": "test/unit/ProtocolControls.t.sol",
-      "sha256": "e4ea0280ef81d154456ba577804fef73b8e475ecc27f3e25cb1d06ba939da27d"
+      "sha256": "a8d426d129978e6c8a58f222ae3a1e3b7c3607b68a9b5a9f44cd5bc3ee6ea190"
     },
     {
       "path": "test/unit/ProtocolFlows.t.sol",
-      "sha256": "42835edc6e28d508073e9510f5ec1ea01a2f46d55bbb9d1973a09b4573af9353"
+      "sha256": "9f86230c74d000d34a83bc73b1200c5b9a80e656b2f9599af5fa0684698515b0"
     },
     {
       "path": "test/unit/SponsorshipPaymaster.t.sol",
@@ -2544,10 +2552,10 @@
   "bytecode": [
     {
       "contract": "ProtocolConfigV1",
-      "creationBytecodeSha256": "17b4407a9a90da987849f5d670d07e80e1eabfcc06b91db94245a5b7c4e50622",
-      "runtimeBytecodeSha256": "4349b399db0ba93afdbf3ac4ae8a2021d1c0f2f1c407755ba188bb96df2539dd",
-      "creationBytes": 4251,
-      "runtimeBytes": 3630
+      "creationBytecodeSha256": "169a6b2b20854e5d59a0419b630d624b9bc04536e7cf2ab92582c54d3923c28b",
+      "runtimeBytecodeSha256": "45d17ae7ffb09d93f386f6e192eba959316dea69a2c50131beab8420a1d5f33f",
+      "creationBytes": 4497,
+      "runtimeBytes": 3865
     },
     {
       "contract": "EmergencyControllerV1",

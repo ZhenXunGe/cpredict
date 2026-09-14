@@ -164,6 +164,22 @@ test("unverifiable rules disable new exposure while keeping existing early-bird 
   ).toBeEnabled();
 });
 
+test("holdings use market titles and omit markets that have settled", async ({
+  page,
+}) => {
+  await page.goto(`${fixture}?positions-test=1#/ctusd-test/entitlements`);
+  await expect(
+    page.getByRole("heading", { name: "持仓与权益", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("仍在进行的测试市场", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("已结算的测试市场", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "持仓成本明细", exact: true }),
+  ).toBeVisible();
+});
+
 test("key pages do not overflow the document", async ({ page }) => {
   for (const route of [
     "markets",

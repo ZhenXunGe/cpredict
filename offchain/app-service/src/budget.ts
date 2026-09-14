@@ -6,6 +6,7 @@ import {
 import type { SponsorConfig } from "./config.js";
 
 const DAY = 86_400_000;
+export const FAUCET_COOLDOWN_MS = 60 * 60 * 1000;
 const SHANGHAI_OFFSET = 8 * 60 * 60 * 1000;
 
 /** Fixed Asia/Shanghai Monday [start,end), independent of host/DB timezone. */
@@ -118,12 +119,14 @@ export function budgetTotals(operations: readonly Operation[], at: Date) {
   });
 }
 
-/** Include the week, the rolling faucet cooldown and unresolved older nonces. */
+/** Cover both quota calendars and the faucet cooldown.
+ * Callers also load unresolved older nonces. */
 export function quotaHistoryStart(createdAt: string): string {
   return new Date(
     Math.min(
       weeklyBudgetWindow(createdAt).start.getTime(),
-      Date.parse(createdAt) - DAY,
+      Date.parse(`${createdAt.slice(0, 10)}T00:00:00.000Z`),
+      Date.parse(createdAt) - FAUCET_COOLDOWN_MS,
     ),
   ).toISOString();
 }

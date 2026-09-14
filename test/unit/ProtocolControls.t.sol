@@ -71,6 +71,14 @@ contract BondMarketMock {
 }
 
 contract ProtocolConfigControlsTest is ProtocolTestBase {
+    function testPlatformRakeShareDefaultsToTwentyPercentAndCanBeConfigured() public {
+        assertEq(config.protocolShareBps(), 2000);
+
+        config.setPlatformRakeShareBps(2500);
+
+        assertEq(config.protocolShareBps(), 2500);
+    }
+
     function testConfigGovernanceSettersAndSnapshot() public {
         config.setProtocolTreasury(ALICE);
         config.setCreationFee(100e6);

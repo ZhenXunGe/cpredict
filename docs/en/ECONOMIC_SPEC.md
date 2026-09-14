@@ -1,6 +1,6 @@
 # Economic Specification and Invariants
 
-Let `P` be total principal and `B=10,000`:
+Let `P` be total principal and `B=10,000`. The platform rake share defaults to 20% and governance can set it before creating subsequent markets:
 
 ```text
 R = floor(P * creatorRakeBps / B)

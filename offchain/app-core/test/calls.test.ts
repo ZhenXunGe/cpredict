@@ -6,7 +6,7 @@ import {
   intentSchema,
   siteConfigSchema,
 } from "../src/contracts.js";
-import { marketVaultAbi } from "../../sdk/src/abis.js";
+import { bondEscrowAbi, marketVaultAbi } from "../../sdk/src/abis.js";
 import { A, H, env } from "./fixtures.js";
 
 const reader: AdmissionReader = {
@@ -89,6 +89,22 @@ describe("public site business intent boundary", () => {
     expect(
       decodeFunctionData({ abi: marketVaultAbi, data: calls[0]!.data }),
     ).toMatchObject({ functionName: "refundFor", args: [A(10)] });
+  });
+  it("settles and withdraws a returnable creator bond in one operation", async () => {
+    const calls = await buildBusinessCalls(
+      env,
+      A(10),
+      { kind: "settle-bond-and-claim", market: A(20) },
+      reader,
+      1000n,
+    );
+    expect(calls).toHaveLength(2);
+    expect(
+      decodeFunctionData({ abi: bondEscrowAbi, data: calls[0]!.data }),
+    ).toMatchObject({ functionName: "settleBond", args: [A(20)] });
+    expect(
+      decodeFunctionData({ abi: bondEscrowAbi, data: calls[1]!.data }),
+    ).toMatchObject({ functionName: "claimFor", args: [A(10)] });
   });
   it("denies arbitrary methods, unrelated receivers and wrong listing control", async () => {
     expect(

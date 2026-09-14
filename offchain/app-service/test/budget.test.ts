@@ -70,8 +70,42 @@ describe("per-environment weekly sponsorship budget", () => {
       "2026-12-27T16:00:00.000Z",
     );
     expect(quotaHistoryStart("2026-09-13T16:00:00.000Z")).toBe(
-      "2026-09-12T16:00:00.000Z",
+      "2026-09-13T00:00:00.000Z",
     );
+  });
+
+  it.each([
+    "2026-09-13T16:00:00.000Z",
+    "2026-09-13T17:00:00.000Z",
+    "2026-09-13T23:59:59.999Z",
+  ])("preserves UTC daily quotas and reports after weekly reset at %s", (at) => {
+    const previous = record("2026-09-13T14:00:00.000Z", "1000");
+    const next = record(at, "1");
+    // Match the history window used by PostgreSQL admission and reporting.
+    const start = quotaHistoryStart(at);
+    const loaded = [previous].filter(
+      (v) => v.operation.createdAt >= start || v.operation.updatedAt >= start,
+    );
+    for (const exposure of [
+      { ...lane, accountOperations: 1 },
+      { ...lane, accountWei: "1000" },
+    ])
+      expect(() =>
+        assertQuota(loaded, next, { ...limits, exposure }),
+      ).toThrowError(
+        expect.objectContaining({ code: "sponsorship_budget_exhausted" }),
+      );
+    expect(() =>
+      assertQuota(loaded, next, { ...limits, methodDailyOperations: 1 }),
+    ).toThrowError(expect.objectContaining({ code: "method_quota_exhausted" }));
+    expect(
+      budgetTotals(loaded.map((v) => v.operation), new Date(at))[0],
+    ).toEqual({
+      lane: "exposure",
+      dailyWei: 1000n,
+      dailyOperations: 1,
+      weeklyWei: 0n,
+    });
   });
 
   it("counts earlier days, accepts the exact ceiling and preserves the exit allocation", () => {
@@ -304,6 +338,9 @@ describe("per-environment weekly sponsorship budget", () => {
     expect(() => assertQuota([full], next, limits)).toThrowError(
       expect.objectContaining({ code: "faucet_cooldown" }),
     );
+    next.operation.createdAt = "2026-09-11T15:00:00.000Z";
+    next.operation.updatedAt = next.operation.createdAt;
+    expect(() => assertQuota([full], next, limits)).not.toThrow();
   });
 
   it("does not recharge a final settlement in later weeks due to routine polling timestamps", () => {

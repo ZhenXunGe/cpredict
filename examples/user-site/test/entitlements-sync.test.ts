@@ -154,6 +154,18 @@ describe("entitlement synchronization", () => {
     ).toBeNull();
   });
 
+  it("batches a returnable creator bond into one settlement and withdrawal", () => {
+    const bond: Entitlement = {
+      ...right,
+      kind: "bond",
+      reason: "settle_and_claim_bond",
+    };
+    expect(entitlementIntent(bond)).toEqual({
+      kind: "settle-bond-and-claim",
+      market: A(101),
+    });
+  });
+
   it("guards the same escrow even if market finalization changes cancel to return", () => {
     const escrow: Entitlement = {
       ...right,

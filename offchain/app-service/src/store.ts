@@ -12,6 +12,7 @@ import type { SponsorConfig } from "./config.js";
 import {
   countsTowardWeek,
   budgetCharges,
+  FAUCET_COOLDOWN_MS,
   weeklyBudgetWindow,
   weeklyLaneLimit,
 } from "./budget.js";
@@ -239,7 +240,7 @@ export function assertQuota(
         v.operation.accountId === o.accountId &&
         v.operation.kind === "faucet" &&
         v.operation.state !== "cancelled" &&
-        Date.parse(v.operation.createdAt) > now - 86_400_000,
+        Date.parse(v.operation.createdAt) > now - FAUCET_COOLDOWN_MS,
     )
   )
     throw new AppError("faucet_cooldown", 429);

@@ -17,6 +17,8 @@ contract ProtocolConfigV1 {
     uint16 public constant HARD_MAX_PROTOCOL_SHARE_BPS = 5000;
     uint16 public constant HARD_MAX_EARLY_BIRD_SHARE_BPS = 5000;
     uint16 public constant HARD_MAX_C2C_FEE_BPS = 200;
+    /// @notice Launch default for the platform's share of the creator rake.
+    uint16 public constant DEFAULT_PLATFORM_RAKE_SHARE_BPS = 2000;
     uint128 public constant HARD_MAX_FULL_MARKET_CAP = 5000e6;
     uint128 public constant HARD_MAX_CLONE_MARKET_CAP = 500e6;
     uint128 public constant HARD_MAX_PER_USER_PRIMARY_CAP = 100e6;
@@ -40,6 +42,7 @@ contract ProtocolConfigV1 {
     event ProtocolTreasuryUpdated(address indexed previousTreasury, address indexed newTreasury);
     event CreationFeeUpdated(uint256 previousFee, uint256 newFee);
     event ProtocolShareUpdated(uint16 previousBps, uint16 newBps);
+    event PlatformRakeShareUpdated(uint16 previousBps, uint16 newBps);
     event EarlyBirdShareUpdated(uint16 previousBps, uint16 newBps);
     event PlatformC2CFeeUpdated(uint16 previousBps, uint16 newBps);
     event MarketCapLimitsUpdated(uint128 fullMarketCap, uint128 cloneMarketCap);
@@ -56,6 +59,7 @@ contract ProtocolConfigV1 {
         governance = governance_;
         paymentToken = paymentToken_;
         protocolTreasury = treasury_;
+        protocolShareBps = DEFAULT_PLATFORM_RAKE_SHARE_BPS;
         earlyBirdShareBps = 2000;
     }
 
@@ -81,12 +85,14 @@ contract ProtocolConfigV1 {
     }
 
     function setProtocolShareBps(uint16 newBps) external onlyGovernance {
-        if (newBps > HARD_MAX_PROTOCOL_SHARE_BPS) {
-            revert ValueOutOfRange("protocolShareBps", newBps, 0, HARD_MAX_PROTOCOL_SHARE_BPS);
-        }
-        uint16 previous = protocolShareBps;
-        protocolShareBps = newBps;
-        emit ProtocolShareUpdated(previous, newBps);
+        _setPlatformRakeShareBps(newBps, true);
+    }
+
+    /// @notice Sets the platform cut taken from the creator rake for subsequently created markets.
+    /// @dev Kept separate from C2C platform fees. `setProtocolShareBps` remains for ABI
+    /// compatibility.
+    function setPlatformRakeShareBps(uint16 newBps) external onlyGovernance {
+        _setPlatformRakeShareBps(newBps, false);
     }
 
     function setEarlyBirdShareBps(uint16 newBps) external onlyGovernance {
@@ -141,6 +147,19 @@ contract ProtocolConfigV1 {
         maxCreatorRakeBps = rakeBps;
         maxCreatorC2CFeeBps = c2cFeeBps;
         emit CreatorFeeLimitsUpdated(rakeBps, c2cFeeBps);
+    }
+
+    function _setPlatformRakeShareBps(uint16 newBps, bool emitLegacyEvent) internal {
+        if (newBps > HARD_MAX_PROTOCOL_SHARE_BPS) {
+            revert ValueOutOfRange("protocolShareBps", newBps, 0, HARD_MAX_PROTOCOL_SHARE_BPS);
+        }
+        uint16 previous = protocolShareBps;
+        protocolShareBps = newBps;
+        if (emitLegacyEvent) {
+            emit ProtocolShareUpdated(previous, newBps);
+        } else {
+            emit PlatformRakeShareUpdated(previous, newBps);
+        }
     }
 
     function snapshot(uint16 creatorRakeBps, uint16 creatorC2CFeeBps)

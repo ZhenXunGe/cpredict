@@ -274,7 +274,7 @@ const messages: Record<string, string> = {
     "ETH 转入未完成确认。请检查钱包和已有转账记录，避免重复转入。",
   operation_admission_expired: "本次确认已过期，请重新核对交易。",
   snapshot_invalidated: "历史快照已变化，正在等待重新查询。",
-  faucet_cooldown: "该账户每 24 小时可领取一次测试资产。",
+  faucet_cooldown: "该账户每 1 小时可领取一次测试资产。",
   quota_exceeded: "当前代付额度已用尽，请稍后重试。",
   sponsorship_budget_exhausted:
     "当前操作类别的代付额度已用尽，可在 Gas 支付方式中选择自行支付 ETH。",

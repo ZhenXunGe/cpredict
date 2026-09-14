@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { z } from "zod";
 import {
@@ -7,6 +7,10 @@ import {
   type Entitlement,
 } from "../../../../offchain/app-core/src/ledger-contracts.js";
 import { operationSchema } from "../../../../offchain/app-core/src/contracts.js";
+import {
+  marketSchema,
+  type Market,
+} from "../../../../offchain/app-core/src/catalog-contracts.js";
 import { useSession } from "../wallets.js";
 import {
   AccountGate,
@@ -55,6 +59,7 @@ const reasons: Record<string, string> = {
   credited_to_aggregate_balance: "已记入押金可领取余额；在汇总余额中领取到账。",
   bond_slashed_into_timeout_pool: "押金已罚没并注入超时补偿池。",
   settle_bond_before_claiming_credit: "先结算押金，再领取汇总余额。",
+  settle_and_claim_bond: "将结算并领取押金，一笔操作到账。",
   chain_read_unavailable: "链上查询暂不可用，请重新查询。",
   cancel_listing_to_recover_shares: "撤单取回未成交份额，不产生已实现收益。",
   return_terminal_listing: "市场已终局，先取回托管份额再领取权益。",
@@ -115,6 +120,14 @@ export function EntitlementsPage() {
       rights.data?.pages.flatMap((p) =>
         p.items.map((item) => ({ item, snapshot: p.snapshot })),
       ) ?? [],
+    marketIds = [
+      ...new Set(
+        [
+          ...items.flatMap(({ item }) => (item.market ? [item.market] : [])),
+          ...(pnl.data?.pnl.lots.map((lot) => lot.market) ?? []),
+        ].map((market) => market.toLowerCase()),
+      ),
+    ],
     syncing = operations.some(
       (o) =>
         o.state === "confirmed" &&
@@ -122,6 +135,36 @@ export function EntitlementsPage() {
           !rights.data?.pages.every((p) =>
             snapshotIncludesOperation(p.snapshot, o),
           )),
+    );
+  const marketQueries = useQueries({
+      queries: marketIds.map((market) => ({
+        queryKey: [api.key, "market", market],
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          api.request(`/v2/markets/${market}`, marketSchema, {
+            service: "indexer",
+            signal,
+          }),
+        staleTime: 10000,
+      })),
+    }),
+    marketsByAddress = new Map<string, Market>(
+      marketQueries.flatMap((query, index) =>
+        query.data ? [[marketIds[index]!, query.data]] : [],
+      ),
+    ),
+    marketFor = (market: string) => marketsByAddress.get(market.toLowerCase()),
+    marketLabel = (market: string) =>
+      marketFor(market)?.question?.trim() || shortAddress(market),
+    visibleItems = items.filter(
+      ({ item }) =>
+        !(
+          item.kind === "holding" &&
+          item.market &&
+          marketFor(item.market)?.state === 1
+        ),
+    ),
+    visibleLots = (pnl.data?.pnl.lots ?? []).filter(
+      (lot) => marketFor(lot.market)?.state !== 1,
     );
   return (
     <>
@@ -192,12 +235,12 @@ export function EntitlementsPage() {
             }}
           />
           {rights.isPending && <Loading />}
-          {!rights.isPending && !rights.error && items.length === 0 && (
+          {!rights.isPending && !rights.error && visibleItems.length === 0 && (
             <Empty title="还没有发现权益">
               首次交易后，普通持仓和其他权益会在链上确认并完成索引后显示。
             </Empty>
           )}
-          {items.length > 0 && (
+          {visibleItems.length > 0 && (
             <DataTable
               headers={[
                 "权益 / 市场",
@@ -207,7 +250,7 @@ export function EntitlementsPage() {
                 "操作",
               ]}
             >
-              {items.map(({ item: e, snapshot: rowSnapshot }) => {
+              {visibleItems.map(({ item: e, snapshot: rowSnapshot }) => {
                 const intent = entitlementIntent(e);
                 const progress = entitlementProgress(
                   e,
@@ -223,7 +266,7 @@ export function EntitlementsPage() {
                           <Link
                             to={`/${api.environment.id}/markets/${e.market}`}
                           >
-                            {shortAddress(e.market)}
+                            {marketLabel(e.market)}
                           </Link>
                         ) : (
                           "跨市场汇总余额"
@@ -284,7 +327,9 @@ export function EntitlementsPage() {
                                 e.kind === "escrow"
                                   ? "仅取回托管份额，不实现盈亏。网络 Gas 可选择项目代付或自行支付 ETH。"
                                   : e.kind === "bond" && e.market
-                                    ? "本次将押金结算至汇总可领取余额，实际到账需再领取余额。"
+                                    ? e.reason === "settle_and_claim_bond"
+                                      ? "本次将结算并领取押金，确认后一次到账。"
+                                      : "本次将押金结算至汇总可领取余额；超时弃盘且有参与者时，押金将进入补偿池。"
                                     : "实际到账以链上交易为准；已含费用不会重复扣除。网络 Gas 可选择项目代付或自行支付 ETH。",
                             })
                           }
@@ -296,7 +341,9 @@ export function EntitlementsPage() {
                             : e.kind === "escrow"
                               ? "取回份额"
                               : e.kind === "bond" && e.market
-                                ? "结算押金"
+                                ? e.reason === "settle_and_claim_bond"
+                                  ? "领取押金"
+                                  : "结算押金"
                                 : "领取"}
                         </Button>
                       ) : e.kind === "holding" && e.market ? (
@@ -321,7 +368,7 @@ export function EntitlementsPage() {
               加载更多权益
             </Button>
           )}
-          {pnl.data && pnl.data.pnl.lots.length > 0 && (
+          {pnl.data && visibleLots.length > 0 && (
             <section className="card stack">
               <h2>持仓成本明细</h2>
               <Notice>
@@ -336,11 +383,11 @@ export function EntitlementsPage() {
                   "成本完整性",
                 ]}
               >
-                {pnl.data.pnl.lots.map((lot) => (
+                {visibleLots.map((lot) => (
                   <tr key={`${lot.market}:${lot.outcomeId}`}>
                     <td>
                       <Link to={`/${api.environment.id}/markets/${lot.market}`}>
-                        {lot.market.slice(0, 10)}… / {lot.outcomeId}
+                        {marketLabel(lot.market)} / {lot.outcomeId}
                       </Link>
                     </td>
                     <td>
