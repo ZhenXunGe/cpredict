@@ -398,11 +398,11 @@
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "db9bf32cd483043665ab23f9974e940e4521da629b9266b6a72a2dff47b50956"
+      "sha256": "5692a1541385421c029fb9fdff932b98d328e969ce8ea979c0caf60006008bbc"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
-      "sha256": "6dff1b728553c41f5f7de6b6145e3d5e08fa264bbecc98a2990db020efc63a2a"
+      "sha256": "95145209ebbf1069f7e5b283c85f3360781a8ae587068f9cdba8ade369d887e2"
     },
     {
       "path": "examples/user-site/src/pages/FeedbackInbox.tsx",
@@ -482,7 +482,7 @@
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "939aea2a6747a78ab2049031988ee7af70f901555593b99a055752447fbf9a5c"
+      "sha256": "fef4d49cff167c86c391c4e15e90a94ae1a2ff8c5f2df19f1656200a5fb3ec6a"
     },
     {
       "path": "examples/user-site/test/browser/gas-payment.spec.ts",
@@ -494,7 +494,7 @@
     },
     {
       "path": "examples/user-site/test/browser/public-site.spec.ts",
-      "sha256": "ec1b724967e4bd0066ce24d2d8914df205c4a951b5c9ff9b4a20d247f9ae6b9f"
+      "sha256": "79d9fb8dd7e96d0a741d8850a9d9a8ef2313a49b94fe2f083ce716c72ac253ec"
     },
     {
       "path": "examples/user-site/test/browser/report-fixture.ts",

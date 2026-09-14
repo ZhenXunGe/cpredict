@@ -25,7 +25,6 @@ import {
   snapshotIncludesOperation,
 } from "../entitlements-sync.js";
 import {
-  AddressText,
   Amount,
   Button,
   DataTable,
@@ -152,6 +151,7 @@ export function EntitlementsPage() {
             signal,
           }),
         staleTime: 10000,
+        refetchInterval: 15000,
       })),
     }),
     marketsByAddress = new Map<string, Market>(
@@ -159,19 +159,29 @@ export function EntitlementsPage() {
         query.data ? [[marketIds[index]!, query.data]] : [],
       ),
     ),
+    marketsPending = marketQueries.some((query) => query.isPending),
+    pendingMarkets = new Set(
+      marketIds.filter((_, index) => marketQueries[index]?.isPending),
+    ),
     marketFor = (market: string) => marketsByAddress.get(market.toLowerCase()),
     marketLabel = (market: string) =>
-      marketFor(market)?.question?.trim() || shortAddress(market),
+      marketFor(market)?.question?.trim() ||
+      (pendingMarkets.has(market.toLowerCase())
+        ? "正在读取市场名称"
+        : `名称暂不可用（${shortAddress(market)}）`),
     visibleItems = items.filter(
       ({ item }) =>
         !(
           item.kind === "holding" &&
           item.market &&
-          marketFor(item.market)?.state === 1
+          (pendingMarkets.has(item.market.toLowerCase()) ||
+            marketFor(item.market)?.state === 1)
         ),
     ),
     visibleLots = (pnl.data?.pnl.lots ?? []).filter(
-      (lot) => marketFor(lot.market)?.state !== 1,
+      (lot) =>
+        !pendingMarkets.has(lot.market.toLowerCase()) &&
+        marketFor(lot.market)?.state !== 1,
     );
   return (
     <>
@@ -234,19 +244,29 @@ export function EntitlementsPage() {
             </Notice>
           )}
           <ErrorNotice
-            error={pnl.error ?? rights.error ?? pending.error}
+            error={
+              pnl.error ??
+              rights.error ??
+              pending.error ??
+              marketQueries.find((q) => q.error)?.error
+            }
             retry={() => {
               void rights.refetch();
               void pnl.refetch();
+              for (const query of marketQueries) void query.refetch();
               void pending.refetch();
             }}
           />
           {rights.isPending && <Loading />}
-          {!rights.isPending && !rights.error && visibleItems.length === 0 && (
-            <Empty title="还没有发现权益">
-              首次交易后，普通持仓和其他权益会在链上确认并完成索引后显示。
-            </Empty>
-          )}
+          {marketsPending && <Loading label="正在读取市场名称与结算状态" />}
+          {!rights.isPending &&
+            !rights.error &&
+            !marketsPending &&
+            visibleItems.length === 0 && (
+              <Empty title="还没有发现权益">
+                首次交易后，普通持仓和其他权益会在链上确认并完成索引后显示。
+              </Empty>
+            )}
           {visibleItems.length > 0 && (
             <DataTable
               headers={[
@@ -282,18 +302,19 @@ export function EntitlementsPage() {
                 return (
                   <tr key={e.id}>
                     <td>
-                      <strong>{rightLabels[e.kind]}</strong>
-                      <div className="small muted">
+                      <strong>
                         {e.market ? (
                           <Link
                             to={`/${api.environment.id}/markets/${e.market}`}
+                            title={e.market}
                           >
                             {marketLabel(e.market)}
                           </Link>
                         ) : (
                           "跨市场汇总余额"
                         )}
-                      </div>
+                      </strong>
+                      <div className="small muted">{rightLabels[e.kind]}</div>
                       {e.reason && reasons[e.reason] && (
                         <p className="small">{reasons[e.reason]}</p>
                       )}
@@ -360,7 +381,9 @@ export function EntitlementsPage() {
                                 { label: "权益", value: rightLabels[e.kind] },
                                 {
                                   label: "归属",
-                                  value: e.market ?? "跨市场汇总余额",
+                                  value: e.market
+                                    ? marketLabel(e.market)
+                                    : "跨市场汇总余额",
                                 },
                               ],
                               feeNote:
@@ -426,7 +449,10 @@ export function EntitlementsPage() {
                 {visibleLots.map((lot) => (
                   <tr key={`${lot.market}:${lot.outcomeId}`}>
                     <td>
-                      <Link to={`/${api.environment.id}/markets/${lot.market}`}>
+                      <Link
+                        to={`/${api.environment.id}/markets/${lot.market}`}
+                        title={lot.market}
+                      >
                         {marketLabel(lot.market)} / {lot.outcomeId}
                       </Link>
                     </td>

@@ -167,17 +167,98 @@ test("unverifiable rules disable new exposure while keeping existing early-bird 
 test("holdings use market titles and omit markets that have settled", async ({
   page,
 }) => {
-  await page.goto(`${fixture}?positions-test=1#/ctusd-test/entitlements`);
+  await page.goto(
+    `${fixture}?positions-test=1&delay-market-details=1#/ctusd-test/entitlements`,
+  );
   await expect(
     page.getByRole("heading", { name: "持仓与权益", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("仍在进行的测试市场", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("已结算的测试市场", { exact: true }),
-  ).toHaveCount(0);
+    page.getByText("正在读取市场名称与结算状态", { exact: true }),
+  ).toBeVisible();
+  const holdings = page
+    .getByRole("row")
+    .filter({ has: page.getByText("普通持仓", { exact: true }) });
+  await expect(holdings).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "持仓成本明细", exact: true }),
+  ).toHaveCount(0);
+  await expect(holdings).toHaveCount(1);
+  await expect(
+    holdings.getByRole("link", { name: "仍在进行的测试市场", exact: true }),
   ).toBeVisible();
+  const costs = page
+    .locator("section")
+    .filter({
+      has: page.getByRole("heading", { name: "持仓成本明细", exact: true }),
+    });
+  await expect(
+    costs.getByRole("link", { name: "仍在进行的测试市场 / 1", exact: true }),
+  ).toBeVisible();
+  await expect(
+    costs.getByText("已结算的测试市场", { exact: false }),
+  ).toHaveCount(0);
+  const winner = page
+    .getByRole("row")
+    .filter({ has: page.getByText("赢家收益", { exact: true }) });
+  await expect(
+    winner.getByRole("link", { name: "已结算的测试市场", exact: true }),
+  ).toBeVisible();
+  await test
+    .info()
+    .attach("market-names-and-holdings", {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: "image/png",
+    });
+  await winner.getByRole("button", { name: "领取", exact: true }).click();
+  await expect(
+    page.getByRole("dialog").getByText("已结算的测试市场", { exact: true }),
+  ).toBeVisible();
+});
+
+test("holdings disappear when their market settles without reloading the page", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto(`${fixture}?positions-test=1#/ctusd-test/entitlements`);
+  const holdings = page
+    .getByRole("row")
+    .filter({ has: page.getByText("普通持仓", { exact: true }) });
+  await expect(holdings).toHaveCount(1);
+  await page.getByRole("button", { name: "结算夹具市场", exact: true }).click();
+  await page.clock.fastForward(15001);
+  await expect(holdings).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "持仓成本明细", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page
+      .getByRole("row")
+      .filter({ has: page.getByText("赢家收益", { exact: true }) }),
+  ).toBeVisible();
+});
+
+test("creator center identifies markets by their names and opens management", async ({
+  page,
+}) => {
+  await open(page, "creator");
+  const namedMarket = page
+    .getByRole("table")
+    .getByRole("link", { name: question, exact: true });
+  await expect(namedMarket).toBeVisible();
+  await expect(namedMarket).toHaveAttribute(
+    "href",
+    `#/ctusd-test/creator/${market}`,
+  );
+  await test
+    .info()
+    .attach("creator-market-names", {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: "image/png",
+    });
+  await namedMarket.click();
+  await expect(page).toHaveURL(new RegExp(`/creator/${market}$`));
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
 test("key pages do not overflow the document", async ({ page }) => {

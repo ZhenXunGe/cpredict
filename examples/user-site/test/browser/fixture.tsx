@@ -209,6 +209,7 @@ class FixtureApi extends SiteApi {
   rulesFail = false;
   slow = false;
   pending = false;
+  positionSettled = false;
   override async request<T>(
     path: string,
     schema: z.ZodType<T>,
@@ -294,19 +295,21 @@ class FixtureApi extends SiteApi {
         snapshot,
       };
     } else if (p.startsWith("/v2/markets/")) {
+      if (new URLSearchParams(location.search).has("delay-market-details"))
+        await new Promise((resolve) => setTimeout(resolve, 1500));
       const requestedMarket = p.slice("/v2/markets/".length).toLowerCase();
       result =
         positionsTest && requestedMarket === A(102).toLowerCase()
           ? {
               ...market,
               market: A(102),
+              state: this.positionSettled ? 1 : 0,
               question: "仍在进行的测试市场",
             }
           : positionsTest
             ? { ...market, state: 1, question: "已结算的测试市场" }
             : market;
-    }
-    else if (p.startsWith("/v1/markets/")) {
+    } else if (p.startsWith("/v1/markets/")) {
       if (this.rulesFail) throw new AppError("rules_unverified", 409);
       result = rules;
     } else if (p === "/v1/listings")
@@ -364,6 +367,17 @@ class FixtureApi extends SiteApi {
                 units: "20",
                 amount: null,
                 status: "conditional",
+                reason: null,
+              },
+              {
+                id: "settled-winner",
+                market: A(101),
+                kind: "winner",
+                outcomeId: "0",
+                listingId: null,
+                units: "10",
+                amount: "1000000",
+                status: "claimable",
                 reason: null,
               },
             ]
@@ -614,6 +628,15 @@ function Fixture() {
             }}
           >
             <strong>浏览器夹具 · 无真实资金或签名</strong>
+            {positionsTest && (
+              <button
+                onClick={() => {
+                  api.positionSettled = true;
+                }}
+              >
+                结算夹具市场
+              </button>
+            )}
             {usdc && (
               <>
                 <label>
