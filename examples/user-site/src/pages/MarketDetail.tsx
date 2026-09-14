@@ -14,6 +14,7 @@ import {
   dateText,
   marketReadAbi,
   marketStatusCopy,
+  marketResolutionDeadline,
   useListings,
   useMarket,
   useMarketLive,
@@ -56,23 +57,33 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
     );
   const market = query.data,
     env = api.environment,
-    terminal = live.data ? live.data.state !== 0 : market.state !== 0;
+    state = live.data?.state ?? market.state,
+    terminal = state !== 0,
+    status = marketStatusCopy(
+      market,
+      live.data,
+      env.deployment.protocolVersion,
+    ),
+    timedOut =
+      !!live.data &&
+      state === 0 &&
+      live.data.now >= live.data.resolutionDeadline;
   return (
     <>
       <Link to={`/${env.id}/markets`}>← 返回市场</Link>
       <div style={{ height: 20 }} />
       <PageTitle
         title={rules.data?.question ?? `市场 ${shortAddress(marketAddress)}`}
-        description={`${marketStatusCopy(market)} · 所有时间均为北京时间`}
+        description={`${status} · 所有时间均为北京时间`}
       />
       <div className="detail-grid">
         <div className="stack">
           <section className="surface">
             <div className="row">
               <span
-                className={`status status-${market.state === 1 ? "resolved" : market.state === 2 ? "voided" : "open"}`}
+                className={`status status-${state === 1 ? "resolved" : state === 2 ? "voided" : "open"}`}
               >
-                {marketStatusCopy(market)}
+                {status}
               </span>
               {rules.data && (
                 <span className="small muted">规则哈希已核对</span>
@@ -88,12 +99,11 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
               <dt>最终结算截止</dt>
               <dd>
                 {dateText(
-                  market.outcomeDeadlineAt && market.resolutionWindow
-                    ? (
-                        BigInt(market.outcomeDeadlineAt) +
-                        BigInt(market.resolutionWindow)
-                      ).toString()
-                    : null,
+                  live.data?.resolutionDeadline.toString() ??
+                    marketResolutionDeadline(
+                      market,
+                      env.deployment.protocolVersion,
+                    ),
                 )}
               </dd>
               <dt>创建者</dt>
@@ -132,10 +142,55 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
                   "超时退款与押金罚没补偿分阶段领取。"}
               </Notice>
             )}
+            {timedOut && (
+              <Notice tone="warning">
+                已达到最终结算截止时间，但市场尚未作废。任何账户都可申请超时作废；链上确认后才能按规则领取退款。
+              </Notice>
+            )}
             <Notice tone="warning">
               创建者可根据公布规则决定结果。请评估创建者判断与结算风险。
             </Notice>
             <ErrorNotice error={live.error} retry={() => void live.refetch()} />
+          </section>
+          <section className="surface stack" aria-label="费用说明">
+            <h2>费用说明</h2>
+            {live.data ? (
+              <>
+                <dl className="data-list">
+                  <dt>终局创作者抽成</dt>
+                  <dd>
+                    市场本金的 {live.data.economics.creatorRakeBps / 100}%
+                  </dd>
+                  <dt>终局平台分成</dt>
+                  <dd>
+                    创作者终局抽成的{" "}
+                    {live.data.economics.protocolShareBps / 100}%
+                  </dd>
+                  <dt>C2C 平台手续费</dt>
+                  <dd>
+                    成交总额的 {live.data.economics.platformC2CFeeBps / 100}
+                    %（由卖家承担）
+                  </dd>
+                  <dt>C2C 创作者手续费</dt>
+                  <dd>
+                    成交总额的 {live.data.economics.creatorC2CFeeBps / 100}
+                    %（由卖家承担）
+                  </dd>
+                </dl>
+                <p className="small muted">
+                  费率来自本市场创建时保存的链上快照。
+                  正常结算时，平台分成从创作者终局抽成中分出。 C2C
+                  两项费用从卖家成交收入中扣除，买家支付成交总额；挂单、撤单本身不收取成交手续费。网络
+                  Gas 另计。
+                </p>
+              </>
+            ) : live.isPending ? (
+              <Loading label="正在读取链上费率" />
+            ) : (
+              <Notice tone="warning">
+                费率暂不可用，请在上方重试链上数据读取。
+              </Notice>
+            )}
           </section>
           <section className="surface prose">
             <h2>市场规则</h2>
@@ -225,29 +280,33 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
                 进入创作者中心
               </Link>
             )}
-            {live.data &&
-              live.data.state === 0 &&
-              live.data.now > live.data.resolutionDeadline && (
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    begin({
-                      intent: { kind: "void-timeout", market: market.market },
-                      summary: [
-                        {
-                          label: "市场",
-                          value: rules.data?.question ?? market.market,
-                        },
-                        { label: "操作", value: "超过结算期限，申请超时作废" },
-                      ],
-                      feeNote:
-                        "超时作废激活本金退款。押金罚没进入补偿池与领取补偿是后续独立步骤。",
-                    })
-                  }
-                >
-                  申请超时作废
-                </Button>
-              )}
+            {timedOut && (
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  begin({
+                    intent: { kind: "void-timeout", market: market.market },
+                    summary: [
+                      {
+                        label: "市场",
+                        value:
+                          rules.data?.question ??
+                          market.question?.trim() ??
+                          market.market,
+                      },
+                      {
+                        label: "操作",
+                        value: "已达到结算截止时间，申请超时作废",
+                      },
+                    ],
+                    feeNote:
+                      "超时作废激活本金退款。押金罚没进入补偿池与领取补偿是后续独立步骤。",
+                  })
+                }
+              >
+                申请超时作废
+              </Button>
+            )}
             <p className="small">
               创建费、押金和协议费用由测试资产支付。网络 Gas
               可在确认页选择项目代付或自行支付 ETH。
@@ -319,6 +378,14 @@ function TradePanel({
             { label: "结果", value: labels[outcome] ?? `结果 #${outcome}` },
             { label: "最多支付", value: `${amount} ${env.asset}` },
             { label: "最少获得份额", value: formatUnits(minUnits, 6) },
+            {
+              label: "终局创作者抽成",
+              value: `市场本金的 ${live.data.economics.creatorRakeBps / 100}%`,
+            },
+            {
+              label: "终局平台分成",
+              value: `创作者终局抽成的 ${live.data.economics.protocolShareBps / 100}%`,
+            },
           ],
           feeNote: `一级投入按 1 ${env.asset} 对应 1 份本金记账。结算时创作者抽成 ${live.data.economics.creatorRakeBps / 100}%，平台从该抽成中收取 ${live.data.economics.protocolShareBps / 100}%。网络 Gas 按确认页选择的方式支付。`,
         });
@@ -344,6 +411,14 @@ function TradePanel({
             { label: "挂单份额", value: amount },
             { label: "每份价格", value: `${price} ${env.asset}` },
             { label: "有效期", value: `${expiry} 小时` },
+            {
+              label: "C2C 平台手续费",
+              value: `成交总额的 ${live.data.economics.platformC2CFeeBps / 100}%（成交时由卖家承担）`,
+            },
+            {
+              label: "C2C 创作者手续费",
+              value: `成交总额的 ${live.data.economics.creatorC2CFeeBps / 100}%（成交时由卖家承担）`,
+            },
           ],
           feeNote: `份额进入市场托管，未成交部分仍属于你。成交时扣平台费 ${live.data.economics.platformC2CFeeBps / 100}% 和创作者费 ${live.data.economics.creatorC2CFeeBps / 100}%；挂单与撤单本身不实现收益。`,
         });
@@ -504,6 +579,14 @@ function Listings({
           { label: "份额", value: units },
           { label: "最多支付", value: `${formatUnits(gross, 6)} ${env.asset}` },
           { label: "卖家", value: selected.seller },
+          {
+            label: "C2C 平台手续费",
+            value: `成交总额的 ${live.data.economics.platformC2CFeeBps / 100}%（由卖家承担）`,
+          },
+          {
+            label: "C2C 创作者手续费",
+            value: `成交总额的 ${live.data.economics.creatorC2CFeeBps / 100}%（由卖家承担）`,
+          },
         ],
         feeNote: `本次使用全额成交下限；成交数量变化时重新确认。卖家净收入为成交总额扣除平台费 ${live.data.economics.platformC2CFeeBps / 100}% 和创作者费 ${live.data.economics.creatorC2CFeeBps / 100}%，不会向买家重复扣这两项费用。`,
       });

@@ -187,11 +187,9 @@ test("holdings use market titles and omit markets that have settled", async ({
   await expect(
     holdings.getByRole("link", { name: "仍在进行的测试市场", exact: true }),
   ).toBeVisible();
-  const costs = page
-    .locator("section")
-    .filter({
-      has: page.getByRole("heading", { name: "持仓成本明细", exact: true }),
-    });
+  const costs = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "持仓成本明细", exact: true }),
+  });
   await expect(
     costs.getByRole("link", { name: "仍在进行的测试市场 / 1", exact: true }),
   ).toBeVisible();
@@ -204,12 +202,10 @@ test("holdings use market titles and omit markets that have settled", async ({
   await expect(
     winner.getByRole("link", { name: "已结算的测试市场", exact: true }),
   ).toBeVisible();
-  await test
-    .info()
-    .attach("market-names-and-holdings", {
-      body: await page.screenshot({ fullPage: true }),
-      contentType: "image/png",
-    });
+  await test.info().attach("market-names-and-holdings", {
+    body: await page.screenshot({ fullPage: true }),
+    contentType: "image/png",
+  });
   await winner.getByRole("button", { name: "领取", exact: true }).click();
   await expect(
     page.getByRole("dialog").getByText("已结算的测试市场", { exact: true }),
@@ -250,12 +246,10 @@ test("creator center identifies markets by their names and opens management", as
     "href",
     `#/ctusd-test/creator/${market}`,
   );
-  await test
-    .info()
-    .attach("creator-market-names", {
-      body: await page.screenshot({ fullPage: true }),
-      contentType: "image/png",
-    });
+  await test.info().attach("creator-market-names", {
+    body: await page.screenshot({ fullPage: true }),
+    contentType: "image/png",
+  });
   await namedMarket.click();
   await expect(page).toHaveURL(new RegExp(`/creator/${market}$`));
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
@@ -470,4 +464,198 @@ test("legacy deployment creation has no obsolete fallback or incompatible form",
   ).toBeVisible();
   await expect(page.locator('a[href^="/demo"]')).toHaveCount(0);
   await expect(page.getByLabel("市场问题")).toHaveCount(0);
+});
+
+test("fees distinguish market snapshots from current creation config and remain visible before trading", async ({
+  page,
+}) => {
+  await open(page, `markets/${market}`);
+  const fees = page.getByRole("region", { name: "费用说明", exact: true });
+  await expect(fees).toContainText("创作者终局抽成的 5%");
+  await expect(fees).toContainText("成交总额的 0.25%（由卖家承担）");
+  await fees.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: test.info().outputPath("market-fees.png") });
+  await reviewBuy(page);
+  const dialog = page.getByRole("dialog");
+  await expect(
+    dialog.locator("dt").filter({ hasText: /^终局平台分成$/ }),
+  ).toBeVisible();
+  await expect(dialog).toContainText("创作者终局抽成的 5%");
+  await dialog.getByRole("button", { name: "取消", exact: true }).click();
+  await page.getByRole("button", { name: "挂单卖出", exact: true }).click();
+  await page.getByLabel("挂单份额", { exact: true }).fill("10");
+  await page.getByLabel("每份卖价（ctUSD）", { exact: true }).fill("1");
+  await page.getByRole("button", { name: "核对挂单", exact: true }).click();
+  await expect(dialog).toContainText("成交总额的 0.25%（成交时由卖家承担）");
+  await open(page, "creator/new");
+  const creationFees = page.getByRole("region", {
+    name: "平台费用说明",
+    exact: true,
+  });
+  await expect(creationFees).toContainText("创作者终局抽成的 20%");
+  await expect(creationFees).toContainText("成交总额的 0.5%（由卖家承担）");
+  await creationFees.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: test.info().outputPath("creation-fees.png") });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("zero C2C fees remain distinct from unavailable on-chain fee data", async ({
+  page,
+}) => {
+  for (const route of [`markets/${market}`, "creator/new"]) {
+    await page.goto(`${fixture}?fee-test=zero#/ctusd-test/${route}`);
+    const fees = page.getByRole("region", {
+      name: route.startsWith("markets") ? "费用说明" : "平台费用说明",
+      exact: true,
+    });
+    await expect(fees).toContainText("成交总额的 0%（由卖家承担）");
+    await page.goto(`${fixture}?fee-test=unavailable#/ctusd-test/${route}`);
+    await expect(fees).toContainText("费率暂不可用");
+    await expect(fees).not.toContainText("0%");
+  }
+});
+
+test("timeout action and creator controls use the exact on-chain deadline", async ({
+  page,
+}) => {
+  for (const scenario of ["before", "boundary"]) {
+    await page.goto(
+      `${fixture}?timeout-test=${scenario}#/ctusd-test/markets/${market}`,
+    );
+    await expect(
+      page.getByRole("heading", { name: "费用说明", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("市场本金的 1%", { exact: true }),
+    ).toBeVisible();
+    const action = page.getByRole("button", {
+      name: "申请超时作废",
+      exact: true,
+    });
+    if (scenario === "before") {
+      await expect(action).toHaveCount(0);
+      await expect(
+        page.locator(".status").filter({ hasText: "已封盘 · 待结算" }),
+      ).toBeVisible();
+    } else {
+      await expect(
+        page.locator(".status").filter({ hasText: "已超时 · 待作废" }),
+      ).toBeVisible();
+      await expect(page.getByText(/但市场尚未作废/)).toBeVisible();
+      await action.click();
+      await expect(page.getByRole("dialog")).toContainText(
+        "已达到结算截止时间",
+      );
+      await page
+        .getByRole("dialog")
+        .getByRole("button", { name: "取消", exact: true })
+        .click();
+      await page.screenshot({
+        path: test.info().outputPath("timeout-pending.png"),
+      });
+    }
+    await page.goto(
+      `${fixture}?timeout-test=${scenario}#/ctusd-test/creator/${market}`,
+    );
+    const creatorVoid = page.getByRole("button", {
+      name: "核对规则并作废",
+      exact: true,
+    });
+    const resolve = page.getByRole("button", {
+      name: "核对结果并结算",
+      exact: true,
+    });
+    if (scenario === "before") {
+      await expect(creatorVoid).toBeEnabled();
+      await expect(resolve).toBeEnabled();
+    } else {
+      await expect(creatorVoid).toBeDisabled();
+      await expect(resolve).toBeDisabled();
+      await expect(
+        page.getByRole("link", { name: "前往申请超时作废", exact: true }),
+      ).toBeVisible();
+    }
+  }
+});
+
+test("confirmed timeout replaces stale indexed status without a page reload", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto(
+    `${fixture}?timeout-test=boundary#/ctusd-test/markets/${market}`,
+  );
+  await expect(
+    page.getByRole("button", { name: "申请超时作废", exact: true }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    document.documentElement.dataset.testTimeoutVoided = "1";
+  });
+  await page.clock.fastForward(15001);
+  await expect(page.locator(".status-voided")).toHaveText("已超时作废");
+  await expect(
+    page.getByText(/已超时作废 · 所有时间均为北京时间/),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "申请超时作废", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "领取与退出", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/超时退款与押金罚没补偿分阶段领取/),
+  ).toBeVisible();
+  await page.screenshot({
+    path: test.info().outputPath("timeout-confirmed.png"),
+  });
+  await page.goto(
+    `${fixture}?timeout-test=voided#/ctusd-test/creator/${market}`,
+  );
+  await expect(page.getByText(/状态：已超时作废/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "核对规则并作废", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("market lists identify pending timeouts and legacy timeouts remain terminal", async ({
+  page,
+}) => {
+  await page.goto(`${fixture}?timeout-test=boundary#/ctusd-test/markets`);
+  await expect(
+    page.getByText("已超时 · 待作废", { exact: true }).first(),
+  ).toBeVisible();
+  await page.goto(`${fixture}?timeout-test=boundary#/ctusd-test/creator`);
+  await expect(
+    page.getByRole("cell", { name: "已超时 · 待作废", exact: true }).first(),
+  ).toBeVisible();
+  await page.goto(
+    `${fixture}?timeout-test=voided&legacy=1#/ctusd-test/markets/${market}`,
+  );
+  await expect(page.locator(".status-voided")).toHaveText("已超时作废");
+  await expect(
+    page.getByRole("button", { name: "申请超时作废", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("unchanged catalogue data still crosses the timeout deadline while the page stays open", async ({
+  page,
+}) => {
+  await page.clock.install();
+  for (const route of ["markets", "creator"]) {
+    // A hash-only navigation keeps the prior fixture and its expired deadline.
+    await page.goto("about:blank");
+    await page.goto(`${fixture}?timeout-test=before#/ctusd-test/${route}`);
+    await expect(
+      page.getByText("已封盘 · 待结算", { exact: true }).first(),
+    ).toBeVisible();
+    await page.clock.fastForward(15001);
+    await expect(
+      page.getByText("已超时 · 待作废", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(page.getByText("已超时作废", { exact: true })).toHaveCount(0);
+  }
 });

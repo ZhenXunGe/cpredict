@@ -28,6 +28,7 @@ import {
   useMarkets,
   useRules,
   marketStatusCopy,
+  useMarketClock,
   dateText,
 } from "../data.js";
 import {
@@ -54,6 +55,8 @@ const configAbi = parseAbi([
   "function maxPerUserPrimaryCap() view returns(uint128)",
   "function maxCreatorRakeBps() view returns(uint16)",
   "function maxCreatorC2CFeeBps() view returns(uint16)",
+  "function protocolShareBps() view returns(uint16)",
+  "function platformC2CFeeBps() view returns(uint16)",
 ]);
 function useCreationConfig() {
   const { api } = useSession();
@@ -77,45 +80,65 @@ function useCreationConfig() {
           blockNumber,
         }),
       ]);
-      const [creationFee, fullCap, cloneCap, userCap, rakeMax, c2cMax] =
-        await Promise.all([
-          c.readContract({
-            address: config,
-            abi: configAbi,
-            functionName: "creationFee",
-            blockNumber,
-          }),
-          c.readContract({
-            address: config,
-            abi: configAbi,
-            functionName: "maxFullMarketCap",
-            blockNumber,
-          }),
-          c.readContract({
-            address: config,
-            abi: configAbi,
-            functionName: "maxCloneMarketCap",
-            blockNumber,
-          }),
-          c.readContract({
-            address: config,
-            abi: configAbi,
-            functionName: "maxPerUserPrimaryCap",
-            blockNumber,
-          }),
-          c.readContract({
-            address: config,
-            abi: configAbi,
-            functionName: "maxCreatorRakeBps",
-            blockNumber,
-          }),
-          c.readContract({
-            address: config,
-            abi: configAbi,
-            functionName: "maxCreatorC2CFeeBps",
-            blockNumber,
-          }),
-        ]);
+      const [
+        creationFee,
+        fullCap,
+        cloneCap,
+        userCap,
+        rakeMax,
+        c2cMax,
+        protocolShareBps,
+        platformC2CFeeBps,
+      ] = await Promise.all([
+        c.readContract({
+          address: config,
+          abi: configAbi,
+          functionName: "creationFee",
+          blockNumber,
+        }),
+        c.readContract({
+          address: config,
+          abi: configAbi,
+          functionName: "maxFullMarketCap",
+          blockNumber,
+        }),
+        c.readContract({
+          address: config,
+          abi: configAbi,
+          functionName: "maxCloneMarketCap",
+          blockNumber,
+        }),
+        c.readContract({
+          address: config,
+          abi: configAbi,
+          functionName: "maxPerUserPrimaryCap",
+          blockNumber,
+        }),
+        c.readContract({
+          address: config,
+          abi: configAbi,
+          functionName: "maxCreatorRakeBps",
+          blockNumber,
+        }),
+        c.readContract({
+          address: config,
+          abi: configAbi,
+          functionName: "maxCreatorC2CFeeBps",
+          blockNumber,
+        }),
+        c.readContract({
+          address: config,
+          abi: configAbi,
+          functionName: "protocolShareBps",
+          blockNumber,
+        }),
+        c.readContract({
+          address: config,
+          abi: configAbi,
+          functionName: "platformC2CFeeBps",
+          blockNumber,
+        }),
+      ]);
       return {
         creationFee,
         fullCap,
@@ -123,6 +146,8 @@ function useCreationConfig() {
         userCap,
         rakeMax,
         c2cMax,
+        protocolShareBps,
+        platformC2CFeeBps,
         resolutionWindow,
         now: block.timestamp,
       };
@@ -132,6 +157,7 @@ function useCreationConfig() {
 }
 export function CreatorPage() {
   const { api, account } = useSession(),
+    now = useMarketClock(),
     markets = useMarkets("", "", account?.address),
     pnl = useQuery({
       queryKey: [api.key, "pnl", account?.address],
@@ -212,7 +238,14 @@ export function CreatorPage() {
                           `名称暂不可用（${shortAddress(m.market)}）`}
                       </Link>
                     </td>
-                    <td>{marketStatusCopy(m)}</td>
+                    <td>
+                      {marketStatusCopy(
+                        m,
+                        undefined,
+                        api.environment.deployment.protocolVersion,
+                        now,
+                      )}
+                    </td>
                     <td>
                       <Amount
                         value={m.creatorBond}
@@ -420,6 +453,22 @@ export function CreateMarketPage() {
             label: "创建费",
             value: `${formatUnits(latest.creationFee, 6)} ${api.environment.asset}`,
           },
+          {
+            label: "终局创作者抽成",
+            value: `市场本金的 ${Number(rake) / 100}%`,
+          },
+          {
+            label: "终局平台分成",
+            value: `创作者终局抽成的 ${latest.protocolShareBps / 100}%`,
+          },
+          {
+            label: "C2C 平台手续费",
+            value: `成交总额的 ${latest.platformC2CFeeBps / 100}%（由卖家承担）`,
+          },
+          {
+            label: "C2C 创作者手续费",
+            value: `成交总额的 ${Number(c2c) / 100}%（由卖家承担）`,
+          },
           { label: "锁定押金", value: `${bond} ${api.environment.asset}` },
           {
             label: "合计支付上限",
@@ -470,7 +519,7 @@ export function CreateMarketPage() {
           <Notice tone="warning">{rulesPublicationErrorCopy(error)}</Notice>
         </div>
       ) : (
-        <ErrorNotice error={config.error} />
+        <ErrorNotice error={config.error} retry={() => void config.refetch()} />
       )}
       {validation && (
         <p role="alert" className="notice notice-warning">
@@ -595,6 +644,31 @@ export function CreateMarketPage() {
           {config.data &&
             `当前创作者终局抽成上限 ${config.data.rakeMax} 基点，C2C 创作者费率上限 ${config.data.c2cMax} 基点。`}
         </p>
+        <section className="surface stack" aria-label="平台费用说明">
+          <h3>平台费用说明</h3>
+          {config.data ? (
+            <>
+              <dl className="data-list">
+                <dt>终局平台分成</dt>
+                <dd>创作者终局抽成的 {config.data.protocolShareBps / 100}%</dd>
+                <dt>C2C 平台手续费</dt>
+                <dd>
+                  成交总额的 {config.data.platformC2CFeeBps / 100}
+                  %（由卖家承担）
+                </dd>
+              </dl>
+              <p className="small muted">
+                正常结算时，创作者抽成按市场本金计算，平台分成从该抽成中分出。
+                C2C 平台费与创作者费从卖家成交收入中扣除。
+                以上为当前链上配置，市场创建时保存费率快照；已有市场以各自快照为准。
+              </p>
+            </>
+          ) : config.isPending ? (
+            <Loading label="正在读取链上平台费率" />
+          ) : (
+            <Notice tone="warning">平台费率暂不可用，请重新读取后核对。</Notice>
+          )}
+        </section>
         <label className="row">
           <input
             type="checkbox"
@@ -691,9 +765,23 @@ function CreatorMarket({ market }: { market: Address }) {
             查看用户市场页与规则
           </Link>
           <Notice>
-            状态：{marketStatusCopy(query.data)}
+            状态：
+            {marketStatusCopy(
+              query.data,
+              live.data,
+              api.environment.deployment.protocolVersion,
+            )}
             。已终局市场可在持仓与权益中结算和领取押金。
           </Notice>
+          {live.data?.state === 0 &&
+            live.data.now >= live.data.resolutionDeadline && (
+              <Notice tone="warning">
+                已达到最终结算截止时间，创建者结算和作废入口已关闭。市场不会自动作废，请前往市场页申请超时作废。
+                <Link to={`/${api.environment.id}/markets/${market}`}>
+                  前往申请超时作废
+                </Link>
+              </Notice>
+            )}
           {account?.address.toLowerCase() !==
           query.data.creator.toLowerCase() ? (
             <Notice tone="warning">当前应用账户不是此市场创建者。</Notice>
@@ -725,7 +813,7 @@ function CreatorMarket({ market }: { market: Address }) {
                     !rules.data ||
                     live.data.now <
                       BigInt(query.data.outcomeDeadlineAt ?? "0") ||
-                    live.data.now > live.data.resolutionDeadline
+                    live.data.now >= live.data.resolutionDeadline
                   }
                   onClick={() => act("resolve")}
                 >
@@ -734,7 +822,7 @@ function CreatorMarket({ market }: { market: Address }) {
                 <Button
                   variant="danger"
                   disabled={
-                    !live.data || live.data.now > live.data.resolutionDeadline
+                    !live.data || live.data.now >= live.data.resolutionDeadline
                   }
                   onClick={() => act("creator-void")}
                 >
