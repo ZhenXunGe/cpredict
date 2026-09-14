@@ -125,8 +125,13 @@ if (new URLSearchParams(location.search).has("gas-test")) {
   };
 }
 
+const timeoutScenario = new URLSearchParams(location.search).get(
+  "timeout-test",
+);
 const now = Math.floor(Date.now() / 1000),
-  close = now + 86400;
+  close = timeoutScenario
+    ? now - 7200 + (timeoutScenario === "before" ? 1 : 0)
+    : now + 86400;
 const rules = marketRulesSchema.parse({
   version: "cpredict-rules-v2",
   question: "本周公开测试能否完成全部退出场景？",
@@ -488,6 +493,17 @@ class FixtureApi extends SiteApi {
       args?: unknown[];
     }) => {
       if (this.slow) await new Promise((r) => setTimeout(r, 600));
+      const feeScenario = new URLSearchParams(location.search).get("fee-test");
+      if (
+        feeScenario === "unavailable" &&
+        ["economics", "protocolShareBps", "platformC2CFeeBps"].includes(
+          functionName,
+        )
+      )
+        throw new AppError("fixture_fees_unavailable");
+      const timeoutVoided =
+        timeoutScenario === "voided" ||
+        document.documentElement.dataset.testTimeoutVoided === "1";
       const values: Record<string, unknown> = {
         name: "USD Coin",
         decimals: 6,
@@ -498,12 +514,16 @@ class FixtureApi extends SiteApi {
           creatorRakeBps: 100,
           protocolShareBps: 500,
           earlyBirdShareBps: 100,
-          platformC2CFeeBps: 25,
+          platformC2CFeeBps: feeScenario === "zero" ? 0 : 25,
           creatorC2CFeeBps: 25,
           protocolTreasury: A(6),
         },
-        marketState: 0,
-        voidReason: 0,
+        marketState: timeoutVoided
+          ? this.environment.deployment.protocolVersion === "legacy-v1"
+            ? 3
+            : 2
+          : 0,
+        voidReason: timeoutVoided ? 3 : 0,
         winningOutcome: 0,
         closeAt: BigInt(close),
         resolutionDeadline: BigInt(close + 7200),
@@ -513,6 +533,8 @@ class FixtureApi extends SiteApi {
         config: A(77),
         resolutionWindow: 3600n,
         creationFee: 2000000n,
+        protocolShareBps: 2000,
+        platformC2CFeeBps: feeScenario === "zero" ? 0 : 50,
         maxFullMarketCap: 1000000000n,
         maxCloneMarketCap: 1000000000n,
         maxPerUserPrimaryCap: 100000000n,

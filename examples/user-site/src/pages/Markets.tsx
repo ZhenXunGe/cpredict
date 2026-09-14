@@ -4,6 +4,7 @@ import { Plus, Search, ArrowRight, Clock3 } from "lucide-react";
 import { useSession } from "../wallets.js";
 import {
   useMarkets,
+  useMarketClock,
   useRules,
   dateText,
   marketStatusCopy,
@@ -21,6 +22,7 @@ import {
 } from "../ui.js";
 export function MarketsPage() {
   const { api } = useSession(),
+    now = useMarketClock(),
     [params, setParams] = useSearchParams(),
     [search, setSearch] = useState(params.get("q") ?? "");
   const status = params.get("status") ?? "",
@@ -94,7 +96,7 @@ export function MarketsPage() {
       ) : items.length ? (
         <div className="market-list">
           {items.map((m) => (
-            <MarketRow market={m} key={m.market} />
+            <MarketRow market={m} now={now} key={m.market} />
           ))}
         </div>
       ) : (
@@ -124,7 +126,7 @@ export function MarketsPage() {
     </>
   );
 }
-export function MarketRow({ market: m }: { market: Market }) {
+export function MarketRow({ market: m, now }: { market: Market; now: bigint }) {
   const { api } = useSession(),
     rules = useRules(m);
   return (
@@ -166,7 +168,12 @@ export function MarketRow({ market: m }: { market: Market }) {
         <span
           className={`status status-${m.state === 1 ? "resolved" : m.state === 2 ? "voided" : "open"}`}
         >
-          {marketStatusCopy(m)}
+          {marketStatusCopy(
+            m,
+            undefined,
+            api.environment.deployment.protocolVersion,
+            now,
+          )}
         </span>
         <div className="market-meta">
           <Clock3 size={13} aria-hidden="true" />

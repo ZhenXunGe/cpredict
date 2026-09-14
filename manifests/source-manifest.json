@@ -362,7 +362,7 @@
     },
     {
       "path": "examples/user-site/src/data.ts",
-      "sha256": "90660d89554d831294b2e5c4441f35d1d404e6afd051bf52fd37c6825033bb43"
+      "sha256": "ba924eb2e7d234d64c32858a6a22bfcb1f151c6553be28c3f932762da05c4a9c"
     },
     {
       "path": "examples/user-site/src/deposit-client.ts",
@@ -398,7 +398,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "5692a1541385421c029fb9fdff932b98d328e969ce8ea979c0caf60006008bbc"
+      "sha256": "6d1e74598411bb5c22451084af336004faa3620d94c091658a9bc354271a1383"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
@@ -418,11 +418,11 @@
     },
     {
       "path": "examples/user-site/src/pages/MarketDetail.tsx",
-      "sha256": "079afdba646bb980b5ad3f3c109c97678befd5759d8650746d3612d988a9ce4d"
+      "sha256": "718f94a3a3e175d0210b321d9ae18fb42181d97cd5f0fb09318f1bca2aab60c0"
     },
     {
       "path": "examples/user-site/src/pages/Markets.tsx",
-      "sha256": "8b555a88908c6fea7231b7481e484aabe99b7e0a6bfef3e10fb1d4f5d15c9930"
+      "sha256": "2325075e286445d8c75f4d0d22cd98ced04c4e6916c31a95313927213df10f8c"
     },
     {
       "path": "examples/user-site/src/pages/ProviderStatus.tsx",
@@ -482,7 +482,7 @@
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "fef4d49cff167c86c391c4e15e90a94ae1a2ff8c5f2df19f1656200a5fb3ec6a"
+      "sha256": "f58dc58dc8b7c1268bb29b67f2d917c45ba160789833ed4c3abc32799b6b0926"
     },
     {
       "path": "examples/user-site/test/browser/gas-payment.spec.ts",
@@ -494,7 +494,7 @@
     },
     {
       "path": "examples/user-site/test/browser/public-site.spec.ts",
-      "sha256": "79d9fb8dd7e96d0a741d8850a9d9a8ef2313a49b94fe2f083ce716c72ac253ec"
+      "sha256": "01a4deb67627701697f368e5699e26b2ae00d70dfef0ce13f67ec792eefcb44f"
     },
     {
       "path": "examples/user-site/test/browser/report-fixture.ts",

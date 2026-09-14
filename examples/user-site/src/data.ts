@@ -1,4 +1,8 @@
-import { publicMarketState } from "../../../offchain/sdk/src/legacy-protocol.js";
+import { useEffect, useState } from "react";
+import {
+  publicMarketState,
+  type ProtocolVersion,
+} from "../../../offchain/sdk/src/legacy-protocol.js";
 import {
   legacyMarketRulesSchema,
   encodeLegacyMarketRules,
@@ -49,6 +53,7 @@ export function useMarkets(status: string, search: string, owner?: Address) {
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     staleTime: 10000,
+    refetchInterval: 15000,
   });
 }
 export function useMarket(market: Address) {
@@ -61,6 +66,7 @@ export function useMarket(market: Address) {
         signal,
       }),
     staleTime: 10000,
+    refetchInterval: 15000,
   });
 }
 export function useRules(market: Market | undefined) {
@@ -215,11 +221,49 @@ export function useMarketLive(market: Address) {
     staleTime: 5000,
   });
 }
-export function marketStatusCopy(m: Market) {
-  if (m.state === 1) return "已结算";
-  if (m.state === 2) return m.voidReason === 3 ? "已超时作废" : "已作废";
-  if (m.closeAt && BigInt(m.closeAt) <= BigInt(Math.floor(Date.now() / 1000)))
-    return "已封盘 · 待结算";
+// Catalogue rows must cross deadlines even when polling returns identical data.
+export function useMarketClock() {
+  const [now, setNow] = useState(() => BigInt(Math.floor(Date.now() / 1000)));
+  useEffect(() => {
+    const timer = setInterval(
+      () => setNow(BigInt(Math.floor(Date.now() / 1000))),
+      15000,
+    );
+    return () => clearInterval(timer);
+  }, []);
+  return now;
+}
+export function marketResolutionDeadline(
+  m: Market,
+  protocol?: ProtocolVersion,
+) {
+  const anchor = protocol === "legacy-v1" ? m.closeAt : m.outcomeDeadlineAt;
+  return anchor !== null && m.resolutionWindow !== null
+    ? (BigInt(anchor) + BigInt(m.resolutionWindow)).toString()
+    : null;
+}
+export function marketStatusCopy(
+  m: Market,
+  live?: {
+    state: number;
+    voidReason: number;
+    now: bigint;
+    closeAt: bigint;
+    resolutionDeadline: bigint;
+  },
+  protocol?: ProtocolVersion,
+  observedAt = BigInt(Math.floor(Date.now() / 1000)),
+) {
+  const state = live?.state ?? m.state;
+  const reason = live?.voidReason ?? m.voidReason;
+  if (state === 1) return "已结算";
+  if (state === 2) return reason === 3 ? "已超时作废" : "已作废";
+  const now = live?.now ?? observedAt;
+  const deadline =
+    live?.resolutionDeadline ?? marketResolutionDeadline(m, protocol);
+  if (deadline !== null && now >= BigInt(deadline)) return "已超时 · 待作废";
+  const closeAt = live?.closeAt ?? m.closeAt;
+  if (closeAt !== null && BigInt(closeAt) <= now) return "已封盘 · 待结算";
   return "进行中";
 }
 export function dateText(value: string | null | undefined) {
