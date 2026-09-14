@@ -8,6 +8,7 @@ import {
   bytes,
   intentSchema,
   gasPaymentSchema,
+  signingFields,
   registerOperationSchema,
   depositPrepareSchema,
   depositReportQuerySchema,
@@ -282,6 +283,88 @@ export async function createApplicationServer(options: {
       ownedId(request),
     ),
   }));
+  app.post(
+    "/v1/trading-sessions/prepare",
+    { config: { rateLimit: { max: 15, timeWindow: "1 minute" } } },
+    async (request) => ({
+      session: await service.tradingSessions.prepare(
+        await authenticate(request),
+        request.body,
+      ),
+    }),
+  );
+  app.post("/v1/trading-sessions/:id/activate", async (request) => {
+    const input = z
+      .strictObject({ signature: bytes.refine((v) => v.length === 132) })
+      .parse(request.body);
+    return {
+      session: await service.tradingSessions.activate(
+        await authenticate(request),
+        ownedId(request),
+        input.signature,
+      ),
+    };
+  });
+  app.get("/v1/trading-sessions", async (request) => {
+    const identity = await authenticate(request),
+      { accountId, cursor } = z
+        .strictObject({
+          accountId: z.string().uuid(),
+          cursor: z.string().uuid().optional(),
+        })
+        .parse(request.query);
+    await service.controlledAccount(identity, accountId, false);
+    const rows = await service.store.tradingSessions(
+      identity.subject,
+      accountId,
+      cursor,
+    );
+    return {
+      items: rows.slice(0, 20),
+      nextCursor: rows.length > 20 ? rows[19]!.id : null,
+    };
+  });
+  app.post("/v1/trading-sessions/disable-all", async (request) => {
+    await service.store.disableUserTradingSessions(
+      (await authenticate(request)).subject,
+    );
+    return { disabled: true };
+  });
+  app.get("/v1/trading-sessions/:id", async (request) =>
+    service.tradingSessions.view(await authenticate(request), ownedId(request)),
+  );
+  app.post("/v1/trading-sessions/:id/disable", async (request) => ({
+    session: await service.tradingSessions.disable(
+      await authenticate(request),
+      ownedId(request),
+    ),
+  }));
+  app.post("/v1/trading-sessions/:id/revoke/prepare", async (request) => {
+    const identity = await authenticate(request),
+      session = await service.tradingSessions.owned(identity, ownedId(request));
+    const body = z
+      .strictObject({
+        gasPayment: z.enum(["sponsored", "self-funded"]).default("sponsored"),
+      })
+      .parse(request.body);
+    return service.prepare(
+      identity,
+      session.accountId,
+      { kind: "revoke-trading-session", sessionId: session.id },
+      body.gasPayment,
+    );
+  });
+  app.post("/v1/trading-sessions/:id/revoke", async (request) => {
+    const identity = await authenticate(request),
+      input = registerOperationSchema.parse(request.body);
+    if (
+      input.intent.kind !== "revoke-trading-session" ||
+      input.intent.sessionId !== ownedId(request) ||
+      input.signingMode === "session"
+    )
+      throw new AppError("invalid_signing_mode", 400);
+    return { operation: await service.register(identity, input) };
+  });
   app.post("/v1/operations/prepare", async (request) => {
     const identity = await authenticate(request);
     const body = z
@@ -289,6 +372,7 @@ export async function createApplicationServer(options: {
         accountId: z.string().uuid(),
         intent: intentSchema,
         gasPayment: gasPaymentSchema.optional(),
+        ...signingFields,
       })
       .parse(request.body);
     return service.prepare(
@@ -296,6 +380,10 @@ export async function createApplicationServer(options: {
       body.accountId,
       body.intent,
       body.gasPayment,
+      {
+        ...(body.signingMode ? { signingMode: body.signingMode } : {}),
+        ...(body.sessionId ? { sessionId: body.sessionId } : {}),
+      },
     );
   });
   for (const path of ["/v1/operations", "/v1/faucet/claims"])

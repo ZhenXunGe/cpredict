@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "cpredict-protocol-sbom",
-  "documentNamespace": "https://cpredict.example.invalid/spdx/6fdb130eaa793fc6d14628383795280823929f061d6ae8724a821a3bf59aa5dc",
+  "documentNamespace": "https://cpredict.example.invalid/spdx/ce696ab135b41b3497e1827a910174a1189c33de277d2ad8adc9d7784c6b5d90",
   "creationInfo": {
     "created": "1970-01-01T00:00:00Z",
     "creators": [
@@ -2952,6 +2952,57 @@
       "comment": "Locked npm path node_modules/@simplewebauthn/browser; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-6f5f445a86c90c438d3b81e7",
+      "name": "@simplewebauthn/browser",
+      "versionInfo": "8.3.7",
+      "downloadLocation": "https://registry.npmmirror.com/@simplewebauthn/browser/-/browser-8.3.7.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "66d45ffa950480e0af8eb62c6ccb097e21ce74a72b499b76ceb027208a5f980d3aaf4171068bc562ad2b275ef5b2865b7b5dca996cc0a0b2a34b1556ecac4275"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@zerodev/webauthn-key/node_modules/@simplewebauthn/browser; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-c2463415bd95d75734465946",
+      "name": "@simplewebauthn/browser",
+      "versionInfo": "9.0.1",
+      "downloadLocation": "https://registry.npmmirror.com/@simplewebauthn/browser/-/browser-9.0.1.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "c03d96a5b91a10fe35ef4b35dff1d4c4f700579cb865768aa354df364952e730de7cf8a72205cea60cf592912fa1b02c68b3dad8a787ec028a5ffa1dd66ac127"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@zerodev/permissions/node_modules/@simplewebauthn/browser; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-21049d223a05cc981d78ede0",
+      "name": "@simplewebauthn/types",
+      "versionInfo": "12.0.0",
+      "downloadLocation": "https://registry.npmmirror.com/@simplewebauthn/types/-/types-12.0.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "abacbc324a15f15f23078cf3a75f14ca3d88ee8169dbf38d2fc7378fcb93d3a00e5aeddc20285cd5abbbd50607acfd9bfb10daa641938affbd957ef1913940b0"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@zerodev/webauthn-key/node_modules/@simplewebauthn/types; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-ab25e067c884105ae722cafb",
       "name": "@simplewebauthn/types",
       "versionInfo": "9.0.1",
@@ -2967,6 +3018,23 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/@simplewebauthn/types; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-304e2da657fcdc7219df23fd",
+      "name": "@simplewebauthn/typescript-types",
+      "versionInfo": "8.3.4",
+      "downloadLocation": "https://registry.npmmirror.com/@simplewebauthn/typescript-types/-/typescript-types-8.3.4.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "dfcc6d71ad0ea9f455365a0a06b141e4b10ce8f379bf315b246eab02eb4f56bb461c56313dd895ddbb585aad1e01901998ff9da853d8271256789ac67e66079e"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@simplewebauthn/typescript-types; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-e6bbfbac43e0004512142592",
@@ -6896,6 +6964,23 @@
       "comment": "Locked npm path node_modules/@zerodev/ecdsa-validator; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-062d17748b5e3299f0c96224",
+      "name": "@zerodev/permissions",
+      "versionInfo": "5.6.3",
+      "downloadLocation": "https://registry.npmmirror.com/@zerodev/permissions/-/permissions-5.6.3.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "3305b7128deb07956238a758e8d528caf9904d5fdb09b3996e640c4d842a013ec1f2b748f63a38e2734e34c3872210e47c5e1516143df8ce7470264b03feb372"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@zerodev/permissions; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-0a9147ce75bcc9f534e9df56",
       "name": "@zerodev/sdk",
       "versionInfo": "5.5.10",
@@ -6911,6 +6996,23 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/@zerodev/sdk; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-56688ba7ba2e0b829b25cbe8",
+      "name": "@zerodev/webauthn-key",
+      "versionInfo": "5.5.0",
+      "downloadLocation": "https://registry.npmmirror.com/@zerodev/webauthn-key/-/webauthn-key-5.5.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "01b0f677faabb17ec05b124c11fc319cb6e9d538e25237355789dedd0e34509c4a7be956eb84ddfb2f0e0f4a9214caa037aad0c4967468e01799ab7c1fac65b8"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/@zerodev/webauthn-key; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-4c94fbb726cbc39b5130a074",
@@ -7423,6 +7525,23 @@
       "comment": "Locked npm path node_modules/big.js; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-9ee2150335bba85ebdec09a7",
+      "name": "bignumber.js",
+      "versionInfo": "9.3.1",
+      "downloadLocation": "https://registry.npmmirror.com/bignumber.js/-/bignumber.js-9.3.1.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "2a8d2e5f5e682144bbc09dd16f7d05b3a4a455b2e63c100a7659bbabdf9a93d6db21e15fd0cc2e06c415eb3efe5fbebcfdc1ec7e0f96972b03589726b618ec8d"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/bignumber.js; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-03c0b916ebd1b55ff11bee9f",
       "name": "bintrees",
       "versionInfo": "1.0.2",
@@ -7455,6 +7574,40 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/blakejs; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-656e85d353b625514534b6ae",
+      "name": "bn.js",
+      "versionInfo": "4.11.6",
+      "downloadLocation": "https://registry.npmmirror.com/bn.js/-/bn.js-4.11.6.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "5d6c2734d142bae490d26debdc2e0b13712239196d1ddf4cd39a6ae853a555e8a8a61cd16cca39d126f3d5e865f0add9fa3c3dfaf9a09d779f635873f17fb6c0"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/ethjs-unit/node_modules/bn.js; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-f9b8f32775b6e93d08b1a0cc",
+      "name": "bn.js",
+      "versionInfo": "4.11.6",
+      "downloadLocation": "https://registry.npmmirror.com/bn.js/-/bn.js-4.11.6.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "5d6c2734d142bae490d26debdc2e0b13712239196d1ddf4cd39a6ae853a555e8a8a61cd16cca39d126f3d5e865f0add9fa3c3dfaf9a09d779f635873f17fb6c0"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/number-to-bn/node_modules/bn.js; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-e0658330d7291677c9aa2258",
@@ -7574,6 +7727,23 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/bs58; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-7c1105525201275c2dc1e36f",
+      "name": "buffer-reverse",
+      "versionInfo": "1.0.1",
+      "downloadLocation": "https://registry.npmmirror.com/buffer-reverse/-/buffer-reverse-1.0.1.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "33ced821406c67a37ddb85b9eef0f04ff68ebbc870ed981d072cfa8a392c2e39872442c10129984d394d1d182313ea53b13f6825719a0d282aab07dd1e8b4352"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/buffer-reverse; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-c2c602813e9ad2372a9ffaf7",
@@ -8169,6 +8339,23 @@
       "licenseDeclared": "BSD-3-Clause",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/crypt; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-4e1eaa412e9906cd550f8df0",
+      "name": "crypto-js",
+      "versionInfo": "4.2.0",
+      "downloadLocation": "https://registry.npmmirror.com/crypto-js/-/crypto-js-4.2.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "2802c3c84620a58f919686ff8ab894b6357a77912af98d7dd40e60e14a8b022f02c863fd375f857556e47354b129cdabe18018a86f09cced8a18bf808b30fbd1"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/crypto-js; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-4c25c99671e85aeb46d1a934",
@@ -8902,6 +9089,23 @@
       "comment": "Locked npm path node_modules/eth-rpc-errors; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-e0ad284c9983e8d7df7214e7",
+      "name": "ethereum-bloom-filters",
+      "versionInfo": "1.2.0",
+      "downloadLocation": "https://registry.npmmirror.com/ethereum-bloom-filters/-/ethereum-bloom-filters-1.2.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "dbc872884ec756c5ae6ea86954b56665715de084de1e2f8152ed39a3d8ac7f4194a4cb730548bef3f805ac6686633bc600942627724a8fbecc93d1bdf13f38ac"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/ethereum-bloom-filters; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-1c760bd8b00abe0fd5d8e746",
       "name": "ethereum-cryptography",
       "versionInfo": "2.2.1",
@@ -8917,6 +9121,23 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/ethereum-cryptography; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-b11e97726f945105cafd48b1",
+      "name": "ethjs-unit",
+      "versionInfo": "0.1.6",
+      "downloadLocation": "https://registry.npmmirror.com/ethjs-unit/-/ethjs-unit-0.1.6.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "fd29fd634a0a974baa42ebe0164ff342047b6b0d60dfaa97fe3cd2439952c253b41a280fca693878641f78d4c3d37c3574f3aa7f3f15efb0b2e378c7e7aa5a83"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/ethjs-unit; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-37c67fb01bc55ed5234c26b8",
@@ -10024,6 +10245,23 @@
       "comment": "Locked npm path node_modules/is-generator-function; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-39a2277c5f5f58ad7e9f19a9",
+      "name": "is-hex-prefixed",
+      "versionInfo": "1.0.0",
+      "downloadLocation": "https://registry.npmmirror.com/is-hex-prefixed/-/is-hex-prefixed-1.0.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "5afb4e8ae835545ac4f6fd42c9dc26f859d7777fb0f4669e554b2ce56e2ffd22f2dd45b4d2f3feea2345d927677e20682f2e1b4ea55d91fb4d19351e38556c6c"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/is-hex-prefixed; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-1cb1f4b77762fbbbc9385bd3",
       "name": "is-number",
       "versionInfo": "7.0.0",
@@ -10925,6 +11163,23 @@
       "comment": "Locked npm path node_modules/md5; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-b538d4540a2df5a8703b7c7d",
+      "name": "merkletreejs",
+      "versionInfo": "0.3.11",
+      "downloadLocation": "https://registry.npmmirror.com/merkletreejs/-/merkletreejs-0.3.11.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "2c92939788953539dd84bfb7533fed7e48c3d249485ac1e553382db8d9cdaec7fb6c0957477d26fb1601ee51ebe59fe5e9eff2008b2bdba0da6f1e81ba8e1519"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/merkletreejs; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-500a7d2de28a3ee51970354c",
       "name": "micro-ftch",
       "versionInfo": "0.3.1",
@@ -11229,6 +11484,23 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/normalize-path; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-d73b06bb6ce57608cdb9319f",
+      "name": "number-to-bn",
+      "versionInfo": "1.7.0",
+      "downloadLocation": "https://registry.npmmirror.com/number-to-bn/-/number-to-bn-1.7.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "c2c27d81f4b3d7fb3866c24dd35972a27c2ec40d6d9a5e97d720439dfa4c825ca970144565992eb36e8474f4a5a92e4625f61d75565adb6a7754d6f7cf99b922"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/number-to-bn; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-8b4282f974ee164dc2e2832c",
@@ -12659,6 +12931,23 @@
       "comment": "Locked npm path node_modules/radix3; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-35f808e03bb648bd445f74ee",
+      "name": "randombytes",
+      "versionInfo": "2.1.0",
+      "downloadLocation": "https://registry.npmmirror.com/randombytes/-/randombytes-2.1.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "bd897788e5fee022945aec468bd5248627ba7eca97a92f4513665a89ce2d3450f637641069738c15bb8a2b84260c70b424ee81d59a78d49d0ba53d2847af1a99"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/randombytes; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-96bc15aad6ac07876e2a1965",
       "name": "react-aria",
       "versionInfo": "3.52.1",
@@ -13866,6 +14155,23 @@
       "comment": "Locked npm path node_modules/strip-ansi; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-181461b8634647834d80c92e",
+      "name": "strip-hex-prefix",
+      "versionInfo": "1.0.0",
+      "downloadLocation": "https://registry.npmmirror.com/strip-hex-prefix/-/strip-hex-prefix-1.0.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "abc778b9eec9184895732a638b56c02d3a2cfb4a56b721a58af016c8fb93907cee4c226aacaf6c5b1610654aba36addcbb2bf76e6ef7e08847bc7b46194454e8"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/strip-hex-prefix; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-9b24100f2093c1132df80ba2",
       "name": "strip-json-comments",
       "versionInfo": "3.1.1",
@@ -14323,6 +14629,23 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/tr46; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-bec28e5da2cabc8bab624b88",
+      "name": "treeify",
+      "versionInfo": "1.1.0",
+      "downloadLocation": "https://registry.npmmirror.com/treeify/-/treeify-1.1.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "d66e1103bc55009ad21abad71acd0bdd84f0caf06cd92f0f6d11da2d9024170ec947ca0817062dcacc6505985821aef14b289824a677886aeb939e5c180de2f4"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/treeify; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-6bd457b8f527cd8fff7a8a53",
@@ -14835,6 +15158,23 @@
       "comment": "Locked npm path node_modules/rpc-websockets/node_modules/utf-8-validate; integrity verified against package-lock.json."
     },
     {
+      "SPDXID": "SPDXRef-Package-0533db72b94ceab806814cf8",
+      "name": "utf8",
+      "versionInfo": "3.0.0",
+      "downloadLocation": "https://registry.npmmirror.com/utf8/-/utf8-3.0.0.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "13c56314843f4f2420a7e4d97d2ea5f32a7fc56a694801f389d1a246ba9ee1b2b85cff694d1c8a160189a4edd237bcdd5f80dea264ebc1ab1e087a2f7e915ca9"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "MIT",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/utf8; integrity verified against package-lock.json."
+    },
+    {
       "SPDXID": "SPDXRef-Package-dd279f6f94b60a8ac8846bce",
       "name": "util-deprecate",
       "versionInfo": "1.0.2",
@@ -15071,6 +15411,23 @@
       "licenseDeclared": "MIT",
       "copyrightText": "NOASSERTION",
       "comment": "Locked npm path node_modules/wagmi; integrity verified against package-lock.json."
+    },
+    {
+      "SPDXID": "SPDXRef-Package-d92bdb5ce7b992f8deeb013a",
+      "name": "web3-utils",
+      "versionInfo": "1.10.4",
+      "downloadLocation": "https://registry.npmmirror.com/web3-utils/-/web3-utils-1.10.4.tgz",
+      "filesAnalyzed": false,
+      "checksums": [
+        {
+          "algorithm": "SHA512",
+          "checksumValue": "b6cbbc1622892e4d8fce10e5f5f5db194593924557621b5303e4a610590a7edfbd060c0bc5f091a54f7ab16bfb2020bcce2c4135ddc9511568891ddd51780ff0"
+        }
+      ],
+      "licenseConcluded": "NOASSERTION",
+      "licenseDeclared": "LGPL-3.0",
+      "copyrightText": "NOASSERTION",
+      "comment": "Locked npm path node_modules/web3-utils; integrity verified against package-lock.json."
     },
     {
       "SPDXID": "SPDXRef-Package-9716997d603f260a14a2b75e",
@@ -16969,11 +17326,6 @@
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
     },
     {
-      "spdxElementId": "SPDXRef-Package-ab25e067c884105ae722cafb",
-      "relationshipType": "BUILD_DEPENDENCY_OF",
-      "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
-    },
-    {
       "spdxElementId": "SPDXRef-Package-ab66f8282c27f11713f95b7e",
       "relationshipType": "BUILD_DEPENDENCY_OF",
       "relatedSpdxElement": "SPDXRef-Package-cpredict-protocol"
@@ -17206,6 +17558,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-0533db72b94ceab806814cf8"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-055786a3da81f224518bf264"
     },
     {
@@ -17222,6 +17579,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-05df526d36a42a0442f5baf2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-062d17748b5e3299f0c96224"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -17466,6 +17828,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-181461b8634647834d80c92e"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-1855025c481bfeec8f266272"
     },
     {
@@ -17572,6 +17939,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-20da7f896abe4f8e34488dda"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-21049d223a05cc981d78ede0"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -17776,6 +18148,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-304e2da657fcdc7219df23fd"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-319a3f88a7f535fa64471851"
     },
     {
@@ -17861,6 +18238,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-35f808e03bb648bd445f74ee"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-36162f11c2304093f8cd27b2"
     },
     {
@@ -17917,6 +18299,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-395ab5dd077199605e1fb2e4"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-39a2277c5f5f58ad7e9f19a9"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -18306,6 +18693,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-4e1eaa412e9906cd550f8df0"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-4ec3b528cca26eb34ff234db"
     },
     {
@@ -18407,6 +18799,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-5659dae4346a3d377c8353da"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-56688ba7ba2e0b829b25cbe8"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -18582,6 +18979,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-647a5224151d645c0f2a5bc9"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-656e85d353b625514534b6ae"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -18762,6 +19164,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-6f1d6114b56ef50417673cd1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-6f5f445a86c90c438d3b81e7"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -18952,6 +19359,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-7bf2a5a1908b92f34b7e14d2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-7c1105525201275c2dc1e36f"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -19496,6 +19908,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-9ee2150335bba85ebdec09a7"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-a03ca101fdefdd4cc0db33f7"
     },
     {
@@ -19651,6 +20068,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-ab25e067c884105ae722cafb"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-ab2eda5b845307d93f20d466"
     },
     {
@@ -19736,6 +20158,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-b11e97726f945105cafd48b1"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-b1c23e868eaab500da0c8551"
     },
     {
@@ -19787,6 +20214,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-b528c2cdc14cd24269d4d1d2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-b538d4540a2df5a8703b7c7d"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -19931,6 +20363,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-bec28e5da2cabc8bab624b88"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-bf2de39d93c7a1c0b482d0d9"
     },
     {
@@ -19987,6 +20424,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-c1d4fe6e4646252dbac261a2"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-c2463415bd95d75734465946"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -20351,6 +20793,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-d73b06bb6ce57608cdb9319f"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-d86280de21cf76868f131eb4"
     },
     {
@@ -20362,6 +20809,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-d8d384b37b8c7edfbf7f509e"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-d92bdb5ce7b992f8deeb013a"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -20472,6 +20924,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-e0882326a01275511e928b12"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-e0ad284c9983e8d7df7214e7"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -20821,6 +21278,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-f9b8f32775b6e93d08b1a0cc"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-fa312f1fe4e00d2b8df80954"
     },
     {
@@ -21119,7 +21581,7 @@
       "annotationDate": "1970-01-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: cpredict-sbom-generator-1",
-      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/npm-license-evidence.json=757c2f1b76443b1431f05fd4348439f653cb67bfd1b790bb0a86a37a1364bb4d, manifests/npm-licenses/041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be.txt=041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be, manifests/npm-licenses/0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357.txt=0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357, manifests/npm-licenses/1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc.txt=1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc, manifests/npm-licenses/45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1.txt=45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1, manifests/npm-licenses/6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd.txt=6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd, manifests/npm-licenses/8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb.txt=8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb, manifests/npm-licenses/a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214.txt=a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214, manifests/npm-licenses/c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a.txt=c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a, manifests/npm-licenses/caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec.txt=caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec, manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt=d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41, manifests/npm-licenses/e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93.txt=e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=cf4e89bd433787a0b665b6508e6ed6ddbe19caf3769b3b9a0e5a60c1c0f6749b, package.json=51aba38afd8587c13d711da2698dcf58f6a617dce5fffa9854edfca69d2329e8"
+      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/npm-license-evidence.json=757c2f1b76443b1431f05fd4348439f653cb67bfd1b790bb0a86a37a1364bb4d, manifests/npm-licenses/041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be.txt=041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be, manifests/npm-licenses/0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357.txt=0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357, manifests/npm-licenses/1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc.txt=1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc, manifests/npm-licenses/45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1.txt=45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1, manifests/npm-licenses/6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd.txt=6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd, manifests/npm-licenses/8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb.txt=8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb, manifests/npm-licenses/a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214.txt=a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214, manifests/npm-licenses/c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a.txt=c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a, manifests/npm-licenses/caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec.txt=caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec, manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt=d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41, manifests/npm-licenses/e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93.txt=e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=5b2dbaf6c86e0710251ef1a23ee92b02351b5db7a85dd883fe9419c97b3cf71f, package.json=86805f4932f7328b293f7fd8e733c25a52af0e6e0ce53ae8bd584057d0cc0b9f"
     }
   ]
 }

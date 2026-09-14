@@ -1,3 +1,5 @@
+import { tradingSessionSchema } from "../../app-core/src/trading-session-contracts.js";
+import { quickTradingConfigSchema } from "../../app-core/src/contracts.js";
 import { readFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
@@ -98,6 +100,12 @@ describe.skipIf(!url)("public application PostgreSQL invariants", () => {
         "utf8",
       ),
     );
+    await sql.unsafe(
+      await readFile(
+        new URL("../migrations/006_trading_sessions.sql", import.meta.url),
+        "utf8",
+      ),
+    );
     await sql.end();
     store = new PostgresApplicationStore(scopedUrl, environmentKey(env));
     otherProcess = new PostgresApplicationStore(scopedUrl, environmentKey(env));
@@ -111,6 +119,121 @@ describe.skipIf(!url)("public application PostgreSQL invariants", () => {
       await admin.unsafe(`DROP SCHEMA ${schema} CASCADE`);
       await admin.end();
     }
+  });
+  it("serializes session registration, preserves permission budgets and isolates logout", async () => {
+    const account = {
+      ...appAccount,
+      id: randomUUID(),
+      controller: A(9801),
+      address: A(9802),
+    };
+    const id = randomUUID(),
+      owner = "session-pg-owner",
+      now = "2026-09-09T00:00:00.000Z";
+    await store.createChallenge({
+      ...challenge(id),
+      subject: owner,
+      controller: account.controller,
+    });
+    await store.bindAccount(id, owner, account, now);
+    const session = tradingSessionSchema.parse({
+      id: randomUUID(),
+      accountId: account.id,
+      account: account.address,
+      controller: account.controller,
+      environment: env.id,
+      deploymentId: env.deployment.id,
+      permissionId: "0x10203040",
+      publicKey: A(9803),
+      perOperation: "100",
+      total: "100",
+      validAfter: "1788912000",
+      validUntil: "1788998400",
+      createdAt: now,
+      state: "active",
+      authorizationHash: H(1),
+      config: quickTradingConfigSchema.parse({
+        enabled: true,
+        version: 1,
+        policy: A(9804),
+        policyCodeHash: H(2),
+        signer: A(9805),
+        signerCodeHash: H(3),
+        paymaster: A(9806),
+      }),
+    });
+    await store.createTradingSession(owner, session);
+    expect(await store.tradingSessions(owner, account.id)).toHaveLength(1);
+    expect(
+      await store.tradingSessions(owner, account.id, session.id),
+    ).toHaveLength(0);
+    for (let n = 1; n <= 21; n++)
+      await store.createTradingSession(owner, {
+        ...session,
+        id: randomUUID(),
+        permissionId: `0x${n.toString(16).padStart(8, "0")}`,
+      });
+    const page = await store.tradingSessions(owner, account.id);
+    const more = await store.tradingSessions(owner, account.id, page[19]!.id);
+    expect(new Set([...page.slice(0, 20), ...more].map((s) => s.id)).size).toBe(
+      22,
+    );
+    await expect(
+      otherProcess.createTradingSession(owner, {
+        ...session,
+        id: randomUUID(),
+      }),
+    ).rejects.toMatchObject({ code: "23505" });
+    expect(await store.tradingSession("other", session.id)).toBeUndefined();
+    const next = (nonce: string) => ({
+      subject: owner,
+      idempotencyKey: randomUUID(),
+      requestHash: H(123),
+      operation: operationSchema.parse({
+        ...operation,
+        id: randomUUID(),
+        accountId: account.id,
+        account: account.address,
+        kind: "buy",
+        lane: "exposure",
+        nonce,
+        createdAt: now,
+        updatedAt: now,
+        expiresAt: "2026-09-09T00:05:00.000Z",
+        signingMode: "session",
+        sessionId: session.id,
+        gasPayment: "sponsored",
+        intent: {
+          kind: "buy",
+          market: A(10),
+          outcomeId: "0",
+          units: "1",
+          minUnits: "1",
+          maxPayment: "60",
+          deadline: "1788998400",
+        },
+      }),
+    });
+    const submissions = await Promise.allSettled([
+      store.admit(next("2"), limits),
+      otherProcess.admit(next("3"), limits),
+    ]);
+    expect(submissions.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+    const saved = (await store.sessionOperations(session.id))[0]!;
+    await store.transition(saved.id, ["awaiting-signature"], {
+      state: "reverted",
+      updatedAt: now,
+    });
+    await expect(otherProcess.admit(next("4"), limits)).rejects.toMatchObject({
+      code: "trading_session_budget_exceeded",
+    });
+    await otherProcess.disableUserTradingSessions(owner);
+    expect((await store.tradingSession(owner, session.id))?.state).toBe(
+      "disabled",
+    );
+    await expect(
+      store.setTradingSessionState(owner, session.id, "active"),
+    ).rejects.toMatchObject({ code: "trading_session_unavailable" });
   });
   it("consumes control challenges once across processes and preserves a stable account identity", async () => {
     const id = randomUUID();

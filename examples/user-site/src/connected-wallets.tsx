@@ -1,3 +1,4 @@
+import { clearUserTradingSessions } from "./trading-session-storage.js";
 import { useMemo, useEffect, useState, type ReactNode } from "react";
 import {
   PrivyProvider,
@@ -138,6 +139,7 @@ function ConnectedSession({
     connectFundingWallet: () =>
       connectWallet({ walletChainType: "ethereum-only" }),
     logout: async () => {
+      if (privy.user?.id) await clearUserTradingSessions(privy.user.id, api);
       await cache.cancelQueries();
       cache.clear();
       setSelected(null);

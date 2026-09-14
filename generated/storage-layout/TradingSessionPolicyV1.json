@@ -1,0 +1,116 @@
+{
+  "storage": [
+    {
+      "astId": 39888,
+      "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+      "label": "sessionState",
+      "offset": 0,
+      "slot": "0",
+      "type": "t_mapping(t_bytes32,t_mapping(t_address,t_struct(SessionState)39874_storage))"
+    }
+  ],
+  "types": {
+    "t_address": {
+      "encoding": "inplace",
+      "label": "address",
+      "numberOfBytes": "20"
+    },
+    "t_bool": {
+      "encoding": "inplace",
+      "label": "bool",
+      "numberOfBytes": "1"
+    },
+    "t_bytes32": {
+      "encoding": "inplace",
+      "label": "bytes32",
+      "numberOfBytes": "32"
+    },
+    "t_mapping(t_address,t_struct(SessionState)39874_storage)": {
+      "encoding": "mapping",
+      "key": "t_address",
+      "label": "mapping(address => struct TradingSessionPolicyV1.SessionState)",
+      "numberOfBytes": "32",
+      "value": "t_struct(SessionState)39874_storage"
+    },
+    "t_mapping(t_bytes32,t_mapping(t_address,t_struct(SessionState)39874_storage))": {
+      "encoding": "mapping",
+      "key": "t_bytes32",
+      "label": "mapping(bytes32 => mapping(address => struct TradingSessionPolicyV1.SessionState))",
+      "numberOfBytes": "32",
+      "value": "t_mapping(t_address,t_struct(SessionState)39874_storage)"
+    },
+    "t_struct(SessionState)39874_storage": {
+      "encoding": "inplace",
+      "label": "struct TradingSessionPolicyV1.SessionState",
+      "numberOfBytes": "64",
+      "members": [
+        {
+          "astId": 39861,
+          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "label": "perOperation",
+          "offset": 0,
+          "slot": "0",
+          "type": "t_uint128"
+        },
+        {
+          "astId": 39863,
+          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "label": "total",
+          "offset": 16,
+          "slot": "0",
+          "type": "t_uint128"
+        },
+        {
+          "astId": 39865,
+          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "label": "spent",
+          "offset": 0,
+          "slot": "1",
+          "type": "t_uint128"
+        },
+        {
+          "astId": 39867,
+          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "label": "validAfter",
+          "offset": 16,
+          "slot": "1",
+          "type": "t_uint48"
+        },
+        {
+          "astId": 39869,
+          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "label": "validUntil",
+          "offset": 22,
+          "slot": "1",
+          "type": "t_uint48"
+        },
+        {
+          "astId": 39871,
+          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "label": "installed",
+          "offset": 28,
+          "slot": "1",
+          "type": "t_bool"
+        },
+        {
+          "astId": 39873,
+          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "label": "revoked",
+          "offset": 29,
+          "slot": "1",
+          "type": "t_bool"
+        }
+      ]
+    },
+    "t_uint128": {
+      "encoding": "inplace",
+      "label": "uint128",
+      "numberOfBytes": "16"
+    },
+    "t_uint48": {
+      "encoding": "inplace",
+      "label": "uint48",
+      "numberOfBytes": "6"
+    }
+  }
+}

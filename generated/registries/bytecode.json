@@ -1,5 +1,12 @@
 [
   {
+    "contract": "TradingSessionPolicyV1",
+    "creationBytecodeSha256": "170ddccf801cbe34f2613b9cfe72b170b132be348e074a2f4b29ce8384225239",
+    "runtimeBytecodeSha256": "62872e58f799058d50d6f182ae43ec755ab7774b1a12b38878322e6d3b329c20",
+    "creationBytes": 9562,
+    "runtimeBytes": 9015
+  },
+  {
     "contract": "ProtocolConfigV1",
     "creationBytecodeSha256": "169a6b2b20854e5d59a0419b630d624b9bc04536e7cf2ab92582c54d3923c28b",
     "runtimeBytecodeSha256": "45d17ae7ffb09d93f386f6e192eba959316dea69a2c50131beab8420a1d5f33f",

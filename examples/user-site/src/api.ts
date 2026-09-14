@@ -198,6 +198,16 @@ export class SiteApi {
   }
 }
 const messages: Record<string, string> = {
+  quick_trading_disabled: "快捷交易已关闭，请明确选择逐笔控制钱包签名。已有记录仍可查询和撤销。",
+  trading_session_unavailable: "此快捷授权不可用或已到期，请重新授权，或明确选择逐笔控制钱包签名。",
+  trading_session_budget_exceeded: "快捷交易额度不足，请重新授权，或明确选择逐笔控制钱包签名。",
+  trading_session_requires_sponsorship: "快捷交易仅支持项目代付。自付 ETH 时请明确选择逐笔控制钱包签名。",
+  trading_session_storage_unavailable: "此浏览器无法安全保存快捷凭证，请使用逐笔控制钱包签名。",
+  trading_session_authorization_failed: "快捷交易授权未完成，请重新尝试或使用逐笔控制钱包签名。",
+  trading_session_logout_incomplete: "本地快捷凭证已清除，但服务端停用尚未完成。请联网后再次退出；也可由控制钱包执行链上撤销。",
+  invalid_session_authorization: "钱包权限内容与本次授权不一致，已停止授权。",
+  trading_session_paymaster_mismatch: "代付方与快捷授权不一致，已停止提交。",
+  trading_session_limits_invalid: "额度超出允许范围，请核对单笔与累计额度。",
   invalid_factory: "规则服务的 Factory 与当前环境不一致，请联系维护者。",
   challenge_expired: "规则签名挑战已过期，请重新发布规则并再次签名。",
   challenge_unavailable:
@@ -279,7 +289,7 @@ const messages: Record<string, string> = {
   sponsorship_budget_exhausted:
     "当前操作类别的代付额度已用尽，可在 Gas 支付方式中选择自行支付 ETH。",
   sponsorship_weekly_budget_exhausted:
-    "当前操作类别的本周代付额度已用尽，可在 Gas 支付方式中选择自行支付 ETH。新增交易与退出分别保留额度。",
+    "当前操作类别的本周可用代付额度不足，其中可能包含尚未最终确认交易的预留额度。交易最终确认后，未使用的预留额度会自动释放；也可在 Gas 支付方式中选择自行支付 ETH。新增交易与退出分别保留额度。",
   method_quota_exhausted: "此类操作今日已达到代付次数限制，请稍后重试。",
   ops_forbidden: "此账号没有查看运营报表的权限。",
   new_exposure_disabled: "当前暂停新增交易，已有资产的领取和退出仍可使用。",

@@ -1,3 +1,5 @@
+import { useQuickTrading } from "./QuickTrading.js";
+import { supportsQuickTrading } from "../../../offchain/app-core/src/trading-session-contracts.js";
 import {
   createContext,
   useContext,
@@ -37,6 +39,7 @@ import {
   shortAddress,
 } from "./ui.js";
 export const operationLabels: Record<OperationKind, string> = {
+  "revoke-trading-session": "撤销快捷交易权限",
   faucet: "领取测试资产",
   "deposit-usdc": "USDC 免 Gas 入金",
   buy: "一级购买",
@@ -137,6 +140,10 @@ export function AccountGate() {
   );
 }
 export function OperationProvider({ children }: { children: ReactNode }) {
+  const quick = useQuickTrading();
+  const [signingMode, setSigningMode] = useState<"controller" | "session">(
+    "controller",
+  );
   const session = useSession(),
     cache = useQueryClient(),
     location = useLocation(),
@@ -266,6 +273,11 @@ export function OperationProvider({ children }: { children: ReactNode }) {
       accountId: session.account?.id ?? null,
       identityKey: session.identityKey,
     });
+    setSigningMode(
+      quick?.local && supportsQuickTrading(next.intent)
+        ? "session"
+        : "controller",
+    );
     setDraft(next);
     setRecord(null);
     setError(null);
@@ -302,6 +314,12 @@ export function OperationProvider({ children }: { children: ReactNode }) {
         current.current.draftId === id &&
         current.current.account === account.id &&
         current.current.identity === identity,
+      signingMode === "session"
+        ? async (intent) => {
+            if (!quick) throw new AppError("trading_session_unavailable", 409);
+            return quick.credential(intent);
+          }
+        : undefined,
     );
     try {
       await client.submit(
@@ -483,6 +501,46 @@ export function OperationProvider({ children }: { children: ReactNode }) {
                         : "等待代付准入"}
                   </dd>
                 </dl>
+                {quick && draft && supportsQuickTrading(draft.intent) && (
+                  <div className="stack">
+                    <label>
+                      签名方式
+                      <select
+                        value={signingMode}
+                        disabled={!!stage || !!latest}
+                        onChange={(e) => {
+                          setSigningMode(
+                            e.target.value as "controller" | "session",
+                          );
+                          setError(null);
+                        }}
+                      >
+                        <option value="controller">逐笔控制钱包签名</option>
+                        <option
+                          value="session"
+                          disabled={!quick.local || gasPayment !== "sponsored"}
+                        >
+                          快捷交易（浏览器本地签名）
+                        </option>
+                      </select>
+                    </label>
+                    {signingMode === "session" && (
+                      <Notice>
+                        授权过期、额度不足或选择自付 ETH
+                        时，请重新授权或明确选择逐笔控制钱包签名。
+                      </Notice>
+                    )}
+                    {quick.enabled && (
+                      <Button
+                        variant="quiet"
+                        disabled={!!stage || !!latest}
+                        onClick={quick.open}
+                      >
+                        开启或重新授权快捷交易
+                      </Button>
+                    )}
+                  </div>
+                )}
                 {!gasQuote && (
                   <GasPaymentPanel
                     key={`${session.api.key}:${session.identityKey}:${session.account.id}`}
@@ -517,7 +575,9 @@ export function OperationProvider({ children }: { children: ReactNode }) {
                   : stage === "reviewing-gas"
                     ? "请核对 ETH Gas 费用"
                     : stage === "awaiting-signature"
-                      ? "请在钱包中确认签名"
+                      ? signingMode === "session"
+                        ? "正在浏览器内签名"
+                        : "请在钱包中确认签名"
                       : "正在提交，请勿重复操作"}
               </div>
             )}

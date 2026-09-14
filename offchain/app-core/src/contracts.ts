@@ -43,6 +43,37 @@ export const secureUrl = z
   });
 export const servicePath = z.string().regex(/^\/[a-zA-Z0-9/_-]*$/);
 
+export const quickTradingConfigSchema = z
+  .strictObject({
+    enabled: z.boolean().default(false),
+    version: z.literal(1),
+    policy: address,
+    policyCodeHash: hash,
+    signer: address,
+    signerCodeHash: hash,
+    paymaster: address,
+    defaultPerOperation: positive.default("100000000"),
+    maxPerOperation: positive.default("100000000"),
+    defaultTotal: positive.default("1000000000"),
+    maxTotal: positive.default("10000000000"),
+    maxDurationSeconds: z.number().int().min(60).max(86400).default(86400),
+  })
+  .superRefine((v, ctx) => {
+    if (BigInt(v.maxTotal) >= 2n ** 128n)
+      ctx.addIssue({
+        code: "custom",
+        message: "session budget exceeds uint128",
+      });
+    if (
+      BigInt(v.defaultPerOperation) > BigInt(v.maxPerOperation) ||
+      BigInt(v.defaultTotal) > BigInt(v.maxTotal) ||
+      BigInt(v.defaultPerOperation) > BigInt(v.defaultTotal) ||
+      BigInt(v.maxPerOperation) > BigInt(v.maxTotal)
+    )
+      ctx.addIssue({ code: "custom", message: "invalid quick trading limits" });
+  });
+export type QuickTradingConfig = z.infer<typeof quickTradingConfigSchema>;
+
 export const deploymentSchema = z.strictObject({
   id,
   protocolVersion: z.enum(["legacy-v1", "time-v2"]).optional(),
@@ -79,6 +110,7 @@ export const environmentSchema = z
       rpc: servicePath,
     }),
     privyAppId: z.string().min(1).max(128),
+    quickTrading: quickTradingConfigSchema.optional(),
     // Omit to use Privy's app-level configuration or its SDK default.
     walletConnectProjectId: z.string().trim().min(1).max(128).optional(),
     explorerUrl: secureUrl,
@@ -97,6 +129,12 @@ export const environmentSchema = z
     }),
   })
   .superRefine((v, ctx) => {
+    if (v.quickTrading?.enabled && v.asset !== "ctUSD")
+      ctx.addIssue({
+        code: "custom",
+        path: ["quickTrading"],
+        message: "quick trading is ctUSD only",
+      });
     if (
       v.features.gaslessDeposit &&
       (v.asset !== "USDC" || v.account.index !== "1002")
@@ -286,6 +324,10 @@ export const intentSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("claim-bond") }),
   z.strictObject({ kind: z.literal("claim-fees") }),
   z.strictObject({
+    kind: z.literal("revoke-trading-session"),
+    sessionId: z.string().uuid(),
+  }),
+  z.strictObject({
     kind: z.literal("transfer"),
     recipient: address,
     amount: positive,
@@ -314,7 +356,12 @@ export const callSchema = z.strictObject({
   value: z.literal("0"),
 });
 export type BusinessCall = z.infer<typeof callSchema>;
+export const signingFields = {
+  signingMode: z.enum(["controller", "session"]).optional(),
+  sessionId: z.string().uuid().optional(),
+};
 export const preparedOperationSchema = z.strictObject({
+  ...signingFields,
   account: accountSchema,
   nonce: uint,
   calls: z.array(callSchema).min(1).max(8),
@@ -325,6 +372,7 @@ export const preparedOperationSchema = z.strictObject({
   expiresInSeconds: z.number().int().min(60).max(300),
 });
 export const registerOperationSchema = z.strictObject({
+  ...signingFields,
   environment: id,
   deploymentId: id,
   accountId: z.string().uuid(),
@@ -348,6 +396,7 @@ export const operationStateSchema = z.enum([
 ]);
 export type OperationState = z.infer<typeof operationStateSchema>;
 export const operationSchema = z.strictObject({
+  ...signingFields,
   id: z.string().uuid(),
   environment: id,
   deploymentId: id,
@@ -373,6 +422,7 @@ export const operationSchema = z.strictObject({
     "settle-bond-and-claim",
     "claim-bond",
     "claim-fees",
+    "revoke-trading-session",
     "transfer",
   ]),
   intent: intentSchema,

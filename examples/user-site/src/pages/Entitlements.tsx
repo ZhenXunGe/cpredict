@@ -56,8 +56,15 @@ const states: Record<Entitlement["status"], string> = {
 };
 const reasons: Record<string, string> = {
   waiting_for_timeout_bond_funding: "本金退款后，须等待押金注入补偿池。",
+  refund_before_timeout_compensation:
+    "预计补偿金额如下，请先领取本金，再领取超时补偿。实际到账以链上结算为准。",
+  refund_and_funding_before_timeout_compensation:
+    "请先领取本金，并等待押金注入超时补偿池后领取补偿。",
+  principal_first_then_timeout_compensation: "领取本金后，可继续领取超时补偿。",
   credited_to_aggregate_balance: "已记入押金可领取余额；在汇总余额中领取到账。",
   bond_slashed_into_timeout_pool: "押金已罚没并注入超时补偿池。",
+  bond_slashed_pending_timeout_funding:
+    "市场已超时作废，押金已罚没，待注入超时补偿池，无法领取。",
   settle_bond_before_claiming_credit: "先结算押金，再领取汇总余额。",
   settle_and_claim_bond: "将结算并领取押金，一笔操作到账。",
   chain_read_unavailable: "链上查询暂不可用，请重新查询。",
@@ -251,12 +258,27 @@ export function EntitlementsPage() {
               ]}
             >
               {visibleItems.map(({ item: e, snapshot: rowSnapshot }) => {
+                const pendingTimeoutFunding =
+                  e.kind === "bond" &&
+                  e.reason === "bond_slashed_pending_timeout_funding";
+                const timeoutFunded =
+                  e.kind === "bond" &&
+                  e.reason === "bond_slashed_into_timeout_pool";
+                const waitingForRefund =
+                  e.kind === "timeout-bonus" &&
+                  (e.reason === "refund_before_timeout_compensation" ||
+                    e.reason ===
+                      "refund_and_funding_before_timeout_compensation");
+                const waitingForFunding =
+                  e.kind === "timeout-bonus" &&
+                  (e.reason === "waiting_for_timeout_bond_funding" ||
+                    e.reason ===
+                      "refund_and_funding_before_timeout_compensation");
                 const intent = entitlementIntent(e);
-                const progress = entitlementProgress(
-                  e,
-                  operations,
-                  rowSnapshot,
-                );
+                const progress =
+                  pendingTimeoutFunding || timeoutFunded
+                    ? null
+                    : entitlementProgress(e, operations, rowSnapshot);
                 return (
                   <tr key={e.id}>
                     <td>
@@ -280,11 +302,23 @@ export function EntitlementsPage() {
                       <Amount value={e.units} />
                     </td>
                     <td>
-                      <Amount value={e.amount} asset={api.environment.asset} />
+                      {waitingForFunding ? (
+                        <span className="muted">待补偿池注入</span>
+                      ) : (
+                        <>
+                          <Amount
+                            value={e.amount}
+                            asset={api.environment.asset}
+                          />
+                          {waitingForRefund && (
+                            <div className="small muted">预计补偿</div>
+                          )}
+                        </>
+                      )}
                     </td>
                     <td>
                       <span
-                        className={`badge ${e.status === "claimable" ? "badge-blue" : ""}`}
+                        className={`badge ${e.status === "claimable" && !pendingTimeoutFunding ? "badge-blue" : ""}`}
                       >
                         {progress?.phase === "syncing"
                           ? "已确认，等待同步"
@@ -292,7 +326,13 @@ export function EntitlementsPage() {
                             ? progress.operation.state === "unknown"
                               ? "结果待核对"
                               : states.executing
-                            : states[e.status]}
+                            : pendingTimeoutFunding
+                              ? "已罚没，待注入"
+                              : timeoutFunded
+                                ? "已罚没并注入"
+                                : waitingForRefund
+                                  ? "待领取本金"
+                                  : states[e.status]}
                       </span>
                     </td>
                     <td>

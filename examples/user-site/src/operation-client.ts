@@ -1,8 +1,16 @@
+import { privateKeyToAccount } from "viem/accounts";
+import {
+  createSessionKernel,
+  policyId,
+  tradingPolicyAbi,
+} from "../../../offchain/app-core/src/trading-session-kernel.js";
+import { sessionViewSchema } from "../../../offchain/app-core/src/trading-session-contracts.js";
+import type { BrowserTradingSession } from "./trading-session-storage.js";
 import {
   createKernelAccountClient,
   createZeroDevPaymasterClient,
 } from "@zerodev/sdk";
-import { custom, type EIP1193Provider } from "viem";
+import { custom, encodeFunctionData, type EIP1193Provider } from "viem";
 import {
   createBundlerClient,
   formatUserOperationRequest,
@@ -60,6 +68,9 @@ export class UserOperationClient {
     private readonly account: AppAccount,
     private readonly controller: () => Promise<EIP1193Provider>,
     private readonly stillCurrent: () => boolean,
+    private readonly sessionCredential?: (
+      intent: BusinessIntent,
+    ) => Promise<BrowserTradingSession>,
   ) {}
   private current() {
     if (!this.stillCurrent())
@@ -108,40 +119,90 @@ export class UserOperationClient {
           requireGasBalance(await gasBalance(client, account), 1n);
           this.current();
         }
-        const provider = await this.controller();
+        if (
+          this.sessionCredential &&
+          (gas.payment !== "sponsored" || !navigator.locks)
+        )
+          throw new AppError("trading_session_requires_sponsorship", 409);
+        const credential = this.sessionCredential
+          ? await this.sessionCredential(intent)
+          : null;
         this.current();
-        const kernel = await createAppKernel(client, provider, env);
-        this.current();
-        if (!sameAddress(kernel.address, account.address))
-          throw new AppError("account_derivation_mismatch", 409);
-        await assertCurrentController(
-          client,
-          account.address,
-          account.controller,
-        );
-        this.current();
-        const block = await client.getBlock(),
-          reader = new ProtocolAdmissionReader(
-            client,
-            env,
-            env.services.metadata,
-          );
-        const expected = await buildBusinessCalls(
-          env,
-          account.address,
-          intent,
-          reader,
-          block.timestamp,
-        );
-        this.current();
-        const prepared = await api.request(
-          "/v1/operations/prepare",
-          preparedOperationSchema,
-          {
+        const signing = credential
+          ? {
+              signingMode: "session" as const,
+              sessionId: credential.session.id,
+            }
+          : {};
+        // Independent read-only preparation branches run together. No request signs or registers an operation here.
+        const [kernel, expected, prepared] = await Promise.all([
+          (async () => {
+            const kernel = credential
+              ? credential.kernel
+                ? await credential.kernel()
+                : await createSessionKernel(client, env, credential.session, {
+                    signer: privateKeyToAccount(credential.privateKey),
+                    enableSignature: credential.enableSignature,
+                  })
+              : await createAppKernel(client, await this.controller(), env);
+            if (!sameAddress(kernel.address, account.address))
+              throw new AppError("account_derivation_mismatch", 409);
+            await assertCurrentController(
+              client,
+              account.address,
+              account.controller,
+            );
+            return kernel;
+          })(),
+          (async () => {
+            if (intent.kind === "revoke-trading-session") {
+              const { session } = await api.request(
+                `/v1/trading-sessions/${intent.sessionId}`,
+                sessionViewSchema,
+                { auth: true },
+              );
+              if (
+                session.accountId !== account.id ||
+                !sameAddress(session.account, account.address)
+              )
+                throw new AppError("trading_session_account_changed", 409);
+              return [
+                {
+                  to: session.config.policy,
+                  data: encodeFunctionData({
+                    abi: tradingPolicyAbi,
+                    functionName: "revoke",
+                    args: [policyId(session)],
+                  }),
+                  value: "0" as const,
+                },
+              ];
+            }
+            const block = await client.getBlock();
+            return buildBusinessCalls(
+              env,
+              account.address,
+              intent,
+              new ProtocolAdmissionReader(client, env, env.services.metadata),
+              block.timestamp,
+            );
+          })(),
+          api.request("/v1/operations/prepare", preparedOperationSchema, {
             auth: true,
-            body: { accountId: account.id, intent, gasPayment: gas.payment },
-          },
-        );
+            body: {
+              accountId: account.id,
+              intent,
+              gasPayment: gas.payment,
+              ...signing,
+            },
+          }),
+        ]);
+        if (
+          (prepared.signingMode ?? "controller") !==
+            (signing.signingMode ?? "controller") ||
+          prepared.sessionId !== signing.sessionId
+        )
+          throw new AppError("operation_preparation_changed", 409);
         this.current();
         const calls = expected.map((c) => ({ ...c, value: 0n })),
           callData = await kernel.encodeCalls(calls);
@@ -172,6 +233,7 @@ export class UserOperationClient {
             factory: prepared.factory,
             factoryData: prepared.factoryData,
             gasPayment: gas.payment,
+            ...signing,
           });
         // Only a non-executable operation key is retained. The server owns durable recovery across devices.
         sessionStorage.setItem(recoveryKey, key);
@@ -186,6 +248,12 @@ export class UserOperationClient {
         sessionStorage.removeItem(recoveryKey);
         if (recorded.state !== "awaiting-signature") return recorded;
         const operation = recorded;
+        if (
+          (operation.signingMode ?? "controller") !==
+            (signing.signingMode ?? "controller") ||
+          operation.sessionId !== signing.sessionId
+        )
+          throw new AppError("operation_preparation_changed", 409);
         if ((operation.gasPayment ?? "sponsored") !== gas.payment)
           throw new AppError("gas_payment_mismatch", 409);
         const transport = custom(
@@ -283,10 +351,29 @@ export class UserOperationClient {
           this.current();
         }
         onStage("awaiting-signature");
+        // The session signer signs locally; the original controller is never requested on this path.
         const signature = await kernel.signUserOperation(
           unsigned as UserOperation<"0.7">,
         );
         this.current();
+        // Cross-tab disable/logout must also be observed after potentially slow gas preparation.
+        if (credential) {
+          credential.assertCurrent?.();
+          const currentSession = await api.request(
+            `/v1/trading-sessions/${credential.session.id}`,
+            sessionViewSchema,
+            { auth: true },
+          );
+          if (
+            currentSession.session.state !== "active" ||
+            currentSession.revoked ||
+            BigInt(currentSession.session.validUntil) * 1000n <=
+              BigInt(Date.now())
+          )
+            throw new AppError("trading_session_unavailable", 409);
+        }
+        this.current();
+        credential?.assertCurrent?.();
         const signed = { ...unsigned, signature } as UserOperation<"0.7">;
         // Validate ordinary wire serialization before passing to the official accountless bundler client.
         formatUserOperationRequest(signed);

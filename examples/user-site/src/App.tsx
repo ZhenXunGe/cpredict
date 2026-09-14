@@ -40,6 +40,10 @@ import {
 } from "../../../offchain/app-core/src/contracts.js";
 import { snapshotSchema } from "../../../offchain/app-core/src/ledger-contracts.js";
 import { WalletProvider, useSession } from "./wallets.js";
+import {
+  QuickTradingProvider,
+  QuickTradingAuthorization,
+} from "./QuickTrading.js";
 import { OperationProvider } from "./operations.js";
 import {
   Button,
@@ -151,10 +155,7 @@ function Configuration() {
         <Empty title="公开测试站尚未开放">
           需要先配置独立的测试部署、钱包服务和代付预算。当前没有可交易的环境。
         </Empty>
-        <Notice>
-          ctUSD 与测试网 USDC
-          均为测试资产，无真实货币价值。
-        </Notice>
+        <Notice>ctUSD 与测试网 USDC 均为测试资产，无真实货币价值。</Notice>
         <a href="/third-party/index.html">第三方软件声明与许可</a>
       </main>
     );
@@ -219,9 +220,12 @@ function EnvironmentBoundary({
       key={`${env.id}:${env.deployment.manifestHash}`}
       environment={env}
     >
-      <OperationProvider>
-        <SiteLayout environments={environments} />
-      </OperationProvider>
+      <QuickTradingProvider>
+        <OperationProvider>
+          <QuickTradingAuthorization />
+          <SiteLayout environments={environments} />
+        </OperationProvider>
+      </QuickTradingProvider>
     </WalletProvider>
   );
 }

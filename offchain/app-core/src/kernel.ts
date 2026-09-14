@@ -96,31 +96,33 @@ export async function assertCurrentController(
   });
   if (root.toLowerCase() !== `0x01${validator.slice(2).toLowerCase()}`)
     throw new AppError("account_validator_changed", 409);
-  const validation = await client.readContract({
-    address: asset,
-    abi: rootAbi,
-    functionName: "validationConfig",
-    args: [root],
-  });
+  const [validation, actual, implementation] = await Promise.all([
+    client.readContract({
+      address: asset,
+      abi: rootAbi,
+      functionName: "validationConfig",
+      args: [root],
+    }),
+    client.readContract({
+      address: validator,
+      abi: parseAbi([
+        "function ecdsaValidatorStorage(address) view returns (address owner)",
+      ]),
+      functionName: "ecdsaValidatorStorage",
+      args: [asset],
+    }),
+    client.getStorageAt({
+      address: asset,
+      slot: toHex(
+        BigInt(keccak256(stringToBytes("eip1967.proxy.implementation"))) - 1n,
+        { size: 32 },
+      ),
+    }),
+  ]);
   if (
     !sameAddress(validation.hook, "0x0000000000000000000000000000000000000001")
   )
     throw new AppError("account_hook_changed", 409);
-  const actual = await client.readContract({
-    address: validator,
-    abi: parseAbi([
-      "function ecdsaValidatorStorage(address) view returns (address owner)",
-    ]),
-    functionName: "ecdsaValidatorStorage",
-    args: [asset],
-  });
-  const implementation = await client.getStorageAt({
-    address: asset,
-    slot: toHex(
-      BigInt(keccak256(stringToBytes("eip1967.proxy.implementation"))) - 1n,
-      { size: 32 },
-    ),
-  });
   // The standard EIP-1967 slot is used below; never infer account compatibility
   // merely from a matching ECDSA validator owner.
   if (!sameAddress(actual, controller))

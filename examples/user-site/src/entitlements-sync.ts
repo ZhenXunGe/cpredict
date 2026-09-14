@@ -39,6 +39,12 @@ function entitlementAction(e: Entitlement): BusinessIntent | null {
 }
 
 export function entitlementIntent(e: Entitlement): BusinessIntent | null {
+  if (
+    e.kind === "bond" &&
+    (e.reason === "bond_slashed_pending_timeout_funding" ||
+      e.reason === "bond_slashed_into_timeout_pool")
+  )
+    return null;
   return e.status === "claimable" ? entitlementAction(e) : null;
 }
 

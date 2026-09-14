@@ -1,3 +1,5 @@
+import type { TradingSession } from "../../app-core/src/trading-session-contracts.js";
+import { sessionSpend } from "../../app-core/src/trading-session-contracts.js";
 import type { Address, Hex } from "viem";
 import {
   AppError,
@@ -142,6 +144,23 @@ export function applyOperationPatch(
   return next;
 }
 export interface ApplicationStore {
+  disableUserTradingSessions(subject: string): Promise<void>;
+  createTradingSession(subject: string, session: TradingSession): Promise<void>;
+  tradingSession(
+    subject: string,
+    id: string,
+  ): Promise<TradingSession | undefined>;
+  tradingSessions(
+    subject: string,
+    accountId: string,
+    cursor?: string,
+  ): Promise<TradingSession[]>;
+  setTradingSessionState(
+    subject: string,
+    id: string,
+    state: "active" | "disabled",
+  ): Promise<TradingSession>;
+  sessionOperations(sessionId: string): Promise<Operation[]>;
   ready(): Promise<void>;
   close(): Promise<void>;
   createChallenge(value: ControlChallenge): Promise<void>;
@@ -324,4 +343,36 @@ export function assertAccountUnchanged(a: AppAccount, b: AppAccount): void {
     a.environment !== b.environment
   )
     throw new AppError("account_configuration_changed", 409);
+}
+
+/** Conservative reservation: failed executions can still consume policy budget. */
+export function assertTradingSessionQuota(
+  existing: readonly Operation[],
+  session: TradingSession | undefined,
+  next: Operation,
+): void {
+  if (
+    !session ||
+    session.state !== "active" ||
+    session.accountId !== next.accountId ||
+    BigInt(session.validUntil) * 1000n <= BigInt(Date.parse(next.createdAt))
+  )
+    throw new AppError("trading_session_unavailable", 409);
+  const spent = existing
+    .filter(
+      (o) =>
+        o.sessionId === session.id &&
+        !(
+          o.state === "cancelled" &&
+          !o.userOperationHash &&
+          !o.transactionHash
+        ),
+    )
+    .reduce((n, o) => n + sessionSpend(o.intent), 0n);
+  const amount = sessionSpend(next.intent);
+  if (
+    amount > BigInt(session.perOperation) ||
+    spent + amount > BigInt(session.total)
+  )
+    throw new AppError("trading_session_budget_exceeded", 409);
 }

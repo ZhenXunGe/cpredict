@@ -215,7 +215,7 @@ export function CreatorPage() {
                     </td>
                     <td>
                       <Link to={`/${api.environment.id}/creator/${m.market}`}>
-                        查看与结算
+                        {m.state === 1 || m.state === 2 ? "查看" : "查看与结算"}
                       </Link>
                     </td>
                   </tr>

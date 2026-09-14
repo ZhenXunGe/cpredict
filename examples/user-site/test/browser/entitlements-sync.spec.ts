@@ -232,27 +232,30 @@ test("a returnable creator bond settles and arrives from one claim action", asyn
 }) => {
   await setup(page);
   await page.unroute("**/ctusd/indexer/public/v2/entitlements/**");
-  await page.route("**/ctusd/indexer/public/v2/entitlements/**", async (route) => {
-    await route.fulfill({
-      json: {
-        items: [
-          {
-            id: "creator-bond",
-            market: A(101),
-            kind: "bond",
-            outcomeId: null,
-            listingId: null,
-            units: null,
-            amount: "1000000",
-            status: "claimable",
-            reason: "settle_and_claim_bond",
-          },
-        ],
-        nextCursor: null,
-        snapshot: snapshot(100),
-      },
-    });
-  });
+  await page.route(
+    "**/ctusd/indexer/public/v2/entitlements/**",
+    async (route) => {
+      await route.fulfill({
+        json: {
+          items: [
+            {
+              id: "creator-bond",
+              market: A(101),
+              kind: "bond",
+              outcomeId: null,
+              listingId: null,
+              units: null,
+              amount: "1000000",
+              status: "claimable",
+              reason: "settle_and_claim_bond",
+            },
+          ],
+          nextCursor: null,
+          snapshot: snapshot(100),
+        },
+      });
+    },
+  );
   let submitted: unknown;
   await page.unroute("**/test/entitlement-submit");
   await page.route("**/test/entitlement-submit", async (route) => {
@@ -280,6 +283,160 @@ test("a returnable creator bond settles and arrives from one claim action", asyn
     path: test.info().outputPath("creator-bond-one-step.png"),
     fullPage: true,
   });
+});
+
+test("a timeout creator bond updates without any creator action before or after funding", async ({
+  page,
+}) => {
+  const state = await setup(page);
+  await page.unroute("**/ctusd/indexer/public/v2/pnl/**");
+  await page.route("**/ctusd/indexer/public/v2/pnl/**", async (route) => {
+    await route.fulfill({
+      json: {
+        pnl: computePnl(appAccount.address, [], { coverageComplete: true }),
+        snapshot: snapshot(state.pnlBlock),
+      },
+    });
+  });
+  await page.unroute("**/ctusd/indexer/public/v2/entitlements/**");
+  await page.route(
+    "**/ctusd/indexer/public/v2/entitlements/**",
+    async (route) => {
+      const funded = state.rightsBlock >= 105;
+      await route.fulfill({
+        json: {
+          items: [
+            {
+              id: "creator-bond",
+              market: A(101),
+              kind: "bond",
+              outcomeId: null,
+              listingId: null,
+              units: null,
+              amount: "0",
+              status: funded ? "claimed" : "conditional",
+              reason: funded
+                ? "bond_slashed_into_timeout_pool"
+                : "bond_slashed_pending_timeout_funding",
+            },
+          ],
+          nextCursor: null,
+          snapshot: snapshot(state.rightsBlock),
+        },
+      });
+    },
+  );
+  await open(page);
+  const bond = page.getByRole("row").filter({ hasText: "创作者押金" });
+  await expect(bond).toContainText(
+    "市场已超时作废，押金已罚没，待注入超时补偿池，无法领取。",
+  );
+  await expect(bond.locator(".badge")).toHaveText("已罚没，待注入");
+  await expect(bond.getByRole("button")).toHaveCount(0);
+  await page.screenshot({
+    path: test.info().outputPath("timeout-bond-pending.png"),
+    fullPage: true,
+  });
+  state.rightsBlock = 105;
+  state.pnlBlock = 105;
+  await page.clock.fastForward(15100);
+  await expect(bond).toContainText("押金已罚没并注入超时补偿池。");
+  await expect(bond.locator(".badge")).toHaveText("已罚没并注入");
+  await expect(bond.getByRole("button")).toHaveCount(0);
+  expect(state.submissions).toBe(0);
+  await page.screenshot({
+    path: test.info().outputPath("timeout-bond-funded.png"),
+    fullPage: true,
+  });
+});
+
+test("a timeout participant sees principal and expected bonus together before refunding", async ({
+  page,
+}) => {
+  const state = await setup(page);
+  await page.unroute("**/ctusd/indexer/public/v2/entitlements/**");
+  await page.route(
+    "**/ctusd/indexer/public/v2/entitlements/**",
+    async (route) => {
+      const refunded = state.rightsBlock >= 105;
+      const base = {
+        market: A(101),
+        outcomeId: null,
+        listingId: null,
+        units: "10000000",
+      };
+      await route.fulfill({
+        json: {
+          items: [
+            {
+              ...base,
+              id: "refund",
+              kind: "refund",
+              amount: "10000000",
+              status: refunded ? "claimed" : "claimable",
+              reason: "principal_first_then_timeout_compensation",
+            },
+            {
+              ...base,
+              id: "timeout",
+              kind: "timeout-bonus",
+              amount: "5000000",
+              status: refunded ? "claimable" : "conditional",
+              reason: refunded ? null : "refund_before_timeout_compensation",
+            },
+          ],
+          nextCursor: null,
+          snapshot: snapshot(state.rightsBlock),
+        },
+      });
+    },
+  );
+  await page.unroute("**/test/entitlement-submit");
+  await page.route("**/test/entitlement-submit", async (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      intent: { kind: "refund", market: A(101) },
+    });
+    state.operation = {
+      ...confirmed,
+      kind: "refund",
+      intent: { kind: "refund", market: A(101) },
+    };
+    await route.fulfill({ json: state.operation });
+  });
+  await open(page);
+  const refund = page
+    .getByRole("row")
+    .filter({ has: page.getByText("本金退款", { exact: true }) });
+  const bonus = page
+    .getByRole("row")
+    .filter({ has: page.getByText("超时补偿", { exact: true }) });
+  await expect(refund).toContainText("10 ctUSD");
+  await expect(bonus).toContainText("5 ctUSD");
+  await expect(bonus).toContainText("预计补偿");
+  await expect(bonus).toContainText("待领取本金");
+  await expect(
+    bonus.getByRole("button", { name: "领取", exact: true }),
+  ).toHaveCount(0);
+  await page.screenshot({
+    path: test.info().outputPath("timeout-participant-before-refund.png"),
+    fullPage: true,
+  });
+  await refund.getByRole("button", { name: "领取", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "确认并继续", exact: true }).click();
+  await expect(dialog).toContainText("已确认");
+  await dialog
+    .locator(".dialog-footer")
+    .getByRole("button", { name: "关闭", exact: true })
+    .click();
+  state.rightsBlock = 105;
+  state.pnlBlock = 105;
+  await tick(page);
+  await expect(refund).toContainText("已处理");
+  await expect(
+    bonus.getByRole("button", { name: "领取", exact: true }),
+  ).toBeEnabled();
+  await expect(bonus).not.toContainText("预计补偿");
 });
 
 test("another account does not inherit a confirmed claim waiting for synchronization", async ({

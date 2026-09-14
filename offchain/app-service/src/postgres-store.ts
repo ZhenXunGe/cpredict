@@ -1,3 +1,7 @@
+import {
+  tradingSessionSchema,
+  type TradingSession,
+} from "../../app-core/src/trading-session-contracts.js";
 import postgres, { type Sql } from "postgres";
 import { createHash } from "node:crypto";
 import { z } from "zod";
@@ -16,6 +20,7 @@ import {
 import type { SponsorConfig } from "./config.js";
 import { quotaHistoryStart } from "./budget.js";
 import {
+  assertTradingSessionQuota,
   assertAccountUnchanged,
   applyOperationPatch,
   assertQuota,
@@ -90,6 +95,44 @@ export class PostgresApplicationStore implements ApplicationStore {
       idle_timeout: 20,
       onnotice: () => undefined,
     });
+  }
+  async disableUserTradingSessions(subject: string) {
+    await this
+      .sql`UPDATE app_trading_sessions SET record=jsonb_set(record,'{state}','"disabled"') WHERE subject=${subject}`;
+  }
+  async createTradingSession(subject: string, session: TradingSession) {
+    await this
+      .sql`INSERT INTO app_trading_sessions(id,subject,account_id,permission_id,record)
+      VALUES(${session.id},${subject},${session.accountId},${session.permissionId},${this.sql.json(session)})`;
+  }
+  async tradingSession(subject: string, id: string) {
+    const rows = await this
+      .sql`SELECT record FROM app_trading_sessions WHERE id=${id} AND subject=${subject}`;
+    return rows[0] ? tradingSessionSchema.parse(rows[0].record) : undefined;
+  }
+  async tradingSessions(subject: string, accountId: string, cursor?: string) {
+    const rows = await this
+      .sql`SELECT record FROM app_trading_sessions WHERE subject=${subject} AND account_id=${accountId} AND (${cursor ?? null}::uuid IS NULL OR (record->>'createdAt',id)<(SELECT record->>'createdAt',id FROM app_trading_sessions WHERE id=${cursor ?? null}::uuid AND subject=${subject} AND account_id=${accountId})) ORDER BY record->>'createdAt' DESC,id DESC LIMIT 21`;
+    return rows.map((r) => tradingSessionSchema.parse(r.record));
+  }
+  async setTradingSessionState(
+    subject: string,
+    id: string,
+    state: "active" | "disabled",
+  ) {
+    const rows = await this
+      .sql`UPDATE app_trading_sessions SET record=jsonb_set(record,'{state}',${this.sql.json(state)}::jsonb)
+      WHERE id=${id} AND subject=${subject} AND (record->>'state'='prepared' OR ${state}='disabled') RETURNING record`;
+    if (rows[0]) return tradingSessionSchema.parse(rows[0].record);
+    const old = await this.tradingSession(subject, id);
+    if (!old || old.state !== state)
+      throw new AppError("trading_session_unavailable", 409);
+    return old;
+  }
+  async sessionOperations(sessionId: string) {
+    const rows = await this
+      .sql`SELECT record || billing AS record FROM app_operations WHERE record->>'sessionId'=${sessionId}`;
+    return rows.map((r) => operationSchema.parse(r.record));
   }
   async ready(): Promise<void> {
     await this
@@ -421,6 +464,19 @@ export class PostgresApplicationStore implements ApplicationStore {
         OR updated_at >= ${quotaHistoryStart(o.createdAt)}
         OR state IN ('preparing','awaiting-signature','submitted','confirming','unknown')`;
       assertQuota(rows.map(fromRow), value, limits);
+      if (o.signingMode === "session") {
+        const sessions =
+          await tx`SELECT record FROM app_trading_sessions WHERE id=${o.sessionId!} AND subject=${value.subject} FOR UPDATE`;
+        const priorSession =
+          await tx`SELECT record || billing AS record FROM app_operations WHERE record->>'sessionId'=${o.sessionId!}`;
+        assertTradingSessionQuota(
+          priorSession.map((r) => operationSchema.parse(r.record)),
+          sessions[0]
+            ? tradingSessionSchema.parse(sessions[0].record)
+            : undefined,
+          o,
+        );
+      }
       await tx`INSERT INTO app_operations(id,subject,idempotency_key,request_hash,account_id,sender,nonce,call_hash,state,kind,lane,created_at,updated_at,expires_at,max_gas_cost,record,billing)
         VALUES(${o.id},${value.subject},${value.idempotencyKey},${value.requestHash},${o.accountId},${o.account.toLowerCase()},${o.nonce},${keccak256(o.callData)},${o.state},${o.kind},${o.lane},${o.createdAt},${o.updatedAt},${o.expiresAt},${o.maxGasCost},${tx.json(splitBilling(o).record)},${tx.json(splitBilling(o).billing)})`;
       if (o.intent.kind === "deposit-usdc") {

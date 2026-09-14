@@ -120,6 +120,8 @@ export async function buildBusinessCalls(
   if ("minUnits" in intent && BigInt(intent.minUnits) > BigInt(intent.units))
     throw new AppError("invalid_minimum_units");
   switch (intent.kind) {
+    case "revoke-trading-session":
+      throw new AppError("session_descriptor_required",400);
     case "deposit-usdc":
       if (
         environment.asset !== "USDC" ||
