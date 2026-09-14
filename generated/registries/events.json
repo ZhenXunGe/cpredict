@@ -1928,6 +1928,90 @@
     ]
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "name": "SessionBudgetUsed",
+    "signature": "SessionBudgetUsed(bytes32,address,uint128,uint128)",
+    "selector": "0x4ef8c14b2851f70174b026beb500d0036520e6c17333e38b6536e85222f55b83",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "spent",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      }
+    ]
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
+    "name": "SessionInstalled",
+    "signature": "SessionInstalled(bytes32,address,uint128,uint48)",
+    "selector": "0xe073cdb509c5c1d75035a12429cb96aca30764b5056db467461a82c560541a0d",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "total",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "validUntil",
+        "type": "uint48",
+        "indexed": false,
+        "internalType": "uint48"
+      }
+    ]
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
+    "name": "SessionRevoked",
+    "signature": "SessionRevoked(bytes32,address)",
+    "selector": "0x53c7d74d36edc91dbf6b53bb0ea80bbdb2ca5894d54f6f62beacc537701822fd",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "account",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ]
+  },
+  {
     "contract": "SponsorshipPaymasterV1",
     "name": "SponsorshipBudgetsUpdated",
     "signature": "SponsorshipBudgetsUpdated(uint256,uint256,uint256)",

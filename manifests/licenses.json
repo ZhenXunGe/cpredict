@@ -1380,12 +1380,44 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:@simplewebauthn/browser@8.3.7:node_modules/@zerodev/webauthn-key/node_modules/@simplewebauthn/browser",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@zerodev/webauthn-key/node_modules/@simplewebauthn/browser\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@simplewebauthn/browser@9.0.1:node_modules/@zerodev/permissions/node_modules/@simplewebauthn/browser",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@zerodev/permissions/node_modules/@simplewebauthn/browser\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@simplewebauthn/types@12.0.0:node_modules/@zerodev/webauthn-key/node_modules/@simplewebauthn/types",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@zerodev/webauthn-key/node_modules/@simplewebauthn/types\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
       "identity": "npm:@simplewebauthn/types@9.0.1:node_modules/@simplewebauthn/types",
-      "kind": "development",
+      "kind": "runtime",
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/@simplewebauthn/types\"]",
-      "sourceScope": "Node development dependency"
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@simplewebauthn/typescript-types@8.3.4:node_modules/@simplewebauthn/typescript-types",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@simplewebauthn/typescript-types\"]",
+      "sourceScope": "Node runtime dependency"
     },
     {
       "identity": "npm:@socket.io/component-emitter@3.1.2:node_modules/@socket.io/component-emitter",
@@ -3236,11 +3268,27 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:@zerodev/permissions@5.6.3:node_modules/@zerodev/permissions",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@zerodev/permissions\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
       "identity": "npm:@zerodev/sdk@5.5.10:node_modules/@zerodev/sdk",
       "kind": "runtime",
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/@zerodev/sdk\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:@zerodev/webauthn-key@5.5.0:node_modules/@zerodev/webauthn-key",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@zerodev/webauthn-key\"]",
       "sourceScope": "Node runtime dependency"
     },
     {
@@ -3484,6 +3532,14 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:bignumber.js@9.3.1:node_modules/bignumber.js",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/bignumber.js\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
       "identity": "npm:bintrees@1.0.2:node_modules/bintrees",
       "kind": "runtime",
       "declared": "MIT",
@@ -3497,6 +3553,22 @@
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/blakejs\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:bn.js@4.11.6:node_modules/ethjs-unit/node_modules/bn.js",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ethjs-unit/node_modules/bn.js\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:bn.js@4.11.6:node_modules/number-to-bn/node_modules/bn.js",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/number-to-bn/node_modules/bn.js\"]",
       "sourceScope": "Node runtime dependency"
     },
     {
@@ -3553,6 +3625,14 @@
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/bs58\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:buffer-reverse@1.0.1:node_modules/buffer-reverse",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/buffer-reverse\"]",
       "sourceScope": "Node runtime dependency"
     },
     {
@@ -3833,6 +3913,14 @@
       "declared": "BSD-3-Clause",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/crypt\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:crypto-js@4.2.0:node_modules/crypto-js",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/crypto-js\"]",
       "sourceScope": "Node runtime dependency"
     },
     {
@@ -4180,11 +4268,27 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:ethereum-bloom-filters@1.2.0:node_modules/ethereum-bloom-filters",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ethereum-bloom-filters\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
       "identity": "npm:ethereum-cryptography@2.2.1:node_modules/ethereum-cryptography",
       "kind": "runtime",
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/ethereum-cryptography\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:ethjs-unit@0.1.6:node_modules/ethjs-unit",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/ethjs-unit\"]",
       "sourceScope": "Node runtime dependency"
     },
     {
@@ -4708,6 +4812,14 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:is-hex-prefixed@1.0.0:node_modules/is-hex-prefixed",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/is-hex-prefixed\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
       "identity": "npm:is-number@7.0.0:node_modules/is-number",
       "kind": "development",
       "declared": "MIT",
@@ -5132,6 +5244,14 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:merkletreejs@0.3.11:node_modules/merkletreejs",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/merkletreejs\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
       "identity": "npm:micro-ftch@0.3.1:node_modules/micro-ftch",
       "kind": "runtime",
       "declared": "MIT",
@@ -5273,6 +5393,14 @@
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/normalize-path\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:number-to-bn@1.7.0:node_modules/number-to-bn",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/number-to-bn\"]",
       "sourceScope": "Node runtime dependency"
     },
     {
@@ -5948,6 +6076,14 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:randombytes@2.1.0:node_modules/randombytes",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/randombytes\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
       "identity": "npm:react-aria@3.52.1:node_modules/react-aria",
       "kind": "runtime",
       "declared": "Apache-2.0",
@@ -6516,6 +6652,14 @@
       "sourceScope": "Node runtime dependency"
     },
     {
+      "identity": "npm:strip-hex-prefix@1.0.0:node_modules/strip-hex-prefix",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/strip-hex-prefix\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
       "identity": "npm:strip-json-comments@3.1.1:node_modules/strip-json-comments",
       "kind": "runtime",
       "declared": "MIT",
@@ -6729,6 +6873,14 @@
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/tr46\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:treeify@1.1.0:node_modules/treeify",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/treeify\"]",
       "sourceScope": "Node runtime dependency"
     },
     {
@@ -6972,6 +7124,14 @@
       "sourceScope": "Node development dependency"
     },
     {
+      "identity": "npm:utf8@3.0.0:node_modules/utf8",
+      "kind": "runtime",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/utf8\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
       "identity": "npm:util-deprecate@1.0.2:node_modules/util-deprecate",
       "kind": "runtime",
       "declared": "MIT",
@@ -7081,6 +7241,14 @@
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/wagmi\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:web3-utils@1.10.4:node_modules/web3-utils",
+      "kind": "runtime",
+      "declared": "LGPL-3.0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/web3-utils\"]",
       "sourceScope": "Node runtime dependency"
     },
     {

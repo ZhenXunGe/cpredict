@@ -1,3 +1,5 @@
+import { TradingSessions } from "./trading-sessions.js";
+import { createSessionKernel } from "../../app-core/src/trading-session-kernel.js";
 import { randomUUID } from "node:crypto";
 import { keccak256, stringToHex, type PublicClient } from "viem";
 import { z } from "zod";
@@ -30,6 +32,7 @@ import { DepositService } from "./deposits.js";
 
 export class OperationService {
   readonly deposits: DepositService;
+  readonly tradingSessions: TradingSessions;
   constructor(
     readonly runtime: AppRuntime,
     readonly store: ApplicationStore,
@@ -38,6 +41,7 @@ export class OperationService {
     readonly now: () => Date = () => new Date(),
   ) {
     this.deposits = new DepositService(this);
+    this.tradingSessions = new TradingSessions(this);
   }
   async controlledAccount(
     identity: VerifiedIdentity,
@@ -142,6 +146,10 @@ export class OperationService {
     accountId: string,
     intent: BusinessIntent,
     gasPayment: GasPayment = "sponsored",
+    signing: {
+      signingMode?: "controller" | "session";
+      sessionId?: string;
+    } = {},
   ) {
     const env = this.runtime.environment;
     if (
@@ -158,27 +166,53 @@ export class OperationService {
         intent,
         this.runtime.sponsor.validitySeconds + 10,
       );
-    const kernel = await createAppKernel(
-      this.client,
-      readOnlyController(account.controller),
-      env,
-    );
+    if ((signing.signingMode === "session") !== !!signing.sessionId)
+      throw new AppError("invalid_signing_mode", 400);
+    if (signing.signingMode === "session" && gasPayment !== "sponsored")
+      throw new AppError("trading_session_requires_sponsorship", 403);
+    const session = signing.sessionId
+      ? await this.tradingSessions.usable(
+          identity,
+          signing.sessionId,
+          accountId,
+          intent,
+        )
+      : undefined;
+    const [kernel, block] = await Promise.all([
+      session
+        ? createSessionKernel(this.client, env, session)
+        : createAppKernel(
+            this.client,
+            readOnlyController(account.controller),
+            env,
+          ),
+      this.client.getBlock({ blockTag: "latest" }),
+    ]);
     if (!sameAddress(kernel.address, account.address))
       throw new AppError("account_derivation_mismatch", 409);
-    const block = await this.client.getBlock({ blockTag: "latest" });
-    const calls = await buildBusinessCalls(
-      env,
-      account.address,
-      intent,
-      this.reader,
-      block.timestamp,
-    );
+    const calls =
+      intent.kind === "revoke-trading-session"
+        ? [
+            await this.tradingSessions.revokeCall(
+              identity,
+              intent.sessionId,
+              accountId,
+            ),
+          ]
+        : await buildBusinessCalls(
+            env,
+            account.address,
+            intent,
+            this.reader,
+            block.timestamp,
+          );
     const [nonce, callData, factoryArgs] = await Promise.all([
       kernel.getNonce(),
       kernel.encodeCalls(calls.map((c) => ({ ...c, value: 0n }))),
       kernel.getFactoryArgs(),
     ]);
     return {
+      ...signing,
       account,
       nonce: nonce.toString(),
       calls,
@@ -212,6 +246,10 @@ export class OperationService {
       input.accountId,
       input.intent,
       input.gasPayment,
+      {
+        ...(input.signingMode ? { signingMode: input.signingMode } : {}),
+        ...(input.sessionId ? { sessionId: input.sessionId } : {}),
+      },
     );
     if (
       input.callData.toLowerCase() !== prepared.callData.toLowerCase() ||
@@ -224,6 +262,8 @@ export class OperationService {
       limits = this.runtime.sponsor;
     if (!limits) throw new AppError("sponsorship_disabled", 503);
     const operation = operationSchema.parse({
+      ...(input.signingMode ? { signingMode: input.signingMode } : {}),
+      ...(input.sessionId ? { sessionId: input.sessionId } : {}),
       id: randomUUID(),
       environment: env.id,
       deploymentId: env.deployment.id,

@@ -166,6 +166,16 @@ describe("entitlement synchronization", () => {
     });
   });
 
+  it.each([
+    "bond_slashed_pending_timeout_funding",
+    "bond_slashed_into_timeout_pool",
+  ])(
+    "does not offer creator actions for %s, even with a stale claimable status",
+    (reason) => {
+      expect(entitlementIntent({ ...right, kind: "bond", reason })).toBeNull();
+    },
+  );
+
   it("guards the same escrow even if market finalization changes cancel to return", () => {
     const escrow: Entitlement = {
       ...right,

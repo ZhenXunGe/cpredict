@@ -156,13 +156,39 @@ describe("all beneficial entitlements", () => {
         };
       },
     };
-    const slashed = await hydrateEntitlements(owner, candidates(facts), slashedReader);
+    const slashed = await hydrateEntitlements(
+      owner,
+      candidates(facts),
+      slashedReader,
+    );
     expect(result.find((r) => r.kind === "bond")?.reason).toBe(
       "settle_and_claim_bond",
     );
-    expect(slashed.find((r) => r.kind === "bond")?.reason).toBe(
-      "settle_bond_before_claiming_credit",
-    );
+    expect(slashed.find((r) => r.kind === "bond")).toMatchObject({
+      amount: "0",
+      status: "conditional",
+      reason: "bond_slashed_pending_timeout_funding",
+    });
+    const funded = await hydrateEntitlements(owner, candidates(facts), {
+      ...slashedReader,
+      async bond(market, owner) {
+        return { ...(await slashedReader.bond(market, owner)), settled: true };
+      },
+    });
+    expect(funded.find((r) => r.kind === "bond")).toMatchObject({
+      amount: "0",
+      status: "claimed",
+      reason: "bond_slashed_into_timeout_pool",
+    });
+    const indexed = candidates([
+      ...facts,
+      fact(2, "bond-timeout-funded", { owner: null, amount: "100" }),
+    ]);
+    expect(indexed.find((r) => r.kind === "bond")).toMatchObject({
+      amount: "0",
+      status: "claimed",
+      reason: "bond_slashed_into_timeout_pool",
+    });
   });
   it("does not call timeout compensation claimable before the separate funding stage", async () => {
     const facts = [
@@ -189,6 +215,144 @@ describe("all beneficial entitlements", () => {
     expect(funded.find((r) => r.kind === "timeout-bonus")).toMatchObject({
       status: "claimable",
       amount: "20",
+    });
+  });
+  it("shows timeout compensation alongside principal before refunding, then enables the same right", async () => {
+    const purchase = fact(1, "primary-buy", { units: "10", amount: "10" });
+    const discovered = candidates([purchase]);
+    const before = await hydrateEntitlements(
+      owner,
+      discovered,
+      reader({
+        state: 2,
+        voidReason: 3,
+        balances: [10n, 0n],
+        ownerTimeoutUnits: 0n,
+        timeoutFunded: true,
+        timeoutTotalUnits: 20n,
+        timeoutPool: 10n,
+      }),
+    );
+    expect(before.find((r) => r.kind === "refund")).toMatchObject({
+      status: "claimable",
+      amount: "10",
+    });
+    const bonus = before.find((r) => r.kind === "timeout-bonus");
+    expect(bonus).toMatchObject({
+      status: "conditional",
+      units: "10",
+      amount: "5",
+      reason: "refund_before_timeout_compensation",
+    });
+    const after = await hydrateEntitlements(
+      owner,
+      candidates([
+        purchase,
+        fact(2, "refunded", {
+          units: "10",
+          amount: "10",
+          extra: { timeoutEligibilityRecorded: true },
+        }),
+      ]),
+      reader({
+        state: 2,
+        voidReason: 3,
+        timeoutFunded: true,
+        timeoutTotalUnits: 20n,
+        timeoutPool: 10n,
+      }),
+    );
+    expect(after.find((r) => r.kind === "timeout-bonus")).toMatchObject({
+      id: bonus!.id,
+      status: "claimable",
+      units: "10",
+      amount: "5",
+      reason: null,
+    });
+    const pending = await hydrateEntitlements(
+      owner,
+      discovered,
+      reader({
+        state: 2,
+        voidReason: 3,
+        balances: [10n, 0n],
+        ownerTimeoutUnits: 0n,
+      }),
+    );
+    expect(pending.find((r) => r.kind === "timeout-bonus")).toMatchObject({
+      status: "conditional",
+      reason: "refund_and_funding_before_timeout_compensation",
+    });
+  });
+  it.each([
+    [0, 0],
+    [1, 0],
+    [2, 1],
+    [2, 2],
+  ])(
+    "omits timeout compensation outside timeout voids (%s, %s)",
+    async (state, voidReason) => {
+      const result = await hydrateEntitlements(
+        owner,
+        candidates([fact(1, "primary-buy", { units: "10", amount: "10" })]),
+        reader({
+          state,
+          voidReason,
+          balances: [10n, 0n],
+          ownerTimeoutUnits: 0n,
+        }),
+      );
+      expect(result.some((r) => r.kind === "timeout-bonus")).toBe(false);
+    },
+  );
+  it("only quotes registered units when an earlier refund is already claimable", async () => {
+    const result = await hydrateEntitlements(
+      owner,
+      candidates([
+        fact(1, "primary-buy", { units: "20", amount: "20" }),
+        fact(2, "refunded", {
+          units: "10",
+          amount: "10",
+          extra: { timeoutEligibilityRecorded: true },
+        }),
+      ]),
+      reader({
+        state: 2,
+        voidReason: 3,
+        balances: [10n, 0n],
+        timeoutFunded: true,
+        timeoutTotalUnits: 40n,
+        timeoutPool: 20n,
+      }),
+    );
+    expect(result.find((r) => r.kind === "timeout-bonus")).toMatchObject({
+      status: "claimable",
+      units: "10",
+      amount: "5",
+    });
+  });
+  it("retains completed timeout compensation after all shares are refunded", async () => {
+    const result = await hydrateEntitlements(
+      owner,
+      candidates([
+        fact(1, "primary-buy", { units: "10", amount: "10" }),
+        fact(2, "refunded", {
+          units: "10",
+          amount: "10",
+          extra: { timeoutEligibilityRecorded: true },
+        }),
+        fact(3, "timeout-claimed", { units: "10", amount: "5" }),
+      ]),
+      reader({
+        state: 2,
+        voidReason: 3,
+        ownerTimeoutUnits: 0n,
+        timeoutFunded: true,
+      }),
+    );
+    expect(result.find((r) => r.kind === "timeout-bonus")).toMatchObject({
+      status: "claimed",
+      amount: "5",
     });
   });
   it("retains claimed records and marks unavailable on-chain reads unknown", async () => {

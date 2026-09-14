@@ -217,7 +217,7 @@ export function useMarketLive(market: Address) {
 }
 export function marketStatusCopy(m: Market) {
   if (m.state === 1) return "已结算";
-  if (m.state === 2) return "已作废";
+  if (m.state === 2) return m.voidReason === 3 ? "已超时作废" : "已作废";
   if (m.closeAt && BigInt(m.closeAt) <= BigInt(Math.floor(Date.now() / 1000)))
     return "已封盘 · 待结算";
   return "进行中";

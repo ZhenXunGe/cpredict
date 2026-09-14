@@ -1,3 +1,4 @@
+import type { TradingSession } from "../../app-core/src/trading-session-contracts.js";
 import { keccak256, type Address, type Hex } from "viem";
 import {
   AppError,
@@ -9,6 +10,7 @@ import {
 } from "../../app-core/src/contracts.js";
 import type { SponsorConfig } from "../src/config.js";
 import {
+  assertTradingSessionQuota,
   assertAccountUnchanged,
   applyOperationPatch,
   assertQuota,
@@ -24,6 +26,55 @@ import {
 
 /** Test double only: production always uses the transactional PostgreSQL store. */
 export class MemoryApplicationStore implements ApplicationStore {
+  readonly sessions = new Map<
+    string,
+    { subject: string; session: TradingSession }
+  >();
+  async disableUserTradingSessions(subject: string) {
+    for (const row of this.sessions.values())
+      if (row.subject === subject) row.session.state = "disabled";
+  }
+  async createTradingSession(subject: string, session: TradingSession) {
+    this.sessions.set(session.id, {
+      subject,
+      session: structuredClone(session),
+    });
+  }
+  async tradingSession(subject: string, id: string) {
+    const row = this.sessions.get(id);
+    return row?.subject === subject ? structuredClone(row.session) : undefined;
+  }
+  async tradingSessions(subject: string, accountId: string, cursor?: string) {
+    const rows = [...this.sessions.values()]
+      .filter((r) => r.subject === subject && r.session.accountId === accountId)
+      .map((r) => structuredClone(r.session))
+      .sort(
+        (a, b) =>
+          b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id),
+      );
+    const index = cursor ? rows.findIndex((s) => s.id === cursor) : -1;
+    return cursor && index < 0 ? [] : rows.slice(index + 1, index + 22);
+  }
+  async setTradingSessionState(
+    subject: string,
+    id: string,
+    state: "active" | "disabled",
+  ) {
+    const row = this.sessions.get(id);
+    if (
+      !row ||
+      row.subject !== subject ||
+      (state === "active" && row.session.state === "disabled")
+    )
+      throw new AppError("trading_session_unavailable", 409);
+    row.session.state = state;
+    return structuredClone(row.session);
+  }
+  async sessionOperations(sessionId: string) {
+    return [...this.records.values()]
+      .filter((r) => r.operation.sessionId === sessionId)
+      .map((r) => structuredClone(r.operation));
+  }
   readonly challenges = new Map<string, ControlChallenge>();
   readonly bindings = new Map<string, Set<string>>();
   readonly accountRows = new Map<string, AppAccount>();
@@ -212,6 +263,12 @@ export class MemoryApplicationStore implements ApplicationStore {
       return structuredClone(old);
     }
     assertQuota([...this.records.values()], value, limits);
+    if (value.operation.signingMode === "session")
+      assertTradingSessionQuota(
+        [...this.records.values()].map((r) => r.operation),
+        this.sessions.get(value.operation.sessionId!)?.session,
+        value.operation,
+      );
     if (value.operation.intent.kind === "deposit-usdc") {
       const d = this.depositRows.get(value.operation.intent.depositId);
       assertDepositRegistration(d, value);

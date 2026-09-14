@@ -2,6 +2,537 @@
   "schemaVersion": 1,
   "note": "Generated from Zod. Cross-field, cryptographic, ownership and admission refinements are also enforced by runtime code.",
   "schemas": {
+    "TradingSession": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "accountId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "account": {
+          "type": "string"
+        },
+        "controller": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "string"
+        },
+        "deploymentId": {
+          "type": "string"
+        },
+        "publicKey": {
+          "type": "string"
+        },
+        "permissionId": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]{8}$"
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            },
+            "version": {
+              "type": "number",
+              "const": 1
+            },
+            "policy": {
+              "type": "string"
+            },
+            "policyCodeHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "signer": {
+              "type": "string"
+            },
+            "signerCodeHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "paymaster": {
+              "type": "string"
+            },
+            "defaultPerOperation": {
+              "default": "100000000",
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "maxPerOperation": {
+              "default": "100000000",
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "defaultTotal": {
+              "default": "1000000000",
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "maxTotal": {
+              "default": "10000000000",
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "maxDurationSeconds": {
+              "default": 86400,
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 86400
+            }
+          },
+          "required": [
+            "version",
+            "policy",
+            "policyCodeHash",
+            "signer",
+            "signerCodeHash",
+            "paymaster"
+          ],
+          "additionalProperties": false
+        },
+        "perOperation": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "total": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "validAfter": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "validUntil": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "prepared",
+            "active",
+            "disabled"
+          ]
+        },
+        "authorizationHash": {
+          "type": "string",
+          "pattern": "^0x[\\da-fA-F]{64}$"
+        }
+      },
+      "required": [
+        "id",
+        "accountId",
+        "account",
+        "controller",
+        "environment",
+        "deploymentId",
+        "publicKey",
+        "permissionId",
+        "config",
+        "perOperation",
+        "total",
+        "validAfter",
+        "validUntil",
+        "createdAt",
+        "state",
+        "authorizationHash"
+      ],
+      "additionalProperties": false
+    },
+    "TradingSessionPage": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "accountId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "account": {
+                "type": "string"
+              },
+              "controller": {
+                "type": "string"
+              },
+              "environment": {
+                "type": "string"
+              },
+              "deploymentId": {
+                "type": "string"
+              },
+              "publicKey": {
+                "type": "string"
+              },
+              "permissionId": {
+                "type": "string",
+                "pattern": "^0x[0-9a-fA-F]{8}$"
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "version": {
+                    "type": "number",
+                    "const": 1
+                  },
+                  "policy": {
+                    "type": "string"
+                  },
+                  "policyCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "signer": {
+                    "type": "string"
+                  },
+                  "signerCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "paymaster": {
+                    "type": "string"
+                  },
+                  "defaultPerOperation": {
+                    "default": "100000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxPerOperation": {
+                    "default": "100000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "defaultTotal": {
+                    "default": "1000000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxTotal": {
+                    "default": "10000000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxDurationSeconds": {
+                    "default": 86400,
+                    "type": "integer",
+                    "minimum": 60,
+                    "maximum": 86400
+                  }
+                },
+                "required": [
+                  "version",
+                  "policy",
+                  "policyCodeHash",
+                  "signer",
+                  "signerCodeHash",
+                  "paymaster"
+                ],
+                "additionalProperties": false
+              },
+              "perOperation": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "total": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "validAfter": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "validUntil": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "prepared",
+                  "active",
+                  "disabled"
+                ]
+              },
+              "authorizationHash": {
+                "type": "string",
+                "pattern": "^0x[\\da-fA-F]{64}$"
+              }
+            },
+            "required": [
+              "id",
+              "accountId",
+              "account",
+              "controller",
+              "environment",
+              "deploymentId",
+              "publicKey",
+              "permissionId",
+              "config",
+              "perOperation",
+              "total",
+              "validAfter",
+              "validUntil",
+              "createdAt",
+              "state",
+              "authorizationHash"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "nextCursor": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items"
+      ]
+    },
+    "TradingSessionPrepare": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "accountId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
+        "publicKey": {
+          "type": "string"
+        },
+        "perOperation": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "total": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        }
+      },
+      "required": [
+        "accountId",
+        "publicKey",
+        "perOperation",
+        "total"
+      ],
+      "additionalProperties": false
+    },
+    "TradingSessionView": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "accountId": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "account": {
+              "type": "string"
+            },
+            "controller": {
+              "type": "string"
+            },
+            "environment": {
+              "type": "string"
+            },
+            "deploymentId": {
+              "type": "string"
+            },
+            "publicKey": {
+              "type": "string"
+            },
+            "permissionId": {
+              "type": "string",
+              "pattern": "^0x[0-9a-fA-F]{8}$"
+            },
+            "config": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "version": {
+                  "type": "number",
+                  "const": 1
+                },
+                "policy": {
+                  "type": "string"
+                },
+                "policyCodeHash": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                },
+                "signer": {
+                  "type": "string"
+                },
+                "signerCodeHash": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                },
+                "paymaster": {
+                  "type": "string"
+                },
+                "defaultPerOperation": {
+                  "default": "100000000",
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxPerOperation": {
+                  "default": "100000000",
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "defaultTotal": {
+                  "default": "1000000000",
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxTotal": {
+                  "default": "10000000000",
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxDurationSeconds": {
+                  "default": 86400,
+                  "type": "integer",
+                  "minimum": 60,
+                  "maximum": 86400
+                }
+              },
+              "required": [
+                "version",
+                "policy",
+                "policyCodeHash",
+                "signer",
+                "signerCodeHash",
+                "paymaster"
+              ],
+              "additionalProperties": false
+            },
+            "perOperation": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "total": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "validAfter": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "validUntil": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "prepared",
+                "active",
+                "disabled"
+              ]
+            },
+            "authorizationHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            }
+          },
+          "required": [
+            "id",
+            "accountId",
+            "account",
+            "controller",
+            "environment",
+            "deploymentId",
+            "publicKey",
+            "permissionId",
+            "config",
+            "perOperation",
+            "total",
+            "validAfter",
+            "validUntil",
+            "createdAt",
+            "state",
+            "authorizationHash"
+          ],
+          "additionalProperties": false
+        },
+        "spent": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "pending": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "revoked": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "session",
+        "spent",
+        "pending",
+        "revoked"
+      ]
+    },
     "SiteConfig": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -183,6 +714,71 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 128
+              },
+              "quickTrading": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "version": {
+                    "type": "number",
+                    "const": 1
+                  },
+                  "policy": {
+                    "type": "string"
+                  },
+                  "policyCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "signer": {
+                    "type": "string"
+                  },
+                  "signerCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "paymaster": {
+                    "type": "string"
+                  },
+                  "defaultPerOperation": {
+                    "default": "100000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxPerOperation": {
+                    "default": "100000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "defaultTotal": {
+                    "default": "1000000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxTotal": {
+                    "default": "10000000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxDurationSeconds": {
+                    "default": 86400,
+                    "type": "integer",
+                    "minimum": 60,
+                    "maximum": 86400
+                  }
+                },
+                "required": [
+                  "version",
+                  "policy",
+                  "policyCodeHash",
+                  "signer",
+                  "signerCodeHash",
+                  "paymaster"
+                ],
+                "additionalProperties": false
               },
               "walletConnectProjectId": {
                 "type": "string",
@@ -409,6 +1005,71 @@
           "minLength": 1,
           "maxLength": 128
         },
+        "quickTrading": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "default": false,
+              "type": "boolean"
+            },
+            "version": {
+              "type": "number",
+              "const": 1
+            },
+            "policy": {
+              "type": "string"
+            },
+            "policyCodeHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "signer": {
+              "type": "string"
+            },
+            "signerCodeHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "paymaster": {
+              "type": "string"
+            },
+            "defaultPerOperation": {
+              "default": "100000000",
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "maxPerOperation": {
+              "default": "100000000",
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "defaultTotal": {
+              "default": "1000000000",
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "maxTotal": {
+              "default": "10000000000",
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "maxDurationSeconds": {
+              "default": 86400,
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 86400
+            }
+          },
+          "required": [
+            "version",
+            "policy",
+            "policyCodeHash",
+            "signer",
+            "signerCodeHash",
+            "paymaster"
+          ],
+          "additionalProperties": false
+        },
         "walletConnectProjectId": {
           "type": "string",
           "minLength": 1,
@@ -627,6 +1288,71 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 128
+            },
+            "quickTrading": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "default": false,
+                  "type": "boolean"
+                },
+                "version": {
+                  "type": "number",
+                  "const": 1
+                },
+                "policy": {
+                  "type": "string"
+                },
+                "policyCodeHash": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                },
+                "signer": {
+                  "type": "string"
+                },
+                "signerCodeHash": {
+                  "type": "string",
+                  "pattern": "^0x[\\da-fA-F]{64}$"
+                },
+                "paymaster": {
+                  "type": "string"
+                },
+                "defaultPerOperation": {
+                  "default": "100000000",
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxPerOperation": {
+                  "default": "100000000",
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "defaultTotal": {
+                  "default": "1000000000",
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxTotal": {
+                  "default": "10000000000",
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "maxDurationSeconds": {
+                  "default": 86400,
+                  "type": "integer",
+                  "minimum": 60,
+                  "maximum": 86400
+                }
+              },
+              "required": [
+                "version",
+                "policy",
+                "policyCodeHash",
+                "signer",
+                "signerCodeHash",
+                "paymaster"
+              ],
+              "additionalProperties": false
             },
             "walletConnectProjectId": {
               "type": "string",
@@ -1004,6 +1730,18 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
+        "signingMode": {
+          "type": "string",
+          "enum": [
+            "controller",
+            "session"
+          ]
+        },
+        "sessionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
         "environment": {
           "type": "string",
           "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
@@ -1541,6 +2279,23 @@
               "properties": {
                 "kind": {
                   "type": "string",
+                  "const": "settle-bond-and-claim"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
                   "const": "claim-bond"
                 }
               },
@@ -1559,6 +2314,25 @@
               },
               "required": [
                 "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "revoke-trading-session"
+                },
+                "sessionId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              },
+              "required": [
+                "kind",
+                "sessionId"
               ],
               "additionalProperties": false
             },
@@ -1642,6 +2416,18 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
+        "signingMode": {
+          "type": "string",
+          "enum": [
+            "controller",
+            "session"
+          ]
+        },
+        "sessionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
         "account": {
           "type": "object",
           "properties": {
@@ -1793,6 +2579,18 @@
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
+        "signingMode": {
+          "type": "string",
+          "enum": [
+            "controller",
+            "session"
+          ]
+        },
+        "sessionId": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+        },
         "id": {
           "type": "string",
           "format": "uuid",
@@ -1833,8 +2631,10 @@
             "refund",
             "claim-timeout-bonus",
             "settle-bond",
+            "settle-bond-and-claim",
             "claim-bond",
             "claim-fees",
+            "revoke-trading-session",
             "transfer"
           ]
         },
@@ -2357,6 +3157,23 @@
               "properties": {
                 "kind": {
                   "type": "string",
+                  "const": "settle-bond-and-claim"
+                },
+                "market": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "market"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
                   "const": "claim-bond"
                 }
               },
@@ -2375,6 +3192,25 @@
               },
               "required": [
                 "kind"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "revoke-trading-session"
+                },
+                "sessionId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              },
+              "required": [
+                "kind",
+                "sessionId"
               ],
               "additionalProperties": false
             },

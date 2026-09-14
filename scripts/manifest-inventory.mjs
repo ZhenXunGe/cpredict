@@ -76,6 +76,7 @@ const explicitInventory = [
   "docs/zh/15-reverse-tunnel-deployment-runbook.md",
   "docs/public-test-site-contract.md",
   "docs/usdc-gasless-deposit.md",
+  "docs/ctusd-quick-trading.md",
   "docs/public-test-site-runbook.md",
   "docs/public-test-site-acceptance.md",
   "docs/public-test-site-remaining.md",

@@ -118,6 +118,9 @@ const ACCEPTED_LICENSE_EXPRESSIONS = new Set([
   "CC-BY-SA-4.0",
   "GPL-3.0-only",
   "ISC",
+  // Preserve web3-utils 1.10.4's legacy SPDX declaration verbatim. Its LICENSE
+  // says v3 or later; licenseConcluded remains NOASSERTION, not a legal approval.
+  "LGPL-3.0",
   "LGPL-3.0-only",
   "MIT",
   "MIT OR Apache-2.0",

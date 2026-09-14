@@ -265,6 +265,16 @@ export class AuthenticatedAAGateway {
         })();
     assertOperationBinding(o, u);
     assertGasCeiling(o, u, rpc.method === "eth_sendUserOperation");
+    if (
+      o.signingMode === "session" &&
+      u.paymaster &&
+      !sameAddress(
+        u.paymaster,
+        (await this.service.tradingSessions.owned(identity, o.sessionId!))
+          .config.paymaster,
+      )
+    )
+      throw new AppError("trading_session_paymaster_mismatch", 403);
     const userOperationHash =
       rpc.method === "eth_sendUserOperation"
         ? getUserOperationHash({
@@ -294,6 +304,7 @@ export class AuthenticatedAAGateway {
     )
       throw new AppError("operation_admission_expired", 409);
     await this.service.controlledAccount(identity, o.accountId);
+    await this.service.tradingSessions.validateOperation(identity, o);
     if (o.intent.kind === "deposit-usdc")
       await this.service.deposits.validate(
         identity.subject,
@@ -402,6 +413,22 @@ export class AuthenticatedAAGateway {
       if (!admitted) return deny;
       const o = admitted.operation;
       if (o.gasPayment === "self-funded") return deny;
+      if (o.signingMode === "session") {
+        const account = await this.service.store.account(
+          o.accountId,
+          admitted.subject,
+        );
+        if (!account) return deny;
+        await this.service.tradingSessions.validateOperation(
+          {
+            subject: admitted.subject,
+            controllers: [
+              { address: account.controller, kind: account.walletKind },
+            ],
+          },
+          o,
+        );
+      }
       if (
         Date.parse(o.expiresAt) <= this.service.now().getTime() ||
         o.createdAt.slice(0, 10) !==

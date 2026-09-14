@@ -135,6 +135,11 @@ export function discoverEntitlements(
         reason: "chain_state_pending",
         amount: null,
       });
+      candidate(lot.market, "timeout-bonus", {
+        status: "unknown",
+        reason: "chain_state_pending",
+        amount: null,
+      });
     }
   }
   // A timeout-funded bond event omits creator, so resolve it through the preceding locked bond.
@@ -143,6 +148,7 @@ export function discoverEntitlements(
       const item = items.get(`${f.market.toLowerCase()}:bond:all`);
       if (item) {
         item.status = "claimed";
+        item.amount = "0";
         item.reason = "bond_slashed_into_timeout_pool";
       }
     }
@@ -224,17 +230,22 @@ export async function hydrateEntitlements(
           : "cancel_listing_to_recover_shares";
       } else if (e.kind === "bond" && e.market) {
         const bond = await reader.bond(e.market, owner);
-        e.amount = bond.amount.toString();
+        const slashed = bond.terminal && !bond.returnable;
+        e.amount = slashed ? "0" : bond.amount.toString();
         e.status = bond.settled
           ? "claimed"
-          : bond.terminal
+          : bond.terminal && !slashed
             ? "claimable"
             : "conditional";
-        e.reason = bond.settled
-          ? "settled_see_aggregate_credit_or_timeout_pool"
-          : bond.returnable
-            ? "settle_and_claim_bond"
-            : "settle_bond_before_claiming_credit";
+        e.reason = slashed
+          ? bond.settled
+            ? "bond_slashed_into_timeout_pool"
+            : "bond_slashed_pending_timeout_funding"
+          : bond.settled
+            ? "settled_see_aggregate_credit_or_timeout_pool"
+            : bond.returnable
+              ? "settle_and_claim_bond"
+              : "settle_bond_before_claiming_credit";
       } else if (e.market) {
         const m = await read(e.market);
         let amount: bigint | null = null,
@@ -276,17 +287,26 @@ export async function hydrateEntitlements(
             : 0n;
         }
         if (e.kind === "timeout-bonus") {
+          if (m.state !== 2 || m.voidReason !== 3) continue;
+          const held = m.balances.reduce((a, b) => a + b, 0n);
+          const units = m.ownerTimeoutUnits > 0n ? m.ownerTimeoutUnits : held;
+          if (units === 0n) continue;
+          e.units = units.toString();
           eligible = m.timeoutFunded && m.ownerTimeoutUnits > 0n;
-          amount = eligible
-            ? shareOfPool(
-                m.ownerTimeoutUnits,
-                m.timeoutTotalUnits,
-                m.timeoutPool,
-              )
+          // Show the expected bonus before refunding, but only registered
+          // refund units can be claimed. Existing registered units take priority
+          // if more shares were acquired after an earlier refund.
+          amount = m.timeoutFunded
+            ? shareOfPool(units, m.timeoutTotalUnits, m.timeoutPool)
             : 0n;
-          e.reason = m.timeoutFunded
-            ? null
-            : "waiting_for_timeout_bond_funding";
+          e.reason =
+            m.ownerTimeoutUnits === 0n
+              ? m.timeoutFunded
+                ? "refund_before_timeout_compensation"
+                : "refund_and_funding_before_timeout_compensation"
+              : m.timeoutFunded
+                ? null
+                : "waiting_for_timeout_bond_funding";
         }
         if (e.kind !== "holding") {
           e.amount = amount?.toString() ?? null;

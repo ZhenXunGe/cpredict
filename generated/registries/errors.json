@@ -102,6 +102,13 @@
     ]
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "name": "BudgetExceeded",
+    "signature": "BudgetExceeded()",
+    "selector": "0x50b2c4e1",
+    "inputs": []
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "name": "DeadlineExpired",
     "signature": "DeadlineExpired(uint256,uint256)",
@@ -603,6 +610,13 @@
     ]
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "name": "ForbiddenCall",
+    "signature": "ForbiddenCall()",
+    "selector": "0x00544b2c",
+    "inputs": []
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "name": "ImmutableAfterFirstBuy",
     "signature": "ImmutableAfterFirstBuy()",
@@ -968,6 +982,13 @@
         "internalType": "uint256"
       }
     ]
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
+    "name": "InvalidSession",
+    "signature": "InvalidSession()",
+    "selector": "0x2def1a76",
+    "inputs": []
   },
   {
     "contract": "SponsorshipPaymasterV1",

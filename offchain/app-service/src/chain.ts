@@ -4,6 +4,7 @@ import {
   sameAddress,
   type Environment,
 } from "../../app-core/src/contracts.js";
+import { tradingPolicyAbi } from "../../app-core/src/trading-session-kernel.js";
 export { ProtocolAdmissionReader } from "../../app-core/src/admission-reader.js";
 const factoryAbi = parseAbi([
   "function marketplace() view returns(address)",
@@ -18,6 +19,7 @@ export async function verifyDeployment(
   client: PublicClient,
   environment: Environment,
 ): Promise<void> {
+  await verifyQuickTrading(client, environment);
   const d = environment.deployment;
   if ((await client.getChainId()) !== d.chainId)
     throw new AppError("rpc_chain_mismatch", 503);
@@ -62,4 +64,56 @@ export async function verifyDeployment(
     if (!sameAddress(token, d.paymentToken))
       throw new AppError("payment_token_mismatch", 503);
   }
+}
+
+export async function verifyQuickTrading(
+  client: PublicClient,
+  environment: Environment,
+) {
+  const config = environment.quickTrading;
+  if (!config?.enabled) return;
+  if (environment.asset !== "ctUSD")
+    throw new AppError("quick_trading_environment_invalid", 503);
+  await Promise.all(
+    (["policy", "signer"] as const).map(async (name) => {
+      const code = await client.getCode({ address: config[name] });
+      if (
+        !code ||
+        code === "0x" ||
+        keccak256(code).toLowerCase() !==
+          config[`${name}CodeHash`].toLowerCase()
+      )
+        throw new AppError("trading_session_module_mismatch", 503);
+    }),
+  );
+  await Promise.all(
+    (
+      [
+        "factory",
+        "marketplace",
+        "paymentToken",
+        "bondEscrow",
+        "feeVault",
+        "paymaster",
+      ] as const
+    ).map(async (name) => {
+      const actual = await client.readContract({
+        address: config.policy,
+        abi: tradingPolicyAbi,
+        functionName: name,
+      });
+      if (
+        !sameAddress(
+          actual,
+          name === "paymaster"
+            ? config.paymaster
+            : environment.deployment[name],
+        )
+      )
+        throw new AppError("trading_session_dependency_mismatch", 503);
+    }),
+  );
+  const paymasterCode = await client.getCode({ address: config.paymaster });
+  if (!paymasterCode || paymasterCode === "0x")
+    throw new AppError("trading_session_paymaster_missing", 503);
 }

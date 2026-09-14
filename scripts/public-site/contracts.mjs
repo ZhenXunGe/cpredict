@@ -6,7 +6,12 @@ import * as ledger from "../../dist/offchain/app-core/src/ledger-contracts.js";
 import * as reports from "../../dist/offchain/app-core/src/report-contracts.js";
 import * as catalog from "../../dist/offchain/app-core/src/catalog-contracts.js";
 import { appRuntimeSchema } from "../../dist/offchain/app-service/src/config.js";
+import * as sessions from "../../dist/offchain/app-core/src/trading-session-contracts.js";
 const schemas = {
+  TradingSession: sessions.tradingSessionSchema,
+  TradingSessionPage: sessions.tradingSessionPageSchema,
+  TradingSessionPrepare: sessions.sessionPrepareSchema,
+  TradingSessionView: sessions.sessionViewSchema,
   SiteConfig: core.siteConfigSchema,
   Environment: core.environmentSchema,
   AppRuntime: appRuntimeSchema,

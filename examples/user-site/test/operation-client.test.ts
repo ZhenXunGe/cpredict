@@ -1,3 +1,6 @@
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import { tradingSessionSchema } from "../../../offchain/app-core/src/trading-session-contracts.js";
+import { A } from "../../../offchain/app-core/test/fixtures.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { EIP1193Provider } from "viem";
@@ -16,6 +19,7 @@ import { UserOperationClient } from "../src/operation-client.js";
 
 const mocks = vi.hoisted(() => ({
   kernel: vi.fn(),
+  sessionKernel: vi.fn(),
   accountClient: vi.fn(),
   paymaster: vi.fn(),
   bundler: vi.fn(),
@@ -35,6 +39,13 @@ vi.mock("../../../offchain/app-core/src/calls.js", async (original) => ({
   ...(await original<object>()),
   buildBusinessCalls: mocks.calls,
 }));
+vi.mock(
+  "../../../offchain/app-core/src/trading-session-kernel.js",
+  async (original) => ({
+    ...(await original<object>()),
+    createSessionKernel: mocks.sessionKernel,
+  }),
+);
 vi.mock("viem/account-abstraction", async (original) => ({
   ...(await original<object>()),
   createBundlerClient: mocks.bundler,
@@ -115,6 +126,7 @@ function setup(balance = 1000000n) {
     () => current,
   );
   return {
+    api,
     client,
     sign,
     send,
@@ -209,4 +221,175 @@ describe("self-funded UserOperation consent", () => {
       expect(s.send).not.toHaveBeenCalled();
     },
   );
+});
+
+describe("quick trading signer boundary", () => {
+  function quick() {
+    const f = setup(),
+      privateKey = generatePrivateKey();
+    const session = tradingSessionSchema.parse({
+      id: crypto.randomUUID(),
+      accountId: appAccount.id,
+      account: appAccount.address,
+      controller: appAccount.controller,
+      publicKey: privateKeyToAccount(privateKey).address,
+      environment: env.id,
+      deploymentId: env.deployment.id,
+      permissionId: "0x12345678",
+      state: "active",
+      createdAt: new Date().toISOString(),
+      validAfter: "0",
+      validUntil: String(Math.floor(Date.now() / 1000) + 86400),
+      perOperation: "100000000",
+      total: "1000000000",
+      authorizationHash: H(1),
+      config: {
+        enabled: true,
+        version: 1,
+        policy: A(21),
+        policyCodeHash: H(2),
+        signer: A(22),
+        signerCodeHash: H(3),
+        paymaster: A(23),
+      },
+    });
+    const controller = vi.fn(async () => {
+        throw new Error("controller must not be requested");
+      }),
+      credential = vi.fn(async () => ({
+        session,
+        privateKey,
+        enableSignature: `0x${"11".repeat(65)}` as `0x${string}`,
+      }));
+    const nonce = 4242n;
+    mocks.sessionKernel.mockResolvedValue({
+      address: appAccount.address,
+      encodeCalls: async () => operation.callData,
+      signUserOperation: f.sign,
+    });
+    mocks.accountClient.mockReturnValue({
+      prepareUserOperation: vi.fn(async () => ({
+        ...f.unsigned,
+        nonce,
+        paymaster: session.config.paymaster,
+      })),
+    });
+    let registered: Operation;
+    f.request.mockImplementation(async (path, schema, options) => {
+      let result;
+      if (path === "/v1/operations/prepare")
+        result = {
+          account: appAccount,
+          calls: operation.calls,
+          callData: operation.callData,
+          nonce: nonce.toString(),
+          factory: null,
+          factoryData: null,
+          maxGasCost: operation.maxGasCost,
+          expiresInSeconds: 300,
+          signingMode: "session",
+          sessionId: session.id,
+        };
+      else if (path === "/v1/operations") {
+        expect(options?.body).toMatchObject({
+          nonce: nonce.toString(),
+          signingMode: "session",
+          sessionId: session.id,
+          gasPayment: "sponsored",
+        });
+        registered = {
+          ...operation,
+          nonce: nonce.toString(),
+          signingMode: "session",
+          sessionId: session.id,
+          gasPayment: "sponsored",
+        };
+        result = { operation: registered };
+      } else if (path === `/v1/trading-sessions/${session.id}`)
+        result = { session, spent: "0", pending: "0", revoked: false };
+      else if (path === `/v1/operations/${operation.id}`)
+        result = {
+          operation: {
+            ...registered,
+            state: f.send.mock.calls.length ? "submitted" : "awaiting-signature",
+            userOperationHash: f.send.mock.calls.length ? H(20) : null,
+          },
+        };
+      else result = { items: [] };
+      return (schema as z.ZodType).parse(result);
+    });
+    vi.stubGlobal("navigator", {
+      locks: {
+        request: async (
+          _name: string,
+          _options: unknown,
+          run: (lock: object) => unknown,
+        ) => run({}),
+      },
+    });
+    const client = new UserOperationClient(
+      f.api,
+      appAccount,
+      controller,
+      () => true,
+      credential,
+    );
+    return { ...f, client, controller, credential, session };
+  }
+  it("submits two operations with the session signer and permission nonce, never requesting a controller provider", async () => {
+    const f = quick();
+    for (let i = 0; i < 2; i++)
+      expect(
+        (await f.client.submit(operation.intent, vi.fn(), vi.fn())).state,
+      ).toBe("submitted");
+    expect(f.controller).not.toHaveBeenCalled();
+    expect(mocks.kernel).not.toHaveBeenCalled();
+    expect(mocks.sessionKernel).toHaveBeenCalledTimes(2);
+    expect(f.sign).toHaveBeenCalledTimes(2);
+    expect(f.send).toHaveBeenCalledTimes(2);
+  });
+  it("uses a cached session kernel but aborts when logout invalidates a pending signature", async () => {
+    const f = quick(),
+      credential = await f.credential();
+    let valid = true;
+    const cached = {
+      address: appAccount.address,
+      encodeCalls: async () => operation.callData,
+      signUserOperation: async () => {
+        valid = false;
+        return "0x1234";
+      },
+    };
+    f.credential.mockImplementation(async () => ({
+      ...credential,
+      kernel: async () => cached as never,
+      assertCurrent: () => {
+        if (!valid) throw new AppError("confirmation_context_changed", 409);
+      },
+    }));
+    await expect(
+      f.client.submit(operation.intent, vi.fn(), vi.fn()),
+    ).rejects.toMatchObject({ code: "confirmation_context_changed" });
+    expect(mocks.sessionKernel).not.toHaveBeenCalled();
+    expect(f.controller).not.toHaveBeenCalled();
+    expect(f.send).not.toHaveBeenCalled();
+  });
+  it("does not fall back to the controller when a session expires or self funding is selected", async () => {
+    const f = quick();
+    f.credential.mockRejectedValue(
+      new AppError("trading_session_unavailable", 409),
+    );
+    await expect(
+      f.client.submit(operation.intent, vi.fn(), vi.fn()),
+    ).rejects.toMatchObject({ code: "trading_session_unavailable" });
+    await expect(
+      f.client.submit(operation.intent, vi.fn(), vi.fn(), {
+        payment: "self-funded",
+        confirm: async () => {},
+      }),
+    ).rejects.toMatchObject({ code: "trading_session_requires_sponsorship" });
+    expect(f.controller).not.toHaveBeenCalled();
+    expect(f.sign).not.toHaveBeenCalled();
+    expect(f.send).not.toHaveBeenCalled();
+  });
 });

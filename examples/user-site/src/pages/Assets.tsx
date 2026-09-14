@@ -1,3 +1,4 @@
+import { QuickTradingPanel } from "../QuickTrading.js";
 import { useState, type FormEvent } from "react";
 import {
   address,
@@ -57,6 +58,7 @@ export function AssetsPage() {
         description="控制钱包用于签名，余额与交易属于当前应用资产账户。"
       />
       <AccountGate />
+      {session.account && <QuickTradingPanel />}
       {session.account && (
         <div className="grid-two">
           <section className="surface stack">

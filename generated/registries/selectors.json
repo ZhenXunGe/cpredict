@@ -70,6 +70,11 @@
     "selector": "0xdd1a9729"
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "bondEscrow()",
+    "selector": "0xdd1a9729"
+  },
+  {
     "contract": "BondEscrowV1",
     "signature": "bondOf(address)",
     "selector": "0x72d2b6c0"
@@ -128,6 +133,16 @@
     "contract": "FixedPriceMarketplaceV1",
     "signature": "cancelListing(bytes32)",
     "selector": "0x9299e552"
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "checkSignaturePolicy(bytes32,address,bytes32,bytes)",
+    "selector": "0x309bfb76"
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "checkUserOpPolicy(bytes32,(address,uint256,bytes,bytes,bytes32,uint256,bytes32,bytes,bytes))",
+    "selector": "0x7129edce"
   },
   {
     "contract": "BondEscrowV1",
@@ -555,6 +570,11 @@
     "selector": "0xc45a0155"
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "signature": "featureFlags()",
     "selector": "0x30e66cd2"
@@ -616,6 +636,11 @@
   },
   {
     "contract": "MarketFactoryV1",
+    "signature": "feeVault()",
+    "selector": "0x478222c2"
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
     "signature": "feeVault()",
     "selector": "0x478222c2"
   },
@@ -780,9 +805,19 @@
     "selector": "0xe985e9c5"
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "isInitialized(address)",
+    "selector": "0xd60b347f"
+  },
+  {
     "contract": "MarketFactoryV1",
     "signature": "isMarket(address)",
     "selector": "0x6ec934da"
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "isModuleType(uint256)",
+    "selector": "0xecd05961"
   },
   {
     "contract": "EmergencyControllerV1",
@@ -811,6 +846,11 @@
   },
   {
     "contract": "MarketFactoryV1",
+    "signature": "marketplace()",
+    "selector": "0xabc8c7af"
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
     "signature": "marketplace()",
     "selector": "0xabc8c7af"
   },
@@ -1005,6 +1045,16 @@
     "selector": "0xf23a6e61"
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "onInstall(bytes)",
+    "selector": "0x6d61fe70"
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "onUninstall(bytes)",
+    "selector": "0x8a91b0e3"
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "signature": "outcomeCount()",
     "selector": "0xd300cb31"
@@ -1055,6 +1105,11 @@
     "selector": "0xb930e2f6"
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "paymaster()",
+    "selector": "0x16e4cbf9"
+  },
+  {
     "contract": "BondEscrowV1",
     "signature": "paymentToken()",
     "selector": "0x3013ce29"
@@ -1086,6 +1141,11 @@
   },
   {
     "contract": "ProtocolConfigV1",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
     "signature": "paymentToken()",
     "selector": "0x3013ce29"
   },
@@ -1160,9 +1220,19 @@
     "selector": "0x58355ead"
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "postCheck(bytes)",
+    "selector": "0x173bf7da"
+  },
+  {
     "contract": "SponsorshipPaymasterV1",
     "signature": "postOp(uint8,bytes,uint256,uint256)",
     "selector": "0x7c627b21"
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "preCheck(address,uint256,bytes)",
+    "selector": "0xd68f6025"
   },
   {
     "contract": "MarketFactoryV1",
@@ -1410,6 +1480,11 @@
     "selector": "0x938b24bf"
   },
   {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "revoke(bytes32)",
+    "selector": "0xb75c7dc6"
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "signature": "rulesHash()",
     "selector": "0xc76f9c16"
@@ -1443,6 +1518,11 @@
     "contract": "FixedPriceMarketplaceV1",
     "signature": "sellerNonce(address)",
     "selector": "0x5022e6ea"
+  },
+  {
+    "contract": "TradingSessionPolicyV1",
+    "signature": "sessionState(bytes32,address)",
+    "selector": "0xb97683b5"
   },
   {
     "contract": "CloneMarketVaultV1",
