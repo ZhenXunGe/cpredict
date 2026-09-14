@@ -173,7 +173,12 @@ export interface RightsReader {
   bond(
     market: Address,
     owner: Address,
-  ): Promise<{ amount: bigint; settled: boolean; terminal: boolean }>;
+  ): Promise<{
+    amount: bigint;
+    settled: boolean;
+    terminal: boolean;
+    returnable: boolean;
+  }>;
   credit(kind: "fees" | "bond", owner: Address): Promise<bigint>;
 }
 const shareOfPool = (units: bigint, total: bigint, pool: bigint) =>
@@ -227,7 +232,9 @@ export async function hydrateEntitlements(
             : "conditional";
         e.reason = bond.settled
           ? "settled_see_aggregate_credit_or_timeout_pool"
-          : "settle_bond_before_claiming_credit";
+          : bond.returnable
+            ? "settle_and_claim_bond"
+            : "settle_bond_before_claiming_credit";
       } else if (e.market) {
         const m = await read(e.market);
         let amount: bigint | null = null,
@@ -259,6 +266,9 @@ export async function hydrateEntitlements(
               : null;
         }
         if (e.kind === "early-bird") {
+          // Early-bird rewards are created only by a resolved market. A void
+          // refunds principal instead, so do not retain a non-actionable row.
+          if (m.state !== 1) continue;
           eligible =
             m.state === 1 && m.ownerEarlyScore > 0n && m.earlyPool > 0n;
           amount = eligible

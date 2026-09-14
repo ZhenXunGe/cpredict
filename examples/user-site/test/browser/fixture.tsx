@@ -60,6 +60,9 @@ import "../../src/site.css";
 import { reportFixture } from "./report-fixture.js";
 
 const usdc = new URLSearchParams(location.search).get("usdc") === "1";
+const positionsTest = new URLSearchParams(location.search).has(
+  "positions-test",
+);
 const env = usdc ? depositEnvironment : ctEnv;
 const appAccount = usdc
   ? { ...ctAccount, environment: env.id, index: "1002" }
@@ -290,7 +293,19 @@ class FixtureApi extends SiteApi {
         metadataPending: 0,
         snapshot,
       };
-    } else if (p.startsWith("/v2/markets/")) result = market;
+    } else if (p.startsWith("/v2/markets/")) {
+      const requestedMarket = p.slice("/v2/markets/".length).toLowerCase();
+      result =
+        positionsTest && requestedMarket === A(102).toLowerCase()
+          ? {
+              ...market,
+              market: A(102),
+              question: "仍在进行的测试市场",
+            }
+          : positionsTest
+            ? { ...market, state: 1, question: "已结算的测试市场" }
+            : market;
+    }
     else if (p.startsWith("/v1/markets/")) {
       if (this.rulesFail) throw new AppError("rules_unverified", 409);
       result = rules;
@@ -298,35 +313,84 @@ class FixtureApi extends SiteApi {
       result = { items: [], nextCursor: null, snapshot };
     else if (p.startsWith("/v2/pnl/"))
       result = {
-        pnl: computePnl(A(11), [], { coverageComplete: true }),
+        pnl: {
+          ...computePnl(A(11), [], { coverageComplete: true }),
+          ...(positionsTest
+            ? {
+                lots: [
+                  {
+                    market: A(101),
+                    outcomeId: "0",
+                    units: "10",
+                    escrowUnits: "0",
+                    knownCost: "1000000",
+                    costComplete: true,
+                  },
+                  {
+                    market: A(102),
+                    outcomeId: "1",
+                    units: "20",
+                    escrowUnits: "0",
+                    knownCost: "2000000",
+                    costComplete: true,
+                  },
+                ],
+              }
+            : {}),
+        },
         snapshot,
       };
     else if (p.startsWith("/v2/entitlements/"))
       result = {
-        items: [
-          {
-            id: "early",
-            market: A(101),
-            kind: "early-bird",
-            outcomeId: null,
-            listingId: null,
-            units: "0",
-            amount: "5000000",
-            status: "claimable",
-            reason: null,
-          },
-          {
-            id: "fees",
-            market: null,
-            kind: "fees",
-            outcomeId: null,
-            listingId: null,
-            units: null,
-            amount: "0",
-            status: "claimed",
-            reason: null,
-          },
-        ],
+        items: positionsTest
+          ? [
+              {
+                id: "settled-holding",
+                market: A(101),
+                kind: "holding",
+                outcomeId: "0",
+                listingId: null,
+                units: "10",
+                amount: null,
+                status: "conditional",
+                reason: null,
+              },
+              {
+                id: "open-holding",
+                market: A(102),
+                kind: "holding",
+                outcomeId: "1",
+                listingId: null,
+                units: "20",
+                amount: null,
+                status: "conditional",
+                reason: null,
+              },
+            ]
+          : [
+              {
+                id: "early",
+                market: A(101),
+                kind: "early-bird",
+                outcomeId: null,
+                listingId: null,
+                units: "0",
+                amount: "5000000",
+                status: "claimable",
+                reason: null,
+              },
+              {
+                id: "fees",
+                market: null,
+                kind: "fees",
+                outcomeId: null,
+                listingId: null,
+                units: null,
+                amount: "0",
+                status: "claimed",
+                reason: null,
+              },
+            ],
         nextCursor: null,
         snapshot,
       };

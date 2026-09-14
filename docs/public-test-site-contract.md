@@ -13,7 +13,7 @@ The default-disabled USDC `deposit-usdc` extension, deposit APIs, transaction bo
 | POST /v1/operations | Authenticated account, UUID idempotency key, typed business intent, nonce, SDK encoded call/factory data | Durable sanitized operation; same key returns original; different intent conflicts |
 | GET /v1/operations and /:id | Subject ownership and environment | Recover original hashes; query outage never turns a successful operation into failure |
 | POST /v1/aa/:operationId | Auth + registered operation + permitted SDK JSON-RPC method | Exact canonical SDK call encoding, factory and nonce checked; sponsored or explicit self-funded ETH; only one send |
-| POST /v1/faucet/claims | Same operation registration, faucet intent only | Same operation record, 1,000 ctUSD per account / 24 hours; public mint itself is unrestricted |
+| POST /v1/faucet/claims | Same operation registration, faucet intent only | Same operation record, 1,000 ctUSD per account / hour; public mint itself is unrestricted |
 | POST /v1/sponsorship/policy | Expected provider project/chain and existing admitted operation | Strict AND policy; unknown, expired or excessive operation denied |
 | /v2/activity/:owner, /v2/entitlements/:owner, /v2/pnl/:owner | Deployment-bound, cursor/filter/snapshot validation | Public confirmed facts, explicit completeness and unknown reasons; stale snapshot => 409 |
 | /v2/leaderboards | Published period, frozen market roster, common canonical block | Versioned test-only complete-cost realized PnL, ties, creator exclusions, corrections |

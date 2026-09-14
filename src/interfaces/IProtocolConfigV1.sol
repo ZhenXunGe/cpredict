@@ -9,6 +9,7 @@ interface IProtocolConfigV1 {
     function protocolTreasury() external view returns (address);
     function creationFee() external view returns (uint128);
     function protocolShareBps() external view returns (uint16);
+    function setPlatformRakeShareBps(uint16 newBps) external;
     function earlyBirdShareBps() external view returns (uint16);
     function platformC2CFeeBps() external view returns (uint16);
     function maxFullMarketCap() external view returns (uint128);

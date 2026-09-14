@@ -227,6 +227,61 @@ test("confirmed claims stay blocked while snapshots lag and rights plus PnL refr
   });
 });
 
+test("a returnable creator bond settles and arrives from one claim action", async ({
+  page,
+}) => {
+  await setup(page);
+  await page.unroute("**/ctusd/indexer/public/v2/entitlements/**");
+  await page.route("**/ctusd/indexer/public/v2/entitlements/**", async (route) => {
+    await route.fulfill({
+      json: {
+        items: [
+          {
+            id: "creator-bond",
+            market: A(101),
+            kind: "bond",
+            outcomeId: null,
+            listingId: null,
+            units: null,
+            amount: "1000000",
+            status: "claimable",
+            reason: "settle_and_claim_bond",
+          },
+        ],
+        nextCursor: null,
+        snapshot: snapshot(100),
+      },
+    });
+  });
+  let submitted: unknown;
+  await page.unroute("**/test/entitlement-submit");
+  await page.route("**/test/entitlement-submit", async (route) => {
+    submitted = await route.request().postDataJSON();
+    await route.fulfill({
+      json: {
+        ...confirmed,
+        kind: "settle-bond-and-claim",
+        intent: { kind: "settle-bond-and-claim", market: A(101) },
+      },
+    });
+  });
+  await open(page);
+  const bond = page.getByRole("row").filter({ hasText: "创作者押金" });
+  await expect(bond).toContainText("将结算并领取押金，一笔操作到账。");
+  await bond.getByRole("button", { name: "领取押金", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toContainText("本次将结算并领取押金，确认后一次到账。");
+  await dialog.getByRole("button", { name: "确认并继续", exact: true }).click();
+  await expect(dialog).toContainText("已确认");
+  expect(submitted).toEqual({
+    intent: { kind: "settle-bond-and-claim", market: A(101) },
+  });
+  await page.screenshot({
+    path: test.info().outputPath("creator-bond-one-step.png"),
+    fullPage: true,
+  });
+});
+
 test("another account does not inherit a confirmed claim waiting for synchronization", async ({
   page,
 }) => {

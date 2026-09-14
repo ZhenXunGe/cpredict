@@ -58,7 +58,12 @@ const reader = (patch: Partial<MarketRights> = {}): RightsReader => ({
     return { units: 20n, active: true, terminal: true };
   },
   async bond() {
-    return { amount: 100n, settled: false, terminal: true };
+    return {
+      amount: 100n,
+      settled: false,
+      terminal: true,
+      returnable: true,
+    };
   },
   async credit() {
     return 70n;
@@ -91,6 +96,21 @@ describe("all beneficial entitlements", () => {
     });
     expect(result.some((r) => r.kind === "holding")).toBe(false);
   });
+  it("omits early-bird rewards when the creator voids the market", async () => {
+    const facts = [
+      fact(1, "primary-buy", {
+        units: "100",
+        amount: "100",
+        extra: { score: "30" },
+      }),
+    ];
+    const result = await hydrateEntitlements(
+      owner,
+      candidates(facts),
+      reader({ state: 2, voidReason: 1 }),
+    );
+    expect(result.some((r) => r.kind === "early-bird")).toBe(false);
+  });
   it("retains escrow shares and separates a market bond settlement from aggregate withdrawals", async () => {
     const facts = [
       fact(1, "primary-buy", { units: "20", amount: "20" }),
@@ -111,11 +131,38 @@ describe("all beneficial entitlements", () => {
     expect(result.find((r) => r.kind === "bond")).toMatchObject({
       market,
       status: "claimable",
+      reason: "settle_and_claim_bond",
     });
     expect(result.find((r) => r.kind === "fees")).toMatchObject({
       market: null,
       amount: "70",
     });
+  });
+  it("does not batch a slashed timeout bond with a creator withdrawal", async () => {
+    const facts = [fact(1, "bond-locked", { amount: "100" })];
+    const result = await hydrateEntitlements(
+      owner,
+      candidates(facts),
+      reader(),
+    );
+    const slashedReader: RightsReader = {
+      ...reader(),
+      async bond() {
+        return {
+          amount: 100n,
+          settled: false,
+          terminal: true,
+          returnable: false,
+        };
+      },
+    };
+    const slashed = await hydrateEntitlements(owner, candidates(facts), slashedReader);
+    expect(result.find((r) => r.kind === "bond")?.reason).toBe(
+      "settle_and_claim_bond",
+    );
+    expect(slashed.find((r) => r.kind === "bond")?.reason).toBe(
+      "settle_bond_before_claiming_credit",
+    );
   });
   it("does not call timeout compensation claimable before the separate funding stage", async () => {
     const facts = [

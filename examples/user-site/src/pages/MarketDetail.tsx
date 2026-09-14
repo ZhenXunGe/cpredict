@@ -320,7 +320,7 @@ function TradePanel({
             { label: "最多支付", value: `${amount} ${env.asset}` },
             { label: "最少获得份额", value: formatUnits(minUnits, 6) },
           ],
-          feeNote: `一级投入按 1 ${env.asset} 对应 1 份本金记账。结算时创作者抽成 ${live.data.economics.creatorRakeBps / 100}%，协议分成为该抽成的 ${live.data.economics.protocolShareBps / 100}%。网络 Gas 按确认页选择的方式支付。`,
+          feeNote: `一级投入按 1 ${env.asset} 对应 1 份本金记账。结算时创作者抽成 ${live.data.economics.creatorRakeBps / 100}%，平台从该抽成中收取 ${live.data.economics.protocolShareBps / 100}%。网络 Gas 按确认页选择的方式支付。`,
         });
       else {
         if (!session.account) {

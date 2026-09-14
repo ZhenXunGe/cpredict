@@ -19,7 +19,13 @@ function entitlementAction(e: Entitlement): BusinessIntent | null {
     };
   if (e.kind === "bond")
     return e.market
-      ? { kind: "settle-bond", market: e.market }
+      ? {
+          kind:
+            e.reason === "settle_and_claim_bond"
+              ? "settle-bond-and-claim"
+              : "settle-bond",
+          market: e.market,
+        }
       : { kind: "claim-bond" };
   if (e.kind === "fees") return { kind: "claim-fees" };
   if (!e.market) return null;

@@ -1680,6 +1680,26 @@
     ]
   },
   {
+    "contract": "ProtocolConfigV1",
+    "name": "PlatformRakeShareUpdated",
+    "signature": "PlatformRakeShareUpdated(uint16,uint16)",
+    "selector": "0x103d9b9014c644d91f6d9f76bcdd198f6beda165f6162766466bd9a0079ef0e4",
+    "inputs": [
+      {
+        "name": "previousBps",
+        "type": "uint16",
+        "indexed": false,
+        "internalType": "uint16"
+      },
+      {
+        "name": "newBps",
+        "type": "uint16",
+        "indexed": false,
+        "internalType": "uint16"
+      }
+    ]
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "name": "PrimaryPurchased",
     "signature": "PrimaryPurchased(address,uint256,uint256,uint256,uint256,uint8,uint256,uint256)",

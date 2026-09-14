@@ -21,6 +21,7 @@ export const rightsAbi = parseAbi([
   "function timeoutBonusFunded() view returns (bool)",
   "function earlyBirdScore(address) view returns (uint256)",
   "function timeoutBonusUnits(address) view returns (uint256)",
+  "function totalPrincipal() view returns (uint256)",
   "function balanceOf(address,uint256) view returns (uint256)",
   "function bondOf(address) view returns (address creator,uint128 amount,bool settled)",
   "function creditOf(address) view returns (uint256)",
@@ -146,7 +147,7 @@ export class OnchainRightsReader implements RightsReader {
     return { units: listing[2], terminal: state !== 0, active: listing[6] };
   }
   async bond(market: Address, owner: Address) {
-    const [bond, state] = await Promise.all([
+    const [bond, state, voidReason, totalPrincipal] = await Promise.all([
       this.client.readContract({
         address: this.environment.deployment.bondEscrow,
         abi: rightsAbi,
@@ -160,9 +161,42 @@ export class OnchainRightsReader implements RightsReader {
         functionName: "marketState",
         blockNumber: this.blockNumber,
       }),
+      this.environment.deployment.protocolVersion === "legacy-v1"
+        ? Promise.resolve(0)
+        : this.client.readContract({
+            address: market,
+            abi: rightsAbi,
+            functionName: "voidReason",
+            blockNumber: this.blockNumber,
+          }),
+      this.client.readContract({
+        address: market,
+        abi: rightsAbi,
+        functionName: "totalPrincipal",
+        blockNumber: this.blockNumber,
+      }),
     ]);
     if (!sameAddress(bond[0], owner)) throw new Error("bond owner mismatch");
-    return { amount: bond[1], settled: bond[2], terminal: state !== 0 };
+    const normalized = publicMarketState(
+      this.environment.deployment.protocolVersion,
+      state,
+      voidReason,
+    );
+    const terminal = normalized.state !== 0;
+    return {
+      amount: bond[1],
+      settled: bond[2],
+      terminal,
+      // A timeout bond with participants belongs to the compensation pool.
+      // All other terminal outcomes credit the creator and can be claimed atomically.
+      returnable:
+        terminal &&
+        !(
+          normalized.state === 2 &&
+          normalized.voidReason === 3 &&
+          totalPrincipal > 0n
+        ),
+    };
   }
   async credit(kind: "fees" | "bond", owner: Address) {
     return this.client.readContract({

@@ -99,9 +99,10 @@ export function registerFinancialApi(
     const candidates = discoverEntitlements(owner, facts, pnl).filter(
       (e) => !parsed || e.id.localeCompare(parsed.after) > 0,
     );
+    const candidatePage = candidates.slice(0, q.limit);
     const items = await hydrateEntitlements(
       owner,
-      candidates.slice(0, q.limit),
+      candidatePage,
       new OnchainRightsReader(
         client,
         ledger.environment,
@@ -114,7 +115,9 @@ export function registerFinancialApi(
     });
     if (block.hash !== snapshot.blockHash)
       throw new AppError("snapshot_invalidated", 409);
-    const last = items.at(-1),
+    // Hydration can omit every row. Advance by scanned candidates so hidden
+    // rights cannot strand later pages or be re-read on the next request.
+    const last = candidatePage.at(-1),
       nextCursor =
         candidates.length > q.limit && last
           ? Buffer.from(

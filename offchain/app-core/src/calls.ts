@@ -335,6 +335,25 @@ export async function buildBusinessCalls(
           }),
         ),
       ];
+    case "settle-bond-and-claim":
+      return [
+        call(
+          d.bondEscrow,
+          encodeFunctionData({
+            abi: bondEscrowAbi,
+            functionName: "settleBond",
+            args: [intent.market],
+          }),
+        ),
+        call(
+          d.bondEscrow,
+          encodeFunctionData({
+            abi: bondEscrowAbi,
+            functionName: "claimFor",
+            args: [account],
+          }),
+        ),
+      ];
     case "claim-bond":
       return [
         call(

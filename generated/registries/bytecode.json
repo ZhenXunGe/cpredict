@@ -1,10 +1,10 @@
 [
   {
     "contract": "ProtocolConfigV1",
-    "creationBytecodeSha256": "17b4407a9a90da987849f5d670d07e80e1eabfcc06b91db94245a5b7c4e50622",
-    "runtimeBytecodeSha256": "4349b399db0ba93afdbf3ac4ae8a2021d1c0f2f1c407755ba188bb96df2539dd",
-    "creationBytes": 4251,
-    "runtimeBytes": 3630
+    "creationBytecodeSha256": "169a6b2b20854e5d59a0419b630d624b9bc04536e7cf2ab92582c54d3923c28b",
+    "runtimeBytecodeSha256": "45d17ae7ffb09d93f386f6e192eba959316dea69a2c50131beab8420a1d5f33f",
+    "creationBytes": 4497,
+    "runtimeBytes": 3865
   },
   {
     "contract": "EmergencyControllerV1",

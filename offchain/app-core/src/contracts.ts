@@ -282,6 +282,7 @@ export const intentSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("refund"), ...market }),
   z.strictObject({ kind: z.literal("claim-timeout-bonus"), ...market }),
   z.strictObject({ kind: z.literal("settle-bond"), ...market }),
+  z.strictObject({ kind: z.literal("settle-bond-and-claim"), ...market }),
   z.strictObject({ kind: z.literal("claim-bond") }),
   z.strictObject({ kind: z.literal("claim-fees") }),
   z.strictObject({
@@ -369,6 +370,7 @@ export const operationSchema = z.strictObject({
     "refund",
     "claim-timeout-bonus",
     "settle-bond",
+    "settle-bond-and-claim",
     "claim-bond",
     "claim-fees",
     "transfer",
