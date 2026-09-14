@@ -102,6 +102,6 @@ node scripts/public-site/deploy-trading-policy.mjs \
 
 ## 默认关闭状态的应用发布
 
-`006_trading_sessions.sql` 仅新增公开会话元数据表、归属查询索引和操作 JSON 的可选 sessionId 索引，不删除或改写既有数据、字段及约束。已将其内容摘要登记到 `deploy/public-site/update-policy.json`。常规发布先备份 indexer 数据库、暂停 indexer 和 app-service 写入，再应用迁移并恢复服务；旧应用可继续使用原有表结构。
+`006_trading_sessions.sql` 仅新增公开会话元数据表、归属查询索引和操作 JSON 的可选 sessionId 索引，不删除或改写既有数据、字段及约束。已将其内容摘要登记到 `deploy/public-site/update-policy.json`。常规发布先暂停 indexer 和 app-service 写入，再备份 indexer 数据库、应用迁移并恢复服务；旧应用可继续使用原有表结构。
 
 本轮应用发布保持快捷交易关闭，普通控制钱包操作仍省略会话签名字段。链上策略部署与真实钱包验收按上述开放门槛单独完成。
