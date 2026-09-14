@@ -31,7 +31,6 @@ import {
   dateText,
 } from "../data.js";
 import {
-  AddressText,
   Amount,
   Button,
   DataTable,
@@ -40,6 +39,7 @@ import {
   Loading,
   Notice,
   PageTitle,
+  shortAddress,
 } from "../ui.js";
 import { parseAssetAmount } from "../amounts.js";
 import { publishRules, rulesPublicationErrorCopy } from "../metadata.js";
@@ -204,7 +204,13 @@ export function CreatorPage() {
                 .map((m) => (
                   <tr key={m.market}>
                     <td>
-                      <AddressText value={m.market} />
+                      <Link
+                        to={`/${api.environment.id}/creator/${m.market}`}
+                        title={m.market}
+                      >
+                        {m.question?.trim() ||
+                          `名称暂不可用（${shortAddress(m.market)}）`}
+                      </Link>
                     </td>
                     <td>{marketStatusCopy(m)}</td>
                     <td>
