@@ -31,6 +31,7 @@ const schemas = {
   Leaderboard: reports.leaderboardPageSchema,
   LeaderboardPeriod: reports.leaderboardPeriodSchema,
   OpsReport: reports.opsReportSchema,
+  PlatformFees: reports.platformFeesSchema,
   Telemetry: reports.telemetrySchema,
   Feedback: reports.feedbackSchema,
   FeedbackQuery: reports.feedbackQuerySchema,

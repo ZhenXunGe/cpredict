@@ -567,6 +567,296 @@
                 "minLength": 1,
                 "maxLength": 64
               },
+              "historical": {
+                "type": "boolean"
+              },
+              "asset": {
+                "type": "string",
+                "enum": [
+                  "ctUSD",
+                  "USDC"
+                ]
+              },
+              "decimals": {
+                "type": "number",
+                "const": 6
+              },
+              "deployment": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+                  },
+                  "protocolVersion": {
+                    "type": "string",
+                    "enum": [
+                      "legacy-v1",
+                      "time-v2"
+                    ]
+                  },
+                  "manifestHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "sourceCommit": {
+                    "type": "string",
+                    "pattern": "^[\\da-f]{40}$"
+                  },
+                  "chainId": {
+                    "type": "number",
+                    "const": 421614
+                  },
+                  "deploymentBlock": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "factory": {
+                    "type": "string"
+                  },
+                  "marketplace": {
+                    "type": "string"
+                  },
+                  "bondEscrow": {
+                    "type": "string"
+                  },
+                  "feeVault": {
+                    "type": "string"
+                  },
+                  "paymentToken": {
+                    "type": "string"
+                  },
+                  "protocolTreasury": {
+                    "type": "string"
+                  },
+                  "runtimeCodeHashes": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-f]{40}$"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "manifestHash",
+                  "sourceCommit",
+                  "chainId",
+                  "deploymentBlock",
+                  "factory",
+                  "marketplace",
+                  "bondEscrow",
+                  "feeVault",
+                  "paymentToken",
+                  "protocolTreasury",
+                  "runtimeCodeHashes"
+                ],
+                "additionalProperties": false
+              },
+              "account": {
+                "type": "object",
+                "properties": {
+                  "kernelVersion": {
+                    "type": "string",
+                    "const": "0.3.1"
+                  },
+                  "entryPointVersion": {
+                    "type": "string",
+                    "const": "0.7"
+                  },
+                  "index": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "derivationVersion": {
+                    "type": "number",
+                    "const": 1
+                  }
+                },
+                "required": [
+                  "kernelVersion",
+                  "entryPointVersion",
+                  "index",
+                  "derivationVersion"
+                ],
+                "additionalProperties": false
+              },
+              "services": {
+                "type": "object",
+                "properties": {
+                  "app": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  },
+                  "indexer": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  },
+                  "metadata": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  },
+                  "rpc": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  }
+                },
+                "required": [
+                  "app",
+                  "indexer",
+                  "metadata",
+                  "rpc"
+                ],
+                "additionalProperties": false
+              },
+              "privyAppId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "quickTrading": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "version": {
+                    "type": "number",
+                    "const": 1
+                  },
+                  "policy": {
+                    "type": "string"
+                  },
+                  "policyCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "signer": {
+                    "type": "string"
+                  },
+                  "signerCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "paymaster": {
+                    "type": "string"
+                  },
+                  "defaultPerOperation": {
+                    "default": "100000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxPerOperation": {
+                    "default": "100000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "defaultTotal": {
+                    "default": "1000000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxTotal": {
+                    "default": "10000000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxDurationSeconds": {
+                    "default": 86400,
+                    "type": "integer",
+                    "minimum": 60,
+                    "maximum": 86400
+                  }
+                },
+                "required": [
+                  "version",
+                  "policy",
+                  "policyCodeHash",
+                  "signer",
+                  "signerCodeHash",
+                  "paymaster"
+                ],
+                "additionalProperties": false
+              },
+              "walletConnectProjectId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "explorerUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "legacyUrl": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "features": {
+                "type": "object",
+                "properties": {
+                  "newExposure": {
+                    "type": "boolean"
+                  },
+                  "faucet": {
+                    "type": "boolean"
+                  },
+                  "leaderboard": {
+                    "type": "boolean"
+                  },
+                  "sponsorship": {
+                    "type": "boolean"
+                  },
+                  "gaslessDeposit": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "newExposure",
+                  "faucet",
+                  "leaderboard",
+                  "sponsorship"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "asset",
+              "decimals",
+              "deployment",
+              "account",
+              "services",
+              "privyAppId",
+              "explorerUrl",
+              "features"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "historicalEnvironments": {
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "historical": {
+                "type": "boolean"
+              },
               "asset": {
                 "type": "string",
                 "enum": [
@@ -857,6 +1147,9 @@
           "minLength": 1,
           "maxLength": 64
         },
+        "historical": {
+          "type": "boolean"
+        },
         "asset": {
           "type": "string",
           "enum": [
@@ -1140,6 +1433,9 @@
               "type": "string",
               "minLength": 1,
               "maxLength": 64
+            },
+            "historical": {
+              "type": "boolean"
             },
             "asset": {
               "type": "string",
@@ -1884,6 +2180,26 @@
                 "kind": {
                   "type": "string",
                   "const": "create-market"
+                },
+                "platformFees": {
+                  "type": "object",
+                  "properties": {
+                    "rakeShareBps": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5000
+                    },
+                    "c2cFeeBps": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 200
+                    }
+                  },
+                  "required": [
+                    "rakeShareBps",
+                    "c2cFeeBps"
+                  ],
+                  "additionalProperties": false
                 },
                 "params": {
                   "type": "object",
@@ -2762,6 +3078,26 @@
                 "kind": {
                   "type": "string",
                   "const": "create-market"
+                },
+                "platformFees": {
+                  "type": "object",
+                  "properties": {
+                    "rakeShareBps": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 5000
+                    },
+                    "c2cFeeBps": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 200
+                    }
+                  },
+                  "required": [
+                    "rakeShareBps",
+                    "c2cFeeBps"
+                  ],
+                  "additionalProperties": false
                 },
                 "params": {
                   "type": "object",
@@ -5812,6 +6148,30 @@
         "fees": {
           "type": "object",
           "properties": {
+            "platformLifetime": {
+              "default": null,
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "accrued": {
+                      "type": "string",
+                      "pattern": "^(0|[1-9]\\d{0,77})$"
+                    },
+                    "complete": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "accrued",
+                    "complete"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "protocolAccrued": {
               "type": "string",
               "pattern": "^(0|[1-9]\\d{0,77})$"
@@ -6144,6 +6504,90 @@
         "services",
         "notes"
       ]
+    },
+    "PlatformFees": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "accrued": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "snapshot": {
+          "type": "object",
+          "properties": {
+            "environment": {
+              "type": "string"
+            },
+            "deploymentId": {
+              "type": "string"
+            },
+            "version": {
+              "type": "number",
+              "const": 1
+            },
+            "epoch": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockNumber": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "blockHash": {
+              "type": "string",
+              "pattern": "^0x[\\da-fA-F]{64}$"
+            },
+            "timestamp": {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            "coverageStart": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "complete": {
+              "type": "boolean"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "shadow",
+                "active"
+              ]
+            }
+          },
+          "required": [
+            "environment",
+            "deploymentId",
+            "version",
+            "epoch",
+            "blockNumber",
+            "blockHash",
+            "timestamp",
+            "coverageStart",
+            "complete",
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "accrued",
+        "complete",
+        "snapshot"
+      ],
+      "additionalProperties": false
     },
     "Telemetry": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",

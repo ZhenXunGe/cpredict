@@ -613,6 +613,12 @@ export function CreateMarketPage() {
       setBusy(false);
     }
   };
+  if (api.environment.historical)
+    return (
+      <Notice>
+        历史市场用于查看记录和领取旧权益。请通过“返回当前市场”进入创作者中心创建新市场。
+      </Notice>
+    );
   if (api.environment.deployment.protocolVersion === "legacy-v1")
     return (
       <section className="stack">

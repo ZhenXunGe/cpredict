@@ -15,10 +15,10 @@ export function historicalRuntime(runtime) {
   old.environment.historical = true;
   old.environment.label = "历史市场";
   old.environment.services = {
-    app: "/ctusd-history/app",
-    indexer: "/ctusd-history/indexer/public",
-    metadata: "/ctusd-history/metadata",
-    rpc: "/ctusd-history/app/v1/rpc",
+    app: "/ctusd/app/history",
+    indexer: "/ctusd/indexer/history/public",
+    metadata: "/ctusd/metadata/history",
+    rpc: "/ctusd/app/history/v1/rpc",
   };
   old.environment.features = {
     ...old.environment.features,
@@ -62,7 +62,7 @@ export async function prepareHistoryServices({ containers, runtime, output }) {
       env.CPREDICT_INDEXER_METADATA_URL = "http://metadata-history:8793";
     if (name === "metadata")
       env.CPREDICT_METADATA_PUBLIC_BASE_URL = new URL(
-        "/ctusd-history/metadata",
+        "/ctusd/metadata/history",
         previous.allowedOrigins[0],
       ).href;
     source.environment = env;

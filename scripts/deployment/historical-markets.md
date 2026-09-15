@@ -13,7 +13,7 @@ command: it archives markets instead of keeping their claims available.
 3. Run `prepare-history-services.mjs --runtime <old-runtime> --output <private-dir>`.
    It pins the existing service images/configs in a separate Compose project on
    the original networks. No database or wallet is duplicated. Historical routes
-   use `/ctusd-history/`; the original environment/deployment identity is preserved.
+   use `/ctusd/app/history`, `/ctusd/indexer/history` and `/ctusd/metadata/history` through the existing authenticated edge routes; the original environment/deployment identity is preserved.
 4. Run `site:maintain -- prepare-history --input <old-runtime> --config <new-runtime>
    --environment <new-id>` and review the reported schema before `--apply`.
    Use one dedicated migrator connection to the OLD schema. This adds a current
