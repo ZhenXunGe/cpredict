@@ -73,7 +73,11 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
       <Link to={`/${env.id}/markets`}>← 返回市场</Link>
       <div style={{ height: 20 }} />
       <PageTitle
-        title={rules.data?.question ?? `市场 ${shortAddress(marketAddress)}`}
+        title={
+          rules.data?.question?.trim() ||
+          market.question?.trim() ||
+          `市场 ${shortAddress(marketAddress)}`
+        }
         description={`${status} · 所有时间均为北京时间`}
       />
       <div className="detail-grid">
@@ -290,8 +294,8 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
                       {
                         label: "市场",
                         value:
-                          rules.data?.question ??
-                          market.question?.trim() ??
+                          rules.data?.question?.trim() ||
+                          market.question?.trim() ||
                           market.market,
                       },
                       {

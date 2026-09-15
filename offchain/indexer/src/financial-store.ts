@@ -32,6 +32,8 @@ const cursorSchema = z.strictObject({
 export interface FinancialFilter {
   owner: Address;
   market?: Address;
+  transactionHash?: Hex;
+  marketQuery?: string;
   kinds?: LedgerFact["kind"][];
   from?: string;
   to?: string;
@@ -246,6 +248,10 @@ export class PostgresFinancialLedger {
           kinds: [...(filter.kinds ?? [])].sort(),
           from: filter.from ?? null,
           to: filter.to ?? null,
+          ...(filter.marketQuery ? { marketQuery: filter.marketQuery } : {}),
+          ...(filter.transactionHash
+            ? { transactionHash: filter.transactionHash.toLowerCase() }
+            : {}),
         }),
       )
       .digest("hex");
@@ -270,6 +276,12 @@ export class PostgresFinancialLedger {
         const marketClause = filter.market
           ? db`AND market=${filter.market.toLowerCase()}`
           : db``;
+        const nameClause = filter.marketQuery
+          ? db`AND market IN (SELECT market FROM public_market_metadata WHERE verified=true AND position(lower(${filter.marketQuery}) in lower(question)) > 0)`
+          : db``;
+        const transactionClause = filter.transactionHash
+          ? db`AND transaction_hash=${filter.transactionHash.toLowerCase()}`
+          : db``;
         const kindClause = filter.kinds?.length
           ? db`AND kind IN ${db(filter.kinds)}`
           : db``;
@@ -287,7 +299,7 @@ export class PostgresFinancialLedger {
           { fact: unknown }[]
         >`SELECT fact FROM ledger_facts WHERE chain_id=${this.environment.deployment.chainId} AND block_number<=${snapshot.blockNumber}
         AND (owner=${filter.owner.toLowerCase()} OR counterparty=${filter.owner.toLowerCase()} OR (kind IN ('market-resolved','market-voided','timeout-funded','bond-timeout-funded') AND market IN (SELECT market FROM ledger_facts WHERE (owner=${filter.owner.toLowerCase()} OR counterparty=${filter.owner.toLowerCase()}) AND block_number<=${snapshot.blockNumber})))
-        ${marketClause} ${kindClause} ${fromClause} ${toClause} ${positionClause} ORDER BY block_number DESC,transaction_index DESC,log_index DESC,fact_index DESC LIMIT ${filter.limit + 1}`;
+        ${marketClause} ${nameClause} ${transactionClause} ${kindClause} ${fromClause} ${toClause} ${positionClause} ORDER BY block_number DESC,transaction_index DESC,log_index DESC,fact_index DESC LIMIT ${filter.limit + 1}`;
         const facts = rows.map((r) => ledgerFactSchema.parse(r.fact)),
           items = facts.slice(0, filter.limit),
           last = items.at(-1);

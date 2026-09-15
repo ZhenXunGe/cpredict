@@ -121,7 +121,7 @@ export async function buildBusinessCalls(
     throw new AppError("invalid_minimum_units");
   switch (intent.kind) {
     case "revoke-trading-session":
-      throw new AppError("session_descriptor_required",400);
+      throw new AppError("session_descriptor_required", 400);
     case "deposit-usdc":
       if (
         environment.asset !== "USDC" ||
@@ -396,6 +396,7 @@ export async function buildBusinessCalls(
       const validated = createMarketInputSchema.parse({
         factory: d.factory,
         userSalt: intent.userSalt,
+        platformFees: intent.platformFees,
         params: {
           ...p,
           closeAt: BigInt(p.closeAt),
@@ -417,11 +418,22 @@ export async function buildBusinessCalls(
         payment,
         call(
           d.factory,
-          encodeFunctionData({
-            abi: marketFactoryAbi,
-            functionName: "createMarket",
-            args: [validated.params, validated.userSalt],
-          }),
+          validated.platformFees
+            ? encodeFunctionData({
+                abi: marketFactoryAbi,
+                functionName: "createMarketWithPlatformFees",
+                args: [
+                  validated.params,
+                  validated.userSalt,
+                  validated.platformFees.rakeShareBps,
+                  validated.platformFees.c2cFeeBps,
+                ],
+              })
+            : encodeFunctionData({
+                abi: marketFactoryAbi,
+                functionName: "createMarket",
+                args: [validated.params, validated.userSalt],
+              }),
         ),
       );
     }

@@ -199,7 +199,7 @@ test("confirmed claims stay blocked while snapshots lag and rights plus PnL refr
   await expect(row(page)).toContainText("已确认，等待同步");
   state.rightsBlock = 105;
   await tick(page);
-  await expect(row(page)).toContainText("已处理");
+  await expect(row(page)).toHaveCount(0);
   await expect(
     page.getByText(
       "交易已确认，权益与收益正在等待同步。页面会自动更新，请勿重复领取。",
@@ -225,6 +225,84 @@ test("confirmed claims stay blocked while snapshots lag and rights plus PnL refr
     path: test.info().outputPath("entitlements-synchronized.png"),
     fullPage: true,
   });
+});
+
+test("early-bird claims leave no zero refund or winner placeholders but preserve real winner payouts", async ({
+  page,
+}) => {
+  const state = await setup(page);
+  let winnerAmount = "0";
+  await page.unroute("**/ctusd/indexer/public/v2/entitlements/**");
+  await page.route(
+    "**/ctusd/indexer/public/v2/entitlements/**",
+    async (route) => {
+      state.rightsReads++;
+      await route.fulfill({
+        json: {
+          items: [
+            earlyBird(state.rightsBlock >= 105),
+            {
+              ...earlyBird(false),
+              id: "principal-refund",
+              kind: "refund",
+              units: "10000000",
+              amount: "0",
+              status: "conditional",
+            },
+            {
+              ...earlyBird(false),
+              id: "winner",
+              kind: "winner",
+              units: winnerAmount === "0" ? "0" : "1000000",
+              amount: winnerAmount,
+              status: winnerAmount === "0" ? "conditional" : "claimable",
+            },
+          ],
+          nextCursor: null,
+          snapshot: snapshot(state.rightsBlock),
+        },
+      });
+    },
+  );
+  await open(page);
+  const refund = page
+    .getByRole("row")
+    .filter({ has: page.getByText("本金退款", { exact: true }) });
+  const winner = page
+    .getByRole("row")
+    .filter({ has: page.getByText("赢家收益", { exact: true }) });
+  await expect(refund).toHaveCount(0);
+  await expect(winner).toHaveCount(0);
+  await row(page).getByRole("button", { name: "领取", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "确认并继续", exact: true }).click();
+  await expect(dialog).toContainText("已确认");
+  await dialog
+    .locator(".dialog-footer")
+    .getByRole("button", { name: "关闭", exact: true })
+    .click();
+  await expect(row(page)).toContainText("已确认，等待同步");
+  state.rightsBlock = 105;
+  state.pnlBlock = 105;
+  await tick(page);
+  await expect(row(page)).toHaveCount(0);
+  await expect(refund).toHaveCount(0);
+  await expect(winner).toHaveCount(0);
+  await expect(page.getByText("暂无待处理权益", { exact: true })).toBeVisible();
+  await expect(page.getByText("待满足条件", { exact: true })).toHaveCount(0);
+  await page.screenshot({
+    path: test.info().outputPath("early-bird-completed-no-placeholders.png"),
+    fullPage: true,
+  });
+  winnerAmount = "2000000";
+  await page.clock.fastForward(15100);
+  await expect(winner).toHaveCount(1);
+  await expect(winner).toContainText("2 ctUSD");
+  await expect(
+    winner.getByRole("button", { name: "领取", exact: true }),
+  ).toBeEnabled();
+  await expect(refund).toHaveCount(0);
+  expect(state.submissions).toBe(1);
 });
 
 test("a returnable creator bond settles and arrives from one claim action", async ({
@@ -340,8 +418,7 @@ test("a timeout creator bond updates without any creator action before or after 
   state.rightsBlock = 105;
   state.pnlBlock = 105;
   await page.clock.fastForward(15100);
-  await expect(bond).toContainText("押金已罚没并注入超时补偿池。");
-  await expect(bond.locator(".badge")).toHaveText("已罚没并注入");
+  await expect(bond).toHaveCount(0);
   await expect(bond.getByRole("button")).toHaveCount(0);
   expect(state.submissions).toBe(0);
   await page.screenshot({
@@ -432,7 +509,7 @@ test("a timeout participant sees principal and expected bonus together before re
   state.rightsBlock = 105;
   state.pnlBlock = 105;
   await tick(page);
-  await expect(refund).toContainText("已处理");
+  await expect(refund).toHaveCount(0);
   await expect(
     bonus.getByRole("button", { name: "领取", exact: true }),
   ).toBeEnabled();
@@ -464,7 +541,7 @@ test("loaded cursor pages refresh from the first page and keep each old snapshot
   const state = await setup(page, true);
   state.operation = confirmed;
   await open(page);
-  await page.getByRole("button", { name: "加载更多权益", exact: true }).click();
+  await expect.poll(() => state.cursors.includes("page2:100")).toBe(true);
   await expect(row(page)).toContainText("已确认，等待同步");
   state.firstPageBlock = 105;
   await tick(page);
@@ -475,7 +552,7 @@ test("loaded cursor pages refresh from the first page and keep each old snapshot
   state.rightsBlock = 105;
   state.pnlBlock = 105;
   await tick(page);
-  await expect(row(page)).toContainText("已处理");
+  await expect(row(page)).toHaveCount(0);
   expect(state.submissions).toBe(0);
 });
 
@@ -508,4 +585,158 @@ test("claim actions wait for the operation lookup and unknown results never beco
     row(page).getByRole("button", { name: "领取", exact: true }),
   ).toHaveCount(0);
   expect(state.submissions).toBe(0);
+});
+
+test("completed pages are skipped and only current holdings and unfinished rights remain", async ({
+  page,
+}) => {
+  const state = await setup(page);
+  const cursors: Array<string | null> = [];
+  await page.unroute("**/ctusd/indexer/public/v2/entitlements/**");
+  await page.route(
+    "**/ctusd/indexer/public/v2/entitlements/**",
+    async (route) => {
+      const cursor = new URL(route.request().url()).searchParams.get("cursor");
+      cursors.push(cursor);
+      const processed = state.rightsBlock >= 105;
+      await route.fulfill({
+        json: {
+          items: !cursor
+            ? Array.from({ length: 20 }, (_, i) => ({
+                ...earlyBird(true),
+                id: `completed-${i}`,
+              }))
+            : [
+                earlyBird(processed),
+                ...["winner", "refund", "early-bird"].map((kind) => ({
+                  ...earlyBird(false),
+                  id: `zero-${kind}`,
+                  kind,
+                  units: "1000000",
+                  amount: "0",
+                  status: "conditional",
+                })),
+                {
+                  ...earlyBird(false),
+                  id: "holding",
+                  kind: "holding",
+                  units: processed ? "0" : "1000000",
+                  amount: null,
+                  status: "conditional",
+                },
+                {
+                  ...earlyBird(false),
+                  id: "empty-holding",
+                  kind: "holding",
+                  units: "0",
+                  amount: null,
+                  status: "conditional",
+                },
+                {
+                  ...earlyBird(false),
+                  id: "empty-fees",
+                  market: null,
+                  kind: "fees",
+                  amount: "0",
+                  status: "conditional",
+                },
+                {
+                  ...earlyBird(false),
+                  id: "fees",
+                  market: null,
+                  kind: "fees",
+                  amount: "1000000",
+                  status: "claimable",
+                },
+                {
+                  ...earlyBird(false),
+                  id: "uncertain",
+                  kind: "refund",
+                  amount: null,
+                  status: "unknown",
+                  reason: "chain_read_unavailable",
+                },
+              ],
+          nextCursor: cursor ? null : "active-page",
+          snapshot: snapshot(state.rightsBlock),
+        },
+      });
+    },
+  );
+  await page.unroute("**/ctusd/indexer/public/v2/pnl/**");
+  await page.route("**/ctusd/indexer/public/v2/pnl/**", async (route) => {
+    await route.fulfill({
+      json: {
+        pnl: {
+          ...computePnl(appAccount.address, [], { coverageComplete: true }),
+          lots: [
+            {
+              market: A(101),
+              outcomeId: "0",
+              units: state.rightsBlock >= 105 ? "0" : "1000000",
+              escrowUnits: "0",
+              knownCost: "1000000",
+              costComplete: true,
+            },
+            {
+              market: A(101),
+              outcomeId: "1",
+              units: "0",
+              escrowUnits: "0",
+              knownCost: "0",
+              costComplete: true,
+            },
+          ],
+        },
+        snapshot: snapshot(state.rightsBlock),
+      },
+    });
+  });
+  await open(page);
+  await expect(row(page)).toHaveCount(1);
+  await expect.poll(() => cursors.includes("active-page")).toBe(true);
+  await expect(page.getByText("已处理", { exact: true })).toHaveCount(0);
+  const holding = page
+    .getByRole("row")
+    .filter({ has: page.getByText("普通持仓", { exact: true }) });
+  await expect(holding).toHaveCount(1);
+  const fee = page
+    .getByRole("row")
+    .filter({ has: page.getByText("费用收入", { exact: true }) });
+  await expect(fee).toHaveCount(1);
+  await expect(
+    fee.getByRole("button", { name: "领取", exact: true }),
+  ).toBeEnabled();
+  const uncertain = page
+    .getByRole("row")
+    .filter({ has: page.getByText("本金退款", { exact: true }) });
+  await expect(uncertain).toHaveCount(1);
+  await expect(uncertain).toContainText("待核对");
+  await expect(page.getByText("赢家收益", { exact: true })).toHaveCount(0);
+  const costs = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "持仓成本明细", exact: true }),
+  });
+  await expect(costs.getByRole("row")).toHaveCount(2);
+  state.rightsBlock = 105;
+  state.pnlBlock = 105;
+  await page.clock.fastForward(15100);
+  await expect(row(page)).toHaveCount(0);
+  await expect(holding).toHaveCount(0);
+  await expect(costs).toHaveCount(0);
+  await expect(uncertain).toHaveCount(1);
+  await expect(uncertain).toContainText("待核对");
+  await expect(page.getByText("赢家收益", { exact: true })).toHaveCount(0);
+  await expect(
+    fee.getByRole("button", { name: "领取", exact: true }),
+  ).toBeEnabled();
+  expect(state.submissions).toBe(0);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: test.info().outputPath("active-rights-only.png"),
+    fullPage: true,
+  });
 });

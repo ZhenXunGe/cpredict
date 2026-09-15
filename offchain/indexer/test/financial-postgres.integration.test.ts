@@ -15,7 +15,7 @@ import { env } from "../../app-core/test/fixtures.js";
 import { PostgresEventStore } from "../src/postgres-store.js";
 import { block, createMarket, purchase, trader } from "./financial-fixtures.js";
 import { publicCatalog } from "../src/public-catalog.js";
-import { A } from "../../app-core/test/fixtures.js";
+import { A, H } from "../../app-core/test/fixtures.js";
 const url = process.env.TEST_DATABASE_URL;
 describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
   const schema = `cpredict_financial_${process.pid}_${Date.now()}`;
@@ -149,6 +149,54 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
       expect(oldHistory.items[0]!.amount).toBe("100");
       expect(first.items).toHaveLength(1);
       expect(first.snapshot.blockNumber).toBe("3");
+      await sql`INSERT INTO public_market_metadata(market,rules_hash,question,verified) VALUES(${A(101).toLowerCase()},${H(71)},'测试市场 Alpha 100%',true) ON CONFLICT(market) DO UPDATE SET question=excluded.question,verified=true`;
+      const named = await site.request(`/v2/activity/${trader}?marketQuery=${encodeURIComponent("alpha 100%")}&limit=1`, factsPageSchema, {service:"indexer"});
+      expect(named.items).toHaveLength(1);
+      expect(named.items[0]!.market?.toLowerCase()).toBe(A(101).toLowerCase());
+      expect((await site.request(`/v2/activity/${trader}?marketQuery=absent`,factsPageSchema,{service:"indexer"})).items).toEqual([]);
+      expect((await site.request(`/v2/activity/${trader}?marketQuery=_`,factsPageSchema,{service:"indexer"})).items).toEqual([]);
+      if(named.nextCursor) await expect(site.request(`/v2/activity/${trader}?marketQuery=another&cursor=${encodeURIComponent(named.nextCursor)}`,factsPageSchema,{service:"indexer"})).rejects.toBeTruthy();
+      await sql`DELETE FROM public_market_metadata WHERE market=${A(101).toLowerCase()}`;
+      const txHash = first.items[0]!.transactionHash;
+      const exact = await site.request(
+        `/v2/activity/${trader}?transactionHash=${txHash}&limit=1`,
+        factsPageSchema,
+        { service: "indexer" },
+      );
+      expect(exact.items).toHaveLength(1);
+      expect(exact.items.every((f) => f.transactionHash === txHash)).toBe(true);
+      const absent = await site.request(
+        `/v2/activity/${trader}?transactionHash=${H(999)}`,
+        factsPageSchema,
+        { service: "indexer" },
+      );
+      expect(absent.items).toEqual([]);
+      await expect(
+        site.request(
+          `/v2/activity/${trader}?transactionHash=invalid`,
+          factsPageSchema,
+          { service: "indexer" },
+        ),
+      ).rejects.toBeDefined();
+      if (first.nextCursor)
+        await expect(
+          site.request(
+            `/v2/activity/${trader}?transactionHash=${txHash}&limit=1&cursor=${encodeURIComponent(first.nextCursor)}`,
+            factsPageSchema,
+            { service: "indexer" },
+          ),
+        ).rejects.toBeDefined();
+      if (exact.nextCursor) {
+        const nextExact = await site.request(
+          `/v2/activity/${trader}?transactionHash=${txHash}&limit=1&cursor=${encodeURIComponent(exact.nextCursor)}`,
+          factsPageSchema,
+          { service: "indexer" },
+        );
+        expect(nextExact.items.every((f) => f.transactionHash === txHash)).toBe(
+          true,
+        );
+      }
+
       if (first.nextCursor) {
         const next = await site.request(
           `/v2/activity/${trader}?limit=1&cursor=${encodeURIComponent(first.nextCursor)}`,

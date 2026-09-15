@@ -130,7 +130,12 @@ const timeoutScenario = new URLSearchParams(location.search).get(
 );
 const now = Math.floor(Date.now() / 1000),
   close = timeoutScenario
-    ? now - 7200 + (timeoutScenario === "before" ? 1 : 0)
+    ? now - 7200 +
+      (timeoutScenario === "before"
+        ? new URLSearchParams(location.search).has("timeout-countdown")
+          ? 30
+          : 1
+        : 0)
     : now + 86400;
 const rules = marketRulesSchema.parse({
   version: "cpredict-rules-v2",
@@ -232,6 +237,11 @@ class FixtureApi extends SiteApi {
       /^\/v(?:1\/operations|2\/(?:entitlements|pnl))\b/.test(path)
     )
       return super.request(path, schema, _options);
+    if (
+      new URLSearchParams(location.search).has("history-test") &&
+      /^\/v(?:1\/operations|2\/(?:activity|pnl|markets))\b/.test(path)
+    )
+      return super.request(path, schema, _options);
     const url = new URL(path, "http://fixture.invalid"),
       p = url.pathname;
     if (this.slow) await new Promise((r) => setTimeout(r, 600));
@@ -311,9 +321,17 @@ class FixtureApi extends SiteApi {
               state: this.positionSettled ? 1 : 0,
               question: "仍在进行的测试市场",
             }
-          : positionsTest
-            ? { ...market, state: 1, question: "已结算的测试市场" }
-            : market;
+          : positionsTest && requestedMarket === A(103).toLowerCase()
+            ? {
+                ...market,
+                market: A(103),
+                state: 2,
+                voidReason: 3,
+                question: "已作废的测试市场",
+              }
+            : positionsTest
+              ? { ...market, state: 1, question: "已结算的测试市场" }
+              : market;
     } else if (p.startsWith("/v1/markets/")) {
       if (this.rulesFail) throw new AppError("rules_unverified", 409);
       result = rules;
@@ -326,6 +344,26 @@ class FixtureApi extends SiteApi {
           ...(positionsTest
             ? {
                 lots: [
+                  ...(new URLSearchParams(location.search).has("both-outcomes")
+                    ? [
+                        {
+                          market: A(102),
+                          outcomeId: "0",
+                          units: "3000000",
+                          escrowUnits: "0",
+                          knownCost: "3000000",
+                          costComplete: true,
+                        },
+                      ]
+                    : []),
+                  {
+                    market: A(103),
+                    outcomeId: "0",
+                    units: "5000000",
+                    escrowUnits: "0",
+                    knownCost: "5000000",
+                    costComplete: true,
+                  },
                   {
                     market: A(101),
                     outcomeId: "0",
@@ -352,6 +390,43 @@ class FixtureApi extends SiteApi {
       result = {
         items: positionsTest
           ? [
+              ...(new URLSearchParams(location.search).has("both-outcomes")
+                ? [
+                    {
+                      id: "open-holding-other-outcome",
+                      market: A(102),
+                      kind: "holding",
+                      outcomeId: "0",
+                      listingId: null,
+                      units: "3000000",
+                      amount: null,
+                      status: "conditional",
+                      reason: null,
+                    },
+                  ]
+                : []),
+              {
+                id: "voided-holding",
+                market: A(103),
+                kind: "holding",
+                outcomeId: "0",
+                listingId: null,
+                units: "5000000",
+                amount: null,
+                status: "conditional",
+                reason: null,
+              },
+              {
+                id: "voided-refund",
+                market: A(103),
+                kind: "refund",
+                outcomeId: null,
+                listingId: null,
+                units: "5000000",
+                amount: "5000000",
+                status: "claimable",
+                reason: "principal_first_then_timeout_compensation",
+              },
               {
                 id: "settled-holding",
                 market: A(101),
@@ -443,20 +518,46 @@ class FixtureApi extends SiteApi {
           reason: "provider_result_unknown",
         },
       };
-    else if (p === "/v2/leaderboards")
+    else if (p === "/v2/leaderboards") {
+      const named = new URLSearchParams(location.search).has("named-roster");
+      const period = {
+        id: "test-period",
+        startsAt: "100",
+        endsAt: "200",
+        publishedAt: "50",
+        markets: [{ market: A(101), startsAt: "100" }],
+      };
       result = {
-        periods: [],
-        snapshot: null,
+        periods: named ? [period] : [],
+        snapshot: named
+          ? {
+              id: "50000000-0000-4000-8000-000000000001",
+              period,
+              version: 1,
+              statisticsVersion: "weighted-average-v1",
+              data: snapshot,
+              createdAt: "2026-09-15T00:00:00.000Z",
+              excluded: [],
+              correction: null,
+            }
+          : null,
         items: [],
         nextCursor: null,
-        status: "awaiting-roster",
+        status: named ? "available" : "awaiting-roster",
       };
-    else if (p === "/v1/ops/reports") {
+    } else if (p === "/v1/ops/reports") {
       if (!this.admin) throw new AppError("ops_forbidden", 403);
-      result = reportFixture(
+      const report = reportFixture(
         url.searchParams.get("start")!,
         url.searchParams.get("end")!,
       );
+      const feeCoverage = new URLSearchParams(location.search).get(
+        "platform-fee-coverage",
+      );
+      if (feeCoverage === "partial")
+        report.fees.platformLifetime!.complete = false;
+      if (feeCoverage === "unavailable") report.fees.platformLifetime = null;
+      result = report;
     } else if (p === "/v1/ops/feedback") {
       if (!this.admin) throw new AppError("ops_forbidden", 403);
       const second = Boolean(url.searchParams.get("cursor")),
@@ -505,6 +606,9 @@ class FixtureApi extends SiteApi {
         timeoutScenario === "voided" ||
         document.documentElement.dataset.testTimeoutVoided === "1";
       const values: Record<string, unknown> = {
+        supportsPerMarketPlatformFees: !new URLSearchParams(
+          location.search,
+        ).has("old-factory"),
         name: "USD Coin",
         decimals: 6,
         DOMAIN_SEPARATOR:
@@ -578,7 +682,9 @@ function Fixture() {
               }
             : env,
           async () =>
-            new URLSearchParams(location.search).has("entitlements-test")
+            ["entitlements-test", "history-test"].some((key) =>
+              new URLSearchParams(location.search).has(key),
+            )
               ? "fixture-token"
               : null,
         ),

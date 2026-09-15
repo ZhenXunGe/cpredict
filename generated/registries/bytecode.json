@@ -50,10 +50,10 @@
   },
   {
     "contract": "MarketFactoryV1",
-    "creationBytecodeSha256": "9205e413ee8c80cca3726fe764674cabb1798d169de2fb805a74c5792c1237bb",
-    "runtimeBytecodeSha256": "dd7f1bbc8ecb9e008ab6b6dc6064d77462b1e8b6b28b869a86bb06f7d647f68b",
-    "creationBytes": 17620,
-    "runtimeBytes": 16345
+    "creationBytecodeSha256": "6ce36923eef2fe046690194f3aac623bbd09c2490a71b82e8bcedbddfbbeb641",
+    "runtimeBytecodeSha256": "0991d0a4bf2eb3a7c3f5396bc89b2df4c0c430f541a4cfb5e686d71e71f8d7df",
+    "creationBytes": 21894,
+    "runtimeBytes": 20500
   },
   {
     "contract": "FullMarketVaultV1",

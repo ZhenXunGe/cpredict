@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { z } from "zod";
-import { formatEther } from "viem";
+import { formatEther, type Address } from "viem";
 import {
   isRecoverable,
   operationSchema,
@@ -37,8 +37,14 @@ import {
   Modal,
   Notice,
   PageTitle,
+  shortAddress,
 } from "../ui.js";
-import { dateText } from "../data.js";
+import { dateText, marketSchema } from "../data.js";
+import {
+  listingTotal,
+  operationBusinessFacts,
+  businessFactKinds,
+} from "../history-details.js";
 import { DepositHistory } from "../DepositHistory.js";
 const labels: Record<LedgerFact["kind"], string> = {
   "market-created": "创建市场",
@@ -142,12 +148,10 @@ export function HistoryPage() {
   const apply = () => {
     const q = new URLSearchParams();
     if (type) q.set("kind", type);
-    if (market) {
-      if (!/^0x[0-9a-fA-F]{40}$/.test(market)) {
-        setFilterError("请输入完整市场地址。");
-        return;
-      }
-      q.set("market", market);
+    if (market.trim()) {
+      if (/^0x[0-9a-fA-F]{40}$/.test(market.trim()))
+        q.set("market", market.trim());
+      else q.set("marketQuery", market.trim());
     }
     const start = from ? Date.parse(`${from}T00:00:00+08:00`) : null,
       end = to ? Date.parse(`${to}T00:00:00+08:00`) : null;
@@ -183,10 +187,26 @@ export function HistoryPage() {
                 <p className="muted">此应用账户还没有登记操作。</p>
               )}
             {attempts.length > 0 && (
-              <DataTable headers={["操作", "登记时间", "状态", "详情"]}>
+              <DataTable
+                headers={[
+                  "操作",
+                  "市场 / 申请明细",
+                  "登记时间",
+                  "状态",
+                  "详情",
+                ]}
+              >
                 {attempts.map((o) => (
                   <tr key={o.id}>
                     <td>{operationLabels[o.kind]}</td>
+                    <td>
+                      {"market" in o.intent ? (
+                        <HistoryMarket market={o.intent.market} />
+                      ) : (
+                        "跨市场 / 账户"
+                      )}
+                      <IntentSummary operation={o} />
+                    </td>
                     <td>
                       {new Date(o.createdAt).toLocaleString("zh-CN", {
                         timeZone: "Asia/Shanghai",
@@ -234,11 +254,12 @@ export function HistoryPage() {
                   ))}
                 </select>
               </Field>
-              <Field label="市场地址">
+              <Field label="市场名称或地址">
                 <input
                   value={market}
-                  onChange={(e) => setMarket(e.target.value.trim())}
-                  placeholder="全部市场"
+                  onChange={(e) => setMarket(e.target.value)}
+                  placeholder="输入市场名称或完整地址"
+                  maxLength={200}
                 />
               </Field>
               <Field label="开始日期（上海）">
@@ -276,7 +297,8 @@ export function HistoryPage() {
                     "事件",
                     "时间（上海）",
                     "市场",
-                    "测试资产金额",
+                    "份数",
+                    "金额 / 挂单总额",
                     "详情",
                   ]}
                 >
@@ -286,20 +308,21 @@ export function HistoryPage() {
                       <td>{dateText(f.timestamp)}</td>
                       <td>
                         {f.market ? (
-                          <Link
-                            to={`/${api.environment.id}/markets/${f.market}`}
-                          >
-                            {f.market.slice(0, 10)}…
-                          </Link>
+                          <HistoryMarket market={f.market} />
                         ) : (
                           "跨市场 / 账户"
                         )}
                       </td>
                       <td>
-                        <Amount
-                          value={f.amount}
-                          asset={api.environment.asset}
-                        />
+                        <Amount value={f.units} />
+                      </td>
+                      <td>
+                        <FactAmount fact={f} />
+                        {f.kind === "listing-created" && (
+                          <div className="small muted">
+                            挂单总额，尚非成交收入
+                          </div>
+                        )}
                       </td>
                       <td>
                         <Button
@@ -342,24 +365,17 @@ export function HistoryPage() {
                   <dt>市场</dt>
                   <dd>
                     {selectedFact.market ? (
-                      <AddressText value={selectedFact.market} />
+                      <div className="stack">
+                        <HistoryMarket market={selectedFact.market} />
+                        <AddressText value={selectedFact.market} />
+                      </div>
                     ) : (
                       "跨市场汇总 / 账户流转"
                     )}
                   </dd>
                   <dt>事件编号</dt>
                   <dd className="break-all">{selectedFact.id}</dd>
-                  <dt>金额</dt>
-                  <dd>
-                    <Amount
-                      value={selectedFact.amount}
-                      asset={api.environment.asset}
-                    />
-                  </dd>
-                  <dt>份额</dt>
-                  <dd>
-                    <Amount value={selectedFact.units} />
-                  </dd>
+                  <FactFields fact={selectedFact} />
                   <dt>区块</dt>
                   <dd>{selectedFact.blockNumber}</dd>
                 </dl>
@@ -509,6 +525,7 @@ function OperationDetail({
               恢复查询服务暂不可用，保留上次已知状态。
             </Notice>
           )}
+          <OperationBusinessDetails operation={scoped} />
           <dl className="data-list">
             <dt>业务操作 ID</dt>
             <dd className="break-all">{scoped.id}</dd>
@@ -607,5 +624,217 @@ function OperationDetail({
         </div>
       )}
     </Modal>
+  );
+}
+
+function HistoryMarket({ market }: { market: Address }) {
+  const { api } = useSession();
+  const query = useQuery({
+    queryKey: [api.key, "market", market],
+    queryFn: ({ signal }) =>
+      api.request(`/v2/markets/${market}`, marketSchema, {
+        service: "indexer",
+        signal,
+      }),
+    staleTime: 60000,
+    retry: 1,
+  });
+  return (
+    <Link to={`/${api.environment.id}/markets/${market}`} title={market}>
+      {query.data?.question?.trim() ||
+        (query.isPending
+          ? "正在读取市场名称"
+          : `名称暂不可用（${shortAddress(market)}）`)}
+    </Link>
+  );
+}
+
+function IntentSummary({ operation: o }: { operation: Operation }) {
+  const { api } = useSession();
+  const intent = o.intent;
+  if (intent.kind === "buy")
+    return (
+      <div className="small muted">
+        申请购买 <Amount value={intent.units} /> 份
+      </div>
+    );
+  if (intent.kind === "create-listing")
+    return (
+      <div className="small muted">
+        挂单 <Amount value={intent.units} /> 份 · 总额{" "}
+        <Amount
+          value={listingTotal(intent.units, intent.unitPrice)}
+          asset={api.environment.asset}
+        />
+      </div>
+    );
+  return null;
+}
+
+function FactAmount({ fact }: { fact: LedgerFact }) {
+  const { api } = useSession();
+  if (fact.kind === "user-operation")
+    return (
+      <>
+        {fact.amount === null
+          ? "未知"
+          : `${formatEther(BigInt(fact.amount))} ETH`}
+      </>
+    );
+  return (
+    <Amount
+      value={
+        fact.kind === "listing-created"
+          ? listingTotal(fact.units, fact.extra.unitPrice)
+          : fact.amount
+      }
+      asset={api.environment.asset}
+    />
+  );
+}
+
+function FactFields({ fact }: { fact: LedgerFact }) {
+  const { api } = useSession();
+  const listing = fact.kind === "listing-created";
+  return (
+    <>
+      <dt>
+        {listing
+          ? "挂单份数"
+          : fact.kind === "primary-buy"
+            ? "实际购买份数"
+            : "核销 / 变动份数"}
+      </dt>
+      <dd>
+        <Amount value={fact.units} />
+      </dd>
+      {listing && (
+        <>
+          <dt>挂单单价（每份）</dt>
+          <dd>
+            <Amount
+              value={
+                typeof fact.extra.unitPrice === "string" &&
+                /^\d+$/.test(fact.extra.unitPrice)
+                  ? fact.extra.unitPrice
+                  : null
+              }
+              asset={api.environment.asset}
+            />
+          </dd>
+        </>
+      )}
+      <dt>
+        {listing
+          ? "挂单总额（未扣成交手续费）"
+          : fact.kind === "primary-buy"
+            ? "实际购买金额"
+            : [
+                  "winner-claimed",
+                  "early-bird-claimed",
+                  "refunded",
+                  "timeout-claimed",
+                ].includes(fact.kind)
+              ? "实际领取金额"
+              : "金额"}
+      </dt>
+      <dd>
+        <FactAmount fact={fact} />
+      </dd>
+    </>
+  );
+}
+
+function OperationBusinessDetails({ operation: o }: { operation: Operation }) {
+  const { api } = useSession();
+  const supported = !!businessFactKinds[o.kind];
+  const facts = useQuery({
+    queryKey: [
+      api.key,
+      "operation-business-facts",
+      o.accountId,
+      o.id,
+      o.transactionHash,
+      o.userOperationHash,
+    ],
+    enabled:
+      supported &&
+      o.state === "confirmed" &&
+      !!o.transactionHash &&
+      !!o.userOperationHash,
+    queryFn: async ({ signal }) => {
+      const result: LedgerFact[] = [];
+      let cursor: string | undefined;
+      const seen = new Set<string>();
+      do {
+        const q = new URLSearchParams({
+          transactionHash: o.transactionHash!,
+          limit: "100",
+        });
+        if (cursor) q.set("cursor", cursor);
+        const page = await api.request(
+          `/v2/activity/${o.account}?${q}`,
+          factsPageSchema,
+          { service: "indexer", signal },
+        );
+        if (
+          page.items.some(
+            (f) =>
+              f.transactionHash.toLowerCase() !==
+              o.transactionHash!.toLowerCase(),
+          )
+        )
+          throw new AppError("history_transaction_filter_unavailable", 503);
+        result.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+        if (cursor && seen.has(cursor))
+          throw new AppError("invalid_cursor", 409);
+        if (cursor) seen.add(cursor);
+      } while (cursor);
+      return operationBusinessFacts(o, result);
+    },
+    refetchInterval: (q) => (q.state.data?.length ? false : 5000),
+    retry: 1,
+  });
+  if (!supported) return null;
+  return (
+    <section className="surface stack" aria-label="业务明细">
+      <h3>业务明细</h3>
+      {"market" in o.intent && (
+        <div>
+          <HistoryMarket market={o.intent.market} />
+        </div>
+      )}
+      {facts.data?.length ? (
+        facts.data.map((f) => (
+          <dl className="data-list" key={f.id}>
+            <FactFields fact={f} />
+          </dl>
+        ))
+      ) : (
+        <>
+          <IntentSummary operation={o} />
+          <Notice>
+            {o.state === "confirmed"
+              ? "交易已确认，实际份数与金额等待链上明细同步。"
+              : "以上为申请参数，实际份数与到账金额以确认后的链上记录为准。"}
+          </Notice>
+        </>
+      )}
+      {facts.error && (
+        <ErrorNotice error={facts.error} retry={() => void facts.refetch()} />
+      )}
+      {o.kind === "create-listing" && (
+        <p className="small muted">
+          挂单总额按份数 ×
+          单价计算，尚非成交收入；实际成交后还需扣除相应手续费。
+        </p>
+      )}
+      {["claim-winner", "claim-early-bird"].includes(o.kind) && (
+        <p className="small muted">
+          领取金额是本次到账金额，不等同于扣除持仓成本后的净收益。
+        </p>
+      )}
+    </section>
   );
 }

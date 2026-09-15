@@ -263,8 +263,19 @@ export class PostgresReports implements ReportingStore {
           claimed = 0n,
           gas = 0n,
           totalAccrued = 0n,
-          totalClaimed = 0n;
+          totalClaimed = 0n,
+          platformLifetime = 0n,
+          platformLifetimeComplete = !!state?.coverage_complete;
         for (const f of [...all].sort(financialOrder)) {
+          if (f.kind === "fee-accrued") {
+            const category = feeCategory(f.extra.feeKind);
+            if (category === "protocol") {
+              if (f.amount === null) platformLifetimeComplete = false;
+              else platformLifetime += BigInt(f.amount);
+            } else if (category === "unknown") {
+              platformLifetimeComplete = false;
+            }
+          }
           if (f.kind === "fee-accrued") totalAccrued += BigInt(f.amount ?? "0");
           if (f.kind === "fee-claimed") totalClaimed += BigInt(f.amount ?? "0");
           const owner = f.owner?.toLowerCase();
@@ -406,6 +417,13 @@ export class PostgresReports implements ReportingStore {
             c2cVolume: c2c.toString(),
           },
           fees: {
+            platformLifetime:
+              index === null
+                ? null
+                : {
+                    accrued: platformLifetime.toString(),
+                    complete: platformLifetimeComplete,
+                  },
             protocolAccrued: protocol.toString(),
             creatorAccrued: creator.toString(),
             unknownAccrued: unknownFees.toString(),

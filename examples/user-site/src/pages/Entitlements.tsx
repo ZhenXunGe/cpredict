@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -12,6 +13,7 @@ import {
   type Market,
 } from "../../../../offchain/app-core/src/catalog-contracts.js";
 import { useSession } from "../wallets.js";
+import { useRules } from "../data.js";
 import {
   AccountGate,
   useCurrentOperation,
@@ -126,11 +128,33 @@ export function EntitlementsPage() {
       rights.data?.pages.flatMap((p) =>
         p.items.map((item) => ({ item, snapshot: p.snapshot })),
       ) ?? [],
+    currentItems = items.filter(({ item, snapshot: rowSnapshot }) => {
+      if (entitlementProgress(item, operations, rowSnapshot)) return true;
+      if (item.status === "claimed") return false;
+      if (item.status === "unknown" || item.status === "executing") return true;
+      if (item.kind === "holding" && item.units === "0") return false;
+      if (
+        item.status === "conditional" &&
+        item.amount === "0" &&
+        ["winner", "refund", "early-bird"].includes(item.kind)
+      )
+        return false;
+      return !(
+        item.market === null &&
+        (item.kind === "fees" || item.kind === "bond") &&
+        item.status === "conditional" &&
+        item.amount === "0"
+      );
+    }),
     marketIds = [
       ...new Set(
         [
-          ...items.flatMap(({ item }) => (item.market ? [item.market] : [])),
-          ...(pnl.data?.pnl.lots.map((lot) => lot.market) ?? []),
+          ...currentItems.flatMap(({ item }) =>
+            item.market ? [item.market] : [],
+          ),
+          ...(pnl.data?.pnl.lots
+            .filter((lot) => BigInt(lot.units) > 0n)
+            .map((lot) => lot.market) ?? []),
         ].map((market) => market.toLowerCase()),
       ),
     ],
@@ -169,25 +193,47 @@ export function EntitlementsPage() {
       (pendingMarkets.has(market.toLowerCase())
         ? "正在读取市场名称"
         : `名称暂不可用（${shortAddress(market)}）`),
-    visibleItems = items.filter(
+    visibleItems = currentItems.filter(
       ({ item }) =>
         !(
           item.kind === "holding" &&
+          item.status !== "unknown" &&
+          item.status !== "executing" &&
           item.market &&
           (pendingMarkets.has(item.market.toLowerCase()) ||
-            marketFor(item.market)?.state === 1)
+            marketFor(item.market)?.state === 1 ||
+            marketFor(item.market)?.state === 2)
         ),
     ),
     visibleLots = (pnl.data?.pnl.lots ?? []).filter(
       (lot) =>
+        BigInt(lot.units) > 0n &&
         !pendingMarkets.has(lot.market.toLowerCase()) &&
-        marketFor(lot.market)?.state !== 1,
+        marketFor(lot.market)?.state !== 1 &&
+        marketFor(lot.market)?.state !== 2,
     );
+  useEffect(() => {
+    if (
+      !visibleItems.length &&
+      !marketsPending &&
+      rights.hasNextPage &&
+      !rights.isFetching &&
+      !rights.error
+    )
+      void rights.fetchNextPage();
+  }, [
+    visibleItems.length,
+    marketsPending,
+    rights.hasNextPage,
+    rights.isFetching,
+    rights.error,
+    rights.fetchNextPage,
+  ]);
   return (
     <>
       <PageTitle
         title="持仓与权益"
-        description="持仓、托管份额与原始购买产生的权益分别记录。领取后以实际到账核算收益。"
+        description="仅显示当前持仓和待处理权益。领取完成并同步后自动移除，历史记录可在交易历史中查看。"
       />
       <AccountGate />
       {account && (
@@ -262,15 +308,21 @@ export function EntitlementsPage() {
           {!rights.isPending &&
             !rights.error &&
             !marketsPending &&
-            visibleItems.length === 0 && (
-              <Empty title="还没有发现权益">
-                首次交易后，普通持仓和其他权益会在链上确认并完成索引后显示。
+            visibleItems.length === 0 &&
+            !rights.hasNextPage && (
+              <Empty title="暂无待处理权益">
+                已领取或已处理的项目不再显示。
+                <Link to={`/${api.environment.id}/history`}>查看交易历史</Link>
               </Empty>
             )}
+          {visibleItems.length === 0 && rights.hasNextPage && !rights.error && (
+            <Loading label="正在查找待处理权益" />
+          )}
           {visibleItems.length > 0 && (
             <DataTable
               headers={[
                 "权益 / 市场",
+                "持有结果",
                 "份额",
                 "可领取测试资产",
                 "状态",
@@ -318,6 +370,12 @@ export function EntitlementsPage() {
                       {e.reason && reasons[e.reason] && (
                         <p className="small">{reasons[e.reason]}</p>
                       )}
+                    </td>
+                    <td>
+                      <HoldingOutcome
+                        market={e.market ? marketFor(e.market) : undefined}
+                        outcomeId={e.outcomeId}
+                      />
                     </td>
                     <td>
                       <Amount value={e.units} />
@@ -439,7 +497,8 @@ export function EntitlementsPage() {
               </Notice>
               <DataTable
                 headers={[
-                  "市场 / 结果编号",
+                  "市场",
+                  "持有结果",
                   "全部份额",
                   "其中托管",
                   "已知成本",
@@ -453,8 +512,14 @@ export function EntitlementsPage() {
                         to={`/${api.environment.id}/markets/${lot.market}`}
                         title={lot.market}
                       >
-                        {marketLabel(lot.market)} / {lot.outcomeId}
+                        {marketLabel(lot.market)}
                       </Link>
+                    </td>
+                    <td>
+                      <HoldingOutcome
+                        market={marketFor(lot.market)}
+                        outcomeId={lot.outcomeId}
+                      />
                     </td>
                     <td>
                       <Amount value={lot.units} />
@@ -477,5 +542,25 @@ export function EntitlementsPage() {
         </>
       )}
     </>
+  );
+}
+
+function HoldingOutcome({
+  market,
+  outcomeId,
+}: {
+  market: Market | undefined;
+  outcomeId: string | null;
+}) {
+  const rules = useRules(outcomeId === null ? undefined : market);
+  if (outcomeId === null) return <>—</>;
+  const label = rules.data?.outcomes.find(
+    (_, index) => String(index) === outcomeId,
+  );
+  return (
+    <span title={`结果编号 ${outcomeId}`}>
+      {label ??
+        `结果 #${outcomeId}（名称${rules.isFetching ? "读取中" : "暂不可用"}）`}
+    </span>
   );
 }

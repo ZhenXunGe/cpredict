@@ -6,7 +6,11 @@ import {
   intentSchema,
   siteConfigSchema,
 } from "../src/contracts.js";
-import { bondEscrowAbi, marketVaultAbi } from "../../sdk/src/abis.js";
+import {
+  bondEscrowAbi,
+  marketVaultAbi,
+  marketFactoryAbi,
+} from "../../sdk/src/abis.js";
 import { A, H, env } from "./fixtures.js";
 
 const reader: AdmissionReader = {
@@ -137,4 +141,58 @@ describe("public site business intent boundary", () => {
       false,
     );
   });
+});
+
+it("binds per-market platform rates to signed creation calldata and keeps legacy calls intact", async () => {
+  const base = {
+    kind: "create-market",
+    userSalt: H(70),
+    maxPayment: "100",
+    params: {
+      rulesHash: H(71),
+      metadataURI: "https://example.com/rules.json",
+      resolutionSourceHash: H(72),
+      resolutionSourceURI: "https://example.com/source",
+      outcomeCount: 2,
+      closeAt: "2000",
+      eventStartsAt: "0",
+      outcomeDeadlineAt: "3000",
+      creatorTreasury: A(10),
+      deploymentMode: 0,
+      featureFlags: "0",
+      creatorRakeBps: 500,
+      creatorC2CFeeBps: 50,
+      perUserPrimaryCap: "1000000",
+      marketPrimaryCap: "20000000",
+      minimumPrimaryUnits: "10000",
+      minimumC2CUnits: "10000",
+      creatorBond: "10000000",
+    },
+  };
+  for (const platformFees of [
+    undefined,
+    { rakeShareBps: 1000, c2cFeeBps: 75 },
+    { rakeShareBps: 0, c2cFeeBps: 0 },
+  ]) {
+    const intent = intentSchema.parse({
+      ...base,
+      ...(platformFees ? { platformFees } : {}),
+    });
+    const calls = await buildBusinessCalls(env, A(10), intent, reader, 1000n);
+    const tx = calls.find(
+      (c) => c.to.toLowerCase() === env.deployment.factory.toLowerCase(),
+    )!;
+    const decoded = decodeFunctionData({
+      abi: marketFactoryAbi,
+      data: tx.data,
+    });
+    expect(decoded.functionName).toBe(
+      platformFees ? "createMarketWithPlatformFees" : "createMarket",
+    );
+    if (platformFees)
+      expect(decoded.args?.slice(-2)).toEqual([
+        platformFees.rakeShareBps,
+        platformFees.c2cFeeBps,
+      ]);
+  }
 });

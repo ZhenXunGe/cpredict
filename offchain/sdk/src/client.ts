@@ -131,8 +131,15 @@ export class CpredictClient {
         : "market-create-clone",
       value.factory,
       marketFactoryAbi,
-      "createMarket",
-      [value.params, value.userSalt],
+      value.platformFees ? "createMarketWithPlatformFees" : "createMarket",
+      value.platformFees
+        ? [
+            value.params,
+            value.userSalt,
+            value.platformFees.rakeShareBps,
+            value.platformFees.c2cFeeBps,
+          ]
+        : [value.params, value.userSalt],
     );
     const events = parseEventLogs({
       abi: marketFactoryAbi,

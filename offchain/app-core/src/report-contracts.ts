@@ -155,6 +155,13 @@ export const opsReportSchema = z.object({
     c2cVolume: uint,
   }),
   fees: z.object({
+    platformLifetime: z
+      .object({
+        accrued: uint,
+        complete: z.boolean(),
+      })
+      .nullable()
+      .default(null),
     protocolAccrued: uint,
     creatorAccrued: uint,
     unknownAccrued: uint,

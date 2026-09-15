@@ -280,6 +280,11 @@
     "selector": "0x03568f41"
   },
   {
+    "contract": "MarketFactoryV1",
+    "signature": "createMarketWithPlatformFees((bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,address,uint8,uint256,uint16,uint16,uint128,uint128,uint128,uint128,uint128),bytes32,uint16,uint16)",
+    "selector": "0x26f2e8e1"
+  },
+  {
     "contract": "ProtocolConfigV1",
     "signature": "creationFee()",
     "selector": "0xdce0b4e4"
@@ -1693,6 +1698,11 @@
     "contract": "FullMarketVaultV1",
     "signature": "supportsInterface(bytes4)",
     "selector": "0x01ffc9a7"
+  },
+  {
+    "contract": "MarketFactoryV1",
+    "signature": "supportsPerMarketPlatformFees()",
+    "selector": "0xaa7c6db2"
   },
   {
     "contract": "LaunchExposureGuardV1",

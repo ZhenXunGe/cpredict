@@ -191,11 +191,25 @@ test("holdings use market titles and omit markets that have settled", async ({
     has: page.getByRole("heading", { name: "持仓成本明细", exact: true }),
   });
   await expect(
-    costs.getByRole("link", { name: "仍在进行的测试市场 / 1", exact: true }),
+    costs.getByRole("link", { name: "仍在进行的测试市场", exact: true }),
   ).toBeVisible();
+  await expect(holdings.getByText("尚未完成", { exact: true })).toBeVisible();
+  await expect(costs.getByText("尚未完成", { exact: true })).toBeVisible();
   await expect(
     costs.getByText("已结算的测试市场", { exact: false }),
   ).toHaveCount(0);
+  await expect(
+    costs.getByText("已作废的测试市场", { exact: false }),
+  ).toHaveCount(0);
+  const refund = page
+    .getByRole("row")
+    .filter({ has: page.getByText("本金退款", { exact: true }) });
+  await expect(
+    refund.getByRole("link", { name: "已作废的测试市场", exact: true }),
+  ).toBeVisible();
+  await expect(
+    refund.getByRole("button", { name: "领取", exact: true }),
+  ).toBeEnabled();
   const winner = page
     .getByRole("row")
     .filter({ has: page.getByText("赢家收益", { exact: true }) });
@@ -210,6 +224,51 @@ test("holdings use market titles and omit markets that have settled", async ({
   await expect(
     page.getByRole("dialog").getByText("已结算的测试市场", { exact: true }),
   ).toBeVisible();
+});
+
+test("holdings distinguish both outcomes and retain outcome IDs when rules are unavailable", async ({
+  page,
+}) => {
+  await page.goto(
+    `${fixture}?positions-test=1&both-outcomes=1#/ctusd-test/entitlements`,
+  );
+  await expect(page).toHaveTitle(/Cpredict/);
+  const holdings = page
+    .getByRole("row")
+    .filter({ has: page.getByText("普通持仓", { exact: true }) });
+  await expect(holdings).toHaveCount(2);
+  const costs = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "持仓成本明细", exact: true }),
+  });
+  for (const name of ["能够完成", "尚未完成"]) {
+    await expect(holdings.getByText(name, { exact: true })).toBeVisible();
+    await expect(costs.getByText(name, { exact: true })).toBeVisible();
+  }
+  await expect(
+    holdings
+      .filter({ hasText: "能够完成" })
+      .getByRole("cell", { name: "3", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: test.info().outputPath("holding-outcomes.png"),
+    fullPage: true,
+  });
+  await page.getByLabel("规则读取失败").check();
+  await expect(
+    holdings.getByText("结果 #0（名称暂不可用）", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    holdings.getByText("结果 #1（名称暂不可用）", { exact: true }),
+  ).toBeVisible();
+  await expect(holdings.getByText("是", { exact: true })).toHaveCount(0);
+  await page.getByLabel("规则读取失败").uncheck();
+  await expect(holdings.getByText("尚未完成", { exact: true })).toBeVisible();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await expect(page.locator("vite-error-overlay")).toHaveCount(0);
 });
 
 test("holdings disappear when their market settles without reloading the page", async ({
@@ -401,6 +460,40 @@ test("server report denial never displays financial values or feedback", async (
     page.getByRole("heading", { name: "Gas、预算与服务状态" }),
   ).toHaveCount(0);
   await expect(page.getByText("第一条测试反馈")).toHaveCount(0);
+  await expect(page.getByText("平台费用累计总额", { exact: true })).toHaveCount(
+    0,
+  );
+});
+
+test("platform lifetime fees remain separate from date windows and incomplete totals", async ({
+  page,
+}) => {
+  await open(page, "ops", true);
+  const total = page
+    .locator(".stat-card")
+    .filter({ hasText: "平台费用累计总额" });
+  await expect(total).toContainText("20 ctUSD");
+  await page.getByLabel("开始日期（上海）").fill("2026-09-01");
+  await page.getByLabel("结束日期（不含）").fill("2026-09-02");
+  await page.getByRole("button", { name: "查询报表", exact: true }).click();
+  await expect(total).toContainText("20 ctUSD");
+  await page.screenshot({
+    path: test.info().outputPath("platform-fee-total.png"),
+    fullPage: true,
+  });
+  await page.goto(
+    `${fixture}?admin=1&platform-fee-coverage=partial#/ctusd-test/ops`,
+  );
+  const partial = page
+    .locator(".stat-card")
+    .filter({ hasText: "平台费用累计已知金额" });
+  await expect(partial).toContainText("20 ctUSD");
+  await expect(partial).toContainText("不能视为全部平台收入");
+  await page.goto(
+    `${fixture}?admin=1&platform-fee-coverage=unavailable#/ctusd-test/ops`,
+  );
+  await expect(partial).toContainText("未知");
+  await expect(partial).not.toContainText("0 ctUSD");
 });
 
 test("saved feedback returns a traceable record number", async ({ page }) => {
@@ -648,14 +741,66 @@ test("unchanged catalogue data still crosses the timeout deadline while the page
   for (const route of ["markets", "creator"]) {
     // A hash-only navigation keeps the prior fixture and its expired deadline.
     await page.goto("about:blank");
-    await page.goto(`${fixture}?timeout-test=before#/ctusd-test/${route}`);
+    // Allow rendering time before the boundary, then cross it explicitly.
+    await page.goto(`${fixture}?timeout-test=before&timeout-countdown=1#/ctusd-test/${route}`);
     await expect(
       page.getByText("已封盘 · 待结算", { exact: true }).first(),
     ).toBeVisible();
-    await page.clock.fastForward(15001);
+    await page.clock.fastForward(45001);
     await expect(
       page.getByText("已超时 · 待作废", { exact: true }).first(),
     ).toBeVisible();
     await expect(page.getByText("已超时作废", { exact: true })).toHaveCount(0);
   }
+});
+
+test("market names survive rule errors in detail, management and confirmation, and name the leaderboard roster", async ({
+  page,
+}) => {
+  // An invalid document exercises the rule-read failure without a live service
+  // or a deliberately generated browser network error.
+  await page.route("**/v1/markets/*/rules.json", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: "{}" }),
+  );
+  await page.goto(`${fixture}?rules-error=1#/ctusd-test/markets/${market}`);
+  await expect(
+    page.getByRole("heading", { name: question, exact: true }),
+  ).toBeVisible();
+  await page.goto(`${fixture}?rules-error=1#/ctusd-test/creator/${market}`);
+  await expect(
+    page.getByRole("heading", { name: question, exact: true }),
+  ).toBeVisible();
+  await page
+    .getByLabel("证据说明与公开链接")
+    .fill("测试取消依据：https://example.com/results");
+  await page
+    .getByRole("button", { name: "核对规则并作废", exact: true })
+    .click();
+  await expect(page.getByRole("dialog")).toContainText(question);
+  await page.goto(`${fixture}?named-roster=1#/ctusd-test/leaderboard`);
+  await page.getByText("指定市场与统计规则", { exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: question, exact: true }),
+  ).toBeVisible();
+});
+
+test("per-market platform rates show selected percentages and old factories do not offer unsupported fields", async ({
+  page,
+}) => {
+  await open(page, "creator/new");
+  const fees = page.getByRole("region", { name: "平台费用说明", exact: true });
+  await fees.getByLabel("终局平台分成（基点）", { exact: true }).fill("1500");
+  await fees.getByLabel("C2C 平台费率（基点）", { exact: true }).fill("75");
+  await expect(fees).toContainText("创作者终局抽成的 15%");
+  await expect(fees).toContainText("成交总额的 0.75%");
+  await fees.getByLabel("终局平台分成（基点）", { exact: true }).fill("0");
+  await expect(fees).toContainText("创作者终局抽成的 0%");
+  await fees.screenshot({
+    path: test.info().outputPath("per-market-platform-fees.png"),
+  });
+  await page.goto(`${fixture}?old-factory=1#/ctusd-test/creator/new`);
+  await expect(fees).toContainText("当前部署尚不支持逐市场设置平台费率");
+  await expect(
+    fees.getByLabel("终局平台分成（基点）", { exact: true }),
+  ).toHaveCount(0);
 });
