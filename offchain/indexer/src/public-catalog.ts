@@ -37,6 +37,20 @@ const querySchema = z.object({
   vault: address.optional(),
   active: z.enum(["true", "false"]).optional(),
 });
+/** Detail consumers use the same verified, commitment-bound title as the list. */
+export async function publicMarketQuestion(
+  ledger: PostgresFinancialLedger,
+  market: string,
+  rulesHash: string | null,
+): Promise<string | null> {
+  if (!rulesHash) return null;
+  const rows = await ledger.sql<{ question: string | null }[]>`
+    SELECT question FROM public_market_metadata
+    WHERE market=${market.toLowerCase()} AND rules_hash=${rulesHash.toLowerCase()}
+      AND verified=true
+  `;
+  return rows[0]?.question ?? null;
+}
 /** Materialize filtered query rows at one MVCC snapshot. Later changes cannot move items between pages. */
 export async function publicCatalog(
   ledger: PostgresFinancialLedger,

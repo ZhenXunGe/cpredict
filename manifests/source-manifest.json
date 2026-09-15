@@ -1170,7 +1170,7 @@
     },
     {
       "path": "offchain/indexer/src/api.ts",
-      "sha256": "fbf17dce92887a23844c087b63586b25f9fb22a288d0564b13e2324fc64c6bdb"
+      "sha256": "6b3f32d591142e25b4c72c3fceca1c9becdc2ee94d331a6d312bc97999865b19"
     },
     {
       "path": "offchain/indexer/src/config.ts",
@@ -1218,7 +1218,7 @@
     },
     {
       "path": "offchain/indexer/src/public-catalog.ts",
-      "sha256": "d0c5fedc21d0a9b4f6bdbe67aba849125cc6bb1a1d8e83ee5011422a436674f1"
+      "sha256": "d33e9194eeb32c7dfbcbe41b508055039b9e66a7734401e9da1b0374258e1039"
     },
     {
       "path": "offchain/indexer/src/reconciliation.ts",
@@ -1274,7 +1274,7 @@
     },
     {
       "path": "offchain/indexer/test/financial-postgres.integration.test.ts",
-      "sha256": "5e471956516b06adeec5c344c98a2ce839a0a852082220b032b9f87e799b90ec"
+      "sha256": "c3825673d02b85c6584545ee652b98c39668e743ce725553e68463868d2c74eb"
     },
     {
       "path": "offchain/indexer/test/indexer.test.ts",
