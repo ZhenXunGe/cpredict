@@ -402,7 +402,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "0cf6b26759e50572ad4ac8e63a90f50637aeb155661a89dd0011a474720964a0"
+      "sha256": "d38eb5daa7a62e35dc23948f1cbcafaba90d6bee6adf540329a83a6716b58c5a"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
@@ -502,7 +502,7 @@
     },
     {
       "path": "examples/user-site/test/browser/public-site.spec.ts",
-      "sha256": "95c950acde7118d891db657d5aebd612a9d41d636aa9c258ca5b97a4e07b4c2b"
+      "sha256": "92e22e1408d4d55e0abf05cf72b633e2d8732b272e109399b5a3118ecaf07ce0"
     },
     {
       "path": "examples/user-site/test/browser/report-fixture.ts",

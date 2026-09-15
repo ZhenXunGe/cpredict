@@ -862,7 +862,7 @@ test("platform totals include historical deployments and historical views keep c
             deploymentId: "historical-deployment",
             version: 1,
             epoch: "1",
-            blockNumber: "100",
+            blockNumber: "90",
             blockHash: "0x" + "01".repeat(32),
             timestamp: "1780000000",
             coverageStart: "1",
@@ -879,6 +879,9 @@ test("platform totals include historical deployments and historical views keep c
   await expect(
     page.getByRole("region", { name: "平台费用汇总" }),
   ).toContainText("25");
+  await expect(
+    page.getByRole("region", { name: "平台费用汇总" }),
+  ).toContainText("100 / 90");
   if (
     await page
       .getByRole("button", { name: "打开导航", exact: true })

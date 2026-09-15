@@ -206,6 +206,7 @@ function PlatformFeesSummary() {
           .reduce((sum, t) => sum + BigInt(t.accrued), 0n)
           .toString(),
         complete: totals.every((t) => t.complete),
+        blockNumbers: totals.map((t) => t.snapshot.blockNumber).join(" / "),
         snapshot: totals.reduce((a, b) =>
           BigInt(a.snapshot.blockNumber) < BigInt(b.snapshot.blockNumber)
             ? a
@@ -233,7 +234,9 @@ function PlatformFeesSummary() {
       </p>
       {query.data && (
         <p className="small muted">
-          截至区块 {query.data.snapshot.blockNumber}。
+          {environments.length > 1
+            ? `各市场版本同步区块：${query.data.blockNumbers}。`
+            : `截至区块 ${query.data.snapshot.blockNumber}。`}
           {!query.data.complete &&
             "数据覆盖尚未完整核对，不能视为全部平台收入。"}
         </p>
