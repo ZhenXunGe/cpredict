@@ -468,11 +468,26 @@ export function maintenanceActions({
         "Contract and consumed ABI changes need an explicit deployment compatibility check before service publication",
       );
   }
-  for (const path of policy.projectionInputs)
-    if (previous.indexer.inputs[path] !== current.indexer.inputs[path])
+  for (const path of policy.projectionInputs) {
+    const from = previous.indexer.inputs[path],
+      to = current.indexer.inputs[path];
+    if (from === to) continue;
+    const review = (policy.readOnlyProjectionChanges?.[path] ?? []).find(
+      (entry) =>
+        /^[0-9a-f]{40}$/.test(entry.from) &&
+        /^[0-9a-f]{40}$/.test(entry.to) &&
+        entry.from === from &&
+        entry.to === to &&
+        typeof entry.reason === "string" &&
+        entry.reason.trim().length > 0,
+    );
+    if (review)
+      notices.push(`Reviewed read-only change, no historical replay: ${path}: ${review.reason}`);
+    else
       blockers.push(
         `Historical projection input changed; prepare scoped replay and reconciliation before publishing: ${path}`,
       );
+  }
   return { notices, blockers };
 }
 

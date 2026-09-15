@@ -19,6 +19,15 @@
     "offchain/app-service/migrations/005_gas_accounting.sql": "0b2fe4e8edc5584090341a7a41c22a622ec88653813558a4f0e9494e06f6db25",
     "offchain/app-service/migrations/006_trading_sessions.sql": "8e1abb7b52645e0d42186801795fd25256f6e1bc2d75976b2da2e51ad1b3992b"
   },
+  "readOnlyProjectionChanges": {
+    "offchain/indexer/src/financial-store.ts": [
+      {
+        "from": "d393ff850d5f1da5eb35aa3e1162004bcc7008e2",
+        "to": "e6d010c698f70cf851461ee0a3027e8e41b69446",
+        "reason": "Only activity SELECT filters and their cursor scope changed. Ledger writes, rollback, projection and stored fact formats are unchanged; financial PostgreSQL regression tests passed."
+      }
+    ]
+  },
   "projectionInputs": [
     "offchain/indexer/src/derived.ts",
     "offchain/indexer/src/financial-facts.ts",

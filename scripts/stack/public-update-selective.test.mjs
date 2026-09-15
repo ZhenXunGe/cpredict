@@ -554,6 +554,31 @@ test("chain source changes are reported separately; ABI, history and unreviewed 
   });
   assert.equal(result.blockers.length, 3);
 });
+test("read-only projection reviews authorize only an exact prior and next blob pair", async () => {
+  const source = tree(), previous = await state(source), current = await state(source);
+  const path = "offchain/indexer/src/main.ts";
+  previous.indexer.inputs[path] = "a".repeat(40);
+  current.indexer.inputs[path] = "b".repeat(40);
+  const policy = {
+    version: 1, compatibleMigrations: {}, projectionInputs: [path],
+    readOnlyProjectionChanges: {
+      [path]: [{ from: "a".repeat(40), to: "b".repeat(40), reason: "SELECT filters only" }],
+    },
+  };
+  const check = () => maintenanceActions({
+    tree: source, previousTree: source, previous, current, pending: [], policy,
+  });
+  assert.deepEqual(check().blockers, []);
+  assert.match(check().notices[0], /Reviewed read-only change/);
+  current.indexer.inputs[path] = "c".repeat(40);
+  assert.equal(check().blockers.length, 1);
+  current.indexer.inputs[path] = "b".repeat(40);
+  previous.indexer.inputs[path] = "c".repeat(40);
+  assert.equal(check().blockers.length, 1);
+  previous.indexer.inputs[path] = "a".repeat(40);
+  policy.readOnlyProjectionChanges[path][0].reason = "";
+  assert.equal(check().blockers.length, 1);
+});
 test("no-op has no mutation calls; retained container replacement or restart fails verification", async () => {
   assert.deepEqual((await recordActions(await planFor({}))).calls, []);
   const before = containers(),
