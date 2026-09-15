@@ -58,7 +58,7 @@
     },
     {
       "path": "compose.public-site.yaml",
-      "sha256": "33c77a45731d146d07035063003eeb07ef3817f9241d2d00ee577a93c5081b9f"
+      "sha256": "6f13aa459750f01691b45c75438479a82602301ea29b999774f281cfd20555f8"
     },
     {
       "path": "compose.static-handoff.yaml",
@@ -86,7 +86,7 @@
     },
     {
       "path": "deploy/compose/nginx/public-site.conf.template",
-      "sha256": "d47c9fb3ff1207a570d427c8611cca1b2560b37d686da5c0950d13726ac58fa7"
+      "sha256": "fcbccf7486f65449c7e262d1f4c23381c688de6ed848ae1a69c5ab98d38d42e8"
     },
     {
       "path": "deploy/compose/postgres/init/00-create-databases.sh",
@@ -94,7 +94,7 @@
     },
     {
       "path": "deploy/compose/postgres/run-migrations.sh",
-      "sha256": "b3f6ef31d513ae9d31514adc7301173baec1b6b9deb7f743b7549ebad9eb8e28"
+      "sha256": "f645e9f9746835b1023c00c6e74720696fec4b57e297a1533719a58221c8e4f5"
     },
     {
       "path": "deploy/host/bootstrap-node.sh",
@@ -330,7 +330,7 @@
     },
     {
       "path": "examples/user-site/src/App.tsx",
-      "sha256": "9cbd46ed11f0074b6e782d3d928b9ad088ec9f57b696076571ee1286b4fb691b"
+      "sha256": "1aae682dd117f7e723b737775d84ab1e2ccde415383d5831c4e23a4764539385"
     },
     {
       "path": "examples/user-site/src/DepositHistory.tsx",
@@ -402,7 +402,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "591dad42db077106b2fc61db63f10161965f22ffd4aa47d7700dff103bd698a9"
+      "sha256": "1701eabdb32c0c7ef494f965ecd74fe2cb8732a1ba601a8f003d1ed837a7bff4"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
@@ -486,7 +486,7 @@
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "4460c4106827c79fb1912e846f06d6ac9f07f3cdaaa704ab35365820e791a045"
+      "sha256": "196f435b8d49d687b5ef929f21cf5f86b5c9b1a08fb7a1af5ff04792c5d1a943"
     },
     {
       "path": "examples/user-site/test/browser/gas-payment.spec.ts",
@@ -502,7 +502,7 @@
     },
     {
       "path": "examples/user-site/test/browser/public-site.spec.ts",
-      "sha256": "0b0a3ee1104c07475bb34cde532c4767ba3a372e1f09818b46f3ada62b4fb094"
+      "sha256": "a67ad7be63af5ae0e4708179aeb3e8ae318cdf11cc36e8f8ef5fcd061f9276a8"
     },
     {
       "path": "examples/user-site/test/browser/report-fixture.ts",
@@ -866,7 +866,7 @@
     },
     {
       "path": "offchain/app-core/src/contracts.ts",
-      "sha256": "c0f7e9b9572d1499a4a2a76256db1e90ef6840546b330b69176d47d9f29f8ce7"
+      "sha256": "d9cc75dc1ae975ea0a6132589193974cad5773b4b703af55acf684414b6fb59c"
     },
     {
       "path": "offchain/app-core/src/entitlements.ts",
@@ -906,7 +906,7 @@
     },
     {
       "path": "offchain/app-core/src/report-contracts.ts",
-      "sha256": "6f01b997d0eade57d2b0cf1ddb918cf9f1904701d54e35670b4e83b7c1d7bced"
+      "sha256": "751cf4130a98071c0a65ca16a27949cf9de71586511b9dfc55952ee96f0d931c"
     },
     {
       "path": "offchain/app-core/src/service-url.ts",
@@ -938,7 +938,7 @@
     },
     {
       "path": "offchain/app-core/test/environment.test.ts",
-      "sha256": "03392688b82741773786e7acc2d3925027f03a29ae97ce953f99c2cecfb801d8"
+      "sha256": "3a34163136e94ee7ba45ca1c661574672ff38f79dde476296c8697803da2fcee"
     },
     {
       "path": "offchain/app-core/test/fixtures.ts",
@@ -1013,6 +1013,10 @@
       "sha256": "6a94ae0ade360dfc421e512c39e49d659d7a0ca2fe475a3e56f18083ee334e5e"
     },
     {
+      "path": "offchain/app-service/src/historical-deployment.ts",
+      "sha256": "d08f270f2adb54b40577d8cae3d0b5f5d4da94f2e213d3398d5604b6b7ea007b"
+    },
+    {
       "path": "offchain/app-service/src/http.ts",
       "sha256": "bb372010db812d9ab38d3e3882e877e5ad6240a93f6354358bf09a133f58515e"
     },
@@ -1022,11 +1026,11 @@
     },
     {
       "path": "offchain/app-service/src/maintenance-database.ts",
-      "sha256": "c53dd3ab39c9f46ae0f8ee96dd292ccea7407d3696012130aeca4505d7c40d63"
+      "sha256": "2bb2171d11d4c5ffa48ddb0682b3a888c4441a556a380a7b18123b9730d8132f"
     },
     {
       "path": "offchain/app-service/src/maintenance.ts",
-      "sha256": "c8a2aadd87dd32db7840bee3996a2e25df62de18fed4799918636b7f51616137"
+      "sha256": "bb21f1236ba59d8b9091962f66b51d18fa9130d45455821a164ee44482c8036c"
     },
     {
       "path": "offchain/app-service/src/metrics.ts",
@@ -1042,7 +1046,7 @@
     },
     {
       "path": "offchain/app-service/src/postgres-store.ts",
-      "sha256": "aeaff4578f7dfae4454975af91d0cd7475792e259e3f707d2fd3a9afd43ec44f"
+      "sha256": "c4879d0217a45267309207a023ca67857748c6d1c1b4bb4fac784b57bd9ee599"
     },
     {
       "path": "offchain/app-service/src/provider-management.ts",
@@ -1066,7 +1070,7 @@
     },
     {
       "path": "offchain/app-service/src/store.ts",
-      "sha256": "1cab522a6fd30681d5b6cc2b0f72a3e699dd76a3b8825611265e6a22b69c989b"
+      "sha256": "0cad1add86be3d41c8c29e3b77b892dba7618adbfd2b9f8435ef6e1352e13113"
     },
     {
       "path": "offchain/app-service/src/trading-sessions.ts",
@@ -1078,7 +1082,7 @@
     },
     {
       "path": "offchain/app-service/test/budget.test.ts",
-      "sha256": "05d915267081d326832e468c78e0175b5e1da8f31e08c1dd95a51a357605596f"
+      "sha256": "5ec061e3c5b23f3fc152c94650c9a62c340a881a29de3f00d0cc30be2772a42e"
     },
     {
       "path": "offchain/app-service/test/config.test.ts",
@@ -1097,8 +1101,12 @@
       "sha256": "e746b3012a30a913aeb3d7e39c2876640fbc0cdd5ae326a0e39dfde249af8e4a"
     },
     {
+      "path": "offchain/app-service/test/historical-deployment.integration.test.ts",
+      "sha256": "695147ffb8e743e7ecaff887a0d72431ac0dab340d4f63ccb13bd54b156894af"
+    },
+    {
       "path": "offchain/app-service/test/maintenance-database.test.ts",
-      "sha256": "4e30fe1f3486436c900f16519b41f512d8b2ff7781c1a0d06d0c57a3058dbc38"
+      "sha256": "890f5fcb689a0a3de26b94e09608a44a3588b4e30e77971ff46006b52275b9a7"
     },
     {
       "path": "offchain/app-service/test/memory-store.ts",
@@ -1182,7 +1190,7 @@
     },
     {
       "path": "offchain/indexer/src/financial-api.ts",
-      "sha256": "8662d65b4749b5ebda0766497175fbde2343532b7cd1e6d539360c1dc15ca70a"
+      "sha256": "11709a97bdb68bb4a6f068bcc18a8e65491fd42873166366cd930e8325d624a1"
     },
     {
       "path": "offchain/indexer/src/financial-facts.ts",
@@ -1211,6 +1219,10 @@
     {
       "path": "offchain/indexer/src/memory-store.ts",
       "sha256": "ad16d715aa8f363d054f20e3471462b300c212545212e06254261f980383439a"
+    },
+    {
+      "path": "offchain/indexer/src/platform-fees.ts",
+      "sha256": "539307a14d3119e7e7365c9dae57c4712750ed176a73941fb19cb589d5c70e0c"
     },
     {
       "path": "offchain/indexer/src/postgres-store.ts",
@@ -1274,7 +1286,7 @@
     },
     {
       "path": "offchain/indexer/test/financial-postgres.integration.test.ts",
-      "sha256": "c3825673d02b85c6584545ee652b98c39668e743ce725553e68463868d2c74eb"
+      "sha256": "c5122997d45c8a38e26f9f9b352ed2954cf61149d2fe6205f5c65f7a37eeaa13"
     },
     {
       "path": "offchain/indexer/test/indexer.test.ts",
@@ -1298,7 +1310,7 @@
     },
     {
       "path": "offchain/indexer/test/reports-postgres.integration.test.ts",
-      "sha256": "cfe6492f30757c150a68b4fe19404085f2f0518afc1dab60b3ccda20e0ef6891"
+      "sha256": "a566577db037caa09f3e679d295c8f551001426fbc98ac485d7a36bb9cb959d5"
     },
     {
       "path": "offchain/indexer/test/rights-reader.test.ts",
@@ -1757,12 +1769,16 @@
       "sha256": "3e5806391ac7092f68f1ed3023f7ddc7f28be7570e29c7c6a274946b6fb75a53"
     },
     {
+      "path": "scripts/deployment/prepare-history-services.mjs",
+      "sha256": "ebf2e28df1cef6aae18cfebc85d149d9600d88bed1b0a57ee1c0c482bb451348"
+    },
+    {
       "path": "scripts/deployment/prepare-time-v2-site.mjs",
-      "sha256": "b22949f1116088a0bf2f5d5db1f4a8d8fe24922ccc1e55815f59d838605eddfb"
+      "sha256": "a06164c5d014e801965908cc388616ffead8f61f3116e36ef46403354b43dedf"
     },
     {
       "path": "scripts/deployment/prepare-time-v2-site.test.mjs",
-      "sha256": "8daa9a3a060603e022e735c1acbdfec77a2e2b18d78c20c9d1c3622bd532f46c"
+      "sha256": "73274a7943f2f13fd8cf2f87e53f981460f4dd146ce2ae2f0da9c2b2ab38677e"
     },
     {
       "path": "scripts/deployment/sync-runtime.mjs",
@@ -2242,7 +2258,7 @@
     },
     {
       "path": "scripts/stack/config.mjs",
-      "sha256": "e8555dc05d78703a47543249a53e170cebecf881d018c9176d2f976a0f3ac48c"
+      "sha256": "04c04784ceaee42ee2e52c8a5071e787112ba5f62c3fcd5bbc58a731f961a6e6"
     },
     {
       "path": "scripts/stack/config.test.mjs",
@@ -2298,7 +2314,7 @@
     },
     {
       "path": "scripts/stack/public-site-config.mjs",
-      "sha256": "397cb39f8cbc62ad8694cc7f0dc2a9186ae4d33f7c58d67e5667c4cc108f7e60"
+      "sha256": "2aff09d57ce82cb42a900cd2c343b2cf0ab05082d843be0fe7a97ce36baf806e"
     },
     {
       "path": "scripts/stack/public-site-config.test.mjs",
@@ -2314,11 +2330,11 @@
     },
     {
       "path": "scripts/stack/public-update-runner.mjs",
-      "sha256": "f8a245cf86af9a89865a93a264f359acd79f802603fc6b839f8f8d0ed3257deb"
+      "sha256": "1a6987043e21addd09f331d8552cf4b14b136d4c83641673d2de308bfa64845f"
     },
     {
       "path": "scripts/stack/public-update-runtime.mjs",
-      "sha256": "ad0c6563562d75db7f0111850969accc63d733c6207365eadd6ea521c32ea314"
+      "sha256": "cecc090fd9b66946b9e72e957b75a2fa6cbc86112b09b735a98b676ecfb0258c"
     },
     {
       "path": "scripts/stack/public-update-selective.test.mjs",

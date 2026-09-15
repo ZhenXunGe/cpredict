@@ -469,6 +469,7 @@ export async function execute({ root, config, mode }) {
     docker,
     pg,
     c.secret.CPREDICT_STACK_MIGRATOR_PASSWORD,
+    c.publicEnv.CPREDICT_STACK_CTUSD_SCHEMA ?? "public",
   );
   const pending = pendingMigrations(migrationFiles, applied);
   const policy = JSON.parse(
@@ -792,6 +793,7 @@ export async function execute({ root, config, mode }) {
             docker,
             pg,
             c.secret.CPREDICT_STACK_MIGRATOR_PASSWORD,
+            c.publicEnv.CPREDICT_STACK_CTUSD_SCHEMA ?? "public",
           ),
         ).length,
         "Pending migrations remain after update",

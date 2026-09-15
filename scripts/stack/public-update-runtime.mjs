@@ -110,8 +110,17 @@ export async function verifyPinnedInputs(components) {
   }
 }
 
-export async function readAppliedMigrations(docker, postgres, password) {
+export async function readAppliedMigrations(
+  docker,
+  postgres,
+  password,
+  schema = "public",
+) {
   ensure(/^[0-9a-f]{64}$/.test(postgres.Id), "Invalid PostgreSQL identity");
+  ensure(
+    /^(?:public|cpredict_current_[a-f0-9]{16})$/.test(schema),
+    "Invalid current schema",
+  );
   const applied = {};
   for (const database of [
     ...new Set(MIGRATION_GROUPS.map((g) => g.database)),
@@ -120,6 +129,8 @@ export async function readAppliedMigrations(docker, postgres, password) {
       "exec",
       "-e",
       "PGPASSWORD",
+      "-e",
+      `PGOPTIONS=-csearch_path=${database === "indexer" ? schema : "public"}`,
       postgres.Id,
       "psql",
       "-U",

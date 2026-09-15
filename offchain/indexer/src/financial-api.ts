@@ -15,6 +15,7 @@ import { computePnl } from "../../app-core/src/pnl.js";
 import type { PostgresFinancialLedger } from "./financial-store.js";
 import { OnchainRightsReader } from "./rights-reader.js";
 import { Leaderboards } from "./leaderboards.js";
+import { publicPlatformFees } from "./platform-fees.js";
 export function registerFinancialApi(
   app: FastifyInstance,
   ledger: PostgresFinancialLedger,
@@ -25,6 +26,12 @@ export function registerFinancialApi(
     environment: z.literal(ledger.environment.id),
     deploymentId: z.literal(ledger.environment.deployment.id),
   };
+  app.get("/v2/platform-fees", async (request, reply) => {
+    z.object(binding).parse(request.query);
+    const result = await publicPlatformFees(ledger);
+    reply.header("Cache-Control", "public, max-age=15");
+    return result;
+  });
   app.get("/v2/leaderboards", async (request) => {
     z.object(binding).parse(request.query);
     return new Leaderboards(ledger).page(request.query);

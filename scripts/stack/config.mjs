@@ -20,12 +20,13 @@ const SECRET_KEYS = new Set([
   ...PUBLIC_SITE_SECRET_KEYS,
 ]);
 const REQUIRED_SECRET_KEYS = [...SECRET_KEYS].filter(
-  (key) => ![
-    "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
-    "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH",
-    "CPREDICT_RELAY_EXPECTED_SENDER",
-    ...PUBLIC_SITE_SECRET_KEYS,
-  ].includes(key),
+  (key) =>
+    ![
+      "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
+      "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH",
+      "CPREDICT_RELAY_EXPECTED_SENDER",
+      ...PUBLIC_SITE_SECRET_KEYS,
+    ].includes(key),
 );
 const REQUIRED_PUBLIC_KEYS = [
   "CPREDICT_STACK_RUNTIME_ROOT",
@@ -65,60 +66,95 @@ export async function loadStackConfiguration({
   const canonicalPublicPath = await realpath(selectedPublicPath);
   assertWithin(canonicalPublicPath, canonicalBoundary, "runtime public env");
   const publicEnv = parseEnvText(await readFile(selectedPublicPath, "utf8"));
+  if (
+    !/^(?:public|cpredict_current_[a-f0-9]{16})$/.test(
+      publicEnv.CPREDICT_STACK_CTUSD_SCHEMA ?? "public",
+    )
+  )
+    throw new Error("Invalid current deployment schema");
   for (const key of SECRET_KEYS) {
     if (Object.hasOwn(publicEnv, key))
-      throw new Error(`${selectedPublicPath}: public runtime env contains secret key ${key}`);
+      throw new Error(
+        `${selectedPublicPath}: public runtime env contains secret key ${key}`,
+      );
   }
   for (const key of REQUIRED_SECRET_KEYS) requireValue(secret, key);
   for (const key of REQUIRED_PUBLIC_KEYS) requireValue(publicEnv, key);
   if (relay) for (const key of RELAY_PUBLIC_KEYS) requireValue(publicEnv, key);
-  for (const key of REQUIRED_SECRET_KEYS.filter((key) => key.endsWith("PASSWORD"))) {
+  for (const key of REQUIRED_SECRET_KEYS.filter((key) =>
+    key.endsWith("PASSWORD"),
+  )) {
     if (!SAFE_PASSWORD.test(secret[key]))
       throw new Error(`${key} must be 24-128 URL-safe characters`);
   }
   validateRpc(secret.ARBITRUM_SEPOLIA_RPC_URL);
   validatePublicBaseUrl(secret.CPREDICT_METADATA_PUBLIC_BASE_URL);
   validateAddress(publicEnv.CPREDICT_INDEXER_FACTORY_ADDRESS, "factory");
-  for (const [index, value] of publicEnv.CPREDICT_INDEXER_CORE_ADDRESSES.split(",").entries())
+  for (const [index, value] of publicEnv.CPREDICT_INDEXER_CORE_ADDRESSES.split(
+    ",",
+  ).entries())
     validateAddress(value.trim(), `core address ${index}`);
   for (const key of [
     "CPREDICT_PAYMASTER_ENTRY_POINT",
     "CPREDICT_PAYMASTER_ADDRESS",
     "CPREDICT_PAYMASTER_EXPECTED_SIGNER",
-  ]) validateAddress(publicEnv[key], key);
+  ])
+    validateAddress(publicEnv[key], key);
   for (const key of RELAY_PUBLIC_KEYS) {
     const value = publicEnv[key];
     if (value !== undefined && value.length > 0) validateAddress(value, key);
   }
-  validateUnsigned(publicEnv.CPREDICT_INDEXER_DEPLOYMENT_BLOCK, "deployment block");
-  validateUnsigned(publicEnv.CPREDICT_PAYMASTER_POLICY_VERSION, "policy version");
+  validateUnsigned(
+    publicEnv.CPREDICT_INDEXER_DEPLOYMENT_BLOCK,
+    "deployment block",
+  );
+  validateUnsigned(
+    publicEnv.CPREDICT_PAYMASTER_POLICY_VERSION,
+    "policy version",
+  );
   for (const key of [
     "CPREDICT_PAYMASTER_MAX_COST_PER_REQUEST",
     "CPREDICT_PAYMASTER_MAX_COST_PER_USER_DAY",
     "CPREDICT_PAYMASTER_MAX_COST_GLOBAL_DAY",
-  ]) validateUnsigned(publicEnv[key], key);
-  const runtimeRoot = await realpath(resolve(ROOT, publicEnv.CPREDICT_STACK_RUNTIME_ROOT));
+  ])
+    validateUnsigned(publicEnv[key], key);
+  const runtimeRoot = await realpath(
+    resolve(ROOT, publicEnv.CPREDICT_STACK_RUNTIME_ROOT),
+  );
   assertWithin(runtimeRoot, canonicalBoundary, "runtime root");
   await access(resolve(runtimeRoot, "web-demo/runtime-config.json"));
   await access(resolve(runtimeRoot, "web-demo/deployment"));
   if (sponsorship) {
-    const adapter = requireValue(secret, "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH");
-    if (!isAbsolute(adapter)) throw new Error("paymaster adapter host path must be absolute");
+    const adapter = requireValue(
+      secret,
+      "CPREDICT_STACK_PAYMASTER_ADAPTER_HOST_PATH",
+    );
+    if (!isAbsolute(adapter))
+      throw new Error("paymaster adapter host path must be absolute");
     await access(adapter);
   }
   if (relay) {
-    const adapter = requireValue(secret, "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH");
-    if (!isAbsolute(adapter)) throw new Error("relay adapter host path must be absolute");
+    const adapter = requireValue(
+      secret,
+      "CPREDICT_STACK_RELAY_ADAPTER_HOST_PATH",
+    );
+    if (!isAbsolute(adapter))
+      throw new Error("relay adapter host path must be absolute");
     await access(adapter);
     validateAddress(
       requireValue(secret, "CPREDICT_RELAY_EXPECTED_SENDER"),
       "relay expected sender",
     );
     const runtimeConfig = JSON.parse(
-      await readFile(resolve(runtimeRoot, "web-demo/runtime-config.json"), "utf8"),
+      await readFile(
+        resolve(runtimeRoot, "web-demo/runtime-config.json"),
+        "utf8",
+      ),
     );
     if (runtimeConfig.permit2Relay?.enabled !== true)
-      throw new Error("runtime package must enable permit2Relay before the relay profile starts");
+      throw new Error(
+        "runtime package must enable permit2Relay before the relay profile starts",
+      );
   }
   return {
     secretPath,
@@ -145,18 +181,31 @@ function requireValue(value, key) {
 
 function validateRpc(value) {
   const url = new URL(value);
-  const loopback = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(url.hostname);
+  const loopback = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(
+    url.hostname,
+  );
   if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))
     throw new Error("ARBITRUM_SEPOLIA_RPC_URL must use HTTPS or loopback HTTP");
 }
 
 function validatePublicBaseUrl(value) {
   const url = new URL(value);
-  const loopback = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(url.hostname);
+  const loopback = ["127.0.0.1", "localhost", "::1", "[::1]"].includes(
+    url.hostname,
+  );
   if (url.protocol !== "https:" && !(url.protocol === "http:" && loopback))
-    throw new Error("CPREDICT_METADATA_PUBLIC_BASE_URL must use HTTPS or loopback HTTP");
-  if (url.username !== "" || url.password !== "" || url.search !== "" || url.hash !== "")
-    throw new Error("CPREDICT_METADATA_PUBLIC_BASE_URL must not include credentials, query, or fragment");
+    throw new Error(
+      "CPREDICT_METADATA_PUBLIC_BASE_URL must use HTTPS or loopback HTTP",
+    );
+  if (
+    url.username !== "" ||
+    url.password !== "" ||
+    url.search !== "" ||
+    url.hash !== ""
+  )
+    throw new Error(
+      "CPREDICT_METADATA_PUBLIC_BASE_URL must not include credentials, query, or fragment",
+    );
 }
 
 function validateAddress(value, label) {

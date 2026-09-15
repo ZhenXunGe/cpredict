@@ -52,3 +52,52 @@ describe("optional Privy WalletConnect project override", () => {
     );
   });
 });
+
+describe("historical market isolation", () => {
+  const historical = {
+    ...env,
+    id: "history",
+    historical: true,
+    deployment: {
+      ...env.deployment,
+      id: "old",
+      factory: "0x0000000000000000000000000000000000000099",
+    },
+    services: {
+      app: "/old/app",
+      indexer: "/old/indexer",
+      metadata: "/old/metadata",
+      rpc: "/old/rpc",
+    },
+    quickTrading: undefined,
+    features: { ...env.features, newExposure: false, faucet: false },
+  };
+  const site = {
+    version: 1,
+    defaultEnvironment: env.id,
+    environments: [env],
+    historicalEnvironments: [historical],
+  };
+  it("keeps the same wallet and token through a separate historical entry", () => {
+    expect(siteConfigSchema.safeParse(site).success).toBe(true);
+  });
+  it("rejects hidden active entries, mismatched wallets, reused routes, exposure and historical defaults", () => {
+    for (const old of [
+      { ...historical, historical: false },
+      { ...historical, account: { ...env.account, index: "1999" } },
+      { ...historical, services: env.services },
+      {
+        ...historical,
+        features: { ...historical.features, newExposure: true },
+      },
+    ])
+      expect(
+        siteConfigSchema.safeParse({ ...site, historicalEnvironments: [old] })
+          .success,
+      ).toBe(false);
+    expect(
+      siteConfigSchema.safeParse({ ...site, defaultEnvironment: "history" })
+        .success,
+    ).toBe(false);
+  });
+});

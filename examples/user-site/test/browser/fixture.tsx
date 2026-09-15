@@ -63,7 +63,36 @@ const usdc = new URLSearchParams(location.search).get("usdc") === "1";
 const positionsTest = new URLSearchParams(location.search).has(
   "positions-test",
 );
-const env = usdc ? depositEnvironment : ctEnv;
+const historyView = new URLSearchParams(location.search).has("historical-view");
+const env = historyView
+  ? {
+      ...ctEnv,
+      historical: true,
+      quickTrading: undefined,
+      features: { ...ctEnv.features, newExposure: false, faucet: false },
+    }
+  : usdc
+    ? depositEnvironment
+    : ctEnv;
+const historicalEnv = {
+  ...ctEnv,
+  id: "ctusd-history",
+  historical: true,
+  deployment: {
+    ...ctEnv.deployment,
+    id: "historical-deployment",
+    factory: A(99),
+  },
+  services: {
+    app: "/historical/app",
+    indexer: "/historical/indexer",
+    metadata: "/historical/metadata",
+    rpc: "/historical/rpc",
+  },
+  quickTrading: undefined,
+  features: { ...ctEnv.features, newExposure: false, faucet: false },
+};
+const multipleFees = new URLSearchParams(location.search).has("multiple-fees");
 const appAccount = usdc
   ? { ...ctAccount, environment: env.id, index: "1002" }
   : ctAccount;
@@ -130,7 +159,8 @@ const timeoutScenario = new URLSearchParams(location.search).get(
 );
 const now = Math.floor(Date.now() / 1000),
   close = timeoutScenario
-    ? now - 7200 +
+    ? now -
+      7200 +
       (timeoutScenario === "before"
         ? new URLSearchParams(location.search).has("timeout-countdown")
           ? 30
@@ -295,6 +325,14 @@ class FixtureApi extends SiteApi {
         indexedBlock: "100",
         safeBlock: "98",
         finalizedBlock: null,
+        snapshot,
+      };
+    else if (p === "/v2/platform-fees")
+      result = {
+        accrued: "20000000",
+        complete: !new URLSearchParams(location.search).has(
+          "platform-fees-incomplete",
+        ),
         snapshot,
       };
     else if (p === "/v2/markets") {
@@ -671,7 +709,17 @@ class FixtureApi extends SiteApi {
   }
 }
 function Fixture() {
-  const [cache] = useState(createSiteQueryClient),
+  const [cache] = useState(() => {
+      const value = createSiteQueryClient();
+      if (multipleFees)
+        value.setQueryData(["site-config"], {
+          version: 1,
+          defaultEnvironment: env.id,
+          environments: [env],
+          historicalEnvironments: [historicalEnv],
+        });
+      return value;
+    }),
     [api] = useState(
       () =>
         new FixtureApi(
@@ -707,7 +755,7 @@ function Fixture() {
       wallets: usdc
         ? [controllerWallet, ...(connected ? [fundingWallet] : [])]
         : [],
-      opsRead: true,
+      opsRead: !new URLSearchParams(location.search).has("ordinary-creator"),
       loading: false,
       error: null,
       login: () => setLogged(true),
@@ -852,7 +900,11 @@ function Fixture() {
               />
               <Route
                 path={`/${env.id}`}
-                element={<SiteLayout environments={[env]} />}
+                element={
+                  <SiteLayout
+                    environments={multipleFees ? [env, historicalEnv] : [env]}
+                  />
+                }
               >
                 <Route path="markets" element={<MarketsPage />} />
                 <Route path="markets/:market" element={<MarketDetailPage />} />
