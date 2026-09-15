@@ -162,7 +162,7 @@
     },
     {
       "path": "deploy/public-site/update-policy.json",
-      "sha256": "aa5ccc2d9011c24e73380ce1b1da61a15f611e460db968dd394586b0762afaf4"
+      "sha256": "695b88505311b05e303999543314bc267b1ed03e6f4f094f8ed3be1467aed28e"
     },
     {
       "path": "deploy/public-site/update.example.json",
@@ -2310,7 +2310,7 @@
     },
     {
       "path": "scripts/stack/public-update-plan.mjs",
-      "sha256": "a7b4c068fa10f24cb252ba052d0fc9b9f7e82fd5ee69d2a65737d8c7c40efcc1"
+      "sha256": "901aab96a71f1af1eb58772d7ff439bde570e8b05eb3efb389ea82b4d4e88856"
     },
     {
       "path": "scripts/stack/public-update-runner.mjs",
@@ -2322,7 +2322,7 @@
     },
     {
       "path": "scripts/stack/public-update-selective.test.mjs",
-      "sha256": "6c16e4514cb82236839c30f1f19acfe24c1996b863901908179bf35777d48bc7"
+      "sha256": "02202b841883a93b09d7a0955854161e3f0a846c4e01314965466bbfcd417f66"
     },
     {
       "path": "scripts/stack/public-update.mjs",
