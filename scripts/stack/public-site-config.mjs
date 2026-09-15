@@ -93,8 +93,8 @@ export async function loadPublicSiteStack(
         throw new Error(`${name}: ${key} is required in its provider env file`);
     if (
       runtime.sponsor &&
-      (runtime.sponsor.weekly.projectWei !== "100000000000000000" ||
-        runtime.sponsor.weekly.exitReserveWei !== "20000000000000000")
+      (runtime.sponsor.weekly.projectWei !== "2000000000000000000" ||
+        runtime.sponsor.weekly.exitReserveWei !== "400000000000000000")
     )
       throw new Error(`${name}: confirmed Shanghai weekly budget changed`);
     environment[`${prefix}_CONFIG_FILE`] = configPath;

@@ -68,7 +68,12 @@ export const fillListingWithPermit2InputSchema = fillListingInputSchema.extend({
     .transform((value) => value as Hex),
 });
 
+export const platformFeesSchema = z.strictObject({
+  rakeShareBps: z.number().int().min(0).max(5000),
+  c2cFeeBps: z.number().int().min(0).max(200),
+});
 export const createMarketInputSchema = z.object({
+  platformFees: platformFeesSchema.optional(),
   factory: addressSchema,
   userSalt: bytes32Schema,
   params: z

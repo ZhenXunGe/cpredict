@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { formatEther } from "viem";
+import { formatEther, type Address } from "viem";
 import {
   leaderboardPageSchema,
   opsReportSchema,
@@ -22,7 +22,7 @@ import {
   Notice,
   PageTitle,
 } from "../ui.js";
-import { dateText } from "../data.js";
+import { dateText, useMarket } from "../data.js";
 import { FeedbackInbox } from "./FeedbackInbox.js";
 import { ProviderStatus } from "./ProviderStatus.js";
 import { DepositHistory } from "../DepositHistory.js";
@@ -148,10 +148,8 @@ export function LeaderboardPage() {
                 <ul>
                   {snapshot.period.markets.map((m) => (
                     <li key={m.market}>
-                      <Link to={`/${api.environment.id}/markets/${m.market}`}>
-                        {m.market}
-                      </Link>{" "}
-                      · 从 {dateText(m.startsAt)} 开始计榜
+                      <ReportMarketName market={m.market} /> · 从{" "}
+                      {dateText(m.startsAt)} 开始计榜
                     </li>
                   ))}
                 </ul>
@@ -265,6 +263,32 @@ export function OpsPage() {
             {!r.data.coverageComplete &&
               "历史覆盖不完整，金额仅为当前已索引部分。"}
           </Notice>
+          <div className="stat-card">
+            <span>
+              {r.fees.platformLifetime?.complete
+                ? "平台费用累计总额"
+                : "平台费用累计已知金额"}
+            </span>
+            <strong>
+              <Amount
+                value={r.fees.platformLifetime?.accrued ?? null}
+                asset={api.environment.asset}
+              />
+            </strong>
+            <p className="small muted">
+              当前环境全部市场，截至区块 {r.fees.asOfBlock ?? "未知"}
+              ，不受日期筛选影响。
+            </p>
+            <p className="small muted">
+              包含终局平台分成、C2C
+              平台手续费及市场创建费；按记入费用账户的金额累计，领取不重复计入，不含创作者收入。
+            </p>
+            {!r.fees.platformLifetime?.complete && (
+              <p className="small muted">
+                数据尚未完整核对，不能视为全部平台收入。
+              </p>
+            )}
+          </div>
           <div className="stats-grid">
             {[
               { label: "活跃资产账户", value: r.trading.activeAccounts },
@@ -295,7 +319,7 @@ export function OpsPage() {
                 {[
                   { label: "一级投入", value: r.trading.primaryPayment },
                   { label: "C2C 成交总额", value: r.trading.c2cVolume },
-                  { label: "协议费用产生", value: r.fees.protocolAccrued },
+                  { label: "所选期间平台费用", value: r.fees.protocolAccrued },
                   { label: "创作者费用产生", value: r.fees.creatorAccrued },
                   { label: "未分类费用", value: r.fees.unknownAccrued },
                   { label: "实际领取费用（跨市场）", value: r.fees.claimed },
@@ -528,5 +552,18 @@ export function FeedbackPage() {
         </form>
       )}
     </>
+  );
+}
+
+function ReportMarketName({ market }: { market: Address }) {
+  const { api } = useSession();
+  const query = useMarket(market);
+  return (
+    <Link to={`/${api.environment.id}/markets/${market}`} title={market}>
+      {query.data?.question?.trim() ||
+        (query.isPending
+          ? "正在读取市场名称"
+          : `名称暂不可用（${market.slice(0, 6)}…${market.slice(-4)}）`)}
+    </Link>
   );
 }

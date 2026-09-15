@@ -60,6 +60,52 @@ contract DuplicateMarketDeployer is IFullMarketDeployerV1 {
 }
 
 contract FactoryValidationTest is ProtocolTestBase {
+    function testPerMarketPlatformRatesAreIndependentAndImmutable() public {
+        assertTrue(factory.supportsPerMarketPlatformFees());
+        ProtocolTypes.CreateMarketParams memory params =
+            _defaultParams(ProtocolTypes.DeploymentMode.FULL);
+        vm.prank(CREATOR);
+        MarketVaultCoreV1 first = MarketVaultCoreV1(
+            factory.createMarketWithPlatformFees(params, keccak256("custom-first"), 1000, 50)
+        );
+        params.deploymentMode = ProtocolTypes.DeploymentMode.CLONE;
+        vm.prank(CREATOR);
+        MarketVaultCoreV1 second = MarketVaultCoreV1(
+            factory.createMarketWithPlatformFees(params, keccak256("custom-second"), 3000, 150)
+        );
+        config.setProtocolShareBps(4000);
+        config.setPlatformC2CFeeBps(200);
+        assertEq(first.economics().protocolShareBps, 1000);
+        assertEq(first.platformC2CFeeBps(), 50);
+        assertEq(second.economics().protocolShareBps, 3000);
+        assertEq(second.platformC2CFeeBps(), 150);
+        vm.prank(CREATOR);
+        MarketVaultCoreV1 zero = MarketVaultCoreV1(
+            factory.createMarketWithPlatformFees(params, keccak256("custom-zero"), 0, 0)
+        );
+        assertEq(zero.economics().protocolShareBps, 0);
+        assertEq(zero.platformC2CFeeBps(), 0);
+    }
+
+    function testPerMarketPlatformRatesRejectOutOfBounds() public {
+        ProtocolTypes.CreateMarketParams memory params =
+            _defaultParams(ProtocolTypes.DeploymentMode.FULL);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ValueOutOfRange.selector, bytes32("platformRakeShareBps"), 5001, 0, 5000
+            )
+        );
+        vm.prank(CREATOR);
+        factory.createMarketWithPlatformFees(params, bytes32(0), 5001, 0);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ValueOutOfRange.selector, bytes32("platformC2CFeeBps"), 201, 0, 200
+            )
+        );
+        vm.prank(CREATOR);
+        factory.createMarketWithPlatformFees(params, bytes32(0), 0, 201);
+    }
+
     function testFactorySnapshotsFifteenMinuteResolutionWindowIntoFullAndClone() public {
         (
             MarketFactoryV1 localFactory,

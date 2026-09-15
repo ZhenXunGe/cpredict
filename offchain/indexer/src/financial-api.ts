@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type { PublicClient } from "viem";
 import { z } from "zod";
-import { AppError, address, uint } from "../../app-core/src/contracts.js";
+import { AppError, address, hash, uint } from "../../app-core/src/contracts.js";
 import {
   discoverEntitlements,
   hydrateEntitlements,
@@ -171,6 +171,8 @@ export async function financialActivity(
         environment: z.literal(ledger.environment.id),
         deploymentId: z.literal(ledger.environment.deployment.id),
         market: address.optional(),
+        transactionHash: hash.optional(),
+        marketQuery: z.string().trim().min(1).max(200).optional(),
         kind: z
           .string()
           .max(512)
@@ -186,8 +188,10 @@ export async function financialActivity(
     throw new AppError("invalid_window", 400);
   return ledger.activity({
     owner,
+    ...(q.transactionHash ? { transactionHash: q.transactionHash } : {}),
     limit: q.limit,
     ...(q.market ? { market: q.market } : {}),
+    ...(q.marketQuery ? { marketQuery: q.marketQuery } : {}),
     ...(q.kind ? { kinds: q.kind } : {}),
     ...(q.from ? { from: q.from } : {}),
     ...(q.to ? { to: q.to } : {}),

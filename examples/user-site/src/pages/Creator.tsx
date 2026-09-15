@@ -47,6 +47,7 @@ import { publishRules, rulesPublicationErrorCopy } from "../metadata.js";
 const factoryAbi = parseAbi([
   "function config() view returns(address)",
   "function resolutionWindow() view returns(uint64)",
+  "function supportsPerMarketPlatformFees() pure returns(bool)",
 ]);
 const configAbi = parseAbi([
   "function creationFee() view returns(uint128)",
@@ -66,20 +67,30 @@ function useCreationConfig() {
       const c = api.publicClient(),
         block = await c.getBlock(),
         blockNumber = block.number;
-      const [config, resolutionWindow] = await Promise.all([
-        c.readContract({
-          address: api.environment.deployment.factory,
-          abi: factoryAbi,
-          functionName: "config",
-          blockNumber,
-        }),
-        c.readContract({
-          address: api.environment.deployment.factory,
-          abi: factoryAbi,
-          functionName: "resolutionWindow",
-          blockNumber,
-        }),
-      ]);
+      const [config, resolutionWindow, perMarketPlatformFees] =
+        await Promise.all([
+          c.readContract({
+            address: api.environment.deployment.factory,
+            abi: factoryAbi,
+            functionName: "config",
+            blockNumber,
+          }),
+          c.readContract({
+            address: api.environment.deployment.factory,
+            abi: factoryAbi,
+            functionName: "resolutionWindow",
+            blockNumber,
+          }),
+          c
+            .readContract({
+              address: api.environment.deployment.factory,
+              abi: factoryAbi,
+              functionName: "supportsPerMarketPlatformFees",
+              blockNumber,
+            })
+            .then((supported) => supported === true)
+            .catch(() => false),
+        ]);
       const [
         creationFee,
         fullCap,
@@ -148,6 +159,7 @@ function useCreationConfig() {
         c2cMax,
         protocolShareBps,
         platformC2CFeeBps,
+        perMarketPlatformFees,
         resolutionWindow,
         now: block.timestamp,
       };
@@ -294,6 +306,8 @@ export function CreateMarketPage() {
     [minSell, setMinSell] = useState("1"),
     [rake, setRake] = useState("200"),
     [c2c, setC2c] = useState("0"),
+    [platformRake, setPlatformRake] = useState(""),
+    [platformC2c, setPlatformC2c] = useState(""),
     [early, setEarly] = useState(true),
     [mode, setMode] = useState<0 | 1>(0),
     [accepted, setAccepted] = useState(false),
@@ -321,6 +335,8 @@ export function CreateMarketPage() {
     minSell,
     rake,
     c2c,
+    platformRake,
+    platformC2c,
     early,
     mode,
     accepted,
@@ -413,6 +429,22 @@ export function CreateMarketPage() {
         Number(c2c) > latest.c2cMax
       )
         throw new Error("费率超过当前协议允许范围。");
+      const selectedRake = platformRake || String(latest.protocolShareBps);
+      const selectedC2c = platformC2c || String(latest.platformC2CFeeBps);
+      if (
+        !/^\d+$/.test(selectedRake) ||
+        !/^\d+$/.test(selectedC2c) ||
+        Number(selectedRake) > 5000 ||
+        Number(selectedC2c) > 200
+      )
+        throw new Error(
+          "终局平台分成须为 0–5000 基点，C2C 平台费率须为 0–200 基点。",
+        );
+      if (
+        !latest.perMarketPlatformFees &&
+        (platformRake !== "" || platformC2c !== "")
+      )
+        throw new Error("当前工厂尚不支持逐市场平台费率，请刷新后重新核对。");
       signingStarted = true;
       setBusy(true);
       const publication = await publishRules(
@@ -424,6 +456,14 @@ export function CreateMarketPage() {
       assertScope();
       const intent = intentSchema.parse({
         kind: "create-market",
+        ...(latest.perMarketPlatformFees
+          ? {
+              platformFees: {
+                rakeShareBps: Number(selectedRake),
+                c2cFeeBps: Number(selectedC2c),
+              },
+            }
+          : {}),
         params: {
           ...publication,
           outcomeCount: rules.outcomes.length,
@@ -459,11 +499,11 @@ export function CreateMarketPage() {
           },
           {
             label: "终局平台分成",
-            value: `创作者终局抽成的 ${latest.protocolShareBps / 100}%`,
+            value: `创作者终局抽成的 ${Number(selectedRake) / 100}%`,
           },
           {
             label: "C2C 平台手续费",
-            value: `成交总额的 ${latest.platformC2CFeeBps / 100}%（由卖家承担）`,
+            value: `成交总额的 ${Number(selectedC2c) / 100}%（由卖家承担）`,
           },
           {
             label: "C2C 创作者手续费",
@@ -648,19 +688,59 @@ export function CreateMarketPage() {
           <h3>平台费用说明</h3>
           {config.data ? (
             <>
+              {config.data.perMarketPlatformFees && (
+                <div className="grid-two">
+                  <Field label="终局平台分成（基点）">
+                    <input
+                      type="number"
+                      min="0"
+                      max="5000"
+                      step="1"
+                      value={
+                        platformRake || String(config.data.protocolShareBps)
+                      }
+                      onChange={(e) => setPlatformRake(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="C2C 平台费率（基点）">
+                    <input
+                      type="number"
+                      min="0"
+                      max="200"
+                      step="1"
+                      value={
+                        platformC2c || String(config.data.platformC2CFeeBps)
+                      }
+                      onChange={(e) => setPlatformC2c(e.target.value)}
+                    />
+                  </Field>
+                </div>
+              )}
+              {!config.data.perMarketPlatformFees && (
+                <Notice>
+                  当前部署尚不支持逐市场设置平台费率，创建时使用下列协议费率。
+                </Notice>
+              )}
               <dl className="data-list">
                 <dt>终局平台分成</dt>
-                <dd>创作者终局抽成的 {config.data.protocolShareBps / 100}%</dd>
+                <dd>
+                  创作者终局抽成的{" "}
+                  {Number(platformRake || config.data.protocolShareBps) / 100}%
+                </dd>
                 <dt>C2C 平台手续费</dt>
                 <dd>
-                  成交总额的 {config.data.platformC2CFeeBps / 100}
+                  成交总额的{" "}
+                  {Number(platformC2c || config.data.platformC2CFeeBps) / 100}
                   %（由卖家承担）
                 </dd>
               </dl>
               <p className="small muted">
                 正常结算时，创作者抽成按市场本金计算，平台分成从该抽成中分出。
                 C2C 平台费与创作者费从卖家成交收入中扣除。
-                以上为当前链上配置，市场创建时保存费率快照；已有市场以各自快照为准。
+                {config.data.perMarketPlatformFees
+                  ? "可为本市场单独设置；初始值取自协议配置。"
+                  : "以上为当前链上配置。"}
+                市场创建时固定所选费率，已有市场不随配置变化。
               </p>
             </>
           ) : config.isPending ? (
@@ -734,7 +814,13 @@ function CreatorMarket({ market }: { market: Address }) {
     request({
       intent,
       summary: [
-        { label: "市场", value: rules.data?.question ?? market },
+        {
+          label: "市场",
+          value:
+            rules.data?.question?.trim() ||
+            query.data?.question?.trim() ||
+            market,
+        },
         {
           label: "结果",
           value:
@@ -760,7 +846,11 @@ function CreatorMarket({ market }: { market: Address }) {
       {query.isPending && <Loading />}
       {query.data && (
         <div className="surface stack">
-          <h2>{rules.data?.question ?? market}</h2>
+          <h2>
+            {rules.data?.question?.trim() ||
+              query.data?.question?.trim() ||
+              market}
+          </h2>
           <Link to={`/${api.environment.id}/markets/${market}`}>
             查看用户市场页与规则
           </Link>

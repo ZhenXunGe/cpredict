@@ -54,7 +54,7 @@
       "label": "deploymentModeOf",
       "offset": 0,
       "slot": "4",
-      "type": "t_mapping(t_address,t_enum(DeploymentMode)53615)"
+      "type": "t_mapping(t_address,t_enum(DeploymentMode)53713)"
     },
     {
       "astId": 50741,
@@ -81,7 +81,7 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_enum(DeploymentMode)53615": {
+    "t_enum(DeploymentMode)53713": {
       "encoding": "inplace",
       "label": "enum ProtocolTypes.DeploymentMode",
       "numberOfBytes": "1"
@@ -100,12 +100,12 @@
       "numberOfBytes": "32",
       "value": "t_bytes32"
     },
-    "t_mapping(t_address,t_enum(DeploymentMode)53615)": {
+    "t_mapping(t_address,t_enum(DeploymentMode)53713)": {
       "encoding": "mapping",
       "key": "t_address",
       "label": "mapping(address => enum ProtocolTypes.DeploymentMode)",
       "numberOfBytes": "32",
-      "value": "t_enum(DeploymentMode)53615"
+      "value": "t_enum(DeploymentMode)53713"
     },
     "t_mapping(t_address,t_uint256)": {
       "encoding": "mapping",

@@ -1,3 +1,4 @@
+import { platformFeesSchema } from "../../sdk/src/schemas.js";
 import {
   getAddress,
   isAddress,
@@ -281,6 +282,7 @@ export const intentSchema = z.discriminatedUnion("kind", [
   }),
   z.strictObject({
     kind: z.literal("create-market"),
+    platformFees: platformFeesSchema.optional(),
     params: createParams,
     userSalt: hash,
     maxPayment: positive,

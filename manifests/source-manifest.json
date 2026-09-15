@@ -226,7 +226,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "9bd041d92fbe50f2c9e9cbfa24be4ee6904ee08c368d4ddfd8081a42d8394ba5"
+      "sha256": "a3b4aeb20c07bc0589c0257cca20e47459c0f388b32180998efbe0891892b6b7"
     },
     {
       "path": "docs/usdc-gasless-deposit.md",
@@ -377,6 +377,10 @@
       "sha256": "70233c7d0108debeec0217c98b60bd1d5788904f18190076877022cadc4e2768"
     },
     {
+      "path": "examples/user-site/src/history-details.ts",
+      "sha256": "5e661086b4719e0e42ccfd3df5738b51eaf00f839e30efe8d8f50c8e8eed18fe"
+    },
+    {
       "path": "examples/user-site/src/main.tsx",
       "sha256": "ad5454b6e69879d1237a2475c2838f176e1e796667f7f4d5e5ae919a569e185d"
     },
@@ -398,11 +402,11 @@
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "6d1e74598411bb5c22451084af336004faa3620d94c091658a9bc354271a1383"
+      "sha256": "591dad42db077106b2fc61db63f10161965f22ffd4aa47d7700dff103bd698a9"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
-      "sha256": "95145209ebbf1069f7e5b283c85f3360781a8ae587068f9cdba8ade369d887e2"
+      "sha256": "fd2c89087730454d5ce9b781291ba2bc309b4648dcd5a43e98f5bc2a01e17f68"
     },
     {
       "path": "examples/user-site/src/pages/FeedbackInbox.tsx",
@@ -414,11 +418,11 @@
     },
     {
       "path": "examples/user-site/src/pages/History.tsx",
-      "sha256": "a4cf0fec9488e02478bce4b9dd139039a77fb08015c77ef783b961d7ffe4338d"
+      "sha256": "9b17100474ff057f2e2a36d1332fe79a0cb5e17cacbde719dbb7b4498eafd07d"
     },
     {
       "path": "examples/user-site/src/pages/MarketDetail.tsx",
-      "sha256": "718f94a3a3e175d0210b321d9ae18fb42181d97cd5f0fb09318f1bca2aab60c0"
+      "sha256": "e8a5c0c142a1a9a064515389a2e329f20fdeac5695f975af01aea0eccfda8a21"
     },
     {
       "path": "examples/user-site/src/pages/Markets.tsx",
@@ -430,7 +434,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Reports.tsx",
-      "sha256": "6e52f2c9e1dc4a548fd4f11ca89247b7bf77af071edb046d8e159d0ef10b6f8f"
+      "sha256": "8479e00b69135863ea18329bb7fd33386fab7fce190d2e005ce5a8b05c4dff8e"
     },
     {
       "path": "examples/user-site/src/recovery.tsx",
@@ -474,7 +478,7 @@
     },
     {
       "path": "examples/user-site/test/browser/entitlements-sync.spec.ts",
-      "sha256": "67db316006677bc74fb9c46f9c345a5813009478ffc77100908af517fba8e402"
+      "sha256": "a009d5189d5b5cf042085a3f99943f09093f0d23cf76487a8fc4f01565abfb0b"
     },
     {
       "path": "examples/user-site/test/browser/fixture.html",
@@ -482,11 +486,15 @@
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "f58dc58dc8b7c1268bb29b67f2d917c45ba160789833ed4c3abc32799b6b0926"
+      "sha256": "4460c4106827c79fb1912e846f06d6ac9f07f3cdaaa704ab35365820e791a045"
     },
     {
       "path": "examples/user-site/test/browser/gas-payment.spec.ts",
       "sha256": "afae32056b009019596cb8c06166e0ad8d304098e1480a6a1fc6531f2c565e22"
+    },
+    {
+      "path": "examples/user-site/test/browser/history-details.spec.ts",
+      "sha256": "e7ecb56d1c48990a3a3c2fd630a43a21726e853a8ffa9f2b6a91c3df76e51d07"
     },
     {
       "path": "examples/user-site/test/browser/playwright.config.ts",
@@ -494,11 +502,11 @@
     },
     {
       "path": "examples/user-site/test/browser/public-site.spec.ts",
-      "sha256": "01a4deb67627701697f368e5699e26b2ae00d70dfef0ce13f67ec792eefcb44f"
+      "sha256": "0b0a3ee1104c07475bb34cde532c4767ba3a372e1f09818b46f3ada62b4fb094"
     },
     {
       "path": "examples/user-site/test/browser/report-fixture.ts",
-      "sha256": "639c6be5af34482aed633d4eb2a99c2a647b2f108b7278edd2a93c70577ea49b"
+      "sha256": "806e45dc85d0055c0cc27967f1b0814b456395c8a0aac7a8dabe1e45806c6d13"
     },
     {
       "path": "examples/user-site/test/browser/trading-session-fixture.html",
@@ -527,6 +535,10 @@
     {
       "path": "examples/user-site/test/gas-payment.test.ts",
       "sha256": "df41ee96c79e209583faa685184e3d056b3a26781d99eed13d71127bd3eb2a10"
+    },
+    {
+      "path": "examples/user-site/test/history-details.test.ts",
+      "sha256": "9fd156f5c4163b1d52c5e5b030afa60770cf3a8af340e3ba2e998bea02221ec0"
     },
     {
       "path": "examples/user-site/test/metadata.test.ts",
@@ -846,7 +858,7 @@
     },
     {
       "path": "offchain/app-core/src/calls.ts",
-      "sha256": "777df35ae6b1995aad6e653a0346258b0b2626616e598dee8efca4aca8591c6c"
+      "sha256": "8c7aababd7fe7ce7eea23372a0510ef61309f92ae27cae0669d920a9fa45a646"
     },
     {
       "path": "offchain/app-core/src/catalog-contracts.ts",
@@ -854,7 +866,7 @@
     },
     {
       "path": "offchain/app-core/src/contracts.ts",
-      "sha256": "7f673a3278878e87b5328160631b852ff88a694e9719b466932bcc73232d575a"
+      "sha256": "c0f7e9b9572d1499a4a2a76256db1e90ef6840546b330b69176d47d9f29f8ce7"
     },
     {
       "path": "offchain/app-core/src/entitlements.ts",
@@ -894,7 +906,7 @@
     },
     {
       "path": "offchain/app-core/src/report-contracts.ts",
-      "sha256": "ae24a62441eb041249030e97b9697a01309ee7997ae7cf8a552840d185d7e48f"
+      "sha256": "6f01b997d0eade57d2b0cf1ddb918cf9f1904701d54e35670b4e83b7c1d7bced"
     },
     {
       "path": "offchain/app-core/src/service-url.ts",
@@ -914,7 +926,7 @@
     },
     {
       "path": "offchain/app-core/test/calls.test.ts",
-      "sha256": "b46896f316926f640f0f86ef6243f1f3646b8bd518720d503e7e8e38dc27250b"
+      "sha256": "b35e0c85fea56a451757ef95cf17d53517c9c5da5aa476dcd3a3bc708803d0e4"
     },
     {
       "path": "offchain/app-core/test/deposit-receipt.test.ts",
@@ -1046,7 +1058,7 @@
     },
     {
       "path": "offchain/app-service/src/reports.ts",
-      "sha256": "7c486b7b3da2c5b42aadae132006a2e481b89293065d80d1cd2946a3e4804d3d"
+      "sha256": "8ae17f7f315dfeccee8712efbe8729b908d55d656f84f66590beb42f76a3e77a"
     },
     {
       "path": "offchain/app-service/src/server.ts",
@@ -1170,7 +1182,7 @@
     },
     {
       "path": "offchain/indexer/src/financial-api.ts",
-      "sha256": "9f1e250ded784aba4e70ed17d3c8fd777ec908f862da34cdd4a10497dde7a12a"
+      "sha256": "8662d65b4749b5ebda0766497175fbde2343532b7cd1e6d539360c1dc15ca70a"
     },
     {
       "path": "offchain/indexer/src/financial-facts.ts",
@@ -1178,7 +1190,7 @@
     },
     {
       "path": "offchain/indexer/src/financial-store.ts",
-      "sha256": "3fd3cb50f979bc41391a868a62dcb407db49b9ad7efff558f4496f6559d003f2"
+      "sha256": "8babf4b502e796a0d61fc079f22536e89988493f157890b3031bc4da1bf3834e"
     },
     {
       "path": "offchain/indexer/src/indexer.ts",
@@ -1262,7 +1274,7 @@
     },
     {
       "path": "offchain/indexer/test/financial-postgres.integration.test.ts",
-      "sha256": "e33db92c14f61d5c12460ecadfe107f03b4d269c33def1575acb292c2fe32d00"
+      "sha256": "5e471956516b06adeec5c344c98a2ce839a0a852082220b032b9f87e799b90ec"
     },
     {
       "path": "offchain/indexer/test/indexer.test.ts",
@@ -1286,7 +1298,7 @@
     },
     {
       "path": "offchain/indexer/test/reports-postgres.integration.test.ts",
-      "sha256": "5cbd7d408ac747e1cc366a9ec79603190c6cab3019d0552d90e4c0f41a850baf"
+      "sha256": "cfe6492f30757c150a68b4fe19404085f2f0518afc1dab60b3ccda20e0ef6891"
     },
     {
       "path": "offchain/indexer/test/rights-reader.test.ts",
@@ -1470,11 +1482,11 @@
     },
     {
       "path": "offchain/sdk/src/abis.ts",
-      "sha256": "51ae12926e7b1ef44ba95ce8a87e17a817b353f791e904cfe693228787cc2ed9"
+      "sha256": "c51f8fe938caade5e337753a9b9f40196a45afaca6f51f9e56daed6f3ecf9142"
     },
     {
       "path": "offchain/sdk/src/client.ts",
-      "sha256": "fd179722c159c4945d157e2d242611b2d0537d6b2b0f06c505b27e67a1f0ec1f"
+      "sha256": "3860c605ff3f38851240df461f63483c892dbf8b8dad6e570b5f65b0d516c953"
     },
     {
       "path": "offchain/sdk/src/errors.ts",
@@ -1526,7 +1538,7 @@
     },
     {
       "path": "offchain/sdk/src/schemas.ts",
-      "sha256": "e9df9d1eccd175e4c1f490b4e97d8c6ca2979d025da7e0506236fa201ccde29d"
+      "sha256": "1ec765dfe4f0eaeadf1d1556f205c6c236fd648de179584145bc827e798b2c51"
     },
     {
       "path": "offchain/sdk/src/transaction-policy.ts",
@@ -1550,7 +1562,7 @@
     },
     {
       "path": "offchain/sdk/test/create-market.test.ts",
-      "sha256": "40cc2b5983cbf51f25a37feb93ef05f67649b89aad9ee4f1be52f7ff21760ce0"
+      "sha256": "424ee59f5475792a2b42a523c8f2aa7aee6a9c99961c3c134563f10bf25f2d12"
     },
     {
       "path": "offchain/sdk/test/errors.test.ts",
@@ -1957,6 +1969,14 @@
       "sha256": "11ddc978f29cf29c61c734425c3a8df9b427447640ab016c158e2f4de21cc733"
     },
     {
+      "path": "scripts/public-site/sponsorship-limits.mjs",
+      "sha256": "000951fecd2dc6bb1ad075a62c6cc62c2f5c36827948c659283431ce9f054af3"
+    },
+    {
+      "path": "scripts/public-site/sponsorship-limits.test.mjs",
+      "sha256": "8102dd81bf09a23bff3e71c4ec732bcb7024ca7874097a6b8ce5fc9ddb0f76a1"
+    },
+    {
       "path": "scripts/public-site/test-capacity.mjs",
       "sha256": "6d5725fb426516bad155e35d96118083eddac1b4c701aaf9898a55d054cfcac6"
     },
@@ -2278,7 +2298,7 @@
     },
     {
       "path": "scripts/stack/public-site-config.mjs",
-      "sha256": "bc837342bf61aa2f5d2e6b826215e8887a2d5f4cbe28a87c72624a62cf48cebe"
+      "sha256": "397cb39f8cbc62ad8694cc7f0dc2a9186ae4d33f7c58d67e5667c4cc108f7e60"
     },
     {
       "path": "scripts/stack/public-site-config.test.mjs",
@@ -2426,7 +2446,7 @@
     },
     {
       "path": "src/core/MarketFactoryV1.sol",
-      "sha256": "31590db8aa64c7301dc237efdc45a5edbed486cc6d5bf0ec9b9356ce138a3fe4"
+      "sha256": "bab29f6ba97facb75a9e936fe468b8971ddd037428517ab1036a00be9f567b20"
     },
     {
       "path": "src/core/ProtocolConfigV1.sol",
@@ -2554,7 +2574,7 @@
     },
     {
       "path": "test/unit/FactoryValidation.t.sol",
-      "sha256": "01897700b96be6b7095ddf0cbaa0aa943b65790a9883321629c6655025672a19"
+      "sha256": "4469b39861f97ce6469662c8bb4d46a34654c3c4df1392ee73c4953d21644899"
     },
     {
       "path": "test/unit/FeeVaultMutationResistance.t.sol",
@@ -2673,10 +2693,10 @@
     },
     {
       "contract": "MarketFactoryV1",
-      "creationBytecodeSha256": "9205e413ee8c80cca3726fe764674cabb1798d169de2fb805a74c5792c1237bb",
-      "runtimeBytecodeSha256": "dd7f1bbc8ecb9e008ab6b6dc6064d77462b1e8b6b28b869a86bb06f7d647f68b",
-      "creationBytes": 17620,
-      "runtimeBytes": 16345
+      "creationBytecodeSha256": "6ce36923eef2fe046690194f3aac623bbd09c2490a71b82e8bcedbddfbbeb641",
+      "runtimeBytecodeSha256": "0991d0a4bf2eb3a7c3f5396bc89b2df4c0c430f541a4cfb5e686d71e71f8d7df",
+      "creationBytes": 21894,
+      "runtimeBytes": 20500
     },
     {
       "contract": "FullMarketVaultV1",

@@ -35,6 +35,7 @@ export function reportFixture(start: string, end: string) {
       c2cVolume: "48000000",
     },
     fees: {
+      platformLifetime: { accrued: "20000000", complete: true },
       protocolAccrued: "250000",
       creatorAccrued: "250000",
       unknownAccrued: "0",

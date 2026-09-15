@@ -135,12 +135,47 @@ contract MarketFactoryV1 is ReentrancyGuard {
         nonReentrant
         returns (address market)
     {
+        return _createMarket(params, userSalt, false, 0, 0);
+    }
+
+    function supportsPerMarketPlatformFees() external pure returns (bool) {
+        return true;
+    }
+
+    /// @notice Creates a market with explicit immutable platform rates.
+    /// @dev Rake share is a cut of creator rake; C2C fee is a cut of gross sales.
+    function createMarketWithPlatformFees(
+        ProtocolTypes.CreateMarketParams calldata params,
+        bytes32 userSalt,
+        uint16 platformRakeShareBps,
+        uint16 platformC2CFeeBps
+    ) external nonReentrant returns (address market) {
+        return _createMarket(params, userSalt, true, platformRakeShareBps, platformC2CFeeBps);
+    }
+
+    function _createMarket(
+        ProtocolTypes.CreateMarketParams calldata params,
+        bytes32 userSalt,
+        bool customPlatformFees,
+        uint16 platformRakeShareBps,
+        uint16 platformC2CFeeBps
+    ) internal returns (address market) {
         if (!active) revert FactoryNotActive();
         if (deprecated) revert InvalidConfiguration("factory.deprecated");
         if (emergencyController.isPaused(ProtocolTypes.PAUSE_MARKET_CREATION)) {
             revert PauseActive(ProtocolTypes.PAUSE_MARKET_CREATION);
         }
         ProtocolTypes.EconomicSnapshot memory economics = _validate(params);
+        if (customPlatformFees) {
+            if (platformRakeShareBps > 5000) {
+                revert ValueOutOfRange("platformRakeShareBps", platformRakeShareBps, 0, 5000);
+            }
+            if (platformC2CFeeBps > 200) {
+                revert ValueOutOfRange("platformC2CFeeBps", platformC2CFeeBps, 0, 200);
+            }
+            economics.protocolShareBps = platformRakeShareBps;
+            economics.platformC2CFeeBps = platformC2CFeeBps;
+        }
 
         uint256 nonce = creatorNonce[msg.sender];
         creatorNonce[msg.sender] = nonce + 1;

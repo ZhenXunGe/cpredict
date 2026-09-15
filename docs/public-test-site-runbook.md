@@ -69,7 +69,7 @@ npm run site:maintain -- validate-site runtime/public-site/ctusd.runtime.json --
 
 开启 sponsorship 之前，补齐 sponsor：独立 projectId、供应商原生币硬预算 `providerHardLimitWei` 与 `providerHardLimitPeriodSeconds`（或独立的 `providerHardLimitUsd`）、`policyOperator: "and"`、`passOnError: false`、单笔最大 Wei、60–300 秒授权有效期、exposure/exit 两条每日项目/账户/主体 Wei 与次数、每方法每日次数以及 weekly 配置。不得将 ETH 额度自动换算成已批准的美元账单预算。配置中的金额不是供应商后台已生效的证据；必须保留后台硬上限、AND、超时拒绝和域名配置验收。未核实前保持开关关闭。
 
-用户确认每环境每周各 `100000000000000000` wei（0.1 ETH），按 Asia/Shanghai 周一 00:00 的 `[start,end)` 自然周计算，0.08 ETH 用于新增交易、0.02 ETH 专留退出。两个环境各自计额，不共享 0.2 ETH 总池。对应 sponsor 字段：
+2026-09-15 用户要求将当前各类代付额度提高 20 倍。已启用的 ctUSD 环境每周为 `2000000000000000000` wei（2 ETH），按 Asia/Shanghai 周一 00:00 的 `[start,end)` 自然周计算，1.6 ETH 用于新增交易、0.4 ETH 专留退出。环境之间独立计额；未启用环境上线前须单独核验其配置与供应商策略。对应 sponsor 字段：
 
 2026-09-11，用户将本轮 ctUSD 的单笔上限确定为 `5000000000000000` wei（0.005 ETH）。设置 `sponsor.maxCostPerOperation`，周总额及退出预留不变；这不代表运行配置已经更新。切换时必须核查账户、主体及项目的每日限额，避免另一层低上限阻止领币后的创建。独立 USDC 验收仍后移。
 
@@ -77,17 +77,17 @@ npm run site:maintain -- validate-site runtime/public-site/ctusd.runtime.json --
 {
   "maxCostPerOperation": "5000000000000000",
   "providerHardLimitUsd": null,
-  "providerHardLimitWei": "100000000000000000",
+  "providerHardLimitWei": "2000000000000000000",
   "providerHardLimitPeriodSeconds": 604800,
   "weekly": {
     "window": "shanghai-monday",
-    "projectWei": "100000000000000000",
-    "exitReserveWei": "20000000000000000"
+    "projectWei": "2000000000000000000",
+    "exitReserveWei": "400000000000000000"
   }
 }
 ```
 
-上例只是 sponsor 的预算字段片段。每环境周总额保持 0.1 ETH，其中 0.02 ETH 专留退出。现有每日代付金额及次数限制按 UTC 重置，与周限额同时生效。
+上例只是 sponsor 的预算字段片段。ctUSD 周总额为 2 ETH，其中 0.4 ETH 专留退出。每日新增/退出通道各自的项目/账户/主体金额和次数、单方法次数以及本地单笔预留上限均按原值乘 20；每日限制仍按 UTC 重置，与周限额同时生效。供应商端当前周上限 2 ETH，单笔上限 0.02 ETH；本地单笔预留上限为 0.1 ETH，最终仍受供应商单笔上限约束。历史证据中的旧值不应再用作当前额度。
 
 登记代付操作时在数据库事务内预留单笔 Gas 上限；有完整链上回执并达到 `finalized` 后，成功及回滚交易均按 `actualGasCost` 结算。应用确认数尚未达到最终确认、结果未知、回执缺失时继续保留上限。若结果未知的授权已过期、Bundler 查无回执且同 nonce 仍未推进，恢复任务会自动将其关闭为未被供应商接收，但仍保留原 hash 和预留额度。取消操作仅在服务原子确认从未申请代付，或同账户同部署的相同 nonce 已有另一次最终确认执行时释放；可能已发出的代付授权、无证据的旧取消记录不会按零费用处理。跨周未决负债继续占额，迟到的最终结算计入结算周；日常轮询不会重复移动结算时间。新增操作不能借用退出专用额度。
 

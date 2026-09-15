@@ -42,3 +42,24 @@ describe("target-version creation parameters", () => {
     ).toThrow(/earlyBirdStart/);
   });
 });
+
+it("preserves explicit per-market fees including zero and rejects values outside contract bounds", () => {
+  expect(
+    createMarketInputSchema.parse({
+      ...input,
+      platformFees: { rakeShareBps: 0, c2cFeeBps: 0 },
+    }).platformFees,
+  ).toEqual({ rakeShareBps: 0, c2cFeeBps: 0 });
+  expect(() =>
+    createMarketInputSchema.parse({
+      ...input,
+      platformFees: { rakeShareBps: 5001, c2cFeeBps: 0 },
+    }),
+  ).toThrow();
+  expect(() =>
+    createMarketInputSchema.parse({
+      ...input,
+      platformFees: { rakeShareBps: 2000, c2cFeeBps: 201 },
+    }),
+  ).toThrow();
+});

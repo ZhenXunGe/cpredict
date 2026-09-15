@@ -50,6 +50,25 @@ export const marketFactoryAbi = [
   },
   {
     type: "function",
+    name: "supportsPerMarketPlatformFees",
+    stateMutability: "pure",
+    inputs: [],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "createMarketWithPlatformFees",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "params", type: "tuple", components: createMarketComponents },
+      { name: "userSalt", type: "bytes32" },
+      { name: "platformRakeShareBps", type: "uint16" },
+      { name: "platformC2CFeeBps", type: "uint16" },
+    ],
+    outputs: [{ name: "market", type: "address" }],
+  },
+  {
+    type: "function",
     name: "requiredBond",
     stateMutability: "pure",
     inputs: [{ name: "marketPrimaryCap", type: "uint128" }],
