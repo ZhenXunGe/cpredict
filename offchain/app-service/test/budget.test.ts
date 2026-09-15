@@ -78,35 +78,43 @@ describe("per-environment weekly sponsorship budget", () => {
     "2026-09-13T16:00:00.000Z",
     "2026-09-13T17:00:00.000Z",
     "2026-09-13T23:59:59.999Z",
-  ])("preserves UTC daily quotas and reports after weekly reset at %s", (at) => {
-    const previous = record("2026-09-13T14:00:00.000Z", "1000");
-    const next = record(at, "1");
-    // Match the history window used by PostgreSQL admission and reporting.
-    const start = quotaHistoryStart(at);
-    const loaded = [previous].filter(
-      (v) => v.operation.createdAt >= start || v.operation.updatedAt >= start,
-    );
-    for (const exposure of [
-      { ...lane, accountOperations: 1 },
-      { ...lane, accountWei: "1000" },
-    ])
-      expect(() =>
-        assertQuota(loaded, next, { ...limits, exposure }),
-      ).toThrowError(
-        expect.objectContaining({ code: "sponsorship_budget_exhausted" }),
+  ])(
+    "preserves UTC daily quotas and reports after weekly reset at %s",
+    (at) => {
+      const previous = record("2026-09-13T14:00:00.000Z", "1000");
+      const next = record(at, "1");
+      // Match the history window used by PostgreSQL admission and reporting.
+      const start = quotaHistoryStart(at);
+      const loaded = [previous].filter(
+        (v) => v.operation.createdAt >= start || v.operation.updatedAt >= start,
       );
-    expect(() =>
-      assertQuota(loaded, next, { ...limits, methodDailyOperations: 1 }),
-    ).toThrowError(expect.objectContaining({ code: "method_quota_exhausted" }));
-    expect(
-      budgetTotals(loaded.map((v) => v.operation), new Date(at))[0],
-    ).toEqual({
-      lane: "exposure",
-      dailyWei: 1000n,
-      dailyOperations: 1,
-      weeklyWei: 0n,
-    });
-  });
+      for (const exposure of [
+        { ...lane, accountOperations: 1 },
+        { ...lane, accountWei: "1000" },
+      ])
+        expect(() =>
+          assertQuota(loaded, next, { ...limits, exposure }),
+        ).toThrowError(
+          expect.objectContaining({ code: "sponsorship_budget_exhausted" }),
+        );
+      expect(() =>
+        assertQuota(loaded, next, { ...limits, methodDailyOperations: 1 }),
+      ).toThrowError(
+        expect.objectContaining({ code: "method_quota_exhausted" }),
+      );
+      expect(
+        budgetTotals(
+          loaded.map((v) => v.operation),
+          new Date(at),
+        )[0],
+      ).toEqual({
+        lane: "exposure",
+        dailyWei: 1000n,
+        dailyOperations: 1,
+        weeklyWei: 0n,
+      });
+    },
+  );
 
   it("counts earlier days, accepts the exact ceiling and preserves the exit allocation", () => {
     const existing = [record("2026-09-07T01:00:00.000Z", "79000000000000000")];
@@ -357,4 +365,22 @@ describe("per-environment weekly sponsorship budget", () => {
       budgetTotals([old], new Date("2026-09-11T02:00:00.000Z"))[0]!.weeklyWei,
     ).toBe(0n);
   });
+});
+
+it("uses the on-chain account for quotas and nonce conflicts across historical deployments", () => {
+  const previous = record("2026-09-15T10:00:00.000Z", "10");
+  const next = record("2026-09-15T10:01:00.000Z", "10");
+  next.operation.accountId = randomUUID();
+  next.operation.environment = "new-current";
+  expect(() =>
+    assertQuota([previous], next, {
+      ...limits,
+      exposure: { ...lane, accountOperations: 1 },
+    }),
+  ).toThrow(expect.objectContaining({ code: "sponsorship_budget_exhausted" }));
+  previous.operation.state = "unknown";
+  next.operation.nonce = previous.operation.nonce;
+  expect(() => assertQuota([previous], next, limits)).toThrow(
+    expect.objectContaining({ code: "operation_in_progress" }),
+  );
 });

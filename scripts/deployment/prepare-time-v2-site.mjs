@@ -40,6 +40,7 @@ export async function buildTimeV2Runtime({
   sourceCommit,
   deploymentBlock,
   runtimeCodeHashes,
+  successorId,
 }) {
   const { appRuntimeSchema } = await import(
     "../../dist/offchain/app-service/src/config.js"
@@ -67,6 +68,7 @@ export async function buildTimeV2Runtime({
     ...original,
     environment: {
       ...original.environment,
+      ...(successorId ? { id: successorId, historical: false } : {}),
       deployment: {
         id: `ctusd-421614-${d.factory.slice(2).toLowerCase()}`,
         protocolVersion: "time-v2",
@@ -85,7 +87,12 @@ export async function buildTimeV2Runtime({
     },
     minimumOperationBlock: deploymentBlock,
   });
-  assertDeploymentRollover(original.environment, result.environment);
+  if (successorId) {
+    const { assertHistoricalSuccessor } = await import(
+      "../../dist/offchain/app-service/src/historical-deployment.js"
+    );
+    assertHistoricalSuccessor(original.environment, result.environment);
+  } else assertDeploymentRollover(original.environment, result.environment);
   return result;
 }
 
@@ -133,10 +140,14 @@ export async function verifyCreationInputs(pending, broadcast, readArtifact) {
 async function main() {
   const { values: v } = parseArgs({
     options: Object.fromEntries(
-      ["previous", "state", "pending", "provider-env", "output"].map((k) => [
-        k,
-        { type: "string" },
-      ]),
+      [
+        "previous",
+        "state",
+        "pending",
+        "provider-env",
+        "output",
+        "successor-id",
+      ].map((k) => [k, { type: "string" }]),
     ),
   });
   for (const key of ["previous", "state", "pending", "provider-env", "output"])
@@ -249,6 +260,17 @@ async function main() {
     })) === BigInt(pending.marketResolutionWindowSeconds),
     "resolution window mismatch",
   );
+  if (v["successor-id"])
+    assert(
+      await client.readContract({
+        address: pending.factory,
+        abi: parseAbi([
+          "function supportsPerMarketPlatformFees() pure returns(bool)",
+        ]),
+        functionName: "supportsPerMarketPlatformFees",
+      }),
+      "per-market platform fees unsupported",
+    );
   const deploymentBlock = receipts
     .reduce(
       (n, r) => (BigInt(r.blockNumber) < n ? BigInt(r.blockNumber) : n),
@@ -261,6 +283,7 @@ async function main() {
     sourceCommit: state.source.commit,
     deploymentBlock,
     runtimeCodeHashes: hashes,
+    successorId: v["successor-id"],
   });
   const { verifyDeployment } = await import(
     "../../dist/offchain/app-service/src/chain.js"

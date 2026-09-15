@@ -15,6 +15,7 @@ import { env } from "../../app-core/test/fixtures.js";
 import { PostgresEventStore } from "../src/postgres-store.js";
 import { block, createMarket, purchase, trader } from "./financial-fixtures.js";
 import { publicCatalog } from "../src/public-catalog.js";
+import { platformFeesSchema } from "../../app-core/src/report-contracts.js";
 import { A, H } from "../../app-core/test/fixtures.js";
 const url = process.env.TEST_DATABASE_URL;
 describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
@@ -121,6 +122,17 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
       );
       expect(legacyMarkets.items[0]!.status).toBe("open");
       expect(publicMarkets.snapshot!.blockNumber).toBe("3");
+      const publicFees = await site.request(
+        "/v2/platform-fees",
+        platformFeesSchema,
+        { service: "indexer" },
+      );
+      expect(publicFees.accrued).toBe("0");
+      expect(Object.keys(publicFees).sort()).toEqual([
+        "accrued",
+        "complete",
+        "snapshot",
+      ]);
       expect(
         await legacyRequest(
           "/v1/listings",
@@ -149,14 +161,21 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
       expect(oldHistory.items[0]!.amount).toBe("100");
       expect(first.items).toHaveLength(1);
       expect(first.snapshot.blockNumber).toBe("3");
-      const detail = () => site.request(`/v2/markets/${A(101)}`, marketSchema, { service: "indexer" });
+      const detail = () =>
+        site.request(`/v2/markets/${A(101)}`, marketSchema, {
+          service: "indexer",
+        });
       const withoutMetadata = await detail();
       expect(withoutMetadata.question).toBeNull();
       const rulesHash = H(71);
       await sql`UPDATE markets SET rules_hash=${rulesHash} WHERE market=${A(101)}`;
       await sql`INSERT INTO public_market_metadata(market,rules_hash,question,verified) VALUES(${A(101).toLowerCase()},${rulesHash},'测试市场 Alpha 100%',true) ON CONFLICT(market) DO UPDATE SET rules_hash=excluded.rules_hash,question=excluded.question,verified=true`;
       const namedDetail = await detail();
-      const namedList = await site.request(`/v2/markets?q=Alpha`, page(marketSchema), { service: "indexer" });
+      const namedList = await site.request(
+        `/v2/markets?q=Alpha`,
+        page(marketSchema),
+        { service: "indexer" },
+      );
       expect(namedDetail.question).toBe("测试市场 Alpha 100%");
       expect(namedList.items[0]?.question).toBe(namedDetail.question);
       await sql`UPDATE public_market_metadata SET verified=false WHERE market=${A(101).toLowerCase()}`;
@@ -164,12 +183,39 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
       await sql`UPDATE public_market_metadata SET verified=true,rules_hash=${H(999)} WHERE market=${A(101).toLowerCase()}`;
       expect((await detail()).question).toBeNull();
       await sql`UPDATE public_market_metadata SET rules_hash=${rulesHash} WHERE market=${A(101).toLowerCase()}`;
-      const named = await site.request(`/v2/activity/${trader}?marketQuery=${encodeURIComponent("alpha 100%")}&limit=1`, factsPageSchema, {service:"indexer"});
+      const named = await site.request(
+        `/v2/activity/${trader}?marketQuery=${encodeURIComponent("alpha 100%")}&limit=1`,
+        factsPageSchema,
+        { service: "indexer" },
+      );
       expect(named.items).toHaveLength(1);
       expect(named.items[0]!.market?.toLowerCase()).toBe(A(101).toLowerCase());
-      expect((await site.request(`/v2/activity/${trader}?marketQuery=absent`,factsPageSchema,{service:"indexer"})).items).toEqual([]);
-      expect((await site.request(`/v2/activity/${trader}?marketQuery=_`,factsPageSchema,{service:"indexer"})).items).toEqual([]);
-      if(named.nextCursor) await expect(site.request(`/v2/activity/${trader}?marketQuery=another&cursor=${encodeURIComponent(named.nextCursor)}`,factsPageSchema,{service:"indexer"})).rejects.toBeTruthy();
+      expect(
+        (
+          await site.request(
+            `/v2/activity/${trader}?marketQuery=absent`,
+            factsPageSchema,
+            { service: "indexer" },
+          )
+        ).items,
+      ).toEqual([]);
+      expect(
+        (
+          await site.request(
+            `/v2/activity/${trader}?marketQuery=_`,
+            factsPageSchema,
+            { service: "indexer" },
+          )
+        ).items,
+      ).toEqual([]);
+      if (named.nextCursor)
+        await expect(
+          site.request(
+            `/v2/activity/${trader}?marketQuery=another&cursor=${encodeURIComponent(named.nextCursor)}`,
+            factsPageSchema,
+            { service: "indexer" },
+          ),
+        ).rejects.toBeTruthy();
       await sql`DELETE FROM public_market_metadata WHERE market=${A(101).toLowerCase()}`;
       const txHash = first.items[0]!.transactionHash;
       const exact = await site.request(
@@ -226,6 +272,7 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
         `/v2/activity/${trader}`,
         `/v2/pnl/${trader}`,
         "/v2/sync-status",
+        "/v2/platform-fees",
       ]) {
         for (const query of [
           "",

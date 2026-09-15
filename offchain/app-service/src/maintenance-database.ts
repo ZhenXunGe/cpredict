@@ -19,9 +19,17 @@ export function maintenanceDatabaseUrl(
       url.hostname === "postgres" &&
       (!url.port || url.port === "5432") &&
       !url.hash &&
-      query.length === 1 &&
-      query[0]?.[0] === "sslmode" &&
-      query[0]?.[1] === "disable"
+      query.length <= 2 &&
+      new Set(query.map(([key]) => key)).size === query.length &&
+      url.searchParams.get("sslmode") === "disable" &&
+      query.every(
+        ([key, value]) =>
+          key === "sslmode" ||
+          (key === "options" &&
+            /^-csearch_path=(?:public|cpredict_current_[a-f0-9]{16})$/.test(
+              value,
+            )),
+      )
     )
       return value;
     throw new AppError("maintenance_container_database_required");

@@ -125,3 +125,16 @@ test("source validation rejects a receipt-only bundle without matching creation 
     /missing creation/,
   );
 });
+
+test("a current time-v2 deployment can have a distinct successor without changing its wallet", async () => {
+  const f = fixture();
+  f.previous.environment.deployment.protocolVersion = "time-v2";
+  await assert.rejects(buildTimeV2Runtime(f), /rollover_requires/);
+  const next = await buildTimeV2Runtime({ ...f, successorId: "ctusd-current" });
+  assert.equal(next.environment.id, "ctusd-current");
+  assert.deepEqual(next.environment.account, f.previous.environment.account);
+  assert.equal(
+    next.environment.deployment.paymentToken,
+    f.previous.environment.deployment.paymentToken,
+  );
+});

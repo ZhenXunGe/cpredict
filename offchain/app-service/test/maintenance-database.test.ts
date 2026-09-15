@@ -24,6 +24,7 @@ describe("maintenance database transport", () => {
       "postgresql://postgres/test?sslmode=disable&host=database.example",
       "postgresql://postgres/test?sslmode=disable&sslmode=require",
       "postgresql://postgres/test?sslmode=disable#ignored",
+      "postgresql://postgres/test?sslmode=disable&options=-csearch_path=arbitrary",
     ])
       expect(() => maintenanceDatabaseUrl(url, true)).toThrowError(
         expect.objectContaining({
@@ -59,4 +60,10 @@ describe("maintenance database transport", () => {
       expect(String(error)).not.toContain(invalid);
     }
   });
+});
+
+it("accepts only a bounded successor schema override", () => {
+  const url =
+    "postgresql://postgres/test?sslmode=disable&options=-csearch_path%3Dcpredict_current_0123456789abcdef";
+  expect(maintenanceDatabaseUrl(url, true)).toBe(url);
 });

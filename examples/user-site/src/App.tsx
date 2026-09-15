@@ -168,7 +168,14 @@ function Configuration() {
       />
       <Route
         path="/:environment"
-        element={<EnvironmentBoundary environments={c.environments} />}
+        element={
+          <EnvironmentBoundary
+            environments={[
+              ...c.environments,
+              ...(c.historicalEnvironments ?? []),
+            ]}
+          />
+        }
       >
         <Route index element={<Navigate replace to="markets" />} />
         <Route path="markets" element={<Markets />} />
@@ -255,6 +262,14 @@ export function SiteLayout({ environments }: { environments: Environment[] }) {
   ];
   const nav = (
     <nav className="nav" aria-label="主要导航">
+      {environments
+        .filter((e) => e.historical && e.asset === env.asset)
+        .map((e) => (
+          <NavLink key={e.id} to={`/${e.id}/markets`}>
+            <History size={18} aria-hidden="true" />
+            历史市场
+          </NavLink>
+        ))}
       {links.map((l) => (
         <NavLink
           key={l.path}
@@ -329,6 +344,11 @@ export function SiteLayout({ environments }: { environments: Environment[] }) {
           </div>
         </header>
         <main id="main-content" ref={main} tabIndex={-1}>
+          {env.historical && (
+            <Notice>
+              这里保留旧市场、交易记录和未领取权益，可继续领取或退出。新市场请切换至当前环境。
+            </Notice>
+          )}
           <SyncNotice />
           <Suspense fallback={<Loading label="正在打开页面" />}>
             <Outlet />

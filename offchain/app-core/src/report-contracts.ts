@@ -2,6 +2,11 @@ import { z } from "zod";
 import { address, hash, id, signedAmount, uint } from "./contracts.js";
 import { snapshotSchema } from "./ledger-contracts.js";
 import { managementStatusSchema } from "./provider-contracts.js";
+export const platformFeesSchema = z.strictObject({
+  accrued: uint,
+  complete: z.boolean(),
+  snapshot: snapshotSchema,
+});
 export const leaderboardPeriodSchema = z
   .strictObject({
     id,

@@ -742,7 +742,9 @@ test("unchanged catalogue data still crosses the timeout deadline while the page
     // A hash-only navigation keeps the prior fixture and its expired deadline.
     await page.goto("about:blank");
     // Allow rendering time before the boundary, then cross it explicitly.
-    await page.goto(`${fixture}?timeout-test=before&timeout-countdown=1#/ctusd-test/${route}`);
+    await page.goto(
+      `${fixture}?timeout-test=before&timeout-countdown=1#/ctusd-test/${route}`,
+    );
     await expect(
       page.getByText("已封盘 · 待结算", { exact: true }).first(),
     ).toBeVisible();
@@ -784,6 +786,43 @@ test("market names survive rule errors in detail, management and confirmation, a
   ).toBeVisible();
 });
 
+test("platform fee totals are visible to ordinary creators in the center and creation form", async ({
+  page,
+}) => {
+  for (const path of ["creator", "creator/new"]) {
+    await page.goto(`${fixture}?ordinary-creator=1#/ctusd-test/${path}`);
+    await expect(
+      page.getByRole("link", { name: "运营报表", exact: true }),
+    ).toHaveCount(0);
+    const summary = page.getByRole("region", {
+      name: "平台费用汇总",
+      exact: true,
+    });
+    await expect(summary).toContainText("平台费用累计总额");
+    await expect(summary).toContainText("20 ctUSD");
+    await expect(summary).toContainText("领取不重复计入");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBe(true);
+    await summary.screenshot({
+      path: test
+        .info()
+        .outputPath(`platform-fees-${path.replace("/", "-")}.png`),
+    });
+  }
+  await page.goto(
+    `${fixture}?ordinary-creator=1&platform-fees-incomplete=1#/ctusd-test/creator/new`,
+  );
+  const summary = page.getByRole("region", {
+    name: "平台费用汇总",
+    exact: true,
+  });
+  await expect(summary).toContainText("平台费用累计已知金额");
+  await expect(summary).toContainText("不能视为全部平台收入");
+});
+
 test("per-market platform rates show selected percentages and old factories do not offer unsupported fields", async ({
   page,
 }) => {
@@ -803,4 +842,72 @@ test("per-market platform rates show selected percentages and old factories do n
   await expect(
     fees.getByLabel("终局平台分成（基点）", { exact: true }),
   ).toHaveCount(0);
+});
+
+test("platform totals include historical deployments and historical views keep claims accessible", async ({
+  page,
+}, testInfo) => {
+  await page.route(
+    "**/historical/indexer/v2/platform-fees?**",
+    async (route) => {
+      expect(route.request().headers()["x-cpredict-environment"]).toBe(
+        "ctusd-history",
+      );
+      await route.fulfill({
+        json: {
+          accrued: "5000000",
+          complete: true,
+          snapshot: {
+            environment: "ctusd-history",
+            deploymentId: "historical-deployment",
+            version: 1,
+            epoch: "1",
+            blockNumber: "100",
+            blockHash: "0x" + "01".repeat(32),
+            timestamp: "1780000000",
+            coverageStart: "1",
+            complete: true,
+            status: "shadow",
+          },
+        },
+      });
+    },
+  );
+  await page.goto(
+    "/test/browser/fixture.html?ordinary-creator=1&multiple-fees=1#/ctusd-test/creator",
+  );
+  await expect(
+    page.getByRole("region", { name: "平台费用汇总" }),
+  ).toContainText("25");
+  if (
+    await page
+      .getByRole("button", { name: "打开导航", exact: true })
+      .isVisible()
+  )
+    await page.getByRole("button", { name: "打开导航", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "历史市场", exact: true }).first(),
+  ).toHaveAttribute("href", "#/ctusd-history/markets");
+  await page.goto(
+    "/test/browser/fixture.html?historical-view=1#/ctusd-test/creator",
+  );
+  await expect(
+    page.getByText("这里保留旧市场", { exact: false }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "创建市场", exact: true }),
+  ).toHaveCount(0);
+  if (
+    await page
+      .getByRole("button", { name: "打开导航", exact: true })
+      .isVisible()
+  )
+    await page.getByRole("button", { name: "打开导航", exact: true }).click();
+  await expect(
+    page.getByRole("link", { name: "持仓与权益", exact: true }).first(),
+  ).toHaveAttribute("href", "#/ctusd-test/entitlements");
+  await page.screenshot({
+    path: testInfo.outputPath("historical-markets.png"),
+    fullPage: true,
+  });
 });

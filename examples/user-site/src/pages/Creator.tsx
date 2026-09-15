@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import {
   formatUnits,
@@ -11,6 +11,7 @@ import {
 import { z } from "zod";
 import {
   AppError,
+  siteConfigSchema,
   address,
   intentSchema,
   type BusinessIntent,
@@ -20,6 +21,8 @@ import {
   encodeMarketRules,
 } from "../../../../offchain/sdk/src/market-rules.js";
 import { pnlResponseSchema } from "../../../../offchain/app-core/src/ledger-contracts.js";
+import { platformFeesSchema } from "../../../../offchain/app-core/src/report-contracts.js";
+import { SiteApi } from "../api.js";
 import { useSession } from "../wallets.js";
 import { AccountGate, useOperation } from "../operations.js";
 import {
@@ -167,6 +170,79 @@ function useCreationConfig() {
     staleTime: 15000,
   });
 }
+function PlatformFeesSummary() {
+  const { api } = useSession();
+  const cache = useQueryClient();
+  const site = siteConfigSchema.safeParse(cache.getQueryData(["site-config"]));
+  const environments = site.success
+    ? [
+        ...site.data.environments,
+        ...(site.data.historicalEnvironments ?? []),
+      ].filter(
+        (e) =>
+          e.deployment.chainId === api.environment.deployment.chainId &&
+          e.deployment.paymentToken.toLowerCase() ===
+            api.environment.deployment.paymentToken.toLowerCase(),
+      )
+    : [api.environment];
+  const query = useQuery({
+    queryKey: [
+      api.key,
+      "platform-fees",
+      environments.map((e) => e.deployment.id),
+    ],
+    queryFn: async ({ signal }) => {
+      const totals = await Promise.all(
+        environments.map((e) =>
+          (e.id === api.environment.id ? api : new SiteApi(e)).request(
+            "/v2/platform-fees",
+            platformFeesSchema,
+            { service: "indexer", signal },
+          ),
+        ),
+      );
+      return {
+        accrued: totals
+          .reduce((sum, t) => sum + BigInt(t.accrued), 0n)
+          .toString(),
+        complete: totals.every((t) => t.complete),
+        snapshot: totals.reduce((a, b) =>
+          BigInt(a.snapshot.blockNumber) < BigInt(b.snapshot.blockNumber)
+            ? a
+            : b,
+        ).snapshot,
+      };
+    },
+    staleTime: 15000,
+    refetchInterval: 30000,
+  });
+  return (
+    <section className="stat-card" aria-label="平台费用汇总">
+      <h3>
+        {query.data?.complete ? "平台费用累计总额" : "平台费用累计已知金额"}
+      </h3>
+      <strong>
+        <Amount
+          value={query.data?.accrued ?? null}
+          asset={api.environment.asset}
+        />
+      </strong>
+      <p className="small muted">
+        当前及历史市场的终局平台分成、C2C
+        平台手续费及市场创建费合计。按记入费用账户的收入累计，领取不重复计入，不含创作者收入。
+      </p>
+      {query.data && (
+        <p className="small muted">
+          截至区块 {query.data.snapshot.blockNumber}。
+          {!query.data.complete &&
+            "数据覆盖尚未完整核对，不能视为全部平台收入。"}
+        </p>
+      )}
+      {query.isPending && <Loading />}
+      <ErrorNotice error={query.error} />
+    </section>
+  );
+}
 export function CreatorPage() {
   const { api, account } = useSession(),
     now = useMarketClock(),
@@ -186,14 +262,17 @@ export function CreatorPage() {
         title="创作者中心"
         description="创建者对结果负责。费用产生、记入可领取余额和实际到账分别核算。"
         action={
-          <Link
-            className="button button-primary"
-            to={`/${api.environment.id}/creator/new`}
-          >
-            创建市场
-          </Link>
+          !api.environment.historical && (
+            <Link
+              className="button button-primary"
+              to={`/${api.environment.id}/creator/new`}
+            >
+              创建市场
+            </Link>
+          )
         }
       />
+      <PlatformFeesSummary />
       <AccountGate />
       {account && (
         <>
@@ -686,6 +765,7 @@ export function CreateMarketPage() {
         </p>
         <section className="surface stack" aria-label="平台费用说明">
           <h3>平台费用说明</h3>
+          <PlatformFeesSummary />
           {config.data ? (
             <>
               {config.data.perMarketPlatformFees && (

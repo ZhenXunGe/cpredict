@@ -1,4 +1,5 @@
 import { applyPublicSiteMigrations } from "./migrations.js";
+import { prepareHistoricalSuccessor } from "./historical-deployment.js";
 import { rolloverDeployment } from "./deployment-rollover.js";
 import { maintenanceDatabaseUrl } from "./maintenance-database.js";
 import { chmod, readFile, writeFile } from "node:fs/promises";
@@ -92,6 +93,7 @@ async function run() {
     ![
       "migrate",
       "rollover",
+      "prepare-history",
       "status",
       "replay",
       "backfill",
@@ -119,13 +121,13 @@ async function run() {
   );
   const sql = postgres(databaseUrl, {
     max: 1,
-    prepare: command !== "rollover",
+    prepare: !["rollover", "prepare-history"].includes(command ?? ""),
     connect_timeout: 5,
     onnotice: () => undefined,
   });
   let store: PostgresEventStore | undefined;
   try {
-    if (command === "rollover") {
+    if (command === "rollover" || command === "prepare-history") {
       const previous = appRuntimeSchema.parse(
         await readJson(required(values.input, "previous_config")),
       );
@@ -140,12 +142,11 @@ async function run() {
       );
       console.log(
         JSON.stringify(
-          await rolloverDeployment(
-            sql,
-            previous.environment,
-            env,
-            values.apply,
-          ),
+          await (
+            command === "rollover"
+              ? rolloverDeployment
+              : prepareHistoricalSuccessor
+          )(sql, previous.environment, env, values.apply),
           null,
           2,
         ),

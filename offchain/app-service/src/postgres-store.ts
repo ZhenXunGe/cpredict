@@ -275,7 +275,7 @@ export class PostgresApplicationStore implements ApplicationStore {
   }
   async createDeposit(value: StoredDeposit): Promise<StoredDeposit> {
     return this.sql.begin(async (tx) => {
-      await tx`SELECT pg_advisory_xact_lock(hashtextextended(${this.environmentIdentity},0))`;
+      await tx`SELECT pg_advisory_xact_lock(hashtextextended('cpredict-shared-admission',0))`;
       const prior = await tx<
         DepositRow[]
       >`SELECT d.record,d.subject,d.idempotency_key,d.request_hash,(o.record || o.billing) AS operation_record
@@ -407,7 +407,7 @@ export class PostgresApplicationStore implements ApplicationStore {
     now: string,
   ): Promise<StoredDeposit> {
     return this.sql.begin(async (tx) => {
-      await tx`SELECT pg_advisory_xact_lock(hashtextextended(${this.environmentIdentity},0))`;
+      await tx`SELECT pg_advisory_xact_lock(hashtextextended('cpredict-shared-admission',0))`;
       const rows = await tx<
         DepositRow[]
       >`SELECT record,subject,idempotency_key,request_hash FROM app_deposits WHERE id=${id} AND subject=${subject} FOR UPDATE`;
@@ -438,7 +438,7 @@ export class PostgresApplicationStore implements ApplicationStore {
   ): Promise<StoredOperation> {
     return this.sql.begin(async (tx) => {
       // Admission serializes quota reservations across all service instances.
-      await tx`SELECT pg_advisory_xact_lock(hashtextextended(${this.environmentIdentity},0))`;
+      await tx`SELECT pg_advisory_xact_lock(hashtextextended('cpredict-shared-admission',0))`;
       const prior = await tx<
         OperationRow[]
       >`SELECT record || billing AS record,subject,idempotency_key,request_hash FROM app_operations WHERE subject=${value.subject} AND idempotency_key=${value.idempotencyKey}`;

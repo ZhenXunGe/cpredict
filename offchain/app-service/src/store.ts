@@ -4,6 +4,7 @@ import type { Address, Hex } from "viem";
 import {
   AppError,
   isRecoverable,
+  sameAddress,
   type AppAccount,
   type Operation,
   type OperationState,
@@ -240,7 +241,7 @@ export function assertQuota(
     day = o.createdAt.slice(0, 10);
   const unfinished = existing.find(
     (v) =>
-      v.operation.accountId === o.accountId &&
+      sameAddress(v.operation.account, o.account) &&
       v.operation.nonce === o.nonce &&
       (isRecoverable(v.operation.state) ||
         ["preparing", "awaiting-signature"].includes(v.operation.state)),
@@ -256,7 +257,7 @@ export function assertQuota(
     o.kind === "faucet" &&
     existing.some(
       (v) =>
-        v.operation.accountId === o.accountId &&
+        sameAddress(v.operation.account, o.account) &&
         v.operation.kind === "faucet" &&
         v.operation.state !== "cancelled" &&
         Date.parse(v.operation.createdAt) > now - FAUCET_COOLDOWN_MS,
@@ -288,7 +289,7 @@ export function assertQuota(
   for (const [records, cost, count] of [
     [sameDay, cap.projectWei, cap.projectOperations],
     [
-      sameDay.filter((v) => v.operation.accountId === o.accountId),
+      sameDay.filter((v) => sameAddress(v.operation.account, o.account)),
       cap.accountWei,
       cap.accountOperations,
     ],
@@ -309,7 +310,8 @@ export function assertQuota(
   if (
     sameDay.filter(
       (v) =>
-        v.operation.accountId === o.accountId && v.operation.kind === o.kind,
+        sameAddress(v.operation.account, o.account) &&
+        v.operation.kind === o.kind,
     ).length >= limits.methodDailyOperations
   )
     throw new AppError("method_quota_exhausted", 429);

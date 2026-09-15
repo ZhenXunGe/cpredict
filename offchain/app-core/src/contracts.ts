@@ -95,6 +95,7 @@ export const environmentSchema = z
   .strictObject({
     id,
     label: z.string().min(1).max(64),
+    historical: z.boolean().optional(),
     asset: z.enum(["ctUSD", "USDC"]),
     decimals: z.literal(6),
     deployment: deploymentSchema,
@@ -130,6 +131,15 @@ export const environmentSchema = z
     }),
   })
   .superRefine((v, ctx) => {
+    if (
+      v.historical &&
+      (v.features.newExposure || v.features.faucet || v.quickTrading?.enabled)
+    )
+      ctx.addIssue({
+        code: "custom",
+        message:
+          "historical markets cannot enable new exposure, faucet or quick trading",
+      });
     if (v.quickTrading?.enabled && v.asset !== "ctUSD")
       ctx.addIssue({
         code: "custom",
@@ -169,6 +179,7 @@ export const siteConfigSchema = z
     version: z.literal(1),
     defaultEnvironment: id.nullable(),
     environments: z.array(environmentSchema).max(8),
+    historicalEnvironments: z.array(environmentSchema).max(4).optional(),
   })
   .superRefine((v, ctx) => {
     const ids = new Set<string>(),
@@ -188,12 +199,49 @@ export const siteConfigSchema = z
           message:
             "environments require distinct identities, account indexes, deployments and Privy projects",
         });
+      if (e.historical)
+        ctx.addIssue({
+          code: "custom",
+          message: "historical environments require a separate entry",
+        });
       ids.add(e.id);
       accounts.add(accountKey);
       deployments.add(e.deployment.id);
       apps.add(e.privyAppId);
     }
-    if (v.defaultEnvironment !== null && !ids.has(v.defaultEnvironment))
+    for (const e of v.historicalEnvironments ?? []) {
+      const current = v.environments.find(
+        (a) =>
+          a.asset === e.asset &&
+          sameAddress(a.deployment.paymentToken, e.deployment.paymentToken) &&
+          a.deployment.chainId === e.deployment.chainId &&
+          a.decimals === e.decimals &&
+          JSON.stringify(a.account) === JSON.stringify(e.account) &&
+          a.privyAppId === e.privyAppId &&
+          a.walletConnectProjectId === e.walletConnectProjectId,
+      );
+      if (
+        !e.historical ||
+        !current ||
+        ids.has(e.id) ||
+        deployments.has(e.deployment.id) ||
+        sameAddress(current.deployment.factory, e.deployment.factory) ||
+        Object.values(e.services).some((path) =>
+          Object.values(current.services).includes(path),
+        )
+      )
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "historical deployment must preserve its wallet and asset with distinct routes and contracts",
+        });
+      ids.add(e.id);
+      deployments.add(e.deployment.id);
+    }
+    if (
+      v.defaultEnvironment !== null &&
+      !v.environments.some((e) => e.id === v.defaultEnvironment)
+    )
       ctx.addIssue({
         code: "custom",
         message: "default environment is missing",

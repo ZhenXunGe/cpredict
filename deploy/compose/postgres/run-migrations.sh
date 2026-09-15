@@ -71,17 +71,17 @@ esac
 
 psql --set=ON_ERROR_STOP=1 --set=runtime_role="$runtime_role" <<'SQL'
 SELECT format('GRANT CONNECT ON DATABASE %I TO %I', current_database(), :'runtime_role') \gexec
-SELECT format('GRANT USAGE ON SCHEMA public TO %I', :'runtime_role') \gexec
-SELECT format('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO %I', :'runtime_role') \gexec
-SELECT format('GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO %I', :'runtime_role') \gexec
-SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I', :'runtime_role') \gexec
-SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO %I', :'runtime_role') \gexec
+SELECT format('GRANT USAGE ON SCHEMA %I TO %I', current_schema(), :'runtime_role') \gexec
+SELECT format('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA %I TO %I', current_schema(), :'runtime_role') \gexec
+SELECT format('GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA %I TO %I', current_schema(), :'runtime_role') \gexec
+SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA %I GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I', current_schema(), :'runtime_role') \gexec
+SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA %I GRANT USAGE, SELECT ON SEQUENCES TO %I', current_schema(), :'runtime_role') \gexec
 SELECT format('GRANT CONNECT ON DATABASE %I TO cpredict_backup', current_database()) \gexec
-GRANT USAGE ON SCHEMA public TO cpredict_backup;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO cpredict_backup;
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO cpredict_backup;
-ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA public GRANT SELECT ON TABLES TO cpredict_backup;
-ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA public GRANT SELECT ON SEQUENCES TO cpredict_backup;
+SELECT format('GRANT USAGE ON SCHEMA %I TO cpredict_backup', current_schema()) \gexec
+SELECT format('GRANT SELECT ON ALL TABLES IN SCHEMA %I TO cpredict_backup', current_schema()) \gexec
+SELECT format('GRANT SELECT ON ALL SEQUENCES IN SCHEMA %I TO cpredict_backup', current_schema()) \gexec
+SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA %I GRANT SELECT ON TABLES TO cpredict_backup', current_schema()) \gexec
+SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE cpredict_migrator IN SCHEMA %I GRANT SELECT ON SEQUENCES TO cpredict_backup', current_schema()) \gexec
 SELECT format('REVOKE INSERT,UPDATE,DELETE ON %I FROM %I', name, :'runtime_role')
 FROM unnest(ARRAY['public_site_migrations','app_quota_carryover','app_deployment_rollover']) AS protected(name)
 WHERE to_regclass(name) IS NOT NULL \gexec

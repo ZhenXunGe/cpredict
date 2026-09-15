@@ -68,7 +68,7 @@ export async function loadPublicSiteStack(
         name === "ctusd" ? "http://metadata:8793" : "http://metadata-usdc:8793",
       CPREDICT_APP_DATABASE_URL:
         name === "ctusd"
-          ? `postgresql://cpredict_indexer:${secret.CPREDICT_STACK_INDEXER_PASSWORD}@postgres/cpredict_indexer?sslmode=disable`
+          ? `postgresql://cpredict_indexer:${secret.CPREDICT_STACK_INDEXER_PASSWORD}@postgres/cpredict_indexer?sslmode=disable&options=-csearch_path%3D${configuration.publicEnv.CPREDICT_STACK_CTUSD_SCHEMA ?? "public"}`
           : `postgresql://cpredict_usdc_indexer:${secret.CPREDICT_STACK_USDC_INDEXER_PASSWORD}@postgres/cpredict_usdc_indexer?sslmode=disable`,
     });
     const e = runtime.environment;

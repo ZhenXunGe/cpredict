@@ -18,6 +18,7 @@ import { PostgresEventStore } from "../src/postgres-store.js";
 import { Leaderboards } from "../src/leaderboards.js";
 import { activateLedger } from "../src/reconciliation.js";
 import { PostgresReports } from "../../app-service/src/reports.js";
+import { publicPlatformFees } from "../src/platform-fees.js";
 import {
   block,
   createMarket,
@@ -72,8 +73,24 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
         "utf8",
       ),
     );
-    await sql.unsafe(await readFile(new URL("../../app-service/migrations/004_deployment_carryover.sql", import.meta.url), "utf8"));
-    await sql.unsafe(await readFile(new URL("../../app-service/migrations/005_gas_accounting.sql", import.meta.url), "utf8"));
+    await sql.unsafe(
+      await readFile(
+        new URL(
+          "../../app-service/migrations/004_deployment_carryover.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
+    await sql.unsafe(
+      await readFile(
+        new URL(
+          "../../app-service/migrations/005_gas_accounting.sql",
+          import.meta.url,
+        ),
+        "utf8",
+      ),
+    );
     store = new PostgresEventStore(scoped.toString(), 3, env);
     await store.ready();
     reports = new PostgresReports(scoped.toString(), env, null);
@@ -220,17 +237,31 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
         "did:privy:test",
       ),
     ).rejects.toMatchObject({ code: "feedback_idempotency_conflict" });
-    const second = { id: randomUUID(), message: "另一条反馈，用于验证稳定分页与编号查询。" };
+    const second = {
+      id: randomUUID(),
+      message: "另一条反馈，用于验证稳定分页与编号查询。",
+    };
     await reports.feedback(second, "did:privy:test");
     await sql`UPDATE app_feedback SET received_at='2026-09-09T00:00:00.000123Z' WHERE id IN (${input.id},${second.id})`;
     const page = await reports.feedbackPage({ limit: 1 });
     expect(page.items).toHaveLength(1);
     expect(page.nextCursor).not.toBeNull();
     expect(page.items[0]).not.toHaveProperty("subject");
-    const next = await reports.feedbackPage({ limit: 1, cursor: page.nextCursor! });
+    const next = await reports.feedbackPage({
+      limit: 1,
+      cursor: page.nextCursor!,
+    });
     expect(next.snapshotAt).toBe(page.snapshotAt);
-    expect(new Set([...page.items, ...next.items].map((f) => f.id))).toEqual(new Set([input.id, second.id]));
-    await expect(reports.feedbackPage({ limit: 1, id: input.id, cursor: page.nextCursor! })).rejects.toMatchObject({ code: "invalid_cursor" });
+    expect(new Set([...page.items, ...next.items].map((f) => f.id))).toEqual(
+      new Set([input.id, second.id]),
+    );
+    await expect(
+      reports.feedbackPage({
+        limit: 1,
+        id: input.id,
+        cursor: page.nextCursor!,
+      }),
+    ).rejects.toMatchObject({ code: "invalid_cursor" });
     const exact = await reports.feedbackPage({ limit: 30, id: input.id });
     expect(exact.items.map((f) => f.id)).toEqual([input.id]);
   });
@@ -313,8 +344,16 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
           },
         ],
       });
-      const monitor = await withBudget.monitor(new Date("2026-09-09T01:00:00.000Z"));
-      expect(monitor.budget).toEqual(r.weeklyBudget!.lanes.map(({ lane, reservedWei, remainingWei }) => ({ lane, reservedWei, remainingWei })));
+      const monitor = await withBudget.monitor(
+        new Date("2026-09-09T01:00:00.000Z"),
+      );
+      expect(monitor.budget).toEqual(
+        r.weeklyBudget!.lanes.map(({ lane, reservedWei, remainingWei }) => ({
+          lane,
+          reservedWei,
+          remainingWei,
+        })),
+      );
       expect(monitor.pending).toBeGreaterThanOrEqual(monitor.unknown);
       expect(r.budgets.find((b) => b.lane === "exposure")!.reservedWei).toBe(
         "0",
@@ -325,45 +364,123 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
         providerHardLimitPeriodSeconds: 604800,
         providerPolicyVerified: false,
       });
-      const [exitRow] = await sql`SELECT id FROM app_operations WHERE lane='exit' AND nonce=3`;
+      const [exitRow] =
+        await sql`SELECT id FROM app_operations WHERE lane='exit' AND nonce=3`;
       const id = String(exitRow!.id);
       await operations.transition(id, ["awaiting-signature"], {
-        state: "confirmed", finality: "finalized", actualGasCost: "1000",
-        userOperationHash: H(50), transactionHash: H(51), blockHash: H(52), blockNumber: "100",
-        gasSettledAt: "2026-09-09T00:10:00.000Z", updatedAt: "2026-09-09T00:10:00.000Z",
+        state: "confirmed",
+        finality: "finalized",
+        actualGasCost: "1000",
+        userOperationHash: H(50),
+        transactionHash: H(51),
+        blockHash: H(52),
+        blockNumber: "100",
+        gasSettledAt: "2026-09-09T00:10:00.000Z",
+        updatedAt: "2026-09-09T00:10:00.000Z",
       });
-      const settled = await withBudget.report(new Date(150000), new Date(300000), new Date("2026-09-09T01:00:00.000Z"));
-      expect(settled.weeklyBudget!.lanes.find((b) => b.lane === "exit")!.reservedWei).toBe("1000");
-      expect(settled.budgets.find((b) => b.lane === "exit")!.reservedWei).toBe("1000");
-      expect((await withBudget.monitor(new Date("2026-09-09T01:00:00.000Z"))).budget).toEqual(settled.weeklyBudget!.lanes.map(({ lane, reservedWei, remainingWei }) => ({ lane, reservedWei, remainingWei })));
+      const settled = await withBudget.report(
+        new Date(150000),
+        new Date(300000),
+        new Date("2026-09-09T01:00:00.000Z"),
+      );
+      expect(
+        settled.weeklyBudget!.lanes.find((b) => b.lane === "exit")!.reservedWei,
+      ).toBe("1000");
+      expect(settled.budgets.find((b) => b.lane === "exit")!.reservedWei).toBe(
+        "1000",
+      );
+      expect(
+        (await withBudget.monitor(new Date("2026-09-09T01:00:00.000Z"))).budget,
+      ).toEqual(
+        settled.weeklyBudget!.lanes.map(
+          ({ lane, reservedWei, remainingWei }) => ({
+            lane,
+            reservedWei,
+            remainingWei,
+          }),
+        ),
+      );
     } finally {
       await operations.close();
       await withBudget.close();
     }
   });
   it("sums lifetime platform fees across markets without counting withdrawals or creator income", async () => {
-    const fee = (n: number, index: number, kind: string, amount: bigint, source = vault) => raw("FeeAccrued", env.deployment.feeVault, {
-      beneficiary: A(77), source, feeKind: keccak256(stringToHex(kind)), feeReference: H(index), amount,
-    }, n, index);
-    await store.applyBatch([
-      fee(6, 0, "PROTOCOL_RAKE", 5000000n),
-      fee(6, 1, "PLATFORM_C2C", 5000000n, A(102)),
-      fee(6, 2, "MARKET_CREATION", 10000000n, A(103)),
-      fee(6, 3, "CREATOR_C2C", 99000000n),
-      raw("FeeClaimed", env.deployment.feeVault, { beneficiary: A(77), caller: A(77), amount: 20000000n }, 6, 4),
-    ], [block(6)], block(6));
+    const fee = (
+      n: number,
+      index: number,
+      kind: string,
+      amount: bigint,
+      source = vault,
+    ) =>
+      raw(
+        "FeeAccrued",
+        env.deployment.feeVault,
+        {
+          beneficiary: A(77),
+          source,
+          feeKind: keccak256(stringToHex(kind)),
+          feeReference: H(index),
+          amount,
+        },
+        n,
+        index,
+      );
+    await store.applyBatch(
+      [
+        fee(6, 0, "PROTOCOL_RAKE", 5000000n),
+        fee(6, 1, "PLATFORM_C2C", 5000000n, A(102)),
+        fee(6, 2, "MARKET_CREATION", 10000000n, A(103)),
+        fee(6, 3, "CREATOR_C2C", 99000000n),
+        raw(
+          "FeeClaimed",
+          env.deployment.feeVault,
+          { beneficiary: A(77), caller: A(77), amount: 20000000n },
+          6,
+          4,
+        ),
+      ],
+      [block(6)],
+      block(6),
+    );
     await store.financial!.accountScanned([trader], 6n, 6n, H(6));
     const earlier = await reports.report(new Date(150000), new Date(300000));
-    expect(earlier.fees.platformLifetime).toEqual({ accrued: "20000000", complete: true });
+    expect(earlier.fees.platformLifetime).toEqual({
+      accrued: "20000000",
+      complete: true,
+    });
     expect(earlier.fees.protocolAccrued).toBe("0");
     const current = await reports.report(new Date(600000), new Date(700000));
-    expect(current.fees.platformLifetime).toEqual(earlier.fees.platformLifetime);
+    expect(current.fees.platformLifetime).toEqual(
+      earlier.fees.platformLifetime,
+    );
     expect(current.fees.protocolAccrued).toBe("20000000");
+    expect(await publicPlatformFees(store.financial!)).toMatchObject({
+      accrued: "20000000",
+      complete: true,
+    });
     await sql`UPDATE ledger_environment SET coverage_complete=false WHERE singleton`;
-    expect((await reports.report(new Date(600000), new Date(700000))).fees.platformLifetime).toEqual({ accrued: "20000000", complete: false });
+    expect(await publicPlatformFees(store.financial!)).toMatchObject({
+      accrued: "20000000",
+      complete: false,
+    });
+    expect(
+      (await reports.report(new Date(600000), new Date(700000))).fees
+        .platformLifetime,
+    ).toEqual({ accrued: "20000000", complete: false });
     await sql`UPDATE ledger_environment SET coverage_complete=true WHERE singleton`;
-    await store.applyBatch([fee(7, 0, "UNRECOGNIZED_FEE", 1n)], [block(7)], block(7));
-    expect((await reports.report(new Date(600000), new Date(700000))).fees.platformLifetime).toEqual({ accrued: "20000000", complete: false });
+    await store.applyBatch(
+      [fee(7, 0, "UNRECOGNIZED_FEE", 1n)],
+      [block(7)],
+      block(7),
+    );
+    expect(await publicPlatformFees(store.financial!)).toMatchObject({
+      accrued: "20000000",
+      complete: false,
+    });
+    expect(
+      (await reports.report(new Date(600000), new Date(700000))).fees
+        .platformLifetime,
+    ).toEqual({ accrued: "20000000", complete: false });
   });
-
 });
