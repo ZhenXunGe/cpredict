@@ -42,7 +42,12 @@ test("Compose and restore drill pin the reviewed PostgreSQL image digest", () =>
 test("Dockerfiles pin reviewed Node and Nginx image digests", () => {
   const node = locked("node");
   const nginx = locked("nginx");
-  assert.equal(offchain.match(new RegExp(`FROM ${node}`, "g"))?.length, 6);
+  const stages = new Set();
+  for (const [, base, stage] of offchain.matchAll(/^FROM (\S+) AS (\S+)$/gm)) {
+    assert.ok(base === node || stages.has(base), "each stage must derive from the pinned Node image");
+    stages.add(stage);
+  }
+  assert.ok(stages.has("indexer") && stages.has("app-service"));
   assert.equal(
     offchain.match(
       /rm -rf \/opt\/yarn-v1\.22\.22 \/usr\/local\/lib\/node_modules\/npm/g,
