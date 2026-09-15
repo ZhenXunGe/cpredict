@@ -18,7 +18,7 @@ import type { IndexerWebSocketHub } from "./websocket.js";
 import { AppError } from "../../app-core/src/contracts.js";
 import { financialActivity, registerFinancialApi } from "./financial-api.js";
 import type { PostgresFinancialLedger } from "./financial-store.js";
-import { publicCatalog } from "./public-catalog.js";
+import { publicCatalog, publicMarketQuestion } from "./public-catalog.js";
 import type { PublicClient } from "viem";
 
 export interface IndexerApiOptions {
@@ -307,6 +307,11 @@ export function createIndexerApi(
             : reply.send(
                 jsonMarketV2({
                   ...market,
+                  question: await publicMarketQuestion(
+                    financial.ledger,
+                    address,
+                    market.rulesHash,
+                  ),
                   ...publicMarketState(
                     financial.ledger.environment.deployment.protocolVersion,
                     market.state,
@@ -427,7 +432,7 @@ function jsonMarketV1(value: MarketView): unknown {
   });
 }
 
-function jsonMarketV2(value: MarketView): unknown {
+function jsonMarketV2(value: MarketView & { question?: string | null }): unknown {
   return json({
     ...value,
     status: marketStatus(value.state, value.protocolVersion),
