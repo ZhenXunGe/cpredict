@@ -226,7 +226,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "a3b4aeb20c07bc0589c0257cca20e47459c0f388b32180998efbe0891892b6b7"
+      "sha256": "2efed56867c56321d34159470468626d1b23e483b6288af8b5475a91afdc8de4"
     },
     {
       "path": "docs/usdc-gasless-deposit.md",
@@ -1082,7 +1082,7 @@
     },
     {
       "path": "offchain/app-service/test/budget.test.ts",
-      "sha256": "5ec061e3c5b23f3fc152c94650c9a62c340a881a29de3f00d0cc30be2772a42e"
+      "sha256": "e4bd5d2f24f5581c957fdf13f908aad8ca93966dce0e7aea647fc9e700d8a3f9"
     },
     {
       "path": "offchain/app-service/test/config.test.ts",
@@ -1998,11 +1998,11 @@
     },
     {
       "path": "scripts/public-site/sponsorship-limits.mjs",
-      "sha256": "000951fecd2dc6bb1ad075a62c6cc62c2f5c36827948c659283431ce9f054af3"
+      "sha256": "973caf5a1d929ba47dc3d2ceb0c997760df04cbf25d0f43b3a86e4dee4e580e7"
     },
     {
       "path": "scripts/public-site/sponsorship-limits.test.mjs",
-      "sha256": "8102dd81bf09a23bff3e71c4ec732bcb7024ca7874097a6b8ce5fc9ddb0f76a1"
+      "sha256": "b245c01b92b376c6d098cdf5f7cd6f3c80ed7cb9e491dfa9f28ef867c6f851e7"
     },
     {
       "path": "scripts/public-site/test-capacity.mjs",

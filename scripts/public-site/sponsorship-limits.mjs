@@ -1,4 +1,4 @@
-/** Scale monetary and request quotas without changing admission policy or reset windows. */
+/** Scale aggregate budgets and request quotas, preserving each operation's gas ceiling. */
 export function scaleSponsorshipLimits(sponsor, factor) {
   if (!Number.isSafeInteger(factor) || factor < 1)
     throw new Error("invalid quota factor");
@@ -29,7 +29,8 @@ export function scaleSponsorshipLimits(sponsor, factor) {
   }
   for (const key of ["projectWei", "exitReserveWei"])
     result.weekly[key] = money(result.weekly[key]);
-  result.maxCostPerOperation = money(result.maxCostPerOperation);
+  // Admission reserves this entire ceiling until canonical finality. Scaling it
+  // with the budgets would leave pending-operation capacity unchanged.
   result.methodDailyOperations = count(result.methodDailyOperations);
   if (result.providerHardLimitWei !== null)
     result.providerHardLimitWei = money(result.providerHardLimitWei);
