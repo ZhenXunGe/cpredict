@@ -61,6 +61,60 @@ function record(
 }
 
 describe("per-environment weekly sponsorship budget", () => {
+  it("admits claims with the expanded exit budget without inflating each pending reservation", () => {
+    const at = "2026-09-15T08:00:00.000Z";
+    const expanded = sponsorConfigSchema.parse({
+      ...rawLimits,
+      maxCostPerOperation: "5000000000000000",
+      providerHardLimitWei: "2000000000000000000",
+      weekly: {
+        ...rawLimits.weekly,
+        projectWei: "2000000000000000000",
+        exitReserveWei: "400000000000000000",
+      },
+    });
+    // Three pre-fix operations still reserve 0.1 ETH each until finalized.
+    // Even those existing liabilities must not prevent a new 0.005 ETH claim.
+    const pending = Array.from({ length: 3 }, () => {
+      const row = record(at, "100000000000000000", "exit");
+      row.operation.finality = "application-confirmed";
+      row.operation.actualGasCost = "50000000000000";
+      return row;
+    });
+    // Include a small prior cost: otherwise four reservations hit exactly 0.4.
+    pending.push(record(at, "2000000000000000", "exit"));
+    expect(() =>
+      assertQuota(pending, record(at, "100000000000000000", "exit"), expanded),
+    ).toThrowError(
+      expect.objectContaining({ code: "sponsorship_weekly_budget_exhausted" }),
+    );
+    expect(() =>
+      assertQuota(
+        pending,
+        record(at, expanded.maxCostPerOperation, "exit"),
+        expanded,
+      ),
+    ).not.toThrow();
+    expect([
+      ...budgetCharges(pending.map((v) => v.operation)).values(),
+    ]).toEqual([
+      100000000000000000n,
+      100000000000000000n,
+      100000000000000000n,
+      2000000000000000n,
+    ]);
+    const newPending = Array.from({ length: 79 }, () =>
+      record(at, expanded.maxCostPerOperation, "exit"),
+    );
+    const last = record(at, expanded.maxCostPerOperation, "exit");
+    expect(() => assertQuota(newPending, last, expanded)).not.toThrow();
+    expect(() =>
+      assertQuota([...newPending, last], record(at, "1", "exit"), expanded),
+    ).toThrowError(
+      expect.objectContaining({ code: "sponsorship_weekly_budget_exhausted" }),
+    );
+  });
+
   it("uses the exact Shanghai Monday boundary across month and year changes", () => {
     const before = weeklyBudgetWindow("2026-09-13T15:59:59.999Z");
     expect(before.start.toISOString()).toBe("2026-09-06T16:00:00.000Z");

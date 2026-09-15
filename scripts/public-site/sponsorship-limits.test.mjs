@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { scaleSponsorshipLimits } from "./sponsorship-limits.mjs";
-test("scales both lanes, weekly reserves, per-operation and identity quotas without changing safeguards", () => {
+test("scales both lanes, weekly reserves and identity quotas while preserving the gas ceiling", () => {
   const lane = {
     projectWei: "80000000000000000",
     accountWei: "40000000000000000",
@@ -40,7 +40,12 @@ test("scales both lanes, weekly reserves, per-operation and identity quotas with
   }
   assert.equal(after.weekly.projectWei, "2000000000000000000");
   assert.equal(after.weekly.exitReserveWei, "400000000000000000");
-  assert.equal(after.maxCostPerOperation, "100000000000000000");
+  assert.equal(after.maxCostPerOperation, before.maxCostPerOperation);
+  for (const limit of ["projectWei", "exitReserveWei"])
+    assert.equal(
+      BigInt(after.weekly[limit]) / BigInt(after.maxCostPerOperation),
+      (BigInt(before.weekly[limit]) / BigInt(before.maxCostPerOperation)) * 20n,
+    );
   assert.equal(after.methodDailyOperations, 400);
   assert.equal(after.providerHardLimitUsd, "241.00");
   assert.equal(after.providerHardLimitWei, "2000000000000000000");
