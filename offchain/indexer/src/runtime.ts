@@ -1,4 +1,5 @@
-import { createPublicClient, http, type PublicClient } from "viem";
+import { type PublicClient } from "viem";
+import { createIndexerClient } from "./rpc-client.js";
 import { createIndexerApi } from "./api.js";
 import type { IndexerServiceConfig } from "./config.js";
 import { ChainIndexer } from "./indexer.js";
@@ -37,12 +38,7 @@ export async function startIndexerRuntime(
   }
   const client =
     dependencies.client ??
-    createPublicClient({
-      transport: http(config.rpcUrl, {
-        retryCount: 0,
-        timeout: config.rpcTimeoutMs,
-      }),
-    });
+    await createIndexerClient(config);
   const telemetry = dependencies.telemetry ?? new PrometheusIndexerTelemetry();
   const rawStore =
     dependencies.store ??

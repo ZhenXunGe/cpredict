@@ -29,6 +29,11 @@ const valid = {
 } as const;
 
 describe("parseIndexerServiceConfig", () => {
+  it("allows an optional secure log provider and treats an unset Compose value as absent", () => {
+    expect(parseIndexerServiceConfig({ ...valid, CPREDICT_INDEXER_LOG_RPC_URL: "" }).logRpcUrl).toBeUndefined();
+    expect(parseIndexerServiceConfig({ ...valid, CPREDICT_INDEXER_LOG_RPC_URL: "https://logs.example.invalid" }).logRpcUrl).toBe("https://logs.example.invalid");
+    expect(() => parseIndexerServiceConfig({ ...valid, CPREDICT_INDEXER_LOG_RPC_URL: "http://logs.example.invalid" })).toThrow();
+  });
   it("parses bounded production configuration and normalizes addresses", () => {
     const config = parseIndexerServiceConfig(valid);
     expect(config).toMatchObject({
