@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { historicalRuntime } from "./prepare-history-services.mjs";
+import {
+  historicalRuntime,
+  historicalMetadataUrl,
+} from "./prepare-history-services.mjs";
 import { env } from "../../dist/offchain/app-core/test/fixtures.js";
 import {
   environmentKey,
@@ -30,4 +33,16 @@ test("historical access keeps wallet, deployment and quotas on authenticated edg
   assert.match(history.environment.services.metadata, /^\/ctusd\/metadata\//);
   assert.equal(history.environment.features.newExposure, false);
   assert.equal(history.environment.features.faucet, false);
+});
+
+test("historical metadata configuration passes the existing HTTPS endpoint guard", async () => {
+  const { parseMetadataServiceUrl } = await import(
+    "../../dist/offchain/app-core/src/service-url.js"
+  );
+  const url = historicalMetadataUrl({
+    environment: env,
+    allowedOrigins: ["https://example.test"],
+  });
+  assert.equal(url, "https://example.test/ctusd/metadata/history");
+  assert.equal(parseMetadataServiceUrl(url, true), url);
 });

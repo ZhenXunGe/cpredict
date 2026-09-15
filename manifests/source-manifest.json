@@ -1770,11 +1770,11 @@
     },
     {
       "path": "scripts/deployment/prepare-history-services.mjs",
-      "sha256": "1b7cc42b577f352f60c052b48c13bd1de3d531fc73874e22483c4327f422f51f"
+      "sha256": "084dc6e1bf309974255914a004c3a5cbead43fd2fafe2bedc054ef628f455994"
     },
     {
       "path": "scripts/deployment/prepare-history-services.test.mjs",
-      "sha256": "2a8eb9479a65962ee682efd2806c6c40a30efc2ec251000fa6c424444a02c3af"
+      "sha256": "6070235a3f1f1a0c645b429d6276be6386e530ddae01bf1e6bda4148f893f579"
     },
     {
       "path": "scripts/deployment/prepare-time-v2-site.mjs",
