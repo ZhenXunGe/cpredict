@@ -911,3 +911,16 @@ test("platform totals include historical deployments and historical views keep c
     fullPage: true,
   });
 });
+
+test("historical creation links explain how to return to current markets", async ({
+  page,
+}) => {
+  await page.goto(`${fixture}?historical-view=1#/ctusd-test/creator/new`);
+  await expect(
+    page.getByText("历史市场用于查看记录和领取旧权益", { exact: false }),
+  ).toBeVisible();
+  await expect(page.getByLabel("终局平台分成（基点）")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "核对并创建市场", exact: true }),
+  ).toHaveCount(0);
+});

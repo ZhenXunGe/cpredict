@@ -86,7 +86,7 @@
     },
     {
       "path": "deploy/compose/nginx/public-site.conf.template",
-      "sha256": "fcbccf7486f65449c7e262d1f4c23381c688de6ed848ae1a69c5ab98d38d42e8"
+      "sha256": "360056a1fb416fdd2b76c984b8c8a570c997e802ea304b5e673c1a44eeffbee0"
     },
     {
       "path": "deploy/compose/postgres/init/00-create-databases.sh",
@@ -330,7 +330,7 @@
     },
     {
       "path": "examples/user-site/src/App.tsx",
-      "sha256": "1aae682dd117f7e723b737775d84ab1e2ccde415383d5831c4e23a4764539385"
+      "sha256": "5e58391a86ac1e3ba16982b31d55204e4612edf2fbea4138e506d4bde4fde5b1"
     },
     {
       "path": "examples/user-site/src/DepositHistory.tsx",
@@ -402,7 +402,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "1701eabdb32c0c7ef494f965ecd74fe2cb8732a1ba601a8f003d1ed837a7bff4"
+      "sha256": "0cf6b26759e50572ad4ac8e63a90f50637aeb155661a89dd0011a474720964a0"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
@@ -502,7 +502,7 @@
     },
     {
       "path": "examples/user-site/test/browser/public-site.spec.ts",
-      "sha256": "a67ad7be63af5ae0e4708179aeb3e8ae318cdf11cc36e8f8ef5fcd061f9276a8"
+      "sha256": "95c950acde7118d891db657d5aebd612a9d41d636aa9c258ca5b97a4e07b4c2b"
     },
     {
       "path": "examples/user-site/test/browser/report-fixture.ts",
@@ -562,7 +562,7 @@
     },
     {
       "path": "generated/public-site/contracts.json",
-      "sha256": "245a6133ee7063349a3ecb214568950749df5360cdf9a19c15c272bc9c25ead2"
+      "sha256": "a7a1e25a1d0bc1a0e0c3f7ab711a691968b5e927c6efce59ffd9843af53a4912"
     },
     {
       "path": "load/README.md",
@@ -1770,7 +1770,11 @@
     },
     {
       "path": "scripts/deployment/prepare-history-services.mjs",
-      "sha256": "ebf2e28df1cef6aae18cfebc85d149d9600d88bed1b0a57ee1c0c482bb451348"
+      "sha256": "1b7cc42b577f352f60c052b48c13bd1de3d531fc73874e22483c4327f422f51f"
+    },
+    {
+      "path": "scripts/deployment/prepare-history-services.test.mjs",
+      "sha256": "2a8eb9479a65962ee682efd2806c6c40a30efc2ec251000fa6c424444a02c3af"
     },
     {
       "path": "scripts/deployment/prepare-time-v2-site.mjs",
@@ -1962,7 +1966,7 @@
     },
     {
       "path": "scripts/public-site/contracts.mjs",
-      "sha256": "b15fb53ac9031a3f5c1009576456568b393c3cd4d384889dc6292a0f7555a40e"
+      "sha256": "b25fe73b85efbba3c9521eca868faa9370252245a3a901f620775b3c9cc39c06"
     },
     {
       "path": "scripts/public-site/declaration-patches.test.mjs",

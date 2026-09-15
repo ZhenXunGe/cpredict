@@ -347,6 +347,13 @@ export function SiteLayout({ environments }: { environments: Environment[] }) {
           {env.historical && (
             <Notice>
               这里保留旧市场、交易记录和未领取权益，可继续领取或退出。新市场请切换至当前环境。
+              {environments
+                .filter((e) => !e.historical && e.asset === env.asset)
+                .map((e) => (
+                  <Link key={e.id} to={`/${e.id}/markets`}>
+                    返回当前市场
+                  </Link>
+                ))}
             </Notice>
           )}
           <SyncNotice />
