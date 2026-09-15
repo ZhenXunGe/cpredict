@@ -29,6 +29,14 @@ export function historicalRuntime(runtime) {
   delete old.environment.quickTrading;
   return old;
 }
+// Historical services use their published HTTPS endpoint. The internal HTTP
+// allowlist deliberately contains only the original Compose service names.
+export function historicalMetadataUrl(runtime) {
+  return new URL(
+    historicalRuntime(runtime).environment.services.metadata,
+    runtime.allowedOrigins[0],
+  ).href;
+}
 export async function prepareHistoryServices({ containers, runtime, output }) {
   const { appRuntimeSchema } = await import(
     "../../dist/offchain/app-service/src/config.js"
@@ -57,9 +65,14 @@ export async function prepareHistoryServices({ containers, runtime, output }) {
       }),
     );
     if (name === "app-service")
-      env.CPREDICT_APP_METADATA_URL = "http://metadata-history:8793";
-    if (name === "indexer")
-      env.CPREDICT_INDEXER_METADATA_URL = "http://metadata-history:8793";
+      env.CPREDICT_APP_METADATA_URL = historicalMetadataUrl(previous);
+    if (name === "indexer") {
+      env.CPREDICT_INDEXER_METADATA_URL = historicalMetadataUrl(previous);
+      // The history indexer shares its provider with the current deployment.
+      // Bound catch-up concurrency and allow slower public RPC responses.
+      env.CPREDICT_INDEXER_BLOCK_CONCURRENCY = "4";
+      env.CPREDICT_INDEXER_RPC_TIMEOUT_MS = "15000";
+    }
     if (name === "metadata")
       env.CPREDICT_METADATA_PUBLIC_BASE_URL = new URL(
         "/ctusd/metadata/history",
