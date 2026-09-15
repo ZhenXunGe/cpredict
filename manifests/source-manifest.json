@@ -70,7 +70,7 @@
     },
     {
       "path": "compose.yaml",
-      "sha256": "8d29a24b7b255ba67ff954a6f6a06f5e64e27eef91851ec81df5068f9a17309a"
+      "sha256": "1108fbf281923d30209a629acd9ba9f324f71f26b5f507e7dd647c3a9ac5d223"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
@@ -1182,7 +1182,7 @@
     },
     {
       "path": "offchain/indexer/src/config.ts",
-      "sha256": "1d5adacfc6568492664af22719262f94e86e632a4dcb5827c6b7f8c68ef03d9e"
+      "sha256": "68c485bc32a81b8254d442647939a24897a138ee5f50f99c212f2f1943241069"
     },
     {
       "path": "offchain/indexer/src/derived.ts",
@@ -1241,8 +1241,12 @@
       "sha256": "ca82aa73bc611a7d2a7cc68621a232b4fbd0d0cee109c9bc323cb9b77cdf6add"
     },
     {
+      "path": "offchain/indexer/src/rpc-client.ts",
+      "sha256": "720d0eea2f7bb3461e43b0b3004e6295feb5b8c5e15458e3c21504b3b0de710e"
+    },
+    {
       "path": "offchain/indexer/src/runtime.ts",
-      "sha256": "386a1f657922cd9faf34c8685ba85bbf3a69a2e0995ee31ab10ab7a05c062978"
+      "sha256": "782be7ee4f9f9dfacd5664cf05cac36ce4831987251234f3d7c3beb80729efc8"
     },
     {
       "path": "offchain/indexer/src/scheduler.ts",
@@ -1270,7 +1274,7 @@
     },
     {
       "path": "offchain/indexer/test/config.test.ts",
-      "sha256": "e05d7fbda4ce82b8c010e4fe56eaa0924cba598cc1cfc1560ba804984bd8d837"
+      "sha256": "954d09abc284e5898dc22f7bf74591a46bc4354c3a03a9b010138e6129ed8a5f"
     },
     {
       "path": "offchain/indexer/test/financial-api.test.ts",
@@ -1315,6 +1319,10 @@
     {
       "path": "offchain/indexer/test/rights-reader.test.ts",
       "sha256": "39cdc8297b3231db900968740dac623697dad6e17ed0bb5c6681ae5eb6247bf3"
+    },
+    {
+      "path": "offchain/indexer/test/rpc-client.test.ts",
+      "sha256": "20ac1f20b35dc7f8dae64cc72db166250c1f0d414b03374e66c345e62b8fa7d4"
     },
     {
       "path": "offchain/indexer/test/scheduler.test.ts",

@@ -40,6 +40,10 @@ const schema = z
       .string()
       .url()
       .refine(isSecureServiceUrl, "must use HTTPS or loopback HTTP"),
+    CPREDICT_INDEXER_LOG_RPC_URL: z.preprocess(
+      (value) => value === "" ? undefined : value,
+      z.string().url().refine(isSecureServiceUrl, "must use HTTPS or loopback HTTP").optional(),
+    ),
     CPREDICT_INDEXER_DATABASE_URL: z
       .string()
       .url()
@@ -162,6 +166,7 @@ export interface IndexerServiceConfig {
   logLevel: z.infer<typeof logLevel>;
   chainId: number;
   rpcUrl: string;
+  logRpcUrl?: string;
   databaseUrl: string;
   factoryAddress: Address;
   coreAddresses: readonly Address[];
@@ -206,6 +211,7 @@ export function parseIndexerServiceConfig(
     logLevel: parsed.CPREDICT_INDEXER_LOG_LEVEL,
     chainId: parsed.CPREDICT_INDEXER_CHAIN_ID,
     rpcUrl: parsed.CPREDICT_INDEXER_RPC_URL,
+    ...(parsed.CPREDICT_INDEXER_LOG_RPC_URL ? { logRpcUrl: parsed.CPREDICT_INDEXER_LOG_RPC_URL } : {}),
     databaseUrl: parsed.CPREDICT_INDEXER_DATABASE_URL,
     factoryAddress: parsed.CPREDICT_INDEXER_FACTORY_ADDRESS,
     coreAddresses,
