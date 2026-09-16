@@ -99,7 +99,10 @@ const appAccount = usdc
 const controllerWallet = fixtureWallet(appAccount.controller, "metamask"),
   fundingWallet = fixtureWallet(A(30), "rabby");
 
-if (new URLSearchParams(location.search).has("entitlements-test")) {
+if (
+  new URLSearchParams(location.search).has("entitlements-test") ||
+  new URLSearchParams(location.search).has("creator-redirect")
+) {
   // The regression test intercepts this local endpoint; no wallet is involved.
   UserOperationClient.prototype.submit = async function (
     intent,
@@ -107,11 +110,16 @@ if (new URLSearchParams(location.search).has("entitlements-test")) {
     onStage,
   ) {
     onStage("preparing");
-    const response = await fetch("/test/entitlement-submit", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ intent }),
-    });
+    const response = await fetch(
+      new URLSearchParams(location.search).has("creator-redirect")
+        ? "/test/creator-submit"
+        : "/test/entitlement-submit",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ intent }),
+      },
+    );
     const record = operationSchema.parse(await response.json());
     onRecord(record);
     return record;
@@ -280,6 +288,11 @@ class FixtureApi extends SiteApi {
     if (
       _options.service === "metadata" &&
       new URLSearchParams(location.search).has("rules-error")
+    )
+      return super.request(path, schema, _options);
+    if (
+      new URLSearchParams(location.search).has("creator-redirect") &&
+      path.startsWith("/v1/operations/")
     )
       return super.request(path, schema, _options);
     if (
@@ -771,8 +784,8 @@ function Fixture() {
               }
             : env,
           async () =>
-            ["entitlements-test", "history-test"].some((key) =>
-              new URLSearchParams(location.search).has(key),
+            ["entitlements-test", "history-test", "creator-redirect"].some(
+              (key) => new URLSearchParams(location.search).has(key),
             )
               ? "fixture-token"
               : null,
