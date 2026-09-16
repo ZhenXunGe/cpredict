@@ -458,7 +458,7 @@
     },
     {
       "path": "examples/user-site/src/wallets.tsx",
-      "sha256": "db278b9699989063dde61bbe64184e85a28650d70d5bef7cacfab9b2d565551f"
+      "sha256": "8adee507560e64265dcc09bc026f339a689f43714528dbf43b8b6a08370a3c84"
     },
     {
       "path": "examples/user-site/test/api-errors.test.ts",
@@ -523,6 +523,14 @@
     {
       "path": "examples/user-site/test/browser/trading-session.spec.ts",
       "sha256": "3c692be6038429b225361f16c9e4fd3730fff2d5fe8f72d460f0258f3e4998af"
+    },
+    {
+      "path": "examples/user-site/test/browser/wallet-loading.spec.ts",
+      "sha256": "0b6789160a0cb7edc231ea27d462f4fe5ad875e2748f6b7941bbecc7df7e991d"
+    },
+    {
+      "path": "examples/user-site/test/browser/wallet-runtime-fixture.tsx",
+      "sha256": "81df3f3b5f88612967e9f8de637d6704c54ede60c91ffe454536e808989551df"
     },
     {
       "path": "examples/user-site/test/deposit-client.test.ts",
