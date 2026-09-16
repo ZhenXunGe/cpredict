@@ -793,3 +793,35 @@ test("migration registry inspection is read-only and does not put credentials in
   assert.deepEqual(result, { indexer: [], paymaster: [], metadata: [] });
   assert.equal(calls.length, 3);
 });
+
+test("migration inspection finds the current registry after the legacy public schema is removed", async () => {
+  const schema = "cpredict_current_1111111111111111";
+  const rows = [
+    {
+      path: "offchain/app-service/migrations/001_app.sql",
+      digest: "b".repeat(64),
+    },
+  ];
+  const result = await readAppliedMigrations(
+    async (args) => {
+      const database = args[args.indexOf("-d") + 1];
+      const sql = args.at(-1);
+      assert.ok(
+        args.includes(
+          `PGOPTIONS=-csearch_path=${database === "cpredict_indexer" ? schema : "public"}`,
+        ),
+      );
+      // Only the current indexer schema has a registry; public was retired.
+      if (sql.includes("to_regclass"))
+        return database === "cpredict_indexer" &&
+          !sql.includes("public.public_site_migrations")
+          ? "t\n"
+          : "f\n";
+      return JSON.stringify(rows);
+    },
+    { Id: "a".repeat(64) },
+    "secret-test-fixture",
+    schema,
+  );
+  assert.deepEqual(result, { indexer: rows, paymaster: [], metadata: [] });
+});

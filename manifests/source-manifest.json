@@ -2358,11 +2358,11 @@
     },
     {
       "path": "scripts/stack/public-update-runtime.mjs",
-      "sha256": "cecc090fd9b66946b9e72e957b75a2fa6cbc86112b09b735a98b676ecfb0258c"
+      "sha256": "16ca75b93cb4359d2ea28c2c87fa78580eeffac35f26e09aecbf895b43d82ba1"
     },
     {
       "path": "scripts/stack/public-update-selective.test.mjs",
-      "sha256": "02202b841883a93b09d7a0955854161e3f0a846c4e01314965466bbfcd417f66"
+      "sha256": "fe1c587241816c491ac9145104cfc7b21c9019da5a227050f3f3e00f0f25ea24"
     },
     {
       "path": "scripts/stack/public-update.mjs",

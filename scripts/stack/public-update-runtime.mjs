@@ -147,10 +147,7 @@ export async function readAppliedMigrations(
       timeout: 30000,
     };
     const exists = await docker(
-      [
-        ...args,
-        "SELECT to_regclass('public.public_site_migrations') IS NOT NULL",
-      ],
+      [...args, "SELECT to_regclass('public_site_migrations') IS NOT NULL"],
       options,
     );
     ensure(
