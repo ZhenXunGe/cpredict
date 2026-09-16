@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   encodeAbiParameters,
   encodeEventTopics,
@@ -61,6 +61,97 @@ const LISTING_ID = hash(700n);
 const EVIDENCE_HASH = hash(701n);
 
 describe("ChainIndexer canonical ingestion", () => {
+  it.each(["all", "metadata", "initialization"])(
+    "recovers missing %s vault logs from the creation receipt",
+    async (missing) => {
+      const client = new FakeClient(4n, [
+        marketCreatedLog(2n, MARKET_A),
+        marketInitializedLog(2n, MARKET_A),
+        marketMetadataUpdatedLog(2n, MARKET_A, hash(501n), hash(502n)),
+      ]);
+      const getLogs = client.getLogs.bind(client);
+      vi.spyOn(client, "getLogs").mockImplementation(async (input) =>
+        (await getLogs(input)).filter(
+          (log) =>
+            log.address !== MARKET_A ||
+            (missing === "metadata" && log.logIndex !== 7) ||
+            (missing === "initialization" && log.logIndex !== 1),
+        ),
+      );
+      const receipt = vi.spyOn(client, "getTransactionReceipt");
+      const store = new MemoryEventStore();
+      await createIndexer(client, store).runBatch();
+      expect(receipt).toHaveBeenCalledTimes(1);
+      expect(await store.market(CHAIN_ID, MARKET_A)).toMatchObject({
+        outcomeCount: 2,
+        rulesHash: hash(501n),
+        closeAt: 1000n,
+      });
+      expect(store.eventCount(CHAIN_ID)).toBe(3);
+    },
+  );
+
+  it("rescans vaults first discovered in the second query, including subsequent purchases", async () => {
+    const client = new FakeClient(4n, [
+      marketCreatedLog(2n, MARKET_A),
+      marketInitializedLog(2n, MARKET_A),
+      marketMetadataUpdatedLog(2n, MARKET_A, hash(501n), hash(502n)),
+      primaryPurchasedLog(3n, MARKET_A),
+    ]);
+    vi.spyOn(client, "getLogs").mockResolvedValueOnce([]);
+    const store = new MemoryEventStore();
+    expect(await createIndexer(client, store).runBatch()).toMatchObject({
+      discoveredMarkets: 1,
+      eventCount: 4,
+    });
+    expect(
+      (await store.market(CHAIN_ID, MARKET_A))?.primaryPayment,
+    ).toBeGreaterThan(0n);
+  });
+
+  it.each(["missing", "unavailable", "different-fork"])(
+    "does not advance when creation receipt is %s",
+    async (failure) => {
+      const client = new FakeClient(2n, [marketCreatedLog(2n, MARKET_A)]);
+      if (failure === "unavailable")
+        vi.spyOn(client, "getTransactionReceipt").mockRejectedValue(
+          new Error("unavailable"),
+        );
+      if (failure === "different-fork") {
+        const getReceipt = client.getTransactionReceipt.bind(client);
+        vi.spyOn(client, "getTransactionReceipt").mockImplementation(
+          async (input) => ({
+            ...(await getReceipt(input)),
+            blockHash: hash(999n),
+          }),
+        );
+      }
+      const store = new MemoryEventStore();
+      await expect(createIndexer(client, store).runBatch()).rejects.toThrow(
+        "event-logs",
+      );
+      expect(await store.checkpoint(CHAIN_ID)).toBeUndefined();
+      expect(store.eventCount(CHAIN_ID)).toBe(0);
+    },
+  );
+
+  it("rejects event logs from a different canonical fork", async () => {
+    const client = new FakeClient(2n, [
+      marketCreatedLog(2n, MARKET_A),
+      marketInitializedLog(2n, MARKET_A),
+      marketMetadataUpdatedLog(2n, MARKET_A, hash(501n), hash(502n)),
+    ]);
+    const getLogs = client.getLogs.bind(client);
+    vi.spyOn(client, "getLogs").mockImplementation(async (input) =>
+      (await getLogs(input)).map((log) => ({ ...log, blockHash: hash(999n) })),
+    );
+    const store = new MemoryEventStore();
+    await expect(createIndexer(client, store).runBatch()).rejects.toThrow(
+      "canonical batch",
+    );
+    expect(await store.checkpoint(CHAIN_ID)).toBeUndefined();
+  });
+
   it("normalizes RPC contract addresses before projection and filtering", () => {
     const log = transferLog(2n, MARKET_A, ZERO, ALICE, 0n, 10n);
     const normalized = normalizeLog(
@@ -76,6 +167,7 @@ describe("ChainIndexer canonical ingestion", () => {
     const client = new FakeClient(4n, [
       marketCreatedLog(2n, MARKET_A),
       marketInitializedLog(2n, MARKET_A),
+      marketMetadataUpdatedLog(2n, MARKET_A, hash(501n), hash(502n)),
     ]);
     const store = new MemoryEventStore();
     const indexer = createIndexer(client, store);
@@ -84,11 +176,11 @@ describe("ChainIndexer canonical ingestion", () => {
 
     expect(result).toMatchObject({
       blockCount: 4,
-      eventCount: 2,
+      eventCount: 3,
       discoveredMarkets: 1,
     });
     expect(store.blockCount(CHAIN_ID)).toBe(4);
-    expect(store.eventCount(CHAIN_ID)).toBe(2);
+    expect(store.eventCount(CHAIN_ID)).toBe(3);
     expect(await store.canonicalBlock(CHAIN_ID, 3n)).toMatchObject({
       blockNumber: 3n,
     });
@@ -97,8 +189,8 @@ describe("ChainIndexer canonical ingestion", () => {
       outcomeCount: 2,
       closeAt: 1_000n,
       createdAt: 100n,
-      eventStartsAt: 1_001n,
-      outcomeDeadlineAt: 2_000n,
+      eventStartsAt: null,
+      outcomeDeadlineAt: 3_000n,
     });
   });
 
@@ -117,11 +209,20 @@ describe("ChainIndexer canonical ingestion", () => {
     expect(client.maximumBlockConcurrency).toBe(16);
     expect(store.blockCount(CHAIN_ID)).toBe(48);
     for (let number = 1n; number <= 48n; number++)
-      expect(await store.canonicalBlock(CHAIN_ID, number)).toMatchObject({ blockNumber: number });
+      expect(await store.canonicalBlock(CHAIN_ID, number)).toMatchObject({
+        blockNumber: number,
+      });
     client.replaceFrom(40n, []);
-    expect(await indexer.runBatch()).toMatchObject({ fromBlock: 40n, toBlock: 48n, blockCount: 9 });
+    expect(await indexer.runBatch()).toMatchObject({
+      fromBlock: 40n,
+      toBlock: 48n,
+      blockCount: 9,
+    });
     expect(store.blockCount(CHAIN_ID)).toBe(48);
-    expect(await store.checkpoint(CHAIN_ID)).toMatchObject({ blockNumber: 48n, blockHash: hash(2_048n) });
+    expect(await store.checkpoint(CHAIN_ID)).toMatchObject({
+      blockNumber: 48n,
+      blockHash: hash(2_048n),
+    });
   });
 
   it("drains failed header reads without advancing the checkpoint or launching the rest", async () => {
@@ -140,24 +241,32 @@ describe("ChainIndexer canonical ingestion", () => {
       }
     };
     const store = new MemoryEventStore();
-    await expect(createIndexer(client, store, 16).runBatch()).rejects.toThrow("canonical-blocks");
+    await expect(createIndexer(client, store, 16).runBatch()).rejects.toThrow(
+      "canonical-blocks",
+    );
     expect(active).toBe(0);
     expect(started).toBeLessThanOrEqual(16);
     expect(await store.checkpoint(CHAIN_ID)).toBeUndefined();
     expect(store.blockCount(CHAIN_ID)).toBe(0);
     client.getBlock = original;
-    expect(await createIndexer(client, store, 16).runBatch()).toMatchObject({ fromBlock: 1n, toBlock: 48n });
+    expect(await createIndexer(client, store, 16).runBatch()).toMatchObject({
+      fromBlock: 1n,
+      toBlock: 48n,
+    });
   });
 
   it("rejects unbounded concurrency even when constructed outside the service config", () => {
     for (const value of [0, -1, 1.5, 33, Number.NaN, Number.POSITIVE_INFINITY])
-      expect(() => createIndexer(new FakeClient(1n, []), new MemoryEventStore(), value)).toThrow("blockConcurrency");
+      expect(() =>
+        createIndexer(new FakeClient(1n, []), new MemoryEventStore(), value),
+      ).toThrow("blockConcurrency");
   });
 
   it("removes a one-block orphan and replays the replacement without duplicate rows", async () => {
     const client = new FakeClient(4n, [
       marketCreatedLog(4n, MARKET_A),
       marketInitializedLog(4n, MARKET_A),
+      marketMetadataUpdatedLog(4n, MARKET_A, hash(501n), hash(502n)),
     ]);
     const store = new MemoryEventStore();
     const indexer = createIndexer(client, store);
@@ -166,19 +275,21 @@ describe("ChainIndexer canonical ingestion", () => {
     client.replaceFrom(4n, [
       marketCreatedLog(4n, MARKET_B),
       marketInitializedLog(4n, MARKET_B),
+      marketMetadataUpdatedLog(4n, MARKET_B, hash(501n), hash(502n)),
     ]);
     const replay = await indexer.runBatch();
 
-    expect(replay).toMatchObject({ fromBlock: 4n, toBlock: 4n, eventCount: 2 });
+    expect(replay).toMatchObject({ fromBlock: 4n, toBlock: 4n, eventCount: 3 });
     expect(await store.registeredMarkets(CHAIN_ID)).toEqual([MARKET_B]);
     expect(await store.market(CHAIN_ID, MARKET_A)).toBeUndefined();
-    expect(store.eventCount(CHAIN_ID)).toBe(2);
+    expect(store.eventCount(CHAIN_ID)).toBe(3);
   });
 
   it("finds the common ancestor across a multi-block reorg with an eventless ancestor", async () => {
     const client = new FakeClient(6n, [
       marketCreatedLog(2n, MARKET_A),
       marketInitializedLog(2n, MARKET_A),
+      marketMetadataUpdatedLog(2n, MARKET_A, hash(501n), hash(502n)),
       transferLog(5n, MARKET_A, ZERO, ALICE, 0n, 10n),
     ]);
     const store = new MemoryEventStore();
@@ -208,6 +319,7 @@ describe("ChainIndexer canonical ingestion", () => {
     const client = new FakeClient(2n, [
       marketCreatedLog(2n, MARKET_A),
       marketInitializedLog(2n, MARKET_A),
+      marketMetadataUpdatedLog(2n, MARKET_A, hash(501n), hash(502n)),
     ]);
     const indexer = createIndexer(client, store);
     await indexer.runBatch();
@@ -219,7 +331,7 @@ describe("ChainIndexer canonical ingestion", () => {
       throw new Error("missing fixture state");
     const duplicate = normalizeFixture(marketCreatedLog(2n, MARKET_A));
     await store.applyBatch([duplicate, duplicate], [block], checkpoint);
-    expect(store.eventCount(CHAIN_ID)).toBe(2);
+    expect(store.eventCount(CHAIN_ID)).toBe(3);
     expect(await store.registeredMarkets(CHAIN_ID)).toEqual([MARKET_A]);
   });
 
@@ -227,6 +339,7 @@ describe("ChainIndexer canonical ingestion", () => {
     const client = new FakeClient(5n, [
       marketCreatedLog(1n, MARKET_A),
       marketInitializedLog(1n, MARKET_A),
+      marketMetadataUpdatedLog(1n, MARKET_A, hash(501n), hash(502n)),
       transferLog(2n, MARKET_A, ZERO, ALICE, 0n, 10n),
       listingCreatedLog(3n, MARKET_A),
       listingFilledLog(4n),
@@ -268,8 +381,10 @@ describe("ChainIndexer canonical ingestion", () => {
     const client = new FakeClient(4n, [
       marketCreatedLog(1n, MARKET_A),
       marketInitializedLog(1n, MARKET_A),
+      marketMetadataUpdatedLog(1n, MARKET_A, hash(501n), hash(502n)),
       marketCreatedLog(2n, MARKET_B),
       marketInitializedLog(2n, MARKET_B),
+      marketMetadataUpdatedLog(2n, MARKET_B, hash(501n), hash(502n)),
       transferLog(3n, MARKET_A, ZERO, ALICE, 0n, 11n),
       transferLog(4n, MARKET_B, ZERO, ALICE, 0n, 17n),
     ]);
@@ -310,6 +425,7 @@ describe("ChainIndexer canonical ingestion", () => {
     const client = new FakeClient(4n, [
       marketCreatedLog(1n, MARKET_A),
       marketInitializedLog(1n, MARKET_A),
+      marketMetadataUpdatedLog(1n, MARKET_A, hash(501n), hash(502n)),
       transferLog(2n, MARKET_A, ZERO, ALICE, 0n, 10n),
       transferLog(3n, MARKET_A, ZERO, ALICE, 1n, 7n),
       marketResolvedLog(4n, MARKET_A, EVIDENCE_HASH),
@@ -345,6 +461,7 @@ describe("ChainIndexer canonical ingestion", () => {
     const client = new FakeClient(4n, [
       marketCreatedLog(1n, MARKET_A),
       marketInitializedLog(1n, MARKET_A),
+      marketMetadataUpdatedLog(1n, MARKET_A, hash(501n), hash(502n)),
       marketMetadataUpdatedLog(2n, MARKET_A, rulesHash, sourceHash),
       primaryPurchasedLog(3n, MARKET_A),
     ]);
@@ -396,8 +513,10 @@ describe("ChainIndexer canonical ingestion", () => {
     const client = new FakeClient(2n, [
       marketCreatedLog(1n, MARKET_A),
       marketInitializedLog(1n, MARKET_A),
+      marketMetadataUpdatedLog(1n, MARKET_A, hash(501n), hash(502n)),
       marketCreatedLog(2n, MARKET_B),
       marketInitializedLog(2n, MARKET_B),
+      marketMetadataUpdatedLog(2n, MARKET_B, hash(501n), hash(502n)),
     ]);
     const store = new MemoryEventStore();
     await createIndexer(client, store).runBatch();
@@ -448,6 +567,7 @@ describe("ChainIndexer canonical ingestion", () => {
       const client = new FakeClient(2n, [
         marketCreatedLog(1n, MARKET_A),
         marketInitializedLog(1n, MARKET_A),
+        marketMetadataUpdatedLog(1n, MARKET_A, hash(501n), hash(502n)),
         scenario.terminal,
       ]);
       const store = new MemoryEventStore();
@@ -500,6 +620,20 @@ class FakeClient {
 
   async getBlockNumber(): Promise<bigint> {
     return this.head;
+  }
+
+  async getTransactionReceipt({ hash: transactionHash }: { hash: Hex }) {
+    const logs = this.logs.filter(
+      (log) => log.transactionHash === transactionHash,
+    );
+    if (!logs[0]) throw new Error("missing receipt");
+    return {
+      status: "success" as const,
+      transactionHash,
+      blockHash: logs[0].blockHash,
+      blockNumber: logs[0].blockNumber,
+      logs,
+    };
   }
 
   async getBlock({ blockNumber }: { blockNumber: bigint }): Promise<FakeBlock> {
@@ -836,7 +970,7 @@ function fixtureLog(
     logIndex,
     removed: false,
     topics,
-    transactionHash: hash(blockNumber * 100n + BigInt(logIndex + 1)),
+    transactionHash: hash(blockNumber * 100n),
     transactionIndex: 0,
   } as Log;
 }

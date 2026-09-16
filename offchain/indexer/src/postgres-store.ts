@@ -528,8 +528,79 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     events: readonly IndexedEvent[],
     expectedBlocks: readonly CanonicalBlock[],
   ): Promise<void> {
+    await this.applyVerifiedBackfill(events, expectedBlocks);
+  }
+
+  /** Repair only an untouched Factory placeholder; never overwrite a traded or settled market. */
+  async repairMarketCreation(
+    market: Address,
+    events: readonly IndexedEvent[],
+    block: CanonicalBlock,
+  ): Promise<void> {
+    const address = getAddress(market);
+    if (
+      events.length === 0 ||
+      events.some((event) => event.address !== address)
+    )
+      throw new Error(
+        "creation repair must contain only the target vault logs",
+      );
+    const mutations = events.flatMap((event) =>
+      deriveMutations(event, this.protocol),
+    );
+    if (
+      !mutations.some(
+        (m) => m.kind === "market-initialized" && m.market === address,
+      ) ||
+      !mutations.some(
+        (m) => m.kind === "market-metadata" && m.market === address,
+      ) ||
+      mutations.some(
+        (m) => m.kind !== "market-initialized" && m.kind !== "market-metadata",
+      )
+    )
+      throw new Error(
+        "creation repair requires initialization and metadata only",
+      );
+    await this.applyVerifiedBackfill(events, [block], async (db) => {
+      // Serialize against realtime ingestion and rollback before checking the repair scope.
+      await db`LOCK TABLE chain_events, markets IN SHARE ROW EXCLUSIVE MODE`;
+      const rows = await db<
+        MarketRow[]
+      >`SELECT * FROM markets WHERE chain_id=${block.chainId} AND market=${address}`;
+      const row = rows[0];
+      const registration = await db<
+        { transaction_hash: Hex }[]
+      >`SELECT transaction_hash FROM registered_markets WHERE chain_id=${block.chainId} AND market=${address} AND registered_block=${block.blockNumber.toString()}`;
+      const existing = await db<
+        { n: number }[]
+      >`SELECT count(*)::int AS n FROM chain_events WHERE chain_id=${block.chainId} AND contract_address=${address}`;
+      if (
+        !row ||
+        BigInt(row.created_block) !== block.blockNumber ||
+        row.updated_block !== row.created_block ||
+        row.rules_hash !== null ||
+        row.outcome_count !== null ||
+        Number(row.state) !== 0 ||
+        existing[0]?.n !== 0 ||
+        !registration[0] ||
+        events.some(
+          (event) =>
+            event.transactionHash !== registration[0]!.transaction_hash,
+        )
+      )
+        throw new Error("market is not an untouched incomplete creation");
+    });
+  }
+
+  private async applyVerifiedBackfill(
+    events: readonly IndexedEvent[],
+    expectedBlocks: readonly CanonicalBlock[],
+    guard?: (db: TransactionSql) => Promise<void>,
+  ): Promise<void> {
     if (!this.financial) throw new Error("financial ledger is not configured");
     await this.sql.begin(async (db) => {
+      if (guard) await guard(db);
       for (const block of expectedBlocks) {
         const stored = await db<
           { block_hash: Hex }[]
