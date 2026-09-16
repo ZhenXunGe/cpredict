@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { formatEther } from "viem";
@@ -147,6 +147,7 @@ export function OperationProvider({ children }: { children: ReactNode }) {
   const session = useSession(),
     cache = useQueryClient(),
     location = useLocation(),
+    navigate = useNavigate(),
     path = location.pathname + location.search,
     storageKey = `cpredict-draft:${session.api.key}`;
   const [draft, setDraft] = useState<Draft | null>(() => {
@@ -265,6 +266,29 @@ export function OperationProvider({ children }: { children: ReactNode }) {
           q.queryKey[0] === session.api.key && q.queryKey[1] !== "operation",
       });
   }, [latest?.id, latest?.state, cache, session.api.key]);
+  useEffect(() => {
+    if (
+      latest?.state === "confirmed" &&
+      latest.intent.kind === "create-market" &&
+      draft?.intent.kind === "create-market" &&
+      latest.intent.userSalt === draft.intent.userSalt &&
+      latest.accountId === session.account?.id &&
+      draft.accountId === session.account?.id &&
+      draft.identityKey === session.identityKey &&
+      draft.path === path &&
+      location.pathname === `/${session.api.environment.id}/creator/new`
+    )
+      navigate(`/${session.api.environment.id}/creator`, { replace: true });
+  }, [
+    latest,
+    draft,
+    path,
+    location.pathname,
+    navigate,
+    session.account?.id,
+    session.identityKey,
+    session.api.environment.id,
+  ]);
   const begin = (request: Request) => {
     const next = draftSchema.parse({
       ...request,
