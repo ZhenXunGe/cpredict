@@ -209,6 +209,10 @@
       "sha256": "c663f8141867cab12faf89cafc389a2d6747c83e19dcc45eb4aa13ea0dcd063e"
     },
     {
+      "path": "docs/market-initialization-repair.md",
+      "sha256": "517553084ffb9e7ade084283e12dce5af2e2accc4d89aed16ce29b705195bbb3"
+    },
+    {
       "path": "docs/public-test-site-acceptance.md",
       "sha256": "306d47c9ce33bdeb3afbbc2fba83fd9c809ebfb7f66c6a6a385d9d508336d3c5"
     },
@@ -1201,6 +1205,10 @@
       "sha256": "68c485bc32a81b8254d442647939a24897a138ee5f50f99c212f2f1943241069"
     },
     {
+      "path": "offchain/indexer/src/creation-logs.ts",
+      "sha256": "a0cd572fcac3db73175d462691b57dc94e2c45ade6830b0d02de4ab2fc699d0f"
+    },
+    {
       "path": "offchain/indexer/src/derived.ts",
       "sha256": "10f98972c90883758d5e3f95b24f3fd1c7315283787b533be004650defecc37d"
     },
@@ -1218,7 +1226,7 @@
     },
     {
       "path": "offchain/indexer/src/indexer.ts",
-      "sha256": "f202618d374f9d701d3626fe797450afde041f0b588369d1a2230cb31d3d8214"
+      "sha256": "3618ef343d94950daa11a253ef937809cf56a864cb8c84f00c3d0c8ba6b904a4"
     },
     {
       "path": "offchain/indexer/src/instrumented-store.ts",
@@ -1242,7 +1250,7 @@
     },
     {
       "path": "offchain/indexer/src/postgres-store.ts",
-      "sha256": "4ce89769aa71b164c8ae059bca282062152508b765f4ab8b20fcaa93fd7a8c17"
+      "sha256": "f1a0eff06e8434e533dc6a1f562b514a846dd9f85c9c98fb92a5a859c3361bc9"
     },
     {
       "path": "offchain/indexer/src/public-catalog.ts",
@@ -1251,6 +1259,10 @@
     {
       "path": "offchain/indexer/src/reconciliation.ts",
       "sha256": "cec9dab27c4b17275eadc72af541e13aa886707cead7e9affd1d04ec51caad91"
+    },
+    {
+      "path": "offchain/indexer/src/repair-creation.ts",
+      "sha256": "cb6d7a65fa3ec652ae2f9e794d3fd035d6737741e583059362b6514d6573e07c"
     },
     {
       "path": "offchain/indexer/src/rights-reader.ts",
@@ -1262,7 +1274,7 @@
     },
     {
       "path": "offchain/indexer/src/runtime.ts",
-      "sha256": "782be7ee4f9f9dfacd5664cf05cac36ce4831987251234f3d7c3beb80729efc8"
+      "sha256": "0cb2a93f2305aa3931a7cb5e6f33897ad9313e6f86a31ea0d79bab92843414ad"
     },
     {
       "path": "offchain/indexer/src/scheduler.ts",
@@ -1293,6 +1305,10 @@
       "sha256": "954d09abc284e5898dc22f7bf74591a46bc4354c3a03a9b010138e6129ed8a5f"
     },
     {
+      "path": "offchain/indexer/test/creation-repair.integration.test.ts",
+      "sha256": "cd6eec7e035b8714cca4cf727650dd42b3563183f5d597d575ae16a1ff5b893d"
+    },
+    {
       "path": "offchain/indexer/test/financial-api.test.ts",
       "sha256": "f4ff1d6e6b006b329f4b4d8cfaf8ed8b9a0277838cfd1140175276cd4765ce5d"
     },
@@ -1310,7 +1326,7 @@
     },
     {
       "path": "offchain/indexer/test/indexer.test.ts",
-      "sha256": "c5d2a14a5c43a35f7f2e414650ca173a0174a355711fabde58e231a06b663daf"
+      "sha256": "2f9f171fb5aaa1f85529fae2744ff6939abdfb939ac2500704afc471c3915e1b"
     },
     {
       "path": "offchain/indexer/test/instrumented-store.test.ts",
@@ -1954,7 +1970,7 @@
     },
     {
       "path": "scripts/manifest-inventory.mjs",
-      "sha256": "2b69375422541bb7af3a197228e2427b2d481389fe44bcb1fe453c89f504cb1b"
+      "sha256": "9261e15b45685cc74df91f557d5b595288d9d1a252f818fe8df32a98d3d54413"
     },
     {
       "path": "scripts/normalize-text-log.mjs",

@@ -72,6 +72,7 @@ export async function startIndexerRuntime(
     blockConcurrency: config.blockConcurrency,
     addresses: config.coreAddresses,
     factoryAddress: config.factoryAddress,
+    protocol: environment?.deployment.protocolVersion ?? "time-v2",
     ...(rawStore.financial?{financial:{paymentToken:rawStore.financial.environment.deployment.paymentToken,accounts:()=>rawStore.financial!.trackedAccounts(),scanned:(accounts:readonly import("viem").Address[],from:bigint,to:bigint,hash:import("viem").Hex)=>rawStore.financial!.accountScanned(accounts,from,to,hash),backfill:()=>rawStore.backfillFinancialAccounts(client)}}:{}),
   });
   const scheduler = new BoundedIndexerScheduler(indexer, telemetry, {

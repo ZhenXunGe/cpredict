@@ -1,5 +1,13 @@
-import { getAddress, type Address, type Hex, type Log, type PublicClient } from "viem";
+import {
+  getAddress,
+  type Address,
+  type Hex,
+  type Log,
+  type PublicClient,
+} from "viem";
 import { scopedAccountLogs } from "./scoped-logs.js";
+import { completeMarketCreationLogs } from "./creation-logs.js";
+import type { ProtocolVersion } from "../../sdk/src/legacy-protocol.js";
 import { confirmationFor, discoverMarketAddresses } from "./derived.js";
 import {
   normalizeLog,
@@ -20,7 +28,18 @@ export interface IndexerOptions {
   addresses: readonly Address[];
   /** Enables atomic, same-block discovery of Factory-created market vaults. */
   factoryAddress?: Address;
-  financial?: {paymentToken: Address; accounts(): Promise<readonly Address[]>; scanned(accounts: readonly Address[], from: bigint, to: bigint, hash: Hex): Promise<void>; backfill(): Promise<void>};
+  protocol?: ProtocolVersion;
+  financial?: {
+    paymentToken: Address;
+    accounts(): Promise<readonly Address[]>;
+    scanned(
+      accounts: readonly Address[],
+      from: bigint,
+      to: bigint,
+      hash: Hex,
+    ): Promise<void>;
+    backfill(): Promise<void>;
+  };
 }
 
 export interface BatchResult {
@@ -56,7 +75,9 @@ export class ChainIndexer {
       blockConcurrency < 1 ||
       blockConcurrency > 32
     )
-      throw new RangeError("blockConcurrency must be an integer within [1, 32]");
+      throw new RangeError(
+        "blockConcurrency must be an integer within [1, 32]",
+      );
     if (
       options.addresses.length === 0 &&
       options.factoryAddress === undefined
@@ -67,7 +88,8 @@ export class ChainIndexer {
 
   async runBatch(): Promise<BatchResult | undefined> {
     await syncStage("reconcile", () => this.reconcileCheckpoint());
-    if (this.options.financial) await syncStage("event-logs",()=>this.options.financial!.backfill());
+    if (this.options.financial)
+      await syncStage("event-logs", () => this.options.financial!.backfill());
     const checkpoint = await syncStage("checkpoint-read", () =>
       this.store.checkpoint(this.options.chainId),
     );
@@ -99,22 +121,82 @@ export class ChainIndexer {
       ...registered,
       ...discovered,
     ]);
-    const logs = await syncStage("event-logs", () =>
+    let logs = await syncStage("event-logs", () =>
       this.client.getLogs({
         address: [...addresses],
         fromBlock,
         toBlock,
       }),
     );
-    const tracked = this.options.financial ? await this.options.financial.accounts() : [];
-    const scoped = this.options.financial ? await syncStage("event-logs",()=>scopedAccountLogs(this.client,this.options.financial!.paymentToken,tracked,fromBlock,toBlock)) : [];
-    const events = deduplicateLogs([...discoveryLogs, ...logs, ...scoped])
+    // Discovery and range queries can hit RPC nodes at different indexing stages.
+    // Include vaults first seen in the second query across the whole batch too.
+    const lateMarkets =
+      this.options.factoryAddress === undefined
+        ? []
+        : discoverMarketAddresses(
+            logs.filter(
+              (log) =>
+                log.address.toLowerCase() ===
+                this.options.factoryAddress!.toLowerCase(),
+            ),
+          ).filter(
+            (market) =>
+              !addresses.some(
+                (address) => address.toLowerCase() === market.toLowerCase(),
+              ),
+          );
+    if (lateMarkets.length > 0) {
+      const lateLogs = await syncStage("event-logs", () =>
+        this.client.getLogs({
+          address: [...lateMarkets],
+          fromBlock,
+          toBlock,
+        }),
+      );
+      logs = [...logs, ...lateLogs];
+    }
+    const creationLogs =
+      this.options.factoryAddress === undefined
+        ? [...discoveryLogs, ...logs]
+        : await syncStage("event-logs", () =>
+            completeMarketCreationLogs(
+              this.client,
+              deduplicateLogs([...discoveryLogs, ...logs]),
+              this.options.factoryAddress!,
+              this.options.chainId,
+              this.options.protocol,
+            ),
+          );
+    const tracked = this.options.financial
+      ? await this.options.financial.accounts()
+      : [];
+    const scoped = this.options.financial
+      ? await syncStage("event-logs", () =>
+          scopedAccountLogs(
+            this.client,
+            this.options.financial!.paymentToken,
+            tracked,
+            fromBlock,
+            toBlock,
+          ),
+        )
+      : [];
+    const events = deduplicateLogs([...creationLogs, ...scoped])
       .map((log) => normalizeLog(this.options.chainId, log, confirmationStatus))
       .sort(compareEvents);
     const blocks = await syncStage("canonical-blocks", () =>
       this.loadCanonicalBlocks(fromBlock, toBlock, confirmationStatus),
     );
     validateLineage(blocks, checkpoint);
+    const canonicalHashes = new Map(
+      blocks.map((block) => [block.blockNumber, block.blockHash]),
+    );
+    if (
+      events.some(
+        (event) => canonicalHashes.get(event.blockNumber) !== event.blockHash,
+      )
+    )
+      throw new Error("event logs do not match canonical batch");
     const endBlock = blocks.at(-1);
     if (endBlock === undefined)
       throw new Error("canonical block batch is empty");
@@ -126,13 +208,22 @@ export class ChainIndexer {
     await syncStage("batch-write", () =>
       this.store.applyBatch(events, blocks, next),
     );
-    if (this.options.financial) await syncStage("batch-write",()=>this.options.financial!.scanned(tracked,fromBlock,toBlock,endBlock.blockHash));
+    if (this.options.financial)
+      await syncStage("batch-write", () =>
+        this.options.financial!.scanned(
+          tracked,
+          fromBlock,
+          toBlock,
+          endBlock.blockHash,
+        ),
+      );
     return {
       fromBlock,
       toBlock,
       blockCount: blocks.length,
       eventCount: events.length,
-      discoveredMarkets: discovered.length,
+      discoveredMarkets: uniqueAddresses([...discovered, ...lateMarkets])
+        .length,
       confirmationStatus,
     };
   }
