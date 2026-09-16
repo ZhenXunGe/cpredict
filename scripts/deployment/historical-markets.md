@@ -36,6 +36,27 @@ command: it archives markets instead of keeping their claims available.
    testing or resubmit an unknown operation.
 
 Full database backups include both schemas. Keep the historical service project
-running on restart; do not remove it when updating the main stack. Future database
+running on restart unless the owner explicitly retires it; do not remove it as a side effect of updating the main stack. Future database
 migrations affecting history require a separate compatibility review. Ordinary
 main updates must not recreate shared quota views or reset old usage.
+
+## Retiring a historical deployment
+
+After the owner explicitly requests retirement and deletion, remove its public
+environment and return HTTP 410 from its old page/API namespaces before removing
+the historical Compose services. The shared PostgreSQL container and networks
+belong to the current deployment and must remain.
+
+Before deleting old schemas, validate their environment identities and check for
+unresolved operations, unsettled sponsorship charges and deposits. Move only the
+quota history still needed by the current billing window into the current
+schema's `app_quota_carryover`, then replace its quota view with the local
+operations/carryover union. Verify the per-operation charges and budget totals
+are unchanged inside the same transaction. Delete the old market/indexer/app
+schemas only after detaching this dependency, and verify current schema tables
+are unchanged. Metadata is shared: delete publications and challenges by the
+retired factory identities, never truncate the shared metadata database.
+
+Do not restore a pre-retirement configuration or database backup over the live
+deployment without a separate review; it can resurrect removed endpoints and
+data. On-chain contracts and transactions are not deleted by this procedure.

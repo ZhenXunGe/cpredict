@@ -44,6 +44,10 @@ server {
   location = /healthz { access_log off; default_type application/json; return 200 '{"status":"ok"}'; }
   location = /readyz { allow 127.0.0.1; allow ::1; deny all; proxy_pass http://indexer:8787/readyz; }
   location ~ ^/ctusd/(?:app|indexer|metadata)/history/(?:metrics|readyz)(?:/|$) { return 404; }
+  # The old ctUSD deployment has been retired. Do not forward stale bookmarks,
+  # wallet clients or provider callbacks to either the old or current services.
+  location ~ ^/ctusd/(?:app|indexer|metadata)/history(?:/|$) { return 410; }
+  location ~ ^/ctusd-public-test(?:/|$) { return 410; }
   location ~ ^/(?:ctusd/|usdc/)?(?:app|indexer|metadata)/(?:metrics|readyz)(?:/|$) { return 404; }
   location ~ ^/(?:metrics|runtime|\.env|\.git)(?:/|$|\.) { return 404; }
 
@@ -66,25 +70,6 @@ server {
   }
   location /ctusd/indexer/ { proxy_pass http://indexer:8787/; }
   location /ctusd/metadata/ { proxy_pass http://metadata:8793/; }
-  location /ctusd/app/history/ {
-    proxy_set_header Authorization $http_authorization;
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
-    proxy_set_header X-Forwarded-For $cpredict_client_ip;
-    set $history_app_upstream app-service-history:8795;
-    rewrite ^/ctusd/app/history/(.*)$ /$1 break;
-    proxy_pass http://$history_app_upstream;
-  }
-  location /ctusd/indexer/history/ {
-    set $history_indexer_upstream indexer-history:8787;
-    rewrite ^/ctusd/indexer/history/(.*)$ /$1 break;
-    proxy_pass http://$history_indexer_upstream;
-  }
-  location /ctusd/metadata/history/ {
-    set $history_metadata_upstream metadata-history:8793;
-    rewrite ^/ctusd/metadata/history/(.*)$ /$1 break;
-    proxy_pass http://$history_metadata_upstream;
-  }
   location /usdc/app/ {
     proxy_set_header Authorization $http_authorization;
     proxy_set_header Host $host;

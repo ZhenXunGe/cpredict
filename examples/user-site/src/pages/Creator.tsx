@@ -230,7 +230,8 @@ function PlatformFeesSummary() {
         />
       </strong>
       <p className="small muted">
-        当前及历史市场的终局平台分成、C2C
+        {environments.length > 1 ? "当前及历史市场" : "当前市场"}
+        的终局平台分成、C2C
         平台手续费及市场创建费合计。按记入费用账户的收入累计，领取不重复计入，不含创作者收入。
       </p>
       {query.data && (
