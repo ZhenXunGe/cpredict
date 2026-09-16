@@ -157,6 +157,18 @@ if (new URLSearchParams(location.search).has("gas-test")) {
 const timeoutScenario = new URLSearchParams(location.search).get(
   "timeout-test",
 );
+const creatorSummary = new URLSearchParams(location.search).get(
+  "creator-summary",
+);
+const creatorResolved = ["resolved", "multi", "unavailable"].includes(
+  creatorSummary ?? "",
+);
+const creatorPrincipals =
+  creatorSummary === "zero"
+    ? [0n, 0n]
+    : creatorSummary === "multi"
+      ? [1250000n, 2000000n, 3750000n]
+      : [1250000n, 3750000n];
 const now = Math.floor(Date.now() / 1000),
   close = timeoutScenario
     ? now -
@@ -170,7 +182,11 @@ const now = Math.floor(Date.now() / 1000),
 const rules = marketRulesSchema.parse({
   version: "cpredict-rules-v2",
   question: "本周公开测试能否完成全部退出场景？",
-  outcomes: ["能够完成", "尚未完成"],
+  outcomes: creatorSummary
+    ? creatorSummary === "multi"
+      ? ["甲", "乙", "丙"]
+      : ["是", "否"]
+    : ["能够完成", "尚未完成"],
   closeAt: close,
   eventStartsAt: close + 1,
   outcomeDeadlineAt: close + 3600,
@@ -197,7 +213,7 @@ const market = {
   market: A(101),
   creator: appAccount.address,
   creatorTreasury: appAccount.address,
-  outcomeCount: 2,
+  outcomeCount: rules.outcomes.length,
   closeAt: String(close),
   createdAt: String(now - 3600),
   eventStartsAt: String(close + 1),
@@ -212,9 +228,13 @@ const market = {
   primaryFilledUnits: "0",
   primaryPayment: "0",
   creatorBond: "10000000",
-  state: 0,
+  state: creatorResolved ? 1 : 0,
   voidReason: 0,
-  winningOutcome: null,
+  winningOutcome: creatorResolved
+    ? creatorSummary === "multi"
+      ? "2"
+      : "1"
+    : null,
   evidenceHash: null,
   createdBlock: "90",
   updatedBlock: "100",
@@ -626,12 +646,25 @@ class FixtureApi extends SiteApi {
       address,
       functionName,
       args,
+      blockNumber,
     }: {
       address?: string;
       functionName: string;
       args?: unknown[];
+      blockNumber?: bigint;
     }) => {
       if (this.slow) await new Promise((r) => setTimeout(r, 600));
+      if (
+        creatorSummary &&
+        ["totalPrincipal", "principalByOutcome"].includes(functionName) &&
+        blockNumber !== 100n
+      )
+        throw new AppError("fixture_requires_same_block");
+      if (functionName === "principalByOutcome") {
+        if (creatorSummary === "unavailable")
+          throw new AppError("service_unavailable", 503);
+        return creatorSummary ? creatorPrincipals[Number(args?.[0])] : 0n;
+      }
       const feeScenario = new URLSearchParams(location.search).get("fee-test");
       if (
         feeScenario === "unavailable" &&
@@ -664,14 +697,22 @@ class FixtureApi extends SiteApi {
           ? this.environment.deployment.protocolVersion === "legacy-v1"
             ? 3
             : 2
-          : 0,
+          : creatorResolved
+            ? 1
+            : 0,
         voidReason: timeoutVoided ? 3 : 0,
-        winningOutcome: 0,
+        winningOutcome: creatorResolved
+          ? creatorSummary === "multi"
+            ? 2
+            : 1
+          : 0,
         closeAt: BigInt(close),
         resolutionDeadline: BigInt(close + 7200),
         minimumPrimaryUnits: 10000n,
         minimumC2CUnits: 10000n,
-        totalPrincipal: 0n,
+        totalPrincipal: creatorSummary
+          ? creatorPrincipals.reduce((a, b) => a + b, 0n)
+          : 0n,
         config: A(77),
         resolutionWindow: 3600n,
         creationFee: 2000000n,

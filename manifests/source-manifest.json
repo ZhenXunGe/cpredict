@@ -402,7 +402,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "d38eb5daa7a62e35dc23948f1cbcafaba90d6bee6adf540329a83a6716b58c5a"
+      "sha256": "9aa16b7608e986c304899d802478e5cb7502c7f94fdc4b61ef66bad560b76a00"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
@@ -469,6 +469,10 @@
       "sha256": "d7c231dd413aaa83ff662900770fd1e9660aa42fa06583df19480bb8e3245e31"
     },
     {
+      "path": "examples/user-site/test/browser/creator-summary.spec.ts",
+      "sha256": "d56c33be3fcdcf660ca1cd64b19138f44caf04d2d54aab8d2fc953bfe0b9b6b5"
+    },
+    {
       "path": "examples/user-site/test/browser/deposit-fixture.ts",
       "sha256": "da48cbf42c7e8b75486c9e3968bafd51300fe36e9fed941a0cdf406dcb80969f"
     },
@@ -486,7 +490,7 @@
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "196f435b8d49d687b5ef929f21cf5f86b5c9b1a08fb7a1af5ff04792c5d1a943"
+      "sha256": "70bbfd22004ed68fe8b2000e1547285510e9492b892115976cfae98af19979b5"
     },
     {
       "path": "examples/user-site/test/browser/gas-payment.spec.ts",
