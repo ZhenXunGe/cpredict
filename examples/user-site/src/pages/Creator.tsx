@@ -33,6 +33,7 @@ import {
   marketStatusCopy,
   useMarketClock,
   dateText,
+  marketReadAbi,
 } from "../data.js";
 import {
   Amount,
@@ -887,6 +888,8 @@ function CreatorMarket({ market }: { market: Address }) {
     [outcome, setOutcome] = useState("0"),
     [evidence, setEvidence] = useState(""),
     [error, setError] = useState("");
+  const state = live.data?.state ?? query.data?.state,
+    winningOutcome = live.data?.winningOutcome ?? query.data?.winningOutcome;
   const act = (kind: "resolve" | "creator-void") => {
     if (evidence.trim().length < 8) {
       setError(
@@ -952,6 +955,20 @@ function CreatorMarket({ market }: { market: Address }) {
             )}
             。已终局市场可在持仓与权益中结算和领取押金。
           </Notice>
+          {state === 1 && (
+            <Notice tone="success">
+              终局结果：
+              {winningOutcome === null || winningOutcome === undefined
+                ? "结果尚待同步"
+                : (rules.data?.outcomes[Number(winningOutcome)] ??
+                  `选项 #${winningOutcome}（名称暂不可用）`)}
+            </Notice>
+          )}
+          <CreatorMarketInvestment
+            market={market}
+            outcomeCount={query.data.outcomeCount}
+            labels={rules.data?.outcomes ?? []}
+          />
           {live.data?.state === 0 &&
             live.data.now >= live.data.resolutionDeadline && (
               <Notice tone="warning">
@@ -1020,5 +1037,82 @@ function CreatorMarket({ market }: { market: Address }) {
         </div>
       )}
     </>
+  );
+}
+
+function CreatorMarketInvestment({
+  market,
+  outcomeCount,
+  labels,
+}: {
+  market: Address;
+  outcomeCount: number | null;
+  labels: string[];
+}) {
+  const { api } = useSession();
+  const count = outcomeCount ?? labels.length;
+  const validCount = Number.isInteger(count) && count >= 2 && count <= 32;
+  const query = useQuery({
+    queryKey: [api.key, "creator-market-investment", market, count],
+    enabled: validCount,
+    queryFn: async () => {
+      const client = api.publicClient();
+      const block = await client.getBlock();
+      const base = {
+        address: market,
+        abi: marketReadAbi,
+        blockNumber: block.number,
+      };
+      // The total and option amounts must describe the same chain snapshot.
+      const [total, ...outcomes] = await Promise.all([
+        client.readContract({ ...base, functionName: "totalPrincipal" }),
+        ...Array.from({ length: count }, (_, i) =>
+          client.readContract({
+            ...base,
+            functionName: "principalByOutcome",
+            args: [BigInt(i)],
+          }),
+        ),
+      ]);
+      return { total, outcomes };
+    },
+    staleTime: 5000,
+    refetchInterval: 15000,
+  });
+  return (
+    <section className="stack" aria-label="一级投入统计">
+      <h3>一级投入统计</h3>
+      <p className="small muted">
+        累计一级买入金额，不含 C2C 成交。结算、领取或退款不会减少累计投入。
+      </p>
+      <div className="stats-grid">
+        <div className="stat-card">
+          <span>一级投入总额</span>
+          <strong>
+            <Amount
+              value={query.data?.total.toString()}
+              asset={api.environment.asset}
+            />
+          </strong>
+        </div>
+        {validCount &&
+          Array.from({ length: count }, (_, i) => (
+            <div className="stat-card" key={i}>
+              <span>
+                {labels[i] ? `“${labels[i]}”投入金额` : `选项 #${i} 投入金额`}
+              </span>
+              <strong>
+                <Amount
+                  value={query.data?.outcomes[i]?.toString()}
+                  asset={api.environment.asset}
+                />
+              </strong>
+            </div>
+          ))}
+      </div>
+      {!validCount && <Notice>市场选项信息尚待同步。</Notice>}
+      {validCount && query.isPending && <Loading />}
+      <ErrorNotice error={query.error} retry={() => void query.refetch()} />
+    </section>
   );
 }
