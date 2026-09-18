@@ -1,7 +1,6 @@
 import type { createSessionKernel } from "../../../offchain/app-core/src/trading-session-kernel.js";
 import { z } from "zod";
 import { type Hex } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
 import {
   AppError,
   environmentKey,
@@ -160,6 +159,7 @@ export async function loadTradingSession(
         parsed.session.deploymentId !== api.environment.deployment.id
       )
         throw new AppError("trading_session_account_changed", 409);
+      const { privateKeyToAccount } = await import("./signing-keys.js");
       if (
         privateKeyToAccount(parsed.privateKey as Hex).address.toLowerCase() !==
         parsed.session.publicKey.toLowerCase()

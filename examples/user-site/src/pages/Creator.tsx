@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import {
   formatUnits,
   keccak256,
@@ -31,6 +31,7 @@ import {
   useMarkets,
   useRules,
   marketStatusCopy,
+  marketResolutionDeadline,
   useMarketClock,
   dateText,
   marketReadAbi,
@@ -46,6 +47,11 @@ import {
   PageTitle,
   shortAddress,
 } from "../ui.js";
+import {
+  checkCreationTime,
+  creationNoticeSchema,
+  isNewlyCreatedMarket,
+} from "../market-creation.js";
 import { parseAssetAmount } from "../amounts.js";
 import { publishRules, rulesPublicationErrorCopy } from "../metadata.js";
 const factoryAbi = parseAbi([
@@ -249,9 +255,17 @@ function PlatformFeesSummary() {
   );
 }
 export function CreatorPage() {
-  const { api, account } = useSession(),
-    now = useMarketClock(),
-    markets = useMarkets("", "", account?.address),
+  const { api, account, identityKey } = useSession();
+  const location = useLocation();
+  const parsed = creationNoticeSchema.safeParse(location.state?.creation);
+  const creation =
+    parsed.success &&
+    parsed.data.accountId === account?.id &&
+    parsed.data.identityKey === identityKey
+      ? parsed.data
+      : undefined;
+  const now = useMarketClock(),
+    markets = useMarkets("", "", account?.address, creation),
     pnl = useQuery({
       queryKey: [api.key, "pnl", account?.address],
       enabled: !!account,
@@ -318,6 +332,19 @@ export function CreatorPage() {
             </Link>
           </Notice>
           <h2>我创建的市场</h2>
+          {creation &&
+            !markets.data?.pages.some((p) =>
+              p.items.some((m) => isNewlyCreatedMarket(m, creation)),
+            ) && (
+              <Notice>
+                市场已创建成功，正在同步到列表。此页面会自动更新，无需刷新或重复创建。
+                <Link
+                  to={`/${api.environment.id}/history?operation=${creation.operationId}`}
+                >
+                  查看创建记录
+                </Link>
+              </Notice>
+            )}
           {markets.isPending && <Loading />}
           {markets.data && (
             <DataTable headers={["市场", "状态", "押金", "管理"]}>
@@ -331,7 +358,7 @@ export function CreatorPage() {
                         title={m.market}
                       >
                         {m.question?.trim() ||
-                          `名称暂不可用（${shortAddress(m.market)}）`}
+                          `后台核验中（${shortAddress(m.market)}）`}
                       </Link>
                     </td>
                     <td>
@@ -456,11 +483,7 @@ export function CreateMarketPage() {
       };
       const closeAt = timestamp(close),
         outcomeDeadlineAt = timestamp(deadline);
-      if (
-        BigInt(closeAt) < latest.now + 300n ||
-        BigInt(closeAt) > latest.now + 90n * 86400n
-      )
-        throw new Error("封盘时间必须在链上当前时间的 5 分钟至 90 天之间。");
+      checkCreationTime(BigInt(closeAt), latest.now);
       const rules = marketRulesSchema.parse({
         version: "cpredict-rules-v2",
         question,
@@ -681,7 +704,10 @@ export function CreateMarketPage() {
           />
         </Field>
         <div className="form-grid">
-          <Field label="封盘时间（上海）">
+          <Field
+            label="封盘时间（上海）"
+            hint="请至少预留 6 分钟：合约要求上链时距封盘不少于 5 分钟，另留 1 分钟用于签名与上链。"
+          >
             <input
               type="datetime-local"
               value={close}
@@ -848,6 +874,9 @@ export function CreateMarketPage() {
           />
           开启早鸟机制
         </label>
+        <p className="small muted">
+          早鸟奖励从扣除平台分成后的创作者终局抽成中划出，比例由协议配置在创建时固定。参与者按一级买入数量与时间权重分配，越早买入积分越高；创建后可在市场“费用说明”查看具体比例。
+        </p>
         <label className="row">
           <input
             type="checkbox"
@@ -962,9 +991,30 @@ function CreatorMarket({ market }: { market: Address }) {
               {winningOutcome === null || winningOutcome === undefined
                 ? "结果尚待同步"
                 : (rules.data?.outcomes[Number(winningOutcome)] ??
-                  `选项 #${winningOutcome}（名称暂不可用）`)}
+                  `选项 #${winningOutcome}（后台核验中）`)}
             </Notice>
           )}
+          <section aria-label="市场时间">
+            <p className="small muted">所有时间均为北京时间</p>
+            <dl className="data-list">
+              <dt>封盘时间</dt>
+              <dd>{dateText(query.data.closeAt)}</dd>
+              <dt>事件开始</dt>
+              <dd>{dateText(query.data.eventStartsAt)}</dd>
+              <dt>结果截止</dt>
+              <dd>{dateText(query.data.outcomeDeadlineAt)}</dd>
+              <dt>最终结算截止</dt>
+              <dd>
+                {dateText(
+                  live.data?.resolutionDeadline.toString() ??
+                    marketResolutionDeadline(
+                      query.data,
+                      api.environment.deployment.protocolVersion,
+                    ),
+                )}
+              </dd>
+            </dl>
+          </section>
           <CreatorMarketInvestment
             market={market}
             outcomeCount={query.data.outcomeCount}

@@ -628,6 +628,74 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     });
   }
 
+  /** Receipt-verified purchase recovery: add missing logs without regressing later totals or checkpoint. */
+  async repairPurchaseLogs(events: readonly IndexedEvent[], block: CanonicalBlock): Promise<void> {
+    if (!this.financial || events.length === 0) throw new Error("purchase repair requires financial events");
+    const mutations = events.flatMap((e) => deriveMutations(e, this.protocol));
+    const buys = mutations.filter((m) => m.kind === "primary-purchased");
+    const buy = buys[0];
+    if (buys.length !== 1 || !buy || mutations.some((m) => m.kind !== "primary-purchased" &&
+      !(m.kind === "position-delta" && m.delta === buy.filledUnits && m.vault === buy.market && m.owner === buy.buyer && m.outcomeId === buy.outcomeId)) ||
+      mutations.filter((m) => m.kind === "position-delta").length !== 1 || events.some((e) => e.chainId !== block.chainId || e.blockNumber !== block.blockNumber || e.blockHash !== block.blockHash || e.transactionHash !== events[0]!.transactionHash))
+      throw new Error("purchase repair scope is invalid");
+    await this.sql.begin(async (db) => {
+      await db`LOCK TABLE chain_events,markets,positions IN SHARE ROW EXCLUSIVE MODE`;
+      const current = (await db<MarketRow[]>`SELECT * FROM markets WHERE chain_id=${block.chainId} AND market=${buy.market}`)[0];
+      if (!current) throw new Error("purchase market is not registered");
+      const position = (await db<{updated_block:string}[]>`SELECT updated_block FROM positions WHERE chain_id=${block.chainId} AND vault=${buy.market} AND owner=${buy.buyer} AND outcome_id=${buy.outcomeId.toString()}`)[0];
+      let inserted = 0;
+      for (const event of events) {
+        const existing = (await db<{contract_address:string;data:string;topics:string[];block_hash:string}[]>`SELECT contract_address,data,topics,block_hash FROM chain_events WHERE chain_id=${event.chainId} AND transaction_hash=${event.transactionHash} AND log_index=${event.logIndex}`)[0];
+        if (existing && (existing.block_hash !== event.blockHash || existing.contract_address.toLowerCase() !== event.address.toLowerCase() || existing.data !== event.data || JSON.stringify(existing.topics) !== JSON.stringify(event.topics)))
+          throw new Error("purchase repair conflicts with stored log");
+        if (await insertRawEvent(db,event)) { await applyProjection(db,event,this.protocol); inserted++; }
+      }
+      await db`UPDATE markets SET primary_payment=GREATEST(primary_payment,${current.primary_payment}::numeric),updated_block=GREATEST(updated_block,${current.updated_block}::numeric) WHERE chain_id=${block.chainId} AND market=${buy.market}`;
+      if (position) await db`UPDATE positions SET updated_block=GREATEST(updated_block,${position.updated_block}::numeric) WHERE chain_id=${block.chainId} AND vault=${buy.market} AND owner=${buy.buyer} AND outcome_id=${buy.outcomeId.toString()}`;
+      await this.projectFinancialTransactions(db,[events[0]!.transactionHash]);
+      if (inserted > 0) {
+        const epoch = (await db<{epoch:string}[]>`UPDATE ledger_environment SET epoch=epoch+1 WHERE singleton RETURNING epoch`)[0]!.epoch;
+        await db`INSERT INTO ledger_corrections(epoch,from_block,reason) VALUES(${epoch},${block.blockNumber.toString()},'confirmed_purchase_receipt')`;
+      }
+    });
+  }
+
+  /** Insert verified receipt logs and replay in canonical order; never overlay old state on newer state. */
+  async repairOperationLogs(events: readonly IndexedEvent[], block: CanonicalBlock): Promise<number> {
+    if (!this.financial || !events.length || events.some(e => e.chainId !== block.chainId ||
+      e.blockNumber !== block.blockNumber || e.blockHash !== block.blockHash ||
+      e.transactionHash !== events[0]!.transactionHash)) throw new Error("operation_repair_scope");
+    return await this.sql.begin(async db => {
+      await db`SET LOCAL lock_timeout='5s'`;
+      await db`SET LOCAL statement_timeout='30s'`;
+      await db`SET LOCAL transaction_timeout='30s'`;
+      // Same ordering as ingestion (canonical first). Readers see the old or new complete transaction.
+      await db`LOCK TABLE canonical_blocks,chain_events,chain_checkpoints,registered_markets,markets,listings,positions,fills,claims,activities,activity_participants,ledger_facts,ledger_environment IN SHARE ROW EXCLUSIVE MODE`;
+      const canonical=(await db<{block_hash:string}[]>`SELECT block_hash FROM canonical_blocks WHERE chain_id=${block.chainId} AND block_number=${block.blockNumber.toString()}`)[0];
+      const head=(await db<{block_number:string}[]>`SELECT block_number FROM chain_checkpoints WHERE chain_id=${block.chainId}`)[0];
+      if (canonical?.block_hash !== block.blockHash || !head || BigInt(head.block_number)<block.blockNumber)
+        throw new Error("operation_repair_canonical_mismatch");
+      let inserted=0;
+      for(const event of events){
+        const existing=(await db<{contract_address:string;data:string;topics:string[];block_hash:string;transaction_index:number}[]>`SELECT contract_address,data,topics,block_hash,transaction_index FROM chain_events WHERE chain_id=${event.chainId} AND transaction_hash=${event.transactionHash} AND log_index=${event.logIndex}`)[0];
+        if(existing && (existing.block_hash!==event.blockHash || existing.transaction_index!==event.transactionIndex ||
+          existing.contract_address.toLowerCase()!==event.address.toLowerCase() || existing.data!==event.data || JSON.stringify(existing.topics)!==JSON.stringify(event.topics)))
+          throw new Error("operation_repair_log_conflict");
+        if(await insertRawEvent(db,event))inserted++;
+      }
+      if(!inserted)return 0;
+      // Bound automatic replay. Larger installations must use an explicitly planned shadow rebuild.
+      const rows=await db<RawEventRow[]>`SELECT block_number,block_hash,transaction_hash,transaction_index,log_index,contract_address,topics,data,confirmation_status FROM chain_events WHERE chain_id=${block.chainId} ORDER BY block_number,transaction_index,log_index LIMIT 20001`;
+      if(rows.length>20000)throw new Error("operation_repair_capacity");
+      await clearProjections(db,block.chainId);
+      for(const row of rows)await applyProjection(db,mapRawEvent(block.chainId,row,this.protocol),this.protocol);
+      await this.projectFinancialTransactions(db,[...new Set(rows.map(r=>r.transaction_hash))]);
+      const epoch=(await db<{epoch:string}[]>`UPDATE ledger_environment SET epoch=epoch+1 WHERE singleton RETURNING epoch`)[0]!.epoch;
+      await db`INSERT INTO ledger_corrections(epoch,from_block,reason) VALUES(${epoch},${block.blockNumber.toString()},'confirmed_operation_receipt')`;
+      return inserted;
+    }) as number;
+  }
+
   /** Rebuild the shadow facts in bounded block ranges. Raw event coverage is never upgraded by replay alone. */
   async replayFinancial(from: bigint, to: bigint): Promise<void> {
     if (

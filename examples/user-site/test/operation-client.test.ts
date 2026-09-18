@@ -149,6 +149,92 @@ beforeEach(() => {
   vi.stubGlobal("navigator", {});
 });
 
+describe("purchase preflight and signature stage", () => {
+  const buy = {
+    kind: "buy" as const,
+    market: A(40),
+    outcomeId: "0",
+    units: "20000000",
+    minUnits: "20000000",
+    maxPayment: "20000000",
+    deadline: "900",
+  };
+  it("rejects an impossible purchase before registration, kernel or wallet access", async () => {
+    const f = setup();
+    f.publicClient.readContract.mockImplementation(
+      async ({ functionName }) =>
+        ({
+          perUserPrimaryCap: 10000000n,
+          marketPrimaryCap: 100000000n,
+          totalPrincipal: 0n,
+          cumulativePrimaryBought: 0n,
+          minimumPrimaryUnits: 10000n,
+        })[functionName as "perUserPrimaryCap"],
+    );
+    await expect(f.client.submit(buy, vi.fn(), vi.fn())).rejects.toMatchObject({
+      code: "primary_account_cap",
+    });
+    expect(f.request).not.toHaveBeenCalled();
+    expect(mocks.kernel).not.toHaveBeenCalled();
+    expect(f.sign).not.toHaveBeenCalled();
+    expect(f.send).not.toHaveBeenCalled();
+  });
+  it("fails closed if capacity cannot be read", async () => {
+    const f = setup();
+    f.publicClient.readContract.mockRejectedValue(new Error("offline"));
+    await expect(f.client.submit(buy, vi.fn(), vi.fn())).rejects.toMatchObject({
+      code: "operation_preparation_failed",
+    });
+    expect(f.request).not.toHaveBeenCalled();
+    expect(f.sign).not.toHaveBeenCalled();
+  });
+  it("recovers an existing registration before attempting new purchase preparation", async () => {
+    const f = setup();
+    sessionStorage.setItem(
+      `cpredict-register:${f.api.key}:${appAccount.id}`,
+      operation.id,
+    );
+    f.request.mockImplementation(async (_path, schema) =>
+      schema.parse({ items: [operation] }),
+    );
+    expect(await f.client.submit(buy, vi.fn(), vi.fn())).toEqual(operation);
+    expect(f.publicClient.readContract).not.toHaveBeenCalled();
+    expect(mocks.kernel).not.toHaveBeenCalled();
+    expect(f.send).not.toHaveBeenCalled();
+  });
+  it("explains a simulation failure without falsely requesting a wallet signature", async () => {
+    const f = setup();
+    mocks.accountClient.mockReturnValue({
+      prepareUserOperation: vi
+        .fn()
+        .mockRejectedValue(new Error("simulation failure")),
+    });
+    await expect(
+      f.client.submit(operation.intent, vi.fn(), vi.fn(), {
+        payment: "self-funded",
+        confirm: async () => {},
+      }),
+    ).rejects.toMatchObject({
+      code: "operation_preparation_failed_before_signing",
+      operationId: operation.id,
+    });
+    expect(f.sign).not.toHaveBeenCalled();
+    expect(f.send).not.toHaveBeenCalled();
+  });
+  it("keeps failures after a signature request query-only", async () => {
+    const f = setup();
+    f.sign.mockRejectedValue(new Error("wallet disconnected"));
+    await expect(
+      f.client.submit(operation.intent, vi.fn(), vi.fn(), {
+        payment: "self-funded",
+        confirm: async () => {},
+      }),
+    ).rejects.toMatchObject({ code: "operation_query_required" });
+    expect(f.sign).toHaveBeenCalledTimes(1);
+    expect(f.send).not.toHaveBeenCalled();
+  });
+});
+
 describe("self-funded UserOperation consent", () => {
   it("uses no paymaster, waits for explicit cost approval, and submits the same signed operation once", async () => {
     const s = setup(),
@@ -311,7 +397,9 @@ describe("quick trading signer boundary", () => {
         result = {
           operation: {
             ...registered,
-            state: f.send.mock.calls.length ? "submitted" : "awaiting-signature",
+            state: f.send.mock.calls.length
+              ? "submitted"
+              : "awaiting-signature",
             userOperationHash: f.send.mock.calls.length ? H(20) : null,
           },
         };
@@ -389,6 +477,60 @@ describe("quick trading signer boundary", () => {
       }),
     ).rejects.toMatchObject({ code: "trading_session_requires_sponsorship" });
     expect(f.controller).not.toHaveBeenCalled();
+    expect(f.sign).not.toHaveBeenCalled();
+    expect(f.send).not.toHaveBeenCalled();
+  });
+});
+
+describe("creation-time preflight", () => {
+  const intent = {
+    kind: "create-market" as const,
+    userSalt: H(70),
+    maxPayment: "10000000",
+    params: {
+      rulesHash: H(71),
+      metadataURI: "https://example.com/rules.json",
+      resolutionSourceHash: H(72),
+      resolutionSourceURI: "https://example.com/source",
+      outcomeCount: 2,
+      closeAt: "361",
+      eventStartsAt: "0",
+      outcomeDeadlineAt: "3000",
+      creatorTreasury: A(10),
+      deploymentMode: 0 as const,
+      featureFlags: "0",
+      creatorRakeBps: 200,
+      creatorC2CFeeBps: 0,
+      perUserPrimaryCap: "1000000",
+      marketPrimaryCap: "20000000",
+      minimumPrimaryUnits: "10000",
+      minimumC2CUnits: "10000",
+      creatorBond: "10000000",
+    },
+  };
+  it("blocks a near-close creation before wallet access or operation registration", async () => {
+    const f = setup();
+    vi.spyOn(f.publicClient, "getBlock").mockResolvedValue({ timestamp: 62n });
+    await expect(
+      f.client.submit(intent, vi.fn(), vi.fn()),
+    ).rejects.toMatchObject({ code: "creation_close_too_soon" });
+    expect(f.request).not.toHaveBeenCalled();
+    expect(mocks.kernel).not.toHaveBeenCalled();
+    expect(f.sign).not.toHaveBeenCalled();
+    expect(f.send).not.toHaveBeenCalled();
+  });
+  it("rechecks after slow gas preparation before requesting the signature", async () => {
+    const f = setup();
+    vi.spyOn(f.publicClient, "getBlock")
+      .mockResolvedValueOnce({ timestamp: 1n })
+      .mockResolvedValue({ timestamp: 62n });
+    await expect(
+      f.client.submit(intent, vi.fn(), vi.fn(), {
+        payment: "self-funded",
+        confirm: vi.fn(),
+      }),
+    ).rejects.toMatchObject({ code: "creation_close_too_soon" });
+    expect(mocks.accountClient).toHaveBeenCalled();
     expect(f.sign).not.toHaveBeenCalled();
     expect(f.send).not.toHaveBeenCalled();
   });

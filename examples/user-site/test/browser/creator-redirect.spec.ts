@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "playwright/test";
 import {
   H,
+  A,
   env,
   appAccount,
   operation,
@@ -52,6 +53,7 @@ async function setup(page: Page, initial: Operation["state"]) {
     kind: "create-market",
     intent,
     state: initial,
+    blockNumber: "100",
   };
   let submissions = 0;
   await page.route("**/test/creator-submit", async (route) => {
@@ -62,6 +64,49 @@ async function setup(page: Page, initial: Operation["state"]) {
   await page.route("**/ctusd/app/v1/operations/**", (route) =>
     route.fulfill({ json: { operation: record } }),
   );
+  let indexed = false;
+  let marketReads = 0;
+  await page.route("**/ctusd/indexer/public/v2/markets?**", (route) => {
+    marketReads++;
+    return route.fulfill({
+      json: {
+        items: indexed
+          ? [
+              {
+                chainId: 421614,
+                market: A(101),
+                creator: appAccount.address,
+                creatorTreasury: appAccount.address,
+                outcomeCount: 2,
+                closeAt: "2000000000",
+                createdAt: "1789600000",
+                eventStartsAt: "0",
+                outcomeDeadlineAt: "2000003600",
+                resolutionWindow: "3600",
+                rulesHash: H(71),
+                metadataUri: "https://example.com/rules.json",
+                resolutionSourceHash: H(72),
+                resolutionSourceUri: "https://example.com/source",
+                featureFlags: "0",
+                marketPrimaryCap: "20000000",
+                primaryFilledUnits: "0",
+                primaryPayment: "0",
+                creatorBond: "10000000",
+                state: 0,
+                voidReason: 0,
+                winningOutcome: null,
+                evidenceHash: null,
+                createdBlock: "100",
+                updatedBlock: "100",
+                confirmationStatus: "confirmed",
+                question: "刚创建的测试市场",
+              },
+            ]
+          : [],
+        nextCursor: null,
+      },
+    });
+  });
   await page.addInitScript(
     ({ key, draft }) => sessionStorage.setItem(key, JSON.stringify(draft)),
     {
@@ -86,7 +131,14 @@ async function setup(page: Page, initial: Operation["state"]) {
   );
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.getByRole("button", { name: "确认并继续", exact: true }).click();
+  await expect.poll(() => submissions).toBe(1);
   return {
+    indexed() {
+      indexed = true;
+    },
+    reads() {
+      return marketReads;
+    },
     update(state: Operation["state"]) {
       record = { ...record, state };
     },
@@ -97,10 +149,16 @@ async function setup(page: Page, initial: Operation["state"]) {
   };
 }
 
-test("confirmed creation opens the creator center and closes confirmation", async ({
+test("confirmed creation shows success then refreshes the creator list through indexer lag", async ({
   page,
 }) => {
   const state = await setup(page, "confirmed");
+  await expect(
+    page.getByRole("dialog", { name: "市场创建成功", exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/#\/ctusd-test\/creator\/new$/);
+  await page.screenshot({ path: test.info().outputPath("creation-success.png"), fullPage: true });
+  await page.getByRole("button", { name: "查看我创建的市场" }).click();
   await expect(page).toHaveURL(/#\/ctusd-test\/creator$/);
   await expect(
     page.getByRole("heading", { name: "创作者中心", exact: true }),
@@ -109,6 +167,20 @@ test("confirmed creation opens the creator center and closes confirmation", asyn
     page.getByRole("heading", { name: "我创建的市场", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(
+    page.getByText("市场已创建成功，正在同步到列表。", { exact: false }),
+  ).toBeVisible();
+  const readsBefore = state.reads();
+  state.indexed();
+  await page.clock.fastForward(4000);
+  await expect(
+    page.getByRole("link", { name: "刚创建的测试市场", exact: true }),
+  ).toBeVisible();
+  expect(state.reads()).toBeGreaterThan(readsBefore);
+  await expect(
+    page.getByText("市场已创建成功，正在同步到列表。", { exact: false }),
+  ).toHaveCount(0);
+
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -139,6 +211,11 @@ test("submitted, confirming and unknown creation stay until confirmed polling ar
   }
   state.update("confirmed");
   await page.clock.fastForward(4000);
+  await expect(
+    page.getByRole("dialog", { name: "市场创建成功", exact: true }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/#\/ctusd-test\/creator\/new$/);
+  await page.getByRole("button", { name: "查看我创建的市场" }).click();
   await expect(page).toHaveURL(/#\/ctusd-test\/creator$/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
   state.verify();
@@ -149,6 +226,15 @@ for (const status of ["reverted", "cancelled"] as const)
     const state = await setup(page, status);
     await page.clock.fastForward(10000);
     await expect(page).toHaveURL(/#\/ctusd-test\/creator\/new$/);
-    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(
+      page
+        .getByRole("dialog")
+        .getByText(status === "reverted" ? "链上已回滚" : "已取消", {
+          exact: true,
+        }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: "市场创建成功", exact: true }),
+    ).toHaveCount(0);
     state.verify();
   });

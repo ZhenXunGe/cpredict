@@ -363,7 +363,7 @@ test("a returnable creator bond settles and arrives from one claim action", asyn
   });
 });
 
-test("a timeout creator bond updates without any creator action before or after funding", async ({
+test("a timeout creator can prepare compensation but cannot withdraw a forfeited bond", async ({
   page,
 }) => {
   const state = await setup(page);
@@ -407,10 +407,13 @@ test("a timeout creator bond updates without any creator action before or after 
   await open(page);
   const bond = page.getByRole("row").filter({ hasText: "创作者押金" });
   await expect(bond).toContainText(
-    "市场已超时作废，押金已罚没，待注入超时补偿池，无法领取。",
+    "市场已超时作废，押金须用于参与者补偿，创建者不能领回。",
   );
   await expect(bond.locator(".badge")).toHaveText("已罚没，待注入");
-  await expect(bond.getByRole("button")).toHaveCount(0);
+  await expect(
+    bond.getByRole("button", { name: "准备超时补偿" }),
+  ).toBeEnabled();
+  await expect(bond.getByRole("button", { name: "领取押金" })).toHaveCount(0);
   await page.screenshot({
     path: test.info().outputPath("timeout-bond-pending.png"),
     fullPage: true,

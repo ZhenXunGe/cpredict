@@ -3,6 +3,21 @@
 groups:
   - name: cpredict-public-site
     rules:
+      - alert: CpredictReceiptReconciliationFailed
+        expr: cpredict_indexer_receipt_unresolved > 0
+        for: 2m
+        annotations:
+          summary: Confirmed operations could not be verified or repaired; inspect ledger_operation_receipts without resending transactions
+      - alert: CpredictReceiptReconciliationStale
+        expr: time() - cpredict_indexer_receipt_last_run_timestamp_seconds > 180
+        for: 2m
+        annotations:
+          summary: Confirmed operation receipt verification has stopped completing
+      - alert: CpredictReceiptReconciliationBacklog
+        expr: cpredict_indexer_receipt_pending > 0
+        for: 10m
+        annotations:
+          summary: Confirmed operation receipt verification queue is not draining
       - alert: CpredictApplicationUnavailable
         expr: up{job=~"cpredict-app-.*"} == 0
         for: 2m

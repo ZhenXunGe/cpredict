@@ -1,3 +1,5 @@
+import { listingFeedbackResponse } from "./listing-feedback-fixture.js";
+import { historyFeedbackResponse } from "./history-feedback-fixture.js";
 // Development/test entry only. This file is not a production build input and cannot sign or submit.
 import { useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -62,6 +64,9 @@ import { reportFixture } from "./report-fixture.js";
 const usdc = new URLSearchParams(location.search).get("usdc") === "1";
 const positionsTest = new URLSearchParams(location.search).has(
   "positions-test",
+);
+const timeoutFundingRole = new URLSearchParams(location.search).get(
+  "timeout-funding",
 );
 const historyView = new URLSearchParams(location.search).has("historical-view");
 const env = historyView
@@ -278,6 +283,7 @@ class FixtureApi extends SiteApi {
   slow = false;
   pending = false;
   positionSettled = false;
+  timeoutFundingReady = false;
   override async request<T>(
     path: string,
     schema: z.ZodType<T>,
@@ -292,7 +298,7 @@ class FixtureApi extends SiteApi {
       return super.request(path, schema, _options);
     if (
       new URLSearchParams(location.search).has("creator-redirect") &&
-      path.startsWith("/v1/operations/")
+      (path.startsWith("/v1/operations/") || path.startsWith("/v2/markets?"))
     )
       return super.request(path, schema, _options);
     if (
@@ -307,6 +313,19 @@ class FixtureApi extends SiteApi {
       return super.request(path, schema, _options);
     const url = new URL(path, "http://fixture.invalid"),
       p = url.pathname;
+    if (new URLSearchParams(location.search).has("listing-feedback")) {
+      const feedback = listingFeedbackResponse(
+        url,
+        snapshot,
+        market,
+        new URLSearchParams(location.search).get("listing-feedback")!,
+      );
+      if (feedback !== undefined) return schema.parse(feedback);
+    }
+    if (new URLSearchParams(location.search).has("history-feedback")) {
+      const feedback = historyFeedbackResponse(url, snapshot);
+      if (feedback !== undefined) return schema.parse(feedback);
+    }
     if (this.slow) await new Promise((r) => setTimeout(r, 600));
     let result: unknown;
     if (p.startsWith("/v1/operations/") && gasFixtureOperation) {
@@ -407,7 +426,28 @@ class FixtureApi extends SiteApi {
       if (this.rulesFail) throw new AppError("rules_unverified", 409);
       result = rules;
     } else if (p === "/v1/listings")
-      result = { items: [], nextCursor: null, snapshot };
+      result = {
+        items: new URLSearchParams(location.search).has("c2c-price")
+          ? [
+              {
+                chainId: market.chainId,
+                listingId: H(55),
+                vault: A(101),
+                seller: A(99),
+                outcomeId: "1",
+                remainingUnits: "10000000",
+                unitPrice: new URLSearchParams(location.search).get(
+                  "c2c-price",
+                ),
+                expiresAt: String(now + 86400),
+                active: true,
+                updatedBlock: "100",
+              },
+            ]
+          : [],
+        nextCursor: null,
+        snapshot,
+      };
     else if (p.startsWith("/v2/pnl/"))
       result = {
         pnl: {
@@ -459,103 +499,155 @@ class FixtureApi extends SiteApi {
       };
     else if (p.startsWith("/v2/entitlements/"))
       result = {
-        items: positionsTest
+        items: timeoutFundingRole
           ? [
-              ...(new URLSearchParams(location.search).has("both-outcomes")
+              ...(timeoutFundingRole === "before-refund"
                 ? [
                     {
-                      id: "open-holding-other-outcome",
-                      market: A(102),
-                      kind: "holding",
-                      outcomeId: "0",
+                      id: "timeout-refund",
+                      market: A(101),
+                      kind: "refund",
+                      outcomeId: null,
                       listingId: null,
-                      units: "3000000",
-                      amount: null,
-                      status: "conditional",
-                      reason: null,
+                      units: "1000000",
+                      amount: "1000000",
+                      status: "claimable",
+                      reason: "principal_first_then_timeout_compensation",
                     },
                   ]
                 : []),
               {
-                id: "voided-holding",
-                market: A(103),
-                kind: "holding",
-                outcomeId: "0",
-                listingId: null,
-                units: "5000000",
-                amount: null,
-                status: "conditional",
-                reason: null,
-              },
-              {
-                id: "voided-refund",
-                market: A(103),
-                kind: "refund",
+                id: "timeout-funding",
+                market: A(101),
+                kind:
+                  timeoutFundingRole === "creator" ? "bond" : "timeout-bonus",
                 outcomeId: null,
                 listingId: null,
-                units: "5000000",
-                amount: "5000000",
-                status: "claimable",
-                reason: "principal_first_then_timeout_compensation",
-              },
-              {
-                id: "settled-holding",
-                market: A(101),
-                kind: "holding",
-                outcomeId: "0",
-                listingId: null,
-                units: "10",
-                amount: null,
-                status: "conditional",
-                reason: null,
-              },
-              {
-                id: "open-holding",
-                market: A(102),
-                kind: "holding",
-                outcomeId: "1",
-                listingId: null,
-                units: "20",
-                amount: null,
-                status: "conditional",
-                reason: null,
-              },
-              {
-                id: "settled-winner",
-                market: A(101),
-                kind: "winner",
-                outcomeId: "0",
-                listingId: null,
-                units: "10",
-                amount: "1000000",
-                status: "claimable",
-                reason: null,
+                units: timeoutFundingRole === "creator" ? null : "1000000",
+                amount:
+                  timeoutFundingRole === "creator" || !this.timeoutFundingReady
+                    ? "0"
+                    : "2000000",
+                status:
+                  timeoutFundingRole === "creator"
+                    ? this.timeoutFundingReady
+                      ? "claimed"
+                      : "conditional"
+                    : this.timeoutFundingReady &&
+                        timeoutFundingRole !== "before-refund"
+                      ? "claimable"
+                      : "conditional",
+                reason:
+                  timeoutFundingRole === "creator"
+                    ? this.timeoutFundingReady
+                      ? "bond_slashed_into_timeout_pool"
+                      : "bond_slashed_pending_timeout_funding"
+                    : this.timeoutFundingReady
+                      ? timeoutFundingRole === "before-refund"
+                        ? "refund_before_timeout_compensation"
+                        : null
+                      : timeoutFundingRole === "before-refund"
+                        ? "refund_and_funding_before_timeout_compensation"
+                        : "waiting_for_timeout_bond_funding",
               },
             ]
-          : [
-              {
-                id: "early",
-                market: A(101),
-                kind: "early-bird",
-                outcomeId: null,
-                listingId: null,
-                units: "0",
-                amount: "5000000",
-                status: "claimable",
-                reason: null,
-              },
-              {
-                id: "fees",
-                market: null,
-                kind: "fees",
-                outcomeId: null,
-                listingId: null,
-                units: null,
-                amount: "0",
-                status: "claimed",
-                reason: null,
-              },
-            ],
+          : positionsTest
+            ? [
+                ...(new URLSearchParams(location.search).has("both-outcomes")
+                  ? [
+                      {
+                        id: "open-holding-other-outcome",
+                        market: A(102),
+                        kind: "holding",
+                        outcomeId: "0",
+                        listingId: null,
+                        units: "3000000",
+                        amount: null,
+                        status: "conditional",
+                        reason: null,
+                      },
+                    ]
+                  : []),
+                {
+                  id: "voided-holding",
+                  market: A(103),
+                  kind: "holding",
+                  outcomeId: "0",
+                  listingId: null,
+                  units: "5000000",
+                  amount: null,
+                  status: "conditional",
+                  reason: null,
+                },
+                {
+                  id: "voided-refund",
+                  market: A(103),
+                  kind: "refund",
+                  outcomeId: null,
+                  listingId: null,
+                  units: "5000000",
+                  amount: "5000000",
+                  status: "claimable",
+                  reason: "principal_first_then_timeout_compensation",
+                },
+                {
+                  id: "settled-holding",
+                  market: A(101),
+                  kind: "holding",
+                  outcomeId: "0",
+                  listingId: null,
+                  units: "10",
+                  amount: null,
+                  status: "conditional",
+                  reason: null,
+                },
+                {
+                  id: "open-holding",
+                  market: A(102),
+                  kind: "holding",
+                  outcomeId: "1",
+                  listingId: null,
+                  units: "20",
+                  amount: null,
+                  status: "conditional",
+                  reason: null,
+                },
+                {
+                  id: "settled-winner",
+                  market: A(101),
+                  kind: "winner",
+                  outcomeId: "0",
+                  listingId: null,
+                  units: "10",
+                  amount: "1000000",
+                  status: "claimable",
+                  reason: null,
+                },
+              ]
+            : [
+                {
+                  id: "early",
+                  market: A(101),
+                  kind: "early-bird",
+                  outcomeId: null,
+                  listingId: null,
+                  units: "0",
+                  amount: "5000000",
+                  status: "claimable",
+                  reason: null,
+                },
+                {
+                  id: "fees",
+                  market: null,
+                  kind: "fees",
+                  outcomeId: null,
+                  listingId: null,
+                  units: null,
+                  amount: "0",
+                  status: "claimed",
+                  reason: null,
+                },
+              ],
         nextCursor: null,
         snapshot,
       };
@@ -666,6 +758,8 @@ class FixtureApi extends SiteApi {
       args?: unknown[];
       blockNumber?: bigint;
     }) => {
+      if (functionName === "listings")
+        return [A(101), A(99), 0n, 1500000n, 1999999999n, 1, false];
       if (this.slow) await new Promise((r) => setTimeout(r, 600));
       if (
         creatorSummary &&
@@ -690,6 +784,16 @@ class FixtureApi extends SiteApi {
         timeoutScenario === "voided" ||
         document.documentElement.dataset.testTimeoutVoided === "1";
       const values: Record<string, unknown> = {
+        perUserPrimaryCap: new URLSearchParams(location.search).has("cap-test")
+          ? 10000000n
+          : 100000000n,
+        marketPrimaryCap: 1000000000n,
+        cumulativePrimaryBought:
+          new URLSearchParams(location.search).get("cap-test") ===
+          "account-full"
+            ? 10000000n
+            : 0n,
+        earlyBirdEnabled: true,
         supportsPerMarketPlatformFees: !new URLSearchParams(
           location.search,
         ).has("old-factory"),
@@ -723,9 +827,12 @@ class FixtureApi extends SiteApi {
         resolutionDeadline: BigInt(close + 7200),
         minimumPrimaryUnits: 10000n,
         minimumC2CUnits: 10000n,
-        totalPrincipal: creatorSummary
-          ? creatorPrincipals.reduce((a, b) => a + b, 0n)
-          : 0n,
+        totalPrincipal:
+          new URLSearchParams(location.search).get("cap-test") === "market-full"
+            ? 1000000000n
+            : creatorSummary
+              ? creatorPrincipals.reduce((a, b) => a + b, 0n)
+              : 0n,
         config: A(77),
         resolutionWindow: 3600n,
         creationFee: 2000000n,
@@ -858,6 +965,16 @@ function Fixture() {
             }}
           >
             <strong>浏览器夹具 · 无真实资金或签名</strong>
+            {timeoutFundingRole && (
+              <button
+                onClick={() => {
+                  api.timeoutFundingReady = true;
+                  void cache.invalidateQueries();
+                }}
+              >
+                补偿池已注入（夹具）
+              </button>
+            )}
             {positionsTest && (
               <button
                 onClick={() => {

@@ -1,4 +1,9 @@
+import {
+  isNewlyCreatedMarket,
+  type CreationNotice,
+} from "./market-creation.js";
 import { useEffect, useState } from "react";
+import { readPrimaryCapacity } from "./primary-purchase.js";
 import {
   publicMarketState,
   type ProtocolVersion,
@@ -7,7 +12,11 @@ import {
   legacyMarketRulesSchema,
   encodeLegacyMarketRules,
 } from "../../../offchain/sdk/src/legacy-market-rules.js";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import {
+  queryOptions,
+  useInfiniteQuery,
+  useQuery,
+} from "@tanstack/react-query";
 import { erc20Abi, parseAbi, type Address } from "viem";
 import { z } from "zod";
 import {
@@ -22,6 +31,7 @@ import {
   marketRulesMatchTimes,
 } from "../../../offchain/sdk/src/market-rules.js";
 import { useSession } from "./wallets.js";
+import type { SiteApi } from "./api.js";
 import {
   marketSchema,
   listingSchema,
@@ -35,7 +45,12 @@ export {
   type Market,
   type Listing,
 } from "../../../offchain/app-core/src/catalog-contracts.js";
-export function useMarkets(status: string, search: string, owner?: Address) {
+export function useMarkets(
+  status: string,
+  search: string,
+  owner?: Address,
+  creation?: CreationNotice,
+) {
   const { api } = useSession();
   return useInfiniteQuery({
     queryKey: [api.key, "markets", status, search, owner ?? null],
@@ -53,12 +68,21 @@ export function useMarkets(status: string, search: string, owner?: Address) {
     },
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     staleTime: 10000,
-    refetchInterval: 15000,
+    refetchOnMount: owner ? "always" : true,
+    refetchInterval: (query) =>
+      creation &&
+      Date.now() - creation.confirmedAt < 120000 &&
+      !query.state.data?.pages.some((p) =>
+        p.items.some(
+          (m) => isNewlyCreatedMarket(m, creation) && !!m.question?.trim(),
+        ),
+      )
+        ? 3000
+        : 15000,
   });
 }
-export function useMarket(market: Address) {
-  const { api } = useSession();
-  return useQuery({
+export function marketQueryOptions(api: SiteApi, market: Address) {
+  return queryOptions({
     queryKey: [api.key, "market", market],
     queryFn: ({ signal }) =>
       api.request(`/v2/markets/${market}`, marketSchema, {
@@ -66,13 +90,33 @@ export function useMarket(market: Address) {
         signal,
       }),
     staleTime: 10000,
+  });
+}
+export function useMarket(market: Address) {
+  const { api } = useSession();
+  return useQuery({
+    ...marketQueryOptions(api, market),
     refetchInterval: 15000,
   });
+}
+// Cache only across identical verification inputs. Trading updates do not change
+// hash-addressed rules, but any deadline/hash change must be checked again.
+export function rulesQueryKey(api: SiteApi, market: Market | undefined) {
+  return [
+    api.key,
+    "rules",
+    api.environment.deployment.protocolVersion,
+    market?.rulesHash,
+    market?.closeAt,
+    market?.eventStartsAt,
+    market?.outcomeDeadlineAt,
+    market?.resolutionWindow,
+  ] as const;
 }
 export function useRules(market: Market | undefined) {
   const { api } = useSession();
   return useQuery({
-    queryKey: [api.key, "rules", market?.rulesHash, market?.updatedBlock],
+    queryKey: rulesQueryKey(api, market),
     enabled: !!market?.rulesHash,
     queryFn: async ({ signal }) => {
       if (!market?.rulesHash) throw new AppError("rules_unverified");
@@ -115,7 +159,7 @@ export function useRules(market: Market | undefined) {
       return rules;
     },
     retry: 1,
-    staleTime: 60000,
+    staleTime: Infinity,
   });
 }
 export function useListings(market?: Address) {
@@ -165,6 +209,7 @@ export const marketReadAbi = parseAbi([
   "function marketPrimaryCap() view returns(uint128)",
   "function totalPrincipal() view returns(uint256)",
   "function principalByOutcome(uint256) view returns(uint256)",
+  "function earlyBirdEnabled() view returns(bool)",
 ]);
 export function useMarketLive(market: Address) {
   const { api, account } = useSession();
@@ -185,9 +230,9 @@ export function useMarketLive(market: Address) {
         winningOutcome,
         closeAt,
         resolutionDeadline,
-        minimumPrimary,
         minimumC2C,
-        principal,
+        capacity,
+        earlyBirdEnabled,
       ] = await Promise.all([
         client.readContract({ ...base, functionName: "economics" }),
         client.readContract({ ...base, functionName: "marketState" }),
@@ -197,9 +242,9 @@ export function useMarketLive(market: Address) {
         client.readContract({ ...base, functionName: "winningOutcome" }),
         client.readContract({ ...base, functionName: "closeAt" }),
         client.readContract({ ...base, functionName: "resolutionDeadline" }),
-        client.readContract({ ...base, functionName: "minimumPrimaryUnits" }),
         client.readContract({ ...base, functionName: "minimumC2CUnits" }),
-        client.readContract({ ...base, functionName: "totalPrincipal" }),
+        readPrimaryCapacity(client, market, account?.address, block.number),
+        client.readContract({ ...base, functionName: "earlyBirdEnabled" }),
       ]);
       return {
         economics,
@@ -211,9 +256,11 @@ export function useMarketLive(market: Address) {
         winningOutcome,
         closeAt,
         resolutionDeadline,
-        minimumPrimary,
+        minimumPrimary: capacity.minimumPrimary,
         minimumC2C,
-        principal,
+        principal: capacity.principal,
+        capacity,
+        earlyBirdEnabled,
         now: block.timestamp,
       };
     },

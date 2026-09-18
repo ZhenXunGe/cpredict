@@ -1,4 +1,5 @@
 import {
+  Component,
   lazy,
   memo,
   Suspense,
@@ -24,6 +25,33 @@ const ConnectedWalletProvider = lazy(() =>
     default: module.ConnectedWalletProvider,
   })),
 );
+
+class WalletRuntimeBoundary extends Component<
+  { children: ReactNode; onUnavailable(): void },
+  { failed: boolean }
+> {
+  override state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  override componentDidCatch() {
+    this.props.onUnavailable();
+  }
+  override render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <div className="wallet-load-notice" role="alert">
+        <span>钱包连接暂时未就绪，你可以继续浏览市场。</span>
+        <button
+          className="button button-secondary"
+          onClick={() => window.location.reload()}
+        >
+          刷新重试
+        </button>
+      </div>
+    );
+  }
+}
 
 function publishUnavailable(): never {
   throw new Error("钱包服务尚未就绪，请稍后重试");
@@ -91,7 +119,9 @@ export function WalletProvider({
   return (
     <Session.Provider value={connected ?? browsing}>
       {children}
-      <WalletRuntime environment={environment} publish={publish} />
+      <WalletRuntimeBoundary onUnavailable={() => publish(null)}>
+        <WalletRuntime environment={environment} publish={publish} />
+      </WalletRuntimeBoundary>
     </Session.Provider>
   );
 }

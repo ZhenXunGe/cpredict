@@ -1,3 +1,5 @@
+import { reconcileConfirmedOperations } from "./operation-reconciliation.js";
+import { Counter, Gauge } from "prom-client";
 import { type PublicClient } from "viem";
 import { createIndexerClient } from "./rpc-client.js";
 import { createIndexerApi } from "./api.js";
@@ -64,6 +66,9 @@ export async function startIndexerRuntime(
       eventCount: result.eventCount,
     });
   });
+  const backfill = async () => {
+    await rawStore.backfillFinancialAccounts(client);
+  };
   const indexer = new ChainIndexer(client, store, {
     chainId: config.chainId,
     deploymentBlock: config.deploymentBlock,
@@ -73,7 +78,7 @@ export async function startIndexerRuntime(
     addresses: config.coreAddresses,
     factoryAddress: config.factoryAddress,
     protocol: environment?.deployment.protocolVersion ?? "time-v2",
-    ...(rawStore.financial?{financial:{paymentToken:rawStore.financial.environment.deployment.paymentToken,accounts:()=>rawStore.financial!.trackedAccounts(),scanned:(accounts:readonly import("viem").Address[],from:bigint,to:bigint,hash:import("viem").Hex)=>rawStore.financial!.accountScanned(accounts,from,to,hash),backfill:()=>rawStore.backfillFinancialAccounts(client)}}:{}),
+    ...(rawStore.financial?{financial:{paymentToken:rawStore.financial.environment.deployment.paymentToken,accounts:()=>rawStore.financial!.trackedAccounts(),scanned:(accounts:readonly import("viem").Address[],from:bigint,to:bigint,hash:import("viem").Hex)=>rawStore.financial!.accountScanned(accounts,from,to,hash),backfill}}:{}),
   });
   const scheduler = new BoundedIndexerScheduler(indexer, telemetry, {
     intervalMs: config.pollIntervalMs,
@@ -123,6 +128,11 @@ export async function startIndexerRuntime(
     if (rpcChainId !== config.chainId)
       throw new Error("RPC chainId does not match indexer config");
     await startupStage("database", () => store.ready());
+    if(rawStore.financial)await startupStage("database",async()=>{
+      const sql=rawStore.financial!.sql;
+      if(!(await sql`SELECT to_regclass('ledger_operation_receipts') AS name`)[0]?.name)
+        throw new Error("operation receipt migration required");
+    });
     if(environment) await verifyDeployment(client,environment);
     await startupStage("initial-sync", () => scheduler.runTick());
     scheduler.start();
@@ -142,16 +152,39 @@ export async function startIndexerRuntime(
   }
 
   let stopped = false;
+  let receiptTimer: ReturnType<typeof setTimeout> | undefined;
+  let receiptTick: Promise<void> | undefined;
+  if(rawStore.financial){
+    const outcomes=new Counter({name:"cpredict_indexer_receipt_checks_total",help:"Confirmed operation receipt reconciliation outcomes",labelNames:["status"],registers:[telemetry.registry]});
+    const pending=new Gauge({name:"cpredict_indexer_receipt_pending",help:"Confirmed operations awaiting initial receipt verification",registers:[telemetry.registry]});
+    const unresolved=new Gauge({name:"cpredict_indexer_receipt_unresolved",help:"Operations whose latest receipt verification failed",registers:[telemetry.registry]});
+    const lastSuccess=new Gauge({name:"cpredict_indexer_receipt_last_run_timestamp_seconds",help:"Last completed receipt reconciliation round",registers:[telemetry.registry]});
+    const run=async()=>{
+      let delay=15000;
+      try{
+        const r=await reconcileConfirmedOperations(rawStore,client);
+        outcomes.inc({status:"verified"},r.checked-r.repaired-r.errors);
+        outcomes.inc({status:"repaired"},r.repaired);outcomes.inc({status:"error"},r.errors);
+        pending.set(r.pending);unresolved.set(r.unresolved);lastSuccess.set(Date.now()/1000);
+        if(r.pending>0)delay=1000;
+        if(r.errors || r.repaired)app.log.warn(r,"confirmed operation receipt reconciliation");
+      }catch{outcomes.inc({status:"error"});app.log.warn("confirmed operation receipt reconciliation unavailable");}
+      if(!stopped){receiptTimer=setTimeout(()=>{receiptTick=run();},delay);receiptTimer.unref();}
+    };
+    receiptTick=run();
+  }
   let publicTimer: ReturnType<typeof setTimeout> | undefined;
   let publicTick: Promise<void> | undefined;
   if(rawStore.financial && config.metadataUrl){
     const ledger=rawStore.financial,metadataUrl=config.metadataUrl,leaderboards=new Leaderboards(ledger);
+    let refreshLeaderboards=true;
     const run=async()=>{
       try{await refreshPublicMetadata(ledger,metadataUrl);}catch{app.log.warn("public metadata catalog refresh unavailable");}
-      if(ledger.environment.features.leaderboard){
+      if(refreshLeaderboards && ledger.environment.features.leaderboard){
         try{const periods=await leaderboards.periods();for(const period of periods.slice(0,5)){try{await leaderboards.publish(period.id);}catch{/* Unreconciled, incomplete or not-yet-started periods stay unpublished. */}}}catch{app.log.warn("leaderboard refresh unavailable");}
       }
-      if(!stopped){publicTimer=setTimeout(()=>{publicTick=run();},60000);publicTimer.unref();}
+      refreshLeaderboards=!refreshLeaderboards;
+      if(!stopped){publicTimer=setTimeout(()=>{publicTick=run();},30000);publicTimer.unref();}
     };
     publicTick=run();
   }
@@ -160,10 +193,12 @@ export async function startIndexerRuntime(
       if (stopped) return;
       stopped = true;
       if(publicTimer)clearTimeout(publicTimer);
+      if(receiptTimer)clearTimeout(receiptTimer);
       unsubscribeFromBatches();
       await scheduler.stop();
       await app.close();
       await publicTick;
+      await receiptTick;
       await store.close();
     },
   };

@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   type ReactNode,
+  type SyntheticEvent,
 } from "react";
 import {
   BrowserRouter,
@@ -55,47 +56,44 @@ import {
   shortAddress,
 } from "./ui.js";
 import { useState } from "react";
+import { pageLoaders, preloadPage } from "./route-preload.js";
 const Markets = lazy(() =>
-    import("./pages/Markets.js").then((m) => ({ default: m.MarketsPage })),
+    pageLoaders.markets().then((m) => ({ default: m.MarketsPage })),
   ),
   Market = lazy(() =>
-    import("./pages/MarketDetail.js").then((m) => ({
+    pageLoaders.market().then((m) => ({
       default: m.MarketDetailPage,
     })),
   ),
   Assets = lazy(() =>
-    import("./pages/Assets.js").then((m) => ({ default: m.AssetsPage })),
+    pageLoaders.assets().then((m) => ({ default: m.AssetsPage })),
   ),
   Entitlements = lazy(() =>
-    import("./pages/Entitlements.js").then((m) => ({
+    pageLoaders.entitlements().then((m) => ({
       default: m.EntitlementsPage,
     })),
   ),
   HistoryPage = lazy(() =>
-    import("./pages/History.js").then((m) => ({ default: m.HistoryPage })),
+    pageLoaders.history().then((m) => ({ default: m.HistoryPage })),
   ),
-  Help = lazy(() =>
-    import("./pages/Help.js").then((m) => ({ default: m.HelpPage })),
-  ),
+  Help = lazy(() => pageLoaders.help().then((m) => ({ default: m.HelpPage }))),
   Creator = lazy(() =>
-    import("./pages/Creator.js").then((m) => ({ default: m.CreatorPage })),
+    pageLoaders.creator().then((m) => ({ default: m.CreatorPage })),
   ),
   Create = lazy(() =>
-    import("./pages/Creator.js").then((m) => ({ default: m.CreateMarketPage })),
+    pageLoaders.creator().then((m) => ({ default: m.CreateMarketPage })),
   ),
   Manage = lazy(() =>
-    import("./pages/Creator.js").then((m) => ({
+    pageLoaders.creator().then((m) => ({
       default: m.CreatorMarketPage,
     })),
   ),
   Leaderboard = lazy(() =>
-    import("./pages/Reports.js").then((m) => ({ default: m.LeaderboardPage })),
+    pageLoaders.reports().then((m) => ({ default: m.LeaderboardPage })),
   ),
-  Ops = lazy(() =>
-    import("./pages/Reports.js").then((m) => ({ default: m.OpsPage })),
-  ),
+  Ops = lazy(() => pageLoaders.reports().then((m) => ({ default: m.OpsPage }))),
   Feedback = lazy(() =>
-    import("./pages/Reports.js").then((m) => ({ default: m.FeedbackPage })),
+    pageLoaders.reports().then((m) => ({ default: m.FeedbackPage })),
   );
 export const createSiteQueryClient = () =>
   new QueryClient({
@@ -106,6 +104,7 @@ export const createSiteQueryClient = () =>
   });
 export function App() {
   const [cache] = useState(createSiteQueryClient);
+  useEffect(() => preloadPage(window.location.pathname), []);
   return (
     <Boundary>
       <QueryClientProvider client={cache}>
@@ -260,6 +259,16 @@ export function SiteLayout({ environments }: { environments: Environment[] }) {
       ? [{ path: "ops", label: "运营报表", icon: ChartNoAxesCombined }]
       : []),
   ];
+  const warmLink = (event: SyntheticEvent) => {
+    const link =
+      event.target instanceof Element ? event.target.closest("a[href]") : null;
+    if (
+      !(link instanceof HTMLAnchorElement) ||
+      link.origin !== window.location.origin
+    )
+      return;
+    preloadPage(link.pathname);
+  };
   const nav = (
     <nav className="nav" aria-label="主要导航">
       {environments
@@ -283,7 +292,7 @@ export function SiteLayout({ environments }: { environments: Environment[] }) {
     </nav>
   );
   return (
-    <div className="app-shell">
+    <div className="app-shell" onPointerOver={warmLink} onFocus={warmLink}>
       <a className="skip-link" href="#main-content">
         跳到主要内容
       </a>

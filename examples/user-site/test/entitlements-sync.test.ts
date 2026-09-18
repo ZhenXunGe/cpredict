@@ -166,15 +166,82 @@ describe("entitlement synchronization", () => {
     });
   });
 
+  it("never offers creator withdrawal after a bond funds compensation", () => {
+    expect(
+      entitlementIntent({
+        ...right,
+        kind: "bond",
+        reason: "bond_slashed_into_timeout_pool",
+      }),
+    ).toBeNull();
+  });
+
   it.each([
-    "bond_slashed_pending_timeout_funding",
-    "bond_slashed_into_timeout_pool",
-  ])(
-    "does not offer creator actions for %s, even with a stale claimable status",
-    (reason) => {
-      expect(entitlementIntent({ ...right, kind: "bond", reason })).toBeNull();
+    ["bond", "bond_slashed_pending_timeout_funding"],
+    ["timeout-bonus", "waiting_for_timeout_bond_funding"],
+    ["timeout-bonus", "refund_and_funding_before_timeout_compensation"],
+  ] as const)(
+    "allows %s to fund compensation permissionlessly (%s)",
+    (kind, reason) => {
+      const e: Entitlement = {
+        ...right,
+        kind,
+        reason,
+        status: "conditional",
+        amount: "0",
+      };
+      expect(entitlementIntent(e)).toEqual({
+        kind: "settle-bond",
+        market: A(101),
+      });
+      for (const status of ["claimed", "unknown", "executing"] as const)
+        expect(entitlementIntent({ ...e, status })).toBeNull();
+      expect(entitlementIntent({ ...e, market: null })).toBeNull();
+      const funding: Operation = {
+        ...claim,
+        kind: "settle-bond",
+        intent: { kind: "settle-bond", market: A(101) },
+      };
+      expect(
+        entitlementProgress(
+          e,
+          [{ ...funding, state: "unknown" }],
+          snapshot("999"),
+        )?.phase,
+      ).toBe("executing");
+      expect(entitlementProgress(e, [funding], snapshot("104"))?.phase).toBe(
+        "syncing",
+      );
+      expect(entitlementProgress(e, [funding], snapshot("105"))).toBeNull();
+      expect(
+        entitlementProgress(
+          { ...e, market: A(102) },
+          [funding],
+          snapshot("104"),
+        ),
+      ).toBeNull();
     },
   );
+
+  it("requires refund and funding before offering the actual bonus claim", () => {
+    const e: Entitlement = {
+      ...right,
+      kind: "timeout-bonus",
+      status: "conditional",
+      reason: "refund_before_timeout_compensation",
+    };
+    expect(entitlementIntent(e)).toBeNull();
+    expect(
+      entitlementIntent({ ...e, status: "claimable", reason: null }),
+    ).toEqual({ kind: "claim-timeout-bonus", market: A(101) });
+    expect(
+      entitlementIntent({
+        ...e,
+        status: "unknown",
+        reason: "chain_read_unavailable",
+      }),
+    ).toBeNull();
+  });
 
   it("guards the same escrow even if market finalization changes cancel to return", () => {
     const escrow: Entitlement = {

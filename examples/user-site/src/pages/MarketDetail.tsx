@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
@@ -18,6 +18,7 @@ import {
   useListings,
   useMarket,
   useMarketLive,
+  useMarketClock,
   useRules,
   type Listing,
   type Market,
@@ -36,6 +37,18 @@ import {
   shortAddress,
 } from "../ui.js";
 import { parseAssetAmount } from "../amounts.js";
+import {
+  checkPrimaryPurchase,
+  primaryAvailability,
+  primaryAlternativeBlockedReason,
+} from "../primary-purchase.js";
+type PrimarySelection = {
+  market: Address;
+  outcome: number;
+  units: string;
+  revision: number;
+};
+
 export function MarketDetailPage() {
   const value = address.safeParse(useParams().market);
   return value.success ? (
@@ -50,6 +63,8 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
     rules = useRules(query.data),
     live = useMarketLive(marketAddress),
     begin = useOperation();
+  const [primarySelection, setPrimarySelection] =
+    useState<PrimarySelection | null>(null);
   if (query.isPending) return <Loading />;
   if (!query.data)
     return (
@@ -187,6 +202,38 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
                   两项费用从卖家成交收入中扣除，买家支付成交总额；挂单、撤单本身不收取成交手续费。网络
                   Gas 另计。
                 </p>
+                <details>
+                  <summary>早鸟奖励如何分配</summary>
+                  {live.data.earlyBirdEnabled ? (
+                    <>
+                      <p>
+                        正常结算时，从扣除平台分成后的创作者抽成中提取{" "}
+                        {live.data.economics.earlyBirdShareBps / 100}%
+                        作为早鸟奖励池，约等于创作者终局总抽成的{" "}
+                        {((10000 - live.data.economics.protocolShareBps) *
+                          live.data.economics.earlyBirdShareBps) /
+                          1000000}
+                        %。实际金额以链上整数计算为准。
+                      </p>
+                      <p>
+                        每笔一级买入按实际成交数量 ×
+                        时间权重累计积分，越早买入权重越高（3、2、1）。
+                        {env.deployment.protocolVersion === "legacy-v1"
+                          ? "本市场按设置的早鸟起点到封盘时间分三段，起点之前按 3 倍计分。"
+                          : "本市场从创建到封盘分为三段。"}
+                        个人奖励按本人积分占全部参与者积分的比例分配，与是否押中结果无关。
+                      </p>
+                      <p>
+                        积分属于原买入账户，不随份额转让；卖出份额仍可领取，二级买入不增加积分。正常结算后到“持仓与权益”领取；作废不发早鸟奖励。
+                      </p>
+                    </>
+                  ) : (
+                    <p>本市场未开启早鸟奖励。</p>
+                  )}
+                  <p className="small muted">
+                    早鸟比例来自市场创建时的协议配置，创建者可选择是否开启，不能在此单独调整比例；平台分成若不同，折合总抽成的比例也会不同。
+                  </p>
+                </details>
               </>
             ) : live.isPending ? (
               <Loading label="正在读取链上费率" />
@@ -251,6 +298,14 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
             verified={!!rules.data}
             labels={rules.data?.outcomes ?? []}
             terminal={terminal}
+            onPrimaryPurchase={(outcome, units) =>
+              setPrimarySelection((previous) => ({
+                market: market.market,
+                outcome,
+                units,
+                revision: (previous?.revision ?? 0) + 1,
+              }))
+            }
           />
         </div>
         <aside className="stack">
@@ -269,6 +324,7 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
             </section>
           ) : (
             <TradePanel
+              primarySelection={primarySelection}
               market={market}
               verified={!!rules.data}
               labels={rules.data?.outcomes ?? []}
@@ -322,6 +378,7 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
   );
 }
 function TradePanel({
+  primarySelection,
   market,
   verified,
   labels,
@@ -329,6 +386,7 @@ function TradePanel({
   market: Market;
   verified: boolean;
   labels: string[];
+  primarySelection: PrimarySelection | null;
 }) {
   const session = useSession(),
     env = session.api.environment,
@@ -341,6 +399,21 @@ function TradePanel({
     [price, setPrice] = useState("1"),
     [expiry, setExpiry] = useState("24"),
     [error, setError] = useState<unknown>(null);
+  const amountInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (
+      !primarySelection ||
+      !sameAddress(primarySelection.market, market.market)
+    )
+      return;
+    setMode("buy");
+    setOutcome(primarySelection.outcome);
+    setAmount(primarySelection.units);
+    setMinimum("");
+    setError(null);
+    amountInput.current?.focus({ preventScroll: true });
+    amountInput.current?.scrollIntoView({ block: "center" });
+  }, [primarySelection, market.market]);
   const balance = useQuery({
     queryKey: [
       session.api.key,
@@ -367,7 +440,14 @@ function TradePanel({
       const units = parseAssetAmount(amount),
         minUnits = minimum ? parseAssetAmount(minimum) : units;
       if (minUnits > units) throw new AppError("minimum_exceeds_amount", 400);
-      if (mode === "buy")
+      if (mode === "buy") {
+        const checked = checkPrimaryPurchase(
+          live.data.capacity,
+          units,
+          minUnits,
+          env.asset,
+        );
+        if (checked.error) throw checked.error;
         begin({
           intent: {
             kind: "buy",
@@ -393,7 +473,7 @@ function TradePanel({
           ],
           feeNote: `一级投入按 1 ${env.asset} 对应 1 份本金记账。结算时创作者抽成 ${live.data.economics.creatorRakeBps / 100}%，平台从该抽成中收取 ${live.data.economics.protocolShareBps / 100}%。网络 Gas 按确认页选择的方式支付。`,
         });
-      else {
+      } else {
         if (!session.account) {
           session.login();
           return;
@@ -432,6 +512,23 @@ function TradePanel({
     }
   };
   const closed = !!live.data && live.data.now >= live.data.closeAt;
+  const available = live.data ? primaryAvailability(live.data.capacity) : null;
+  const buyCheck = (() => {
+    if (mode !== "buy" || !live.data) return null;
+    if (available?.market === 0n || available?.account === 0n)
+      return checkPrimaryPurchase(live.data.capacity, 1n, 1n, env.asset);
+    try {
+      const units = parseAssetAmount(amount);
+      return checkPrimaryPurchase(
+        live.data.capacity,
+        units,
+        minimum ? parseAssetAmount(minimum) : units,
+        env.asset,
+      );
+    } catch {
+      return null;
+    } // Keep incomplete decimal input editable; validate syntax on submit.
+  })();
   return (
     <section className="surface">
       <div className="row">
@@ -463,11 +560,31 @@ function TradePanel({
             ))}
           </select>
         </Field>
+        {mode === "buy" && live.data && available && (
+          <div className="small muted" aria-label="一级投入额度">
+            <p>
+              每账户上限 {formatUnits(live.data.capacity.perUserCap, 6)}{" "}
+              {env.asset}；
+              {available.account === null
+                ? "登录后查看你的剩余额度"
+                : `你还可投入 ${formatUnits(available.account, 6)} ${env.asset}`}
+              。
+            </p>
+            <p>
+              市场上限 {formatUnits(live.data.capacity.marketCap, 6)}{" "}
+              {env.asset}；剩余 {formatUnits(available.market, 6)} {env.asset}。
+            </p>
+          </div>
+        )}
         <Field label={mode === "buy" ? `投入数量（${env.asset}）` : "挂单份额"}>
           <input
             inputMode="decimal"
+            ref={amountInput}
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              setError(null);
+            }}
             required
             placeholder="0.00"
           />
@@ -480,7 +597,10 @@ function TradePanel({
             <input
               inputMode="decimal"
               value={minimum}
-              onChange={(e) => setMinimum(e.target.value)}
+              onChange={(e) => {
+                setMinimum(e.target.value);
+                setError(null);
+              }}
               placeholder={amount || "与投入数量相同"}
             />
           </Field>
@@ -516,14 +636,24 @@ function TradePanel({
             仍可能交易，请留意创建者结算与流动性风险。
           </Notice>
         )}
-        <ErrorNotice error={error} />
+        <ErrorNotice error={buyCheck?.error ?? error} />
+        {mode === "buy" &&
+          buyCheck &&
+          !buyCheck.error &&
+          buyCheck.filled > 0n &&
+          minimum && (
+            <p className="small">
+              按当前额度可成交 {formatUnits(buyCheck.filled, 6)}{" "}
+              份；提交前会再次核对，实际成交以链上结果为准。
+            </p>
+          )}
         <Button
           type="submit"
           disabled={
             !verified ||
             !env.features.newExposure ||
             !live.data ||
-            (mode === "buy" && closed)
+            (mode === "buy" && (closed || !!buyCheck?.error))
           }
         >
           核对{mode === "buy" ? "购买" : "挂单"}
@@ -540,16 +670,19 @@ function Listings({
   verified,
   labels,
   terminal,
+  onPrimaryPurchase,
 }: {
   market: Market;
   verified: boolean;
   labels: string[];
   terminal: boolean;
+  onPrimaryPurchase: (outcome: number, units: string) => void;
 }) {
   const session = useSession(),
     query = useListings(market.market),
     begin = useOperation(),
     live = useMarketLive(market.market),
+    now = useMarketClock(),
     env = session.api.environment;
   const [selected, setSelected] = useState<Listing | null>(null),
     [units, setUnits] = useState(""),
@@ -598,6 +731,18 @@ function Listings({
       setError(e);
     }
   };
+  const primaryOpen =
+    !terminal &&
+    !!live.data &&
+    live.data.state === 0 &&
+    live.data.now < live.data.closeAt &&
+    now < live.data.closeAt;
+  const primaryBlocked = primaryAlternativeBlockedReason(
+    live.isError ? null : (live.data?.capacity ?? null),
+    primaryOpen,
+    verified,
+    env.features.newExposure,
+  );
   const rows =
     query.data?.pages
       .flatMap((p) => p.items)
@@ -623,6 +768,9 @@ function Listings({
               </td>
               <td>
                 <Amount value={l.unitPrice} asset={env.asset} />
+                {primaryOpen && BigInt(l.unitPrice) > SHARE_SCALE && (
+                  <div className="small muted">高于一级价格</div>
+                )}
               </td>
               <td>{dateText(l.expiresAt)}</td>
               <td>
@@ -696,6 +844,35 @@ function Listings({
               `结果 #${selected.outcomeId}`}{" "}
             · 卖家 {shortAddress(selected.seller)}
           </p>
+          {primaryOpen && BigInt(selected.unitPrice) > SHARE_SCALE && (
+            <Notice tone="warning">
+              <p>
+                此挂单每份{" "}
+                <Amount value={selected.unitPrice} asset={env.asset} />
+                ，高于一级购买每份 1 {env.asset}。
+              </p>
+              {primaryBlocked ? (
+                <p>{primaryBlocked}当前不能切换到一级购买。</p>
+              ) : (
+                <>
+                  <p>
+                    可先查看一级购买，以更低单价购买同一结果。数量受市场及账户剩余额度限制，提交前会再次核对；网络
+                    Gas 另计。
+                  </p>
+                  {!session.account && <p>登录后才能核对你的一级投入额度。</p>}
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      onPrimaryPurchase(Number(selected.outcomeId), units);
+                      setSelected(null);
+                    }}
+                  >
+                    去一级购买
+                  </Button>
+                </>
+              )}
+            </Notice>
+          )}
           <Field
             label="购买份额"
             hint="可以购买部分挂单；本笔数量必须全部成交，否则重新确认。"
