@@ -946,3 +946,34 @@ main:focus {
     padding-top: 30px;
   }
 }
+
+.wallet-load-notice {
+  position: fixed;
+  z-index: 40;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(600px, calc(100% - 32px));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #eadcb8;
+  border-radius: 12px;
+  background: #fff9eb;
+  color: #765d27;
+  box-shadow: 0 4px 20px #17325214;
+}
+.wallet-load-notice .button {
+  flex-shrink: 0;
+}
+
+.history-operations td:first-child,
+.history-operations td:nth-child(3),
+.history-operations td:nth-child(4) {
+  white-space: nowrap;
+}
+.history-operations td:nth-child(2) {
+  min-width: 240px;
+}

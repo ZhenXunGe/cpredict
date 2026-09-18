@@ -38,6 +38,11 @@ import {
   ENTRY_POINT,
 } from "../../../offchain/app-core/src/kernel.js";
 import { SiteApi } from "./api.js";
+import {
+  checkPrimaryPurchase,
+  readPrimaryCapacity,
+} from "./primary-purchase.js";
+import { checkCreationTime } from "./market-creation.js";
 import { gasBalance, requireGasBalance } from "./gas-payment.js";
 const operationResponse = z.object({ operation: operationSchema });
 const rpcResponse = z.object({
@@ -84,6 +89,7 @@ export class UserOperationClient {
   ): Promise<Operation> {
     const run = async () => {
       let recorded: Operation | undefined;
+      let signatureRequested = false;
       const recoveryKey = `cpredict-register:${this.api.key}:${this.account.id}`;
       const lookupRegistration = async (key: string) => {
         const result = await this.api.request(
@@ -113,6 +119,29 @@ export class UserOperationClient {
           env = api.environment,
           account = this.account,
           client = api.publicClient();
+        if (intent.kind === "create-market") {
+          checkCreationTime(
+            BigInt(intent.params.closeAt),
+            (await client.getBlock()).timestamp,
+          );
+          this.current();
+        }
+        // Fail before controller access, registration or sponsorship. Always use a fresh chain snapshot.
+        if (intent.kind === "buy") {
+          const capacity = await readPrimaryCapacity(
+            client,
+            intent.market,
+            account.address,
+          );
+          this.current();
+          const { error } = checkPrimaryPurchase(
+            capacity,
+            BigInt(intent.units),
+            BigInt(intent.minUnits),
+            env.asset,
+          );
+          if (error) throw error;
+        }
         if (gas.payment === "self-funded") {
           if (!gas.confirm)
             throw new AppError("gas_confirmation_required", 409);
@@ -350,7 +379,15 @@ export class UserOperationClient {
           requireGasBalance(await gasBalance(client, account), cost);
           this.current();
         }
+        if (intent.kind === "create-market") {
+          checkCreationTime(
+            BigInt(intent.params.closeAt),
+            (await client.getBlock()).timestamp,
+          );
+          this.current();
+        }
         onStage("awaiting-signature");
+        signatureRequested = true;
         // The session signer signs locally; the original controller is never requested on this path.
         const signature = await kernel.signUserOperation(
           unsigned as UserOperation<"0.7">,
@@ -418,10 +455,31 @@ export class UserOperationClient {
             /* Keep the original operation ID; never resend here. */
           }
         }
+        // A capacity race during gas simulation can still be explained before any wallet signature.
+        if (recorded && !signatureRequested && intent.kind === "buy") {
+          try {
+            const capacity = await readPrimaryCapacity(
+              this.api.publicClient(),
+              intent.market,
+              this.account.address,
+            );
+            const checked = checkPrimaryPurchase(
+              capacity,
+              BigInt(intent.units),
+              BigInt(intent.minUnits),
+              this.api.environment.asset,
+            );
+            if (checked.error) error = checked.error;
+          } catch {
+            /* Preserve the original failure if the read-only recheck is unavailable. */
+          }
+        }
         if (error instanceof AppError) throw error;
         throw new AppError(
           recorded
-            ? "operation_query_required"
+            ? signatureRequested
+              ? "operation_query_required"
+              : "operation_preparation_failed_before_signing"
             : "operation_preparation_failed",
           503,
           undefined,

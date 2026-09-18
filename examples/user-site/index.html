@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#f4f7fb" />
+    <link
+      rel="preload"
+      href="/site-config.json"
+      as="fetch"
+      crossorigin="anonymous"
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta
       name="description"
@@ -12,7 +18,23 @@
     <title>Cpredict · 公开测试站</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div
+        role="status"
+        aria-live="polite"
+        style="
+          font-family: system-ui, sans-serif;
+          max-width: 1080px;
+          margin: 48px auto;
+          padding: 24px;
+          color: #173252;
+        "
+      >
+        <strong style="font-size: 24px">Cpredict</strong>
+        <p>正在打开市场，请稍候…</p>
+        <noscript>请开启 JavaScript 后继续访问。</noscript>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

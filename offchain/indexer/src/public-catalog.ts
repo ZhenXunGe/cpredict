@@ -57,6 +57,29 @@ export async function publicCatalog(
   kind: "markets" | "listings",
   input: unknown,
 ) {
+  // A competing cache delete/insert can invalidate this read's MVCC snapshot.
+  // 40001 guarantees rollback: retry the entire read, never an unknown outcome.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await readCatalogSnapshot(ledger, kind, input);
+    } catch (error: unknown) {
+      if (
+        attempt >= 3 ||
+        !(error instanceof Error) ||
+        !("code" in error) ||
+        error.code !== "40001"
+      )
+        throw error;
+      await new Promise((resolve) => setTimeout(resolve, 10 * (attempt + 1)));
+    }
+  }
+}
+
+async function readCatalogSnapshot(
+  ledger: PostgresFinancialLedger,
+  kind: "markets" | "listings",
+  input: unknown,
+) {
   const q = querySchema.parse(input),
     fingerprint = createHash("sha256")
       .update(
@@ -214,7 +237,7 @@ export async function refreshPublicMetadata(
 ): Promise<void> {
   const rows = await ledger.sql<
     MarketRow[]
-  >`SELECT m.* FROM markets m LEFT JOIN public_market_metadata c ON c.market=lower(m.market) WHERE m.chain_id=${ledger.environment.deployment.chainId} AND m.rules_hash IS NOT NULL AND (c.market IS NULL OR c.rules_hash<>m.rules_hash OR (NOT c.verified AND c.checked_at<now()-interval '5 minutes')) ORDER BY m.created_block,m.market LIMIT 20`;
+  >`SELECT m.* FROM markets m LEFT JOIN public_market_metadata c ON c.market=lower(m.market) WHERE m.chain_id=${ledger.environment.deployment.chainId} AND m.rules_hash IS NOT NULL AND (c.market IS NULL OR c.rules_hash<>m.rules_hash OR (NOT c.verified AND c.checked_at<now()-interval '30 seconds')) ORDER BY m.created_block,m.market LIMIT 20`;
   for (let start = 0; start < rows.length; start += 4)
     await Promise.all(
       rows.slice(start, start + 4).map(async (row) => {

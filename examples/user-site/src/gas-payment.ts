@@ -1,25 +1,22 @@
 import {
-  createWalletClient,
-  custom,
   formatEther,
   parseEther,
   type EIP1193Provider,
   type PublicClient,
 } from "viem";
-import { entryPoint07Abi } from "viem/account-abstraction";
+import { entryPoint07Abi, entryPoint07Address } from "viem/account-abstraction";
 import { arbitrumSepolia } from "viem/chains";
 import {
   AppError,
   sameAddress,
   type AppAccount,
 } from "../../../offchain/app-core/src/contracts.js";
-import { ENTRY_POINT } from "../../../offchain/app-core/src/kernel.js";
 
 export async function gasBalance(client: PublicClient, account: AppAccount) {
   const [balance, deposit] = await Promise.all([
     client.getBalance({ address: account.address }),
     client.readContract({
-      address: ENTRY_POINT.address,
+      address: entryPoint07Address,
       abi: entryPoint07Abi,
       functionName: "balanceOf",
       args: [account.address],
@@ -49,6 +46,8 @@ export async function fundGas(
     parseEther(amount) <= 0n
   )
     throw new AppError("invalid_gas_funding_amount", 400);
+  const { createWalletClient, custom } = await import("./funding-wallet.js");
+  if (!stillCurrent()) throw new AppError("confirmation_context_changed", 409);
   const wallet = createWalletClient({
     chain: arbitrumSepolia,
     transport: custom(provider, { retryCount: 0 }),

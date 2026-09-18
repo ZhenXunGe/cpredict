@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { Plus, Search, ArrowRight, Clock3 } from "lucide-react";
 import { useSession } from "../wallets.js";
 import {
   useMarkets,
+  marketQueryOptions,
   useMarketClock,
   useRules,
   dateText,
@@ -128,9 +130,17 @@ export function MarketsPage() {
 }
 export function MarketRow({ market: m, now }: { market: Market; now: bigint }) {
   const { api } = useSession(),
-    rules = useRules(m);
+    rules = useRules(m),
+    cache = useQueryClient();
+  const warmMarket = () =>
+    void cache.prefetchQuery(marketQueryOptions(api, m.market));
   return (
-    <article className="market-row">
+    <article
+      className="market-row"
+      onPointerEnter={warmMarket}
+      onFocus={warmMarket}
+      onPointerDown={warmMarket}
+    >
       <div className="market-row-main">
         <Link
           className="market-title"

@@ -563,7 +563,7 @@ function ReportMarketName({ market }: { market: Address }) {
       {query.data?.question?.trim() ||
         (query.isPending
           ? "正在读取市场名称"
-          : `名称暂不可用（${market.slice(0, 6)}…${market.slice(-4)}）`)}
+          : `后台核验中（${market.slice(0, 6)}…${market.slice(-4)}）`)}
     </Link>
   );
 }

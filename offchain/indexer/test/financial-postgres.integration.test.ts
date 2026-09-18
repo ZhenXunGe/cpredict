@@ -377,6 +377,57 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
     ).toEqual([]);
     expect(first.items[0]).toMatchObject({ question: "完整退出测试市场" });
   });
+  it("serves simultaneous catalog reads when another reader expires the snapshot cache", async () => {
+    await sql`UPDATE public_query_snapshots SET created_at=now()-interval '31 minutes'`;
+    let release!: () => void;
+    let acquired!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const ready = new Promise<void>((resolve) => {
+      acquired = resolve;
+    });
+    const blocker = sql.begin(async (db) => {
+      await db`SELECT pg_advisory_xact_lock(hashtextextended('public-query-snapshots',0))`;
+      acquired();
+      await gate;
+    });
+    await ready;
+    const reads = Promise.allSettled(
+      Array.from({ length: 3 }, () =>
+        publicCatalog(store.financial!, "markets", {}),
+      ),
+    );
+    try {
+      // All three readers must acquire their repeatable-read snapshots before
+      // the first one deletes the expired rows. This reproduces the live 40001.
+      await vi.waitFor(
+        async () => {
+          const waiting = await admin<{ count: number }[]>`
+          SELECT count(*)::int AS count FROM pg_stat_activity
+          WHERE wait_event='advisory' AND query LIKE '%public-query-snapshots%'
+        `;
+          expect(waiting[0]!.count).toBe(3);
+        },
+        { timeout: 5000, interval: 10 },
+      );
+    } finally {
+      release();
+      await blocker;
+    }
+    const results = await reads;
+    expect(results.map((result) => result.status)).toEqual([
+      "fulfilled",
+      "fulfilled",
+      "fulfilled",
+    ]);
+    const pages = results.map((result) => {
+      if (result.status === "rejected") throw result.reason;
+      return result.value;
+    });
+    expect(pages[1]).toEqual(pages[0]);
+    expect(pages[2]).toEqual(pages[0]);
+  });
   it("rolls back the entire batch when a recognized financial log is corrupt", async () => {
     const bad = { ...purchase()[1]!, data: "0x" as const };
     await expect(

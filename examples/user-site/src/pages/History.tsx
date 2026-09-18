@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   useInfiniteQuery,
   useQuery,
@@ -6,7 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { z } from "zod";
-import { formatEther, type Address } from "viem";
+import { formatEther, zeroAddress, type Address, type Hex } from "viem";
 import {
   isRecoverable,
   operationSchema,
@@ -39,12 +39,13 @@ import {
   PageTitle,
   shortAddress,
 } from "../ui.js";
-import { dateText, marketSchema } from "../data.js";
+import { dateText, marketSchema, useRules } from "../data.js";
 import {
   listingTotal,
   operationBusinessFacts,
   businessFactKinds,
 } from "../history-details.js";
+import { marketplaceAbi } from "../../../../offchain/sdk/src/abis.js";
 import { DepositHistory } from "../DepositHistory.js";
 const labels: Record<LedgerFact["kind"], string> = {
   "market-created": "创建市场",
@@ -174,7 +175,7 @@ export function HistoryPage() {
       {account && api.environment.asset === "USDC" && <DepositHistory />}
       {account && (
         <>
-          <section className="card stack">
+          <section className="card stack history-operations">
             <h2>操作进度</h2>
             <ErrorNotice
               error={operations.error}
@@ -203,7 +204,7 @@ export function HistoryPage() {
                       {"market" in o.intent ? (
                         <HistoryMarket market={o.intent.market} />
                       ) : (
-                        "跨市场 / 账户"
+                        <ListingOperationMarket operation={o} />
                       )}
                       <IntentSummary operation={o} />
                     </td>
@@ -297,6 +298,7 @@ export function HistoryPage() {
                     "事件",
                     "时间（上海）",
                     "市场",
+                    "结果选项",
                     "份数",
                     "金额 / 挂单总额",
                     "详情",
@@ -314,6 +316,12 @@ export function HistoryPage() {
                         )}
                       </td>
                       <td>
+                        <HistoryOutcome
+                          market={f.market}
+                          outcomeId={f.outcomeId}
+                        />
+                      </td>
+                      <td>
                         <Amount value={f.units} />
                       </td>
                       <td>
@@ -321,6 +329,13 @@ export function HistoryPage() {
                         {f.kind === "listing-created" && (
                           <div className="small muted">
                             挂单总额，尚非成交收入
+                          </div>
+                        )}
+                        {(f.kind === "listing-cancelled" ||
+                          f.kind === "listing-returned") && (
+                          <div className="small muted">
+                            {f.kind === "listing-cancelled" ? "撤销" : "取回"}
+                            部分的挂单总额，非资金到账
                           </div>
                         )}
                       </td>
@@ -616,6 +631,11 @@ function OperationDetail({
               正在继续查询此操作。不要为了重试而重复付款。
             </Notice>
           )}
+          {scoped.state === "reverted" && scoped.kind === "create-market" && (
+            <Notice tone="warning">
+              本次创建已在链上回滚，没有生成市场，因此不会出现在市场列表或创作者中心。请检查创建参数；封盘时间须给签名和上链留出余量，再发起新的创建。
+            </Notice>
+          )}
           {scoped.state === "confirmed" && (
             <Notice>
               交易已经确认。若余额或权益尚未更新，请等待索引同步，交易结果不受页面刷新影响。
@@ -627,45 +647,143 @@ function OperationDetail({
   );
 }
 
-function HistoryMarket({ market }: { market: Address }) {
+function useHistoryMarket(market: Address | null | undefined) {
   const { api } = useSession();
-  const query = useQuery({
+  return useQuery({
     queryKey: [api.key, "market", market],
+    enabled: !!market,
     queryFn: ({ signal }) =>
       api.request(`/v2/markets/${market}`, marketSchema, {
         service: "indexer",
         signal,
       }),
-    staleTime: 60000,
+    staleTime: 30000,
+    refetchInterval: (q) => (q.state.data?.question?.trim() ? false : 30000),
     retry: 1,
   });
+}
+function HistoryMarket({ market }: { market: Address }) {
+  const { api } = useSession();
+  const query = useHistoryMarket(market);
   return (
     <Link to={`/${api.environment.id}/markets/${market}`} title={market}>
       {query.data?.question?.trim() ||
         (query.isPending
           ? "正在读取市场名称"
-          : `名称暂不可用（${shortAddress(market)}）`)}
+          : `后台核验中（${shortAddress(market)}）`)}
     </Link>
   );
 }
-
-function IntentSummary({ operation: o }: { operation: Operation }) {
+function HistoryOutcome({
+  market,
+  outcomeId,
+}: {
+  market: Address | null;
+  outcomeId: string | null;
+}) {
+  const query = useHistoryMarket(outcomeId === null ? null : market);
+  const rules = useRules(query.data);
+  if (outcomeId === null) return <>—</>;
+  const label = rules.data?.outcomes[Number(outcomeId)];
+  return <>{label || `选项 #${outcomeId}（名称待核验）`}</>;
+}
+function useHistoryListing(id: Hex | undefined) {
   const { api } = useSession();
-  const intent = o.intent;
+  return useQuery({
+    queryKey: [api.key, "history-listing", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const row = await api.publicClient().readContract({
+        address: api.environment.deployment.marketplace,
+        abi: marketplaceAbi,
+        functionName: "listings",
+        args: [id!],
+      });
+      if (row[0] === zeroAddress) throw new AppError("listing_not_found", 404);
+      // These listing identity/price fields never change after creation, even after closure.
+      return {
+        market: row[0],
+        outcomeId: String(row[5]),
+        unitPrice: row[3].toString(),
+      };
+    },
+    staleTime: Infinity,
+    retry: 1,
+  });
+}
+function ListingOperationMarket({ operation: o }: { operation: Operation }) {
+  const listing = useHistoryListing(
+    "listingId" in o.intent ? o.intent.listingId : undefined,
+  );
+  if (!("listingId" in o.intent)) return <>跨市场 / 账户</>;
+  return listing.data ? (
+    <HistoryMarket market={listing.data.market} />
+  ) : (
+    <>
+      挂单 {shortAddress(o.intent.listingId)}
+      {listing.isPending ? " · 正在读取" : " · 明细暂未取得"}
+    </>
+  );
+}
+function IntentSummary({ operation: o }: { operation: Operation }) {
+  const { api } = useSession(),
+    intent = o.intent;
+  const listing = useHistoryListing(
+    "listingId" in intent ? intent.listingId : undefined,
+  );
   if (intent.kind === "buy")
     return (
       <div className="small muted">
+        结果选项：
+        <HistoryOutcome market={intent.market} outcomeId={intent.outcomeId} /> ·
         申请购买 <Amount value={intent.units} /> 份
       </div>
     );
-  if (intent.kind === "create-listing")
+  if (intent.kind === "create-listing" || intent.kind === "fill-listing") {
+    const creating = intent.kind === "create-listing";
+    const market = creating ? intent.market : listing.data?.market;
+    const outcome = creating ? intent.outcomeId : listing.data?.outcomeId;
+    const price = creating ? intent.unitPrice : listing.data?.unitPrice;
     return (
       <div className="small muted">
-        挂单 <Amount value={intent.units} /> 份 · 总额{" "}
+        结果选项：
+        {market && outcome !== undefined ? (
+          <HistoryOutcome market={market} outcomeId={outcome} />
+        ) : (
+          "待核对"
+        )}{" "}
+        ·{creating ? "挂单" : "申请购买"} <Amount value={intent.units} /> 份 ·
+        每份 <Amount value={price ?? null} asset={api.environment.asset} /> ·
+        {creating
+          ? "挂单总额（未扣成交手续费）"
+          : "申请成交总额（未扣成交手续费）"}{" "}
         <Amount
-          value={listingTotal(intent.units, intent.unitPrice)}
+          value={listingTotal(intent.units, price)}
           asset={api.environment.asset}
         />
+      </div>
+    );
+  }
+  if (intent.kind === "cancel-listing" || intent.kind === "return-listing")
+    return (
+      <div className="small muted">
+        结果选项：
+        {listing.data ? (
+          <HistoryOutcome
+            market={listing.data.market}
+            outcomeId={listing.data.outcomeId}
+          />
+        ) : (
+          "待核对"
+        )}
+        {" · "}每份{" "}
+        <Amount
+          value={listing.data?.unitPrice ?? null}
+          asset={api.environment.asset}
+        />
+        {" · "}
+        {intent.kind === "cancel-listing" ? "撤单" : "取回"}
+        份数和总额以本次链上事件为准。
       </div>
     );
   return null;
@@ -673,6 +791,11 @@ function IntentSummary({ operation: o }: { operation: Operation }) {
 
 function FactAmount({ fact }: { fact: LedgerFact }) {
   const { api } = useSession();
+  const recovery =
+    fact.kind === "listing-cancelled" || fact.kind === "listing-returned";
+  const listing = useHistoryListing(
+    recovery && fact.listingId ? fact.listingId : undefined,
+  );
   if (fact.kind === "user-operation")
     return (
       <>
@@ -686,7 +809,9 @@ function FactAmount({ fact }: { fact: LedgerFact }) {
       value={
         fact.kind === "listing-created"
           ? listingTotal(fact.units, fact.extra.unitPrice)
-          : fact.amount
+          : recovery
+            ? listingTotal(fact.units, listing.data?.unitPrice)
+            : fact.amount
       }
       asset={api.environment.asset}
     />
@@ -696,19 +821,40 @@ function FactAmount({ fact }: { fact: LedgerFact }) {
 function FactFields({ fact }: { fact: LedgerFact }) {
   const { api } = useSession();
   const listing = fact.kind === "listing-created";
+  const fill = fact.kind === "listing-filled";
+  const cancelled = fact.kind === "listing-cancelled";
+  const returned = fact.kind === "listing-returned";
+  const recovery = cancelled || returned;
+  const listingData = useHistoryListing(
+    (fill || recovery) && fact.listingId ? fact.listingId : undefined,
+  );
   return (
     <>
+      {fact.outcomeId !== null && (
+        <>
+          <dt>结果选项</dt>
+          <dd>
+            <HistoryOutcome market={fact.market} outcomeId={fact.outcomeId} />
+          </dd>
+        </>
+      )}
       <dt>
         {listing
           ? "挂单份数"
-          : fact.kind === "primary-buy"
-            ? "实际购买份数"
-            : "核销 / 变动份数"}
+          : cancelled
+            ? "撤单份数（实际取回）"
+            : returned
+              ? "终局挂单实际取回份数"
+              : fill
+                ? "实际成交份数"
+                : fact.kind === "primary-buy"
+                  ? "实际购买份数"
+                  : "核销 / 变动份数"}
       </dt>
       <dd>
         <Amount value={fact.units} />
       </dd>
-      {listing && (
+      {(listing || fill || recovery) && (
         <>
           <dt>挂单单价（每份）</dt>
           <dd>
@@ -717,7 +863,7 @@ function FactFields({ fact }: { fact: LedgerFact }) {
                 typeof fact.extra.unitPrice === "string" &&
                 /^\d+$/.test(fact.extra.unitPrice)
                   ? fact.extra.unitPrice
-                  : null
+                  : (listingData.data?.unitPrice ?? null)
               }
               asset={api.environment.asset}
             />
@@ -727,20 +873,70 @@ function FactFields({ fact }: { fact: LedgerFact }) {
       <dt>
         {listing
           ? "挂单总额（未扣成交手续费）"
-          : fact.kind === "primary-buy"
-            ? "实际购买金额"
-            : [
-                  "winner-claimed",
-                  "early-bird-claimed",
-                  "refunded",
-                  "timeout-claimed",
-                ].includes(fact.kind)
-              ? "实际领取金额"
-              : "金额"}
+          : cancelled
+            ? "撤销挂单总额（未扣成交手续费）"
+            : returned
+              ? "取回挂单总额（未扣成交手续费）"
+              : fill
+                ? "本次成交总额（未扣成交手续费）"
+                : fact.kind === "primary-buy"
+                  ? "实际购买金额"
+                  : [
+                        "winner-claimed",
+                        "early-bird-claimed",
+                        "refunded",
+                        "timeout-claimed",
+                      ].includes(fact.kind)
+                    ? "实际领取金额"
+                    : "金额"}
       </dt>
       <dd>
         <FactAmount fact={fact} />
       </dd>
+      {recovery && (
+        <>
+          <dt>{cancelled ? "本次撤单成交手续费" : "本次取回成交手续费"}</dt>
+          <dd>
+            <Amount value="0" asset={api.environment.asset} />（
+            {cancelled ? "撤单" : "取回托管份额"}不收取成交手续费）
+          </dd>
+          <dt>挂单编号</dt>
+          <dd className="break-all">{fact.listingId}</dd>
+          <dt>金额说明</dt>
+          <dd>
+            总额按本次实际取回份数 ×
+            挂单单价计算，不是到账资金。已成交部分及其手续费不计入本次
+            {cancelled ? "撤单" : "取回"}；网络 Gas 单独核算。
+            {returned && "取回份额后，符合条件的收益、退款或补偿需另行领取。"}
+          </dd>
+        </>
+      )}
+      {fill && (
+        <>
+          {(
+            [
+              ["平台成交手续费", "platformFee"],
+              ["创作者成交手续费", "creatorFee"],
+              ["卖方实际到账", "sellerProceeds"],
+            ] as const
+          ).map(([label, key]) => (
+            <Fragment key={key}>
+              <dt>{label}</dt>
+              <dd>
+                <Amount
+                  value={
+                    typeof fact.extra[key] === "string" &&
+                    /^\d+$/.test(fact.extra[key] as string)
+                      ? (fact.extra[key] as string)
+                      : null
+                  }
+                  asset={api.environment.asset}
+                />
+              </dd>
+            </Fragment>
+          ))}
+        </>
+      )}
     </>
   );
 }
@@ -808,11 +1004,20 @@ function OperationBusinessDetails({ operation: o }: { operation: Operation }) {
       {facts.data?.length ? (
         facts.data.map((f) => (
           <dl className="data-list" key={f.id}>
+            {!("market" in o.intent) && f.market && (
+              <>
+                <dt>市场</dt>
+                <dd>
+                  <HistoryMarket market={f.market} />
+                </dd>
+              </>
+            )}
             <FactFields fact={f} />
           </dl>
         ))
       ) : (
         <>
+          {!("market" in o.intent) && <ListingOperationMarket operation={o} />}
           <IntentSummary operation={o} />
           <Notice>
             {o.state === "confirmed"

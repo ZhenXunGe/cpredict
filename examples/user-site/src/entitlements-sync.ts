@@ -8,7 +8,20 @@ import type {
   LedgerSnapshot,
 } from "../../../offchain/app-core/src/ledger-contracts.js";
 
+export function needsTimeoutFunding(e: Entitlement): boolean {
+  return (
+    !!e.market &&
+    ((e.kind === "bond" &&
+      e.reason === "bond_slashed_pending_timeout_funding") ||
+      (e.kind === "timeout-bonus" &&
+        (e.reason === "waiting_for_timeout_bond_funding" ||
+          e.reason === "refund_and_funding_before_timeout_compensation")))
+  );
+}
+
 function entitlementAction(e: Entitlement): BusinessIntent | null {
+  // Permissionless settlement funds the shared pool; it never claims the creator's bond.
+  if (needsTimeoutFunding(e)) return { kind: "settle-bond", market: e.market! };
   if (e.kind === "escrow" && e.listingId)
     return {
       kind:
@@ -39,11 +52,11 @@ function entitlementAction(e: Entitlement): BusinessIntent | null {
 }
 
 export function entitlementIntent(e: Entitlement): BusinessIntent | null {
-  if (
-    e.kind === "bond" &&
-    (e.reason === "bond_slashed_pending_timeout_funding" ||
-      e.reason === "bond_slashed_into_timeout_pool")
-  )
+  if (needsTimeoutFunding(e))
+    return e.status === "conditional" || e.status === "claimable"
+      ? entitlementAction(e)
+      : null;
+  if (e.kind === "bond" && e.reason === "bond_slashed_into_timeout_pool")
     return null;
   return e.status === "claimable" ? entitlementAction(e) : null;
 }

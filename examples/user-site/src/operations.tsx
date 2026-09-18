@@ -23,12 +23,9 @@ import {
   type GasPayment,
 } from "../../../offchain/app-core/src/contracts.js";
 import { useSession } from "./wallets.js";
-import {
-  UserOperationClient,
-  type OperationStage,
-  type GasQuote,
-} from "./operation-client.js";
+import type { OperationStage, GasQuote } from "./operation-client.js";
 import { GasPaymentPanel } from "./GasPayment.js";
+import { PrimaryPurchaseError } from "./primary-purchase.js";
 import {
   AddressText,
   Button,
@@ -266,30 +263,35 @@ export function OperationProvider({ children }: { children: ReactNode }) {
           q.queryKey[0] === session.api.key && q.queryKey[1] !== "operation",
       });
   }, [latest?.id, latest?.state, cache, session.api.key]);
-  useEffect(() => {
-    if (
-      latest?.state === "confirmed" &&
-      latest.intent.kind === "create-market" &&
-      draft?.intent.kind === "create-market" &&
-      latest.intent.userSalt === draft.intent.userSalt &&
-      latest.accountId === session.account?.id &&
-      draft.accountId === session.account?.id &&
-      draft.identityKey === session.identityKey &&
-      draft.path === path &&
-      location.pathname === `/${session.api.environment.id}/creator/new`
-    )
-      navigate(`/${session.api.environment.id}/creator`, { replace: true });
-  }, [
-    latest,
-    draft,
-    path,
-    location.pathname,
-    navigate,
-    session.account?.id,
-    session.identityKey,
-    session.api.environment.id,
-  ]);
+  const creationSucceeded =
+    latest?.state === "confirmed" &&
+    latest.intent.kind === "create-market" &&
+    draft?.intent.kind === "create-market" &&
+    latest.intent.userSalt === draft.intent.userSalt &&
+    latest.accountId === session.account?.id &&
+    draft.accountId === session.account?.id &&
+    draft.identityKey === session.identityKey &&
+    draft.path === path &&
+    location.pathname === `/${session.api.environment.id}/creator/new`;
+  const openCreatedMarkets = () => {
+    if (!creationSucceeded || latest?.intent.kind !== "create-market") return;
+    navigate(`/${session.api.environment.id}/creator`, {
+      replace: true,
+      state: {
+        creation: {
+          accountId: latest.accountId,
+          identityKey: session.identityKey,
+          rulesHash: latest.intent.params.rulesHash,
+          blockNumber: latest.blockNumber,
+          operationId: latest.id,
+          confirmedAt: Date.now(),
+        },
+      },
+    });
+  };
   const begin = (request: Request) => {
+    // Prepare code while the user reviews; never prepare or send a transaction here.
+    void import("./operation-client.js").catch(() => undefined);
     const next = draftSchema.parse({
       ...request,
       id: crypto.randomUUID(),
@@ -324,28 +326,39 @@ export function OperationProvider({ children }: { children: ReactNode }) {
     setStage(null);
     sessionStorage.removeItem(storageKey);
   };
+  const submitting = useRef(false);
   const submit = async () => {
     const account = session.account;
-    if (!draft || !account || stage || record) return;
+    if (!draft || !account || stage || record || submitting.current) return;
     const id = draft.id,
       identity = session.identityKey;
     setError(null);
-    const client = new UserOperationClient(
-      session.api,
-      account,
-      () => session.controller(account),
-      () =>
-        current.current.draftId === id &&
-        current.current.account === account.id &&
-        current.current.identity === identity,
-      signingMode === "session"
-        ? async (intent) => {
-            if (!quick) throw new AppError("trading_session_unavailable", 409);
-            return quick.credential(intent);
-          }
-        : undefined,
-    );
+    submitting.current = true;
+    setStage("preparing");
     try {
+      const { UserOperationClient } = await import("./operation-client.js");
+      if (
+        current.current.draftId !== id ||
+        current.current.account !== account.id ||
+        current.current.identity !== identity
+      )
+        throw new AppError("confirmation_context_changed", 409);
+      const client = new UserOperationClient(
+        session.api,
+        account,
+        () => session.controller(account),
+        () =>
+          current.current.draftId === id &&
+          current.current.account === account.id &&
+          current.current.identity === identity,
+        signingMode === "session"
+          ? async (intent) => {
+              if (!quick)
+                throw new AppError("trading_session_unavailable", 409);
+              return quick.credential(intent);
+            }
+          : undefined,
+      );
       await client.submit(
         draft.intent,
         (value) => {
@@ -378,6 +391,7 @@ export function OperationProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       if (current.current.draftId === id) setError(e);
     } finally {
+      submitting.current = false;
       if (current.current.draftId === id) setStage(null);
     }
   };
@@ -412,12 +426,27 @@ export function OperationProvider({ children }: { children: ReactNode }) {
       <Modal
         open={draft !== null}
         onOpenChange={(open) => {
-          if (!open) close();
+          if (!open) {
+            if (creationSucceeded) openCreatedMarkets();
+            else close();
+          }
         }}
-        title={draft ? operationLabels[draft.intent.kind] : "确认操作"}
-        description="请核对本次操作。每笔交易都需要你的明确确认。"
+        title={
+          creationSucceeded
+            ? "市场创建成功"
+            : draft
+              ? operationLabels[draft.intent.kind]
+              : "确认操作"
+        }
+        description={
+          creationSucceeded
+            ? "创建已在链上确认。市场列表将自动同步，无需重新创建或刷新网页。"
+            : "请核对本次操作。每笔交易都需要你的明确确认。"
+        }
         footer={
-          session.account ? (
+          creationSucceeded ? (
+            <Button onClick={openCreatedMarkets}>查看我创建的市场</Button>
+          ) : session.account ? (
             <>
               {stage === "reviewing-gas" && gasQuote ? (
                 <div className="stack" style={{ width: "100%", gap: 12 }}>
@@ -491,148 +520,167 @@ export function OperationProvider({ children }: { children: ReactNode }) {
           ) : undefined
         }
       >
-        {draft && (
-          <>
-            <dl className="data-list">
-              {draft.summary.map((row) => (
-                <div key={row.label} style={{ display: "contents" }}>
-                  <dt>{row.label}</dt>
-                  <dd>{row.value}</dd>
-                </div>
-              ))}
-            </dl>
-            <Notice>{draft.feeNote}</Notice>
-            <AccountGate />
-            {session.account && (
-              <>
-                <dl className="data-list">
-                  <dt>资产账户</dt>
-                  <dd>
-                    <AddressText value={session.account.address} />
-                  </dd>
-                  <dt>控制钱包</dt>
-                  <dd>
-                    <AddressText value={session.account.controller} />
-                  </dd>
-                  <dt>当前环境</dt>
-                  <dd>{session.api.environment.label}</dd>
-                  <dt>网络 Gas</dt>
-                  <dd>
-                    {(latest?.gasPayment ?? gasPayment) === "self-funded"
-                      ? "自行支付 ETH"
-                      : latest
-                        ? "已登记项目代付"
-                        : "等待代付准入"}
-                  </dd>
-                </dl>
-                {quick && draft && supportsQuickTrading(draft.intent) && (
-                  <div className="stack">
-                    <label>
-                      签名方式
-                      <select
-                        value={signingMode}
-                        disabled={!!stage || !!latest}
-                        onChange={(e) => {
-                          setSigningMode(
-                            e.target.value as "controller" | "session",
-                          );
-                          setError(null);
-                        }}
-                      >
-                        <option value="controller">逐笔控制钱包签名</option>
-                        <option
-                          value="session"
-                          disabled={!quick.local || gasPayment !== "sponsored"}
-                        >
-                          快捷交易（浏览器本地签名）
-                        </option>
-                      </select>
-                    </label>
-                    {signingMode === "session" && (
-                      <Notice>
-                        授权过期、额度不足或选择自付 ETH
-                        时，请重新授权或明确选择逐笔控制钱包签名。
-                      </Notice>
-                    )}
-                    {quick.enabled && (
-                      <Button
-                        variant="quiet"
-                        disabled={!!stage || !!latest}
-                        onClick={quick.open}
-                      >
-                        开启或重新授权快捷交易
-                      </Button>
-                    )}
+        {creationSucceeded ? (
+          <Notice tone="success">
+            市场创建成功。名称和规则核验可能稍有延迟，创作者中心会自动更新。
+          </Notice>
+        ) : (
+          draft && (
+            <>
+              <dl className="data-list">
+                {draft.summary.map((row) => (
+                  <div key={row.label} style={{ display: "contents" }}>
+                    <dt>{row.label}</dt>
+                    <dd>{row.value}</dd>
                   </div>
-                )}
-                {!gasQuote && (
-                  <GasPaymentPanel
-                    key={`${session.api.key}:${session.identityKey}:${session.account.id}`}
-                    payment={gasPayment}
-                    onChange={(v) => {
-                      setGasPayment(v);
-                      setError(null);
-                    }}
-                    disabled={!!stage || !!latest}
-                  />
-                )}
-                {gasQuote && (
+                ))}
+              </dl>
+              <Notice>{draft.feeNote}</Notice>
+              <AccountGate />
+              {session.account && (
+                <>
+                  <dl className="data-list">
+                    <dt>资产账户</dt>
+                    <dd>
+                      <AddressText value={session.account.address} />
+                    </dd>
+                    <dt>控制钱包</dt>
+                    <dd>
+                      <AddressText value={session.account.controller} />
+                    </dd>
+                    <dt>当前环境</dt>
+                    <dd>{session.api.environment.label}</dd>
+                    <dt>网络 Gas</dt>
+                    <dd>
+                      {(latest?.gasPayment ?? gasPayment) === "self-funded"
+                        ? "自行支付 ETH"
+                        : latest
+                          ? "已登记项目代付"
+                          : "等待代付准入"}
+                    </dd>
+                  </dl>
+                  {quick && draft && supportsQuickTrading(draft.intent) && (
+                    <div className="stack">
+                      <label>
+                        签名方式
+                        <select
+                          value={signingMode}
+                          disabled={!!stage || !!latest}
+                          onChange={(e) => {
+                            setSigningMode(
+                              e.target.value as "controller" | "session",
+                            );
+                            setError(null);
+                          }}
+                        >
+                          <option value="controller">逐笔控制钱包签名</option>
+                          <option
+                            value="session"
+                            disabled={
+                              !quick.local || gasPayment !== "sponsored"
+                            }
+                          >
+                            快捷交易（浏览器本地签名）
+                          </option>
+                        </select>
+                      </label>
+                      {signingMode === "session" && (
+                        <Notice>
+                          授权过期、额度不足或选择自付 ETH
+                          时，请重新授权或明确选择逐笔控制钱包签名。
+                        </Notice>
+                      )}
+                      {quick.enabled && (
+                        <Button
+                          variant="quiet"
+                          disabled={!!stage || !!latest}
+                          onClick={quick.open}
+                        >
+                          开启或重新授权快捷交易
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {!gasQuote && (
+                    <GasPaymentPanel
+                      key={`${session.api.key}:${session.identityKey}:${session.account.id}`}
+                      payment={gasPayment}
+                      onChange={(v) => {
+                        setGasPayment(v);
+                        setError(null);
+                      }}
+                      disabled={!!stage || !!latest}
+                    />
+                  )}
+                  {gasQuote && (
+                    <Notice tone="warning">
+                      本次最多支付 {formatEther(gasQuote.cost)}{" "}
+                      ETH；智能账户可用 Gas 余额 {formatEther(gasQuote.balance)}{" "}
+                      ETH。请确认后再签名。
+                    </Notice>
+                  )}
                   <Notice tone="warning">
-                    本次最多支付 {formatEther(gasQuote.cost)} ETH；智能账户可用
-                    Gas 余额 {formatEther(gasQuote.balance)}{" "}
-                    ETH。请确认后再签名。
+                    所有金额均为测试资产。网络 Gas
+                    与协议费用、创建费及押金分别核算。
                   </Notice>
-                )}
-                <Notice tone="warning">
-                  所有金额均为测试资产。网络 Gas
-                  与协议费用、创建费及押金分别核算。
+                </>
+              )}
+              {stage && (
+                <div className="step-status" role="status">
+                  <span className="spinner" />
+                  {stage === "preparing"
+                    ? gasPayment === "self-funded"
+                      ? "重新核对交易并估算自付 Gas"
+                      : "重新核对交易并申请代付"
+                    : stage === "reviewing-gas"
+                      ? "请核对 ETH Gas 费用"
+                      : stage === "awaiting-signature"
+                        ? signingMode === "session"
+                          ? "正在浏览器内签名"
+                          : "请在钱包中确认签名"
+                        : "正在提交，请勿重复操作"}
+                </div>
+              )}
+              {latest && (
+                <Notice
+                  tone={
+                    latest.state === "confirmed"
+                      ? "success"
+                      : isRecoverable(latest.state)
+                        ? "warning"
+                        : "info"
+                  }
+                >
+                  <strong>
+                    {latest.state === "awaiting-signature" &&
+                    stage === "preparing"
+                      ? "交易准备中"
+                      : latest.state === "awaiting-signature" &&
+                          (error instanceof PrimaryPurchaseError ||
+                            (error instanceof AppError &&
+                              error.code ===
+                                "operation_preparation_failed_before_signing"))
+                        ? "交易准备未完成"
+                        : operationStateCopy[latest.state]}
+                  </strong>
+                  <p className="small">操作编号 {latest.id}</p>
+                  {isRecoverable(latest.state) && (
+                    <p>仅查询此操作，不会自动重新发送。</p>
+                  )}
+                  {latest.transactionHash && (
+                    <a
+                      href={`${session.api.environment.explorerUrl}/tx/${latest.transactionHash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      查看链上交易
+                    </a>
+                  )}
                 </Notice>
-              </>
-            )}
-            {stage && (
-              <div className="step-status" role="status">
-                <span className="spinner" />
-                {stage === "preparing"
-                  ? gasPayment === "self-funded"
-                    ? "重新核对交易并估算自付 Gas"
-                    : "重新核对交易并申请代付"
-                  : stage === "reviewing-gas"
-                    ? "请核对 ETH Gas 费用"
-                    : stage === "awaiting-signature"
-                      ? signingMode === "session"
-                        ? "正在浏览器内签名"
-                        : "请在钱包中确认签名"
-                      : "正在提交，请勿重复操作"}
-              </div>
-            )}
-            {latest && (
-              <Notice
-                tone={
-                  latest.state === "confirmed"
-                    ? "success"
-                    : isRecoverable(latest.state)
-                      ? "warning"
-                      : "info"
-                }
-              >
-                <strong>{operationStateCopy[latest.state]}</strong>
-                <p className="small">操作编号 {latest.id}</p>
-                {isRecoverable(latest.state) && (
-                  <p>仅查询此操作，不会自动重新发送。</p>
-                )}
-                {latest.transactionHash && (
-                  <a
-                    href={`${session.api.environment.explorerUrl}/tx/${latest.transactionHash}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    查看链上交易
-                  </a>
-                )}
-              </Notice>
-            )}
-            <ErrorNotice error={error ?? operation.error} />
-          </>
+              )}
+              <ErrorNotice error={error ?? operation.error} />
+            </>
+          )
         )}
       </Modal>
     </Operations.Provider>

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { formatUnits } from "viem";
 import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -6,8 +7,12 @@ import {
   entitlementsResponseSchema,
   pnlResponseSchema,
   type Entitlement,
+  type LedgerSnapshot,
 } from "../../../../offchain/app-core/src/ledger-contracts.js";
-import { operationSchema } from "../../../../offchain/app-core/src/contracts.js";
+import {
+  operationSchema,
+  type Operation,
+} from "../../../../offchain/app-core/src/contracts.js";
 import {
   marketSchema,
   type Market,
@@ -24,6 +29,7 @@ import {
   entitlementOperations,
   entitlementProgress,
   entitlementRefreshInterval,
+  needsTimeoutFunding,
   snapshotIncludesOperation,
 } from "../entitlements-sync.js";
 import {
@@ -56,16 +62,17 @@ const states: Record<Entitlement["status"], string> = {
   unknown: "待核对",
 };
 const reasons: Record<string, string> = {
-  waiting_for_timeout_bond_funding: "本金退款后，须等待押金注入补偿池。",
+  waiting_for_timeout_bond_funding:
+    "本金已退款。点击“准备超时补偿”将罚没押金注入补偿池，确认后再领取补偿，无需等待创建者操作。",
   refund_before_timeout_compensation:
     "预计补偿金额如下，请先领取本金，再领取超时补偿。实际到账以链上结算为准。",
   refund_and_funding_before_timeout_compensation:
-    "请先领取本金，并等待押金注入超时补偿池后领取补偿。",
+    "可先领取本金；点击“准备超时补偿”将罚没押金注入补偿池。本金退款和补偿池准备都完成后，即可领取补偿。",
   principal_first_then_timeout_compensation: "领取本金后，可继续领取超时补偿。",
   credited_to_aggregate_balance: "已记入押金可领取余额；在汇总余额中领取到账。",
   bond_slashed_into_timeout_pool: "押金已罚没并注入超时补偿池。",
   bond_slashed_pending_timeout_funding:
-    "市场已超时作废，押金已罚没，待注入超时补偿池，无法领取。",
+    "市场已超时作废，押金须用于参与者补偿，创建者不能领回。点击“准备超时补偿”可将押金注入补偿池，参与者也可发起。",
   settle_bond_before_claiming_credit: "先结算押金，再领取汇总余额。",
   settle_and_claim_bond: "将结算并领取押金，一笔操作到账。",
   chain_read_unavailable: "链上查询暂不可用，请重新查询。",
@@ -192,9 +199,10 @@ export function EntitlementsPage() {
       marketFor(market)?.question?.trim() ||
       (pendingMarkets.has(market.toLowerCase())
         ? "正在读取市场名称"
-        : `名称暂不可用（${shortAddress(market)}）`),
+        : `后台核验中（${shortAddress(market)}）`),
     visibleItems = currentItems.filter(
       ({ item }) =>
+        item.kind !== "escrow" &&
         !(
           item.kind === "holding" &&
           item.status !== "unknown" &&
@@ -212,6 +220,25 @@ export function EntitlementsPage() {
         marketFor(lot.market)?.state !== 1 &&
         marketFor(lot.market)?.state !== 2,
     );
+  const listingRows = currentItems.filter(({ item }) => item.kind === "escrow");
+  const matchesLot = (item: Entitlement, lot: (typeof visibleLots)[number]) =>
+    item.market?.toLowerCase() === lot.market.toLowerCase() &&
+    item.outcomeId === lot.outcomeId;
+  const otherListings = listingRows.filter(
+    ({ item }) => !visibleLots.some((lot) => matchesLot(item, lot)),
+  );
+  const listingAction = ({ item, snapshot }: (typeof items)[number]) => (
+    <ListingAction
+      key={item.id}
+      item={item}
+      snapshot={snapshot}
+      operations={operations}
+      market={item.market ? marketFor(item.market) : undefined}
+      marketLabel={item.market ? marketLabel(item.market) : "待核对"}
+      operationsReady={pending.isSuccess}
+      operationsError={pending.isError}
+    />
+  );
   useEffect(() => {
     if (
       !visibleItems.length &&
@@ -309,12 +336,15 @@ export function EntitlementsPage() {
             !rights.error &&
             !marketsPending &&
             visibleItems.length === 0 &&
-            !rights.hasNextPage && (
+            !rights.hasNextPage &&
+            (visibleLots.length > 0 || listingRows.length > 0 ? (
+              <Notice>暂无待领取权益；持仓和挂单操作见下方。</Notice>
+            ) : (
               <Empty title="暂无待处理权益">
                 已领取或已处理的项目不再显示。
                 <Link to={`/${api.environment.id}/history`}>查看交易历史</Link>
               </Empty>
-            )}
+            ))}
           {visibleItems.length === 0 && rights.hasNextPage && !rights.error && (
             <Loading label="正在查找待处理权益" />
           )}
@@ -346,11 +376,13 @@ export function EntitlementsPage() {
                   (e.reason === "waiting_for_timeout_bond_funding" ||
                     e.reason ===
                       "refund_and_funding_before_timeout_compensation");
+                const funding = needsTimeoutFunding(e);
                 const intent = entitlementIntent(e);
-                const progress =
-                  pendingTimeoutFunding || timeoutFunded
-                    ? null
-                    : entitlementProgress(e, operations, rowSnapshot);
+                const progress = entitlementProgress(
+                  e,
+                  operations,
+                  rowSnapshot,
+                );
                 return (
                   <tr key={e.id}>
                     <td>
@@ -411,7 +443,9 @@ export function EntitlementsPage() {
                                 ? "已罚没并注入"
                                 : waitingForRefund
                                   ? "待领取本金"
-                                  : states[e.status]}
+                                  : waitingForFunding
+                                    ? "待准备补偿池"
+                                    : states[e.status]}
                       </span>
                     </td>
                     <td>
@@ -436,7 +470,12 @@ export function EntitlementsPage() {
                             request({
                               intent,
                               summary: [
-                                { label: "权益", value: rightLabels[e.kind] },
+                                {
+                                  label: "操作",
+                                  value: funding
+                                    ? "准备超时补偿"
+                                    : rightLabels[e.kind],
+                                },
                                 {
                                   label: "归属",
                                   value: e.market
@@ -444,14 +483,13 @@ export function EntitlementsPage() {
                                     : "跨市场汇总余额",
                                 },
                               ],
-                              feeNote:
-                                e.kind === "escrow"
-                                  ? "仅取回托管份额，不实现盈亏。网络 Gas 可选择项目代付或自行支付 ETH。"
-                                  : e.kind === "bond" && e.market
-                                    ? e.reason === "settle_and_claim_bond"
-                                      ? "本次将结算并领取押金，确认后一次到账。"
-                                      : "本次将押金结算至汇总可领取余额；超时弃盘且有参与者时，押金将进入补偿池。"
-                                    : "实际到账以链上交易为准；已含费用不会重复扣除。网络 Gas 可选择项目代付或自行支付 ETH。",
+                              feeNote: funding
+                                ? "本次只将该市场罚没的创建者押金注入公共补偿池，不会把押金转入你的账户。完成后，已领取本金的参与者可按退款份额领取超时补偿；尚未退款的请先领取本金。任何参与者均可发起，无需创建者配合。网络 Gas 可选择项目代付或自行支付 ETH。"
+                                : e.kind === "bond" && e.market
+                                  ? e.reason === "settle_and_claim_bond"
+                                    ? "本次将结算并领取押金，确认后一次到账。"
+                                    : "本次将押金结算至汇总可领取余额；超时弃盘且有参与者时，押金将进入补偿池。"
+                                  : "实际到账以链上交易为准；已含费用不会重复扣除。网络 Gas 可选择项目代付或自行支付 ETH。",
                             })
                           }
                         >
@@ -459,8 +497,8 @@ export function EntitlementsPage() {
                             ? pending.error
                               ? "暂不可领取"
                               : "正在核对操作"
-                            : e.kind === "escrow"
-                              ? "取回份额"
+                            : funding
+                              ? "准备超时补偿"
                               : e.kind === "bond" && e.market
                                 ? e.reason === "settle_and_claim_bond"
                                   ? "领取押金"
@@ -486,7 +524,7 @@ export function EntitlementsPage() {
               disabled={rights.isFetchingNextPage}
               onClick={() => void rights.fetchNextPage()}
             >
-              加载更多权益
+              加载更多持仓与权益
             </Button>
           )}
           {pnl.data && visibleLots.length > 0 && (
@@ -503,6 +541,7 @@ export function EntitlementsPage() {
                   "其中托管",
                   "已知成本",
                   "成本完整性",
+                  "挂单操作",
                 ]}
               >
                 {visibleLots.map((lot) => (
@@ -534,6 +573,54 @@ export function EntitlementsPage() {
                       />
                     </td>
                     <td>{lot.costComplete ? "完整" : "存在未知取得成本"}</td>
+                    <td>
+                      <div className="stack">
+                        {listingRows
+                          .filter(({ item }) => matchesLot(item, lot))
+                          .map(listingAction)}
+                        {!listingRows.some(({ item }) =>
+                          matchesLot(item, lot),
+                        ) &&
+                          (BigInt(lot.escrowUnits) > 0n
+                            ? rights.hasNextPage
+                              ? "请加载更多持仓与权益以查看挂单"
+                              : "正在核对挂单"
+                            : "—")}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </DataTable>
+            </section>
+          )}
+          {otherListings.length > 0 && (
+            <section className="card stack">
+              <h2>待处理挂单</h2>
+              <DataTable headers={["市场", "持有结果", "挂单操作"]}>
+                {otherListings.map((row) => (
+                  <tr key={row.item.id}>
+                    <td>
+                      {row.item.market ? (
+                        <Link
+                          to={`/${api.environment.id}/markets/${row.item.market}`}
+                        >
+                          {marketLabel(row.item.market)}
+                        </Link>
+                      ) : (
+                        "待核对"
+                      )}
+                    </td>
+                    <td>
+                      <HoldingOutcome
+                        market={
+                          row.item.market
+                            ? marketFor(row.item.market)
+                            : undefined
+                        }
+                        outcomeId={row.item.outcomeId}
+                      />
+                    </td>
+                    <td>{listingAction(row)}</td>
                   </tr>
                 ))}
               </DataTable>
@@ -562,5 +649,95 @@ function HoldingOutcome({
       {label ??
         `结果 #${outcomeId}（名称${rules.isFetching ? "读取中" : "暂不可用"}）`}
     </span>
+  );
+}
+
+function ListingAction({
+  item,
+  snapshot,
+  operations,
+  market,
+  marketLabel,
+  operationsReady,
+  operationsError,
+}: {
+  item: Entitlement;
+  snapshot: LedgerSnapshot;
+  operations: Operation[];
+  market: Market | undefined;
+  marketLabel: string;
+  operationsReady: boolean;
+  operationsError: boolean;
+}) {
+  const { api } = useSession();
+  const request = useOperation();
+  const rules = useRules(market);
+  const intent = entitlementIntent(item);
+  const progress = entitlementProgress(item, operations, snapshot);
+  const label =
+    item.reason === "return_terminal_listing" ? "取回终局挂单份额" : "撤销挂单";
+  return (
+    <div className="stack" key={item.id}>
+      <span className="small muted" title={item.listingId ?? undefined}>
+        挂单 {item.listingId ? shortAddress(item.listingId) : "待核对"} ·{" "}
+        <Amount value={item.units} /> 份
+      </span>
+      {progress ? (
+        <>
+          <Button variant="secondary" disabled>
+            {progress.phase === "syncing" ? "等待同步" : "核对原操作中"}
+          </Button>
+          <Link
+            to={`/${api.environment.id}/history?operation=${progress.operation.id}`}
+          >
+            查询原操作
+          </Link>
+        </>
+      ) : intent ? (
+        <Button
+          variant="secondary"
+          disabled={!operationsReady}
+          onClick={() =>
+            request({
+              intent,
+              summary: [
+                { label: "操作", value: label },
+                {
+                  label: "市场",
+                  value: marketLabel,
+                },
+                { label: "挂单编号", value: item.listingId! },
+                {
+                  label: "持有结果",
+                  value:
+                    rules.data?.outcomes.find(
+                      (_, index) => String(index) === item.outcomeId,
+                    ) ?? `结果 #${item.outcomeId ?? "待核对"}`,
+                },
+                {
+                  label: "待取回份额",
+                  value:
+                    item.units === null
+                      ? "待核对"
+                      : formatUnits(BigInt(item.units), 6),
+                },
+              ],
+              feeNote:
+                intent.kind === "cancel-listing"
+                  ? "撤销这笔挂单并取回尚未成交的份额，已成交部分不受影响。实际取回数量以链上执行时剩余份额为准，不产生已实现收益。"
+                  : "市场已终局，先取回这笔挂单尚未成交的托管份额，再按市场结果领取权益。实际数量以链上交易为准。",
+            })
+          }
+        >
+          {operationsReady
+            ? label
+            : operationsError
+              ? "暂不可操作"
+              : "正在核对操作"}
+        </Button>
+      ) : (
+        <span>{states[item.status]}</span>
+      )}
+    </div>
   );
 }

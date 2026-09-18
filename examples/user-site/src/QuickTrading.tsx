@@ -9,7 +9,6 @@ import {
 } from "react";
 import { z } from "zod";
 import { formatUnits, hashTypedData, type Hex } from "viem";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import {
   AppError,
   sameAddress,
@@ -24,7 +23,7 @@ import {
   type SessionView,
   type TradingSession,
 } from "../../../offchain/app-core/src/trading-session-contracts.js";
-import { createSessionKernel } from "../../../offchain/app-core/src/trading-session-kernel.js";
+import type { createSessionKernel } from "../../../offchain/app-core/src/trading-session-kernel.js";
 import { useSession } from "./wallet-session.js";
 import { useOperation } from "./operations.js";
 import {
@@ -167,6 +166,13 @@ export function QuickTradingProvider({ children }: { children: ReactNode }) {
         setError(null);
         let descriptor: TradingSession | undefined;
         try {
+          const { generatePrivateKey, privateKeyToAccount } = await import(
+            "./signing-keys.js"
+          );
+          const { createSessionKernel } = await import(
+            "../../../offchain/app-core/src/trading-session-kernel.js"
+          );
+          authorizationCurrent();
           const privateKey = generatePrivateKey(),
             signer = privateKeyToAccount(privateKey),
             config = api.environment.quickTrading!;
@@ -322,15 +328,21 @@ export function QuickTradingProvider({ children }: { children: ReactNode }) {
       assertCurrent();
       const key = `${scope}:${local.session.id}:${local.session.authorizationHash}`;
       if (kernelCache.current?.key === key) return kernelCache.current.promise;
-      const promise = createSessionKernel(
-        api.publicClient(),
-        api.environment,
-        local.session,
-        {
-          signer: privateKeyToAccount(local.privateKey),
-          enableSignature: local.enableSignature,
-        },
-      );
+      const promise = Promise.all([
+        import("../../../offchain/app-core/src/trading-session-kernel.js"),
+        import("./signing-keys.js"),
+      ]).then(([{ createSessionKernel }, { privateKeyToAccount }]) => {
+        assertCurrent();
+        return createSessionKernel(
+          api.publicClient(),
+          api.environment,
+          local.session,
+          {
+            signer: privateKeyToAccount(local.privateKey),
+            enableSignature: local.enableSignature,
+          },
+        );
+      });
       kernelCache.current = { key, promise };
       void promise.catch(() => {
         if (kernelCache.current?.promise === promise)

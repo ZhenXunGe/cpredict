@@ -18,6 +18,9 @@ export const businessFactKinds: Partial<
 > = {
   buy: "primary-buy",
   "create-listing": "listing-created",
+  "fill-listing": "listing-filled",
+  "cancel-listing": "listing-cancelled",
+  "return-listing": "listing-returned",
   "claim-winner": "winner-claimed",
   "claim-early-bird": "early-bird-claimed",
   refund: "refunded",
@@ -60,6 +63,9 @@ export function operationBusinessFacts(
       f.logIndex > (previous?.logIndex ?? -1) &&
       f.logIndex < marker.logIndex &&
       f.kind === businessFactKinds[operation.kind] &&
+      (!("listingId" in operation.intent) ||
+        f.listingId?.toLowerCase() ===
+          operation.intent.listingId.toLowerCase()) &&
       (!("market" in operation.intent) ||
         f.market?.toLowerCase() === operation.intent.market.toLowerCase()),
   );
