@@ -34,8 +34,16 @@ import {
   tradingSessionEpoch,
   type BrowserTradingSession,
 } from "./trading-session-storage.js";
-import { Button, ErrorNotice, Field, Modal, Notice } from "./ui.js";
+import {
+  Button,
+  ErrorNotice,
+  Field,
+  Modal,
+  Notice,
+  PaginationControls,
+} from "./ui.js";
 import { parseAssetAmount } from "./amounts.js";
+import { usePaginatedList } from "./pagination.js";
 
 type QuickTrading = {
   local: BrowserTradingSession | null;
@@ -496,7 +504,14 @@ export function QuickTradingAuthorization() {
 }
 export function QuickTradingPanel() {
   const quick = useQuickTrading(),
-    begin = useOperation();
+    wallet = useSession();
+  const pagination = usePaginatedList({
+    items: quick?.records ?? [],
+    pageSize: 5,
+    scope: `${wallet.api.key}:${wallet.identityKey}:${wallet.account?.id ?? "signed-out"}`,
+    hasMore: !!quick?.nextCursor,
+    loadMore: quick?.loadMore,
+  });
   if (!quick || (!quick.enabled && !quick.records.length)) return null;
   return (
     <section className="surface stack">
@@ -515,14 +530,18 @@ export function QuickTradingPanel() {
           ctUSD。额度最终以链上判断为准。
         </p>
       )}
-      {quick.nextCursor && (
-        <Button variant="quiet" onClick={() => void quick.loadMore()}>
-          更多授权记录
-        </Button>
-      )}
-      {quick.records.map((s) => (
+      {pagination.items.map((s) => (
         <TradingSessionRecord key={s.id} session={s} />
       ))}
+      <PaginationControls
+        ariaLabel="快捷交易授权记录分页"
+        page={pagination.page}
+        hasPrevious={pagination.hasPrevious}
+        hasNext={pagination.hasNext}
+        busy={pagination.isLoading}
+        onPrevious={pagination.previous}
+        onNext={() => void pagination.next()}
+      />
     </section>
   );
 }

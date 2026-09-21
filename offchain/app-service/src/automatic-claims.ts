@@ -4,7 +4,10 @@ import { PostgresAutomaticStore } from "../../workers/src/automatic-store.js";
 export interface AutomaticClaimsSettings {
   enabled(owner: Address): Promise<boolean>;
   setEnabled(owner: Address, enabled: boolean): Promise<void>;
-  publicStatus(owner: Address): Promise<unknown>;
+  publicStatus(
+    owner: Address,
+    page?: { cursor?: string; limit: number },
+  ): Promise<unknown>;
 }
 export function automaticClaimsSettings(
   url: string,

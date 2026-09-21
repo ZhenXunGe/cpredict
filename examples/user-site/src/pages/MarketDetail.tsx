@@ -34,9 +34,11 @@ import {
   Field,
   Loading,
   Notice,
+  PaginationControls,
   PageTitle,
   shortAddress,
 } from "../ui.js";
+import { usePaginatedList } from "../pagination.js";
 import { parseAssetAmount } from "../amounts.js";
 import {
   checkPrimaryPurchase,
@@ -760,6 +762,17 @@ function Listings({
     query.data?.pages
       .flatMap((p) => p.items)
       .filter((l) => BigInt(l.remainingUnits) > 0n) ?? [];
+  const pagination = usePaginatedList({
+    pages:
+      query.data?.pages.map((page) =>
+        page.items.filter((listing) => BigInt(listing.remainingUnits) > 0n),
+      ) ?? [],
+    pageSize: 10,
+    scope: `${env.id}:${market.market}`,
+    hasMore: !!query.hasNextPage,
+    isLoadingMore: query.isFetchingNextPage,
+    loadMore: query.fetchNextPage,
+  });
   return (
     <section className="stack">
       <h2>C2C 挂单</h2>
@@ -770,7 +783,7 @@ function Listings({
         <DataTable
           headers={["结果 / 卖家", "剩余份额", "每份价格", "到期时间", "操作"]}
         >
-          {rows.map((l) => (
+          {pagination.items.map((l) => (
             <tr key={l.listingId}>
               <td>
                 {labels[Number(l.outcomeId)] ?? `结果 #${l.outcomeId}`}
@@ -844,11 +857,15 @@ function Listings({
           </Empty>
         )
       )}
-      {query.hasNextPage && (
-        <Button variant="secondary" onClick={() => void query.fetchNextPage()}>
-          加载更多挂单
-        </Button>
-      )}
+      <PaginationControls
+        ariaLabel="C2C 挂单分页"
+        page={pagination.page}
+        hasPrevious={pagination.hasPrevious}
+        hasNext={pagination.hasNext}
+        busy={pagination.isLoading}
+        onPrevious={pagination.previous}
+        onNext={() => void pagination.next()}
+      />
       {selected && !terminal && (
         <form className="surface stack" onSubmit={fill}>
           <h3>核对挂单购买</h3>

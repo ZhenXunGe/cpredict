@@ -310,18 +310,39 @@ export async function createApplicationServer(options: {
       ),
     };
   });
-  app.get("/v1/automatic-claims",async(request)=>{
-    const {accountId}=z.strictObject({accountId:z.string().uuid()}).parse(request.query);
-    const account=await service.controlledAccount(await authenticate(request),accountId,false);
-    if(!options.automaticClaims) throw new AppError("automatic_claims_unavailable",503);
-    return options.automaticClaims.publicStatus(account.address);
+  app.get("/v1/automatic-claims", async (request) => {
+    const { accountId, cursor, limit } = z
+      .strictObject({
+        accountId: z.string().uuid(),
+        cursor: z.string().uuid().optional(),
+        limit: z.coerce.number().int().min(1).max(20).default(5),
+      })
+      .parse(request.query);
+    const account = await service.controlledAccount(
+      await authenticate(request),
+      accountId,
+      false,
+    );
+    if (!options.automaticClaims)
+      throw new AppError("automatic_claims_unavailable", 503);
+    return options.automaticClaims.publicStatus(
+      account.address,
+      cursor ? { cursor, limit } : { limit },
+    );
   });
-  app.post("/v1/automatic-claims",async(request)=>{
-    const {accountId,enabled}=z.strictObject({accountId:z.string().uuid(),enabled:z.boolean()}).parse(request.body);
-    const account=await service.controlledAccount(await authenticate(request),accountId,true);
-    if(!options.automaticClaims) throw new AppError("automatic_claims_unavailable",503);
-    await options.automaticClaims.setEnabled(account.address,enabled);
-    return options.automaticClaims.publicStatus(account.address);
+  app.post("/v1/automatic-claims", async (request) => {
+    const { accountId, enabled } = z
+      .strictObject({ accountId: z.string().uuid(), enabled: z.boolean() })
+      .parse(request.body);
+    const account = await service.controlledAccount(
+      await authenticate(request),
+      accountId,
+      true,
+    );
+    if (!options.automaticClaims)
+      throw new AppError("automatic_claims_unavailable", 503);
+    await options.automaticClaims.setEnabled(account.address, enabled);
+    return options.automaticClaims.publicStatus(account.address, { limit: 5 });
   });
   app.get("/v1/trading-sessions", async (request) => {
     const identity = await authenticate(request),
@@ -513,14 +534,21 @@ export async function createApplicationServer(options: {
       .extend({ params: z.array(z.unknown()).max(3).default([]) })
       .parse(request.body);
     const abort = new AbortController();
-    const disconnected = () => { if (!reply.raw.writableEnded) abort.abort(); };
+    const disconnected = () => {
+      if (!reply.raw.writableEnded) abort.abort();
+    };
     request.raw.once("aborted", disconnected);
     reply.raw.once("close", disconnected);
     try {
       return {
         jsonrpc: "2.0",
         id: rpc.id,
-        result: await readRpc(options.chainRpc, rpc.method, rpc.params, abort.signal),
+        result: await readRpc(
+          options.chainRpc,
+          rpc.method,
+          rpc.params,
+          abort.signal,
+        ),
       };
     } catch (error) {
       if (!(error instanceof ProviderCallError)) throw error;

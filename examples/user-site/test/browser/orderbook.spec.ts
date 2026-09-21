@@ -19,6 +19,7 @@ async function setup(page: Page) {
         reason: "waiting_for_entitlement",
         updatedAt: null,
         transactions: [],
+        nextCursor: null,
       },
     });
   });
@@ -73,11 +74,9 @@ test("funded bid defaults matching on; confirmation includes outcome, exact rese
   await page.goto(
     `/test/browser/fixture.html?orderbook-test=1#/ctusd-test/markets/${A(101)}`,
   );
-  const panel = page
-    .locator("section")
-    .filter({
-      has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
-    });
+  const panel = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+  });
   await expect(
     panel.getByRole("checkbox", { name: "自动撮合（默认开启）" }),
   ).toBeChecked();
@@ -115,6 +114,98 @@ test("claim preference is default on, persists opt-out, and explains market-leve
   await expect(checkbox).not.toBeChecked();
   expect(f.errors).toEqual([]);
 });
+test("market bond maintenance is not presented as the participant receiving funds", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.route("**/v1/automatic-claims**", (route) =>
+    route.fulfill({
+      json: {
+        enabled: true,
+        reason: "received",
+        updatedAt: new Date().toISOString(),
+        transactions: [
+          {
+            id: "11111111-1111-4111-8111-111111111111",
+            kind: `settle-bond:${A(101).toLowerCase()}`,
+            state: "confirmed",
+            tx_hash: "0x" + "1".repeat(64),
+            market: A(101),
+            amount: null,
+            created_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+          },
+        ],
+        nextCursor: null,
+      },
+    }),
+  );
+  await page.goto(
+    "/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements",
+  );
+
+  const history = page.getByRole("region", { name: "自动领取记录" });
+  const row = history.getByRole("row").filter({ hasText: "市场押金处理" });
+  await expect(row).toContainText("已完成");
+  await expect(history).toContainText(
+    "仅完成市场级押金结算，不代表押金进入你的账户",
+  );
+  await expect(row).not.toContainText("已到账");
+  expect(f.errors).toEqual([]);
+});
+
+test("automatic claim history shows market, confirmed amount and paginates newest first", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  const transactions = Array.from({ length: 6 }, (_, index) => ({
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    kind: "winner",
+    state: "confirmed",
+    tx_hash: `0x${String(index + 1).repeat(64)}`,
+    market: A(101),
+    amount: String((index + 1) * 1_000_000),
+    created_at: new Date(Date.UTC(2026, 8, 21, 9, 0, index)).toISOString(),
+    completed_at: new Date(Date.UTC(2026, 8, 21, 9, 1, index)).toISOString(),
+  }));
+  await page.route("**/v1/automatic-claims**", (route) => {
+    const url = new URL(route.request().url());
+    const secondPage = url.searchParams.has("cursor");
+    return route.fulfill({
+      json: {
+        enabled: true,
+        reason: "received",
+        updatedAt: new Date().toISOString(),
+        transactions: secondPage
+          ? transactions.slice(5)
+          : transactions.slice(0, 5),
+        nextCursor: secondPage ? null : transactions[4]!.id,
+      },
+    });
+  });
+  await page.goto(
+    "/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements",
+  );
+
+  const history = page.getByRole("region", { name: "自动领取记录" });
+  await expect(
+    history.getByRole("columnheader", { name: "市场" }),
+  ).toBeVisible();
+  await expect(
+    history.getByRole("columnheader", { name: "实际到账" }),
+  ).toBeVisible();
+  await expect(history).toContainText("本周公开测试能否完成全部退出场景？");
+  await expect(history).toContainText("1 ctUSD");
+  await expect(history).not.toContainText("6 ctUSD");
+  await page.getByRole("button", { name: "下一页" }).click();
+  await expect(page.getByText("第 2 页", { exact: true })).toBeVisible();
+  await expect(history).toContainText("6 ctUSD");
+  await expect(history).not.toContainText("1 ctUSD");
+  await page.getByRole("button", { name: "上一页" }).click();
+  await expect(page.getByText("第 1 页", { exact: true })).toBeVisible();
+  await expect(history).toContainText("1 ctUSD");
+  expect(f.errors).toEqual([]);
+});
 test("manual bid acceptance displays fee-adjusted minimum proceeds and frozen assets separately", async ({
   page,
 }) => {
@@ -136,12 +227,31 @@ test("manual bid acceptance displays fee-adjusted minimum proceeds and frozen as
   expect(f.errors).toEqual([]);
 });
 
-
-test("an enabled account sees a blocked shared claims queue and retains manual access", async ({page}) => {
+test("an enabled account sees a blocked shared claims queue and retains manual access", async ({
+  page,
+}) => {
   await setup(page);
-  await page.route("**/v1/automatic-claims**",r=>r.fulfill({json:{enabled:true,reason:"queue_blocked_unknown_transaction",updatedAt:new Date().toISOString(),transactions:[]}}));
-  await page.goto("/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements");
-  await expect(page.getByRole("checkbox",{name:"自动领取权益（默认开启）"})).toBeChecked();
-  await expect(page.getByRole("status").filter({hasText:"自动领取队列暂缓"})).toBeVisible();
-  await expect(page.getByText("无需重复开关，可先手动领取。",{exact:false})).toBeVisible();
+  await page.route("**/v1/automatic-claims**", (r) =>
+    r.fulfill({
+      json: {
+        enabled: true,
+        reason: "queue_blocked_unknown_transaction",
+        updatedAt: new Date().toISOString(),
+        transactions: [],
+        nextCursor: null,
+      },
+    }),
+  );
+  await page.goto(
+    "/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements",
+  );
+  await expect(
+    page.getByRole("checkbox", { name: "自动领取权益（默认开启）" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("status").filter({ hasText: "自动领取队列暂缓" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("无需重复开关，可先手动领取。", { exact: false }),
+  ).toBeVisible();
 });

@@ -633,6 +633,8 @@ tr:last-child td {
 .pagination {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 12px;
   padding-top: 24px;
 }
 .skip-link {
