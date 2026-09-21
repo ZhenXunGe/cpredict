@@ -81,6 +81,7 @@ function emptyStore(
   return {
     checkpoint: async () => undefined,
     canonicalBlock: async () => undefined,
+    scanRanges: async () => [],
     registeredMarkets: async () => [],
     applyBatch: async () => undefined,
     rollbackAfter: async () => undefined,

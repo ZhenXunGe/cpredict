@@ -30,6 +30,27 @@ export interface ChainCheckpoint {
   blockHash: Hex;
 }
 
+export type CanonicalMode = "dense" | "sparse";
+
+/** A committed, contiguous scan interval. Its end hash commits to the complete parent chain. */
+export interface CanonicalScanRange {
+  chainId: number;
+  fromBlock: bigint;
+  toBlock: bigint;
+  predecessor: ChainCheckpoint | undefined;
+  endBlockHash: Hex;
+  confirmationStatus: ConfirmationStatus;
+  mode: CanonicalMode;
+}
+
+/** The only write unit accepted by realtime canonical ingestion. */
+export interface CanonicalBatch {
+  range: CanonicalScanRange;
+  anchors: readonly CanonicalBlock[];
+  events: readonly IndexedEvent[];
+  checkpoint: ChainCheckpoint;
+}
+
 export interface IndexerSyncStatus {
   chainId: number;
   indexedBlock: bigint | null;
@@ -198,12 +219,9 @@ export interface EventStore {
     chainId: number,
     blockNumber: bigint,
   ): Promise<CanonicalBlock | undefined>;
+  scanRanges(chainId: number): Promise<readonly CanonicalScanRange[]>;
   registeredMarkets(chainId: number): Promise<readonly Address[]>;
-  applyBatch(
-    events: readonly IndexedEvent[],
-    blocks: readonly CanonicalBlock[],
-    checkpoint: ChainCheckpoint,
-  ): Promise<void>;
+  applyBatch(batch: CanonicalBatch): Promise<void>;
   /** `blockNumber=undefined` removes the entire indexed chain. */
   rollbackAfter(
     chainId: number,

@@ -2,7 +2,9 @@ import type { Address, Hex } from "viem";
 import type { IndexerDatabaseTelemetry } from "./telemetry.js";
 import type {
   ActivityView,
+  CanonicalBatch,
   CanonicalBlock,
+  CanonicalScanRange,
   ChainCheckpoint,
   ClaimView,
   EventStore,
@@ -55,19 +57,19 @@ export class InstrumentedEventQueryStore implements CloseableEventQueryStore {
     );
   }
 
+  scanRanges(chainId: number): Promise<readonly CanonicalScanRange[]> {
+    return this.measure("scan_ranges", () => this.delegate.scanRanges(chainId));
+  }
+
   registeredMarkets(chainId: number): Promise<readonly Address[]> {
     return this.measure("registered_markets", () =>
       this.delegate.registeredMarkets(chainId),
     );
   }
 
-  applyBatch(
-    events: readonly IndexedEvent[],
-    blocks: readonly CanonicalBlock[],
-    checkpoint: ChainCheckpoint,
-  ): Promise<void> {
+  applyBatch(batch: CanonicalBatch): Promise<void> {
     return this.measure("apply_batch", () =>
-      this.delegate.applyBatch(events, blocks, checkpoint),
+      this.delegate.applyBatch(batch),
     );
   }
 

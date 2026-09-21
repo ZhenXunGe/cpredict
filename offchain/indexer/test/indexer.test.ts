@@ -201,6 +201,193 @@ describe("ChainIndexer canonical ingestion", () => {
     expect(client.maximumBlockConcurrency).toBeLessThanOrEqual(4);
   });
 
+  it("stores only the endpoint anchor for an empty sparse range", async () => {
+    const client = new FakeClient(100n, []);
+    const store = new MemoryEventStore();
+    const result = await createIndexer(client, store, undefined, {
+      canonicalMode: "sparse",
+    }).runBatch();
+
+    expect(result).toMatchObject({
+      fromBlock: 1n,
+      toBlock: 100n,
+      blockCount: 100,
+      anchorCount: 1,
+      eventCount: 0,
+    });
+    expect(store.blockCount(CHAIN_ID)).toBe(1);
+    expect(await store.canonicalBlock(CHAIN_ID, 99n)).toBeUndefined();
+    expect((await store.scanRanges(CHAIN_ID))[0]).toMatchObject({
+      fromBlock: 1n,
+      toBlock: 100n,
+      mode: "sparse",
+    });
+    // Endpoint load plus the closing stability fence; no per-block reads.
+    expect(client.blockRequests).toBe(2);
+  });
+
+  it("deduplicates same-block sparse event anchors", async () => {
+    const client = new FakeClient(10n, [
+      marketCreatedLog(4n, MARKET_A),
+      marketInitializedLog(4n, MARKET_A),
+      marketMetadataUpdatedLog(4n, MARKET_A, hash(501n), hash(502n)),
+    ]);
+    const store = new MemoryEventStore();
+    const result = await createIndexer(client, store, undefined, {
+      canonicalMode: "sparse",
+    }).runBatch();
+
+    expect(result).toMatchObject({ anchorCount: 2, eventCount: 3 });
+    expect(store.blockCount(CHAIN_ID)).toBe(2);
+    expect(await store.canonicalBlock(CHAIN_ID, 4n)).toBeDefined();
+    expect(await store.canonicalBlock(CHAIN_ID, 10n)).toBeDefined();
+  });
+
+  it("produces the same events and projections as dense mode at a fixed head", async () => {
+    const logs = [
+      marketCreatedLog(2n, MARKET_A),
+      marketInitializedLog(2n, MARKET_A),
+      marketMetadataUpdatedLog(2n, MARKET_A, hash(501n), hash(502n)),
+      transferLog(8n, MARKET_A, ZERO, ALICE, 0n, 10n),
+    ];
+    const dense = new MemoryEventStore();
+    const sparse = new MemoryEventStore();
+    await createIndexer(new FakeClient(10n, logs), dense, undefined, {
+      canonicalMode: "dense",
+    }).runBatch();
+    await createIndexer(new FakeClient(10n, logs), sparse, undefined, {
+      canonicalMode: "sparse",
+    }).runBatch();
+
+    expect(sparse.eventCount(CHAIN_ID)).toBe(dense.eventCount(CHAIN_ID));
+    expect(await sparse.registeredMarkets(CHAIN_ID)).toEqual(
+      await dense.registeredMarkets(CHAIN_ID),
+    );
+    expect(await sparse.market(CHAIN_ID, MARKET_A)).toEqual(
+      await dense.market(CHAIN_ID, MARKET_A),
+    );
+    expect(await sparse.listPositions(CHAIN_ID, ALICE, { limit: 20 })).toEqual(
+      await dense.listPositions(CHAIN_ID, ALICE, { limit: 20 }),
+    );
+    expect(await sparse.checkpoint(CHAIN_ID)).toEqual(
+      await dense.checkpoint(CHAIN_ID),
+    );
+    expect(sparse.blockCount(CHAIN_ID)).toBe(3);
+    expect(dense.blockCount(CHAIN_ID)).toBe(10);
+  });
+
+  it("rejects a sparse batch when the endpoint fence changes before commit", async () => {
+    const client = new FakeClient(10n, []);
+    const original = client.getBlock.bind(client);
+    let endpointReads = 0;
+    client.getBlock = async (input) => {
+      const block = await original(input);
+      if (input.blockNumber !== 10n) return block;
+      endpointReads += 1;
+      return endpointReads === 1 ? block : { ...block, hash: hash(99_999n) };
+    };
+    const store = new MemoryEventStore();
+
+    await expect(
+      createIndexer(client, store, undefined, {
+        canonicalMode: "sparse",
+      }).runBatch(),
+    ).rejects.toThrow("canonical-blocks");
+    expect(await store.checkpoint(CHAIN_ID)).toBeUndefined();
+    expect(store.blockCount(CHAIN_ID)).toBe(0);
+    expect(store.eventCount(CHAIN_ID)).toBe(0);
+  });
+
+  it("rolls sparse ranges back to the latest matching endpoint", async () => {
+    const client = new FakeClient(9n, [
+      marketCreatedLog(2n, MARKET_A),
+      marketInitializedLog(2n, MARKET_A),
+      marketMetadataUpdatedLog(2n, MARKET_A, hash(501n), hash(502n)),
+      transferLog(8n, MARKET_A, ZERO, ALICE, 0n, 10n),
+    ]);
+    const store = new MemoryEventStore();
+    const indexer = createIndexer(client, store, undefined, {
+      canonicalMode: "sparse",
+      batchSize: 3n,
+    });
+    await indexer.runBatch();
+    await indexer.runBatch();
+    await indexer.runBatch();
+    expect((await store.scanRanges(CHAIN_ID)).map((range) => range.toBlock)).toEqual([
+      9n,
+      6n,
+      3n,
+    ]);
+
+    client.replaceFrom(5n, [
+      marketCreatedLog(2n, MARKET_A),
+      marketInitializedLog(2n, MARKET_A),
+      marketMetadataUpdatedLog(2n, MARKET_A, hash(501n), hash(502n)),
+      transferLog(7n, MARKET_A, ZERO, ALICE, 1n, 7n),
+    ]);
+    expect(await indexer.runBatch()).toMatchObject({ fromBlock: 4n, toBlock: 6n });
+    expect(await store.checkpoint(CHAIN_ID)).toMatchObject({ blockNumber: 6n });
+    expect((await store.scanRanges(CHAIN_ID)).map((range) => range.toBlock)).toEqual([
+      6n,
+      3n,
+    ]);
+    expect(store.eventCount(CHAIN_ID)).toBe(3);
+  });
+
+  it("continues across dense, sparse and dense history", async () => {
+    const store = new MemoryEventStore();
+    await createIndexer(new FakeClient(3n, []), store, undefined, {
+      canonicalMode: "dense",
+      batchSize: 3n,
+    }).runBatch();
+    await createIndexer(new FakeClient(6n, []), store, undefined, {
+      canonicalMode: "sparse",
+      batchSize: 3n,
+    }).runBatch();
+    await createIndexer(new FakeClient(9n, []), store, undefined, {
+      canonicalMode: "dense",
+      batchSize: 3n,
+    }).runBatch();
+
+    expect([...await store.scanRanges(CHAIN_ID)].reverse().map((range) => ({
+      from: range.fromBlock,
+      to: range.toBlock,
+      mode: range.mode,
+    }))).toEqual([
+      { from: 1n, to: 3n, mode: "dense" },
+      { from: 4n, to: 6n, mode: "sparse" },
+      { from: 7n, to: 9n, mode: "dense" },
+    ]);
+    expect(store.blockCount(CHAIN_ID)).toBe(7);
+    expect(await store.canonicalBlock(CHAIN_ID, 5n)).toBeUndefined();
+    expect(await store.checkpoint(CHAIN_ID)).toMatchObject({ blockNumber: 9n });
+  });
+
+  it("uses retained dense history for a reorg deeper than sparse ranges", async () => {
+    const store = new MemoryEventStore();
+    await createIndexer(new FakeClient(3n, []), store, undefined, {
+      canonicalMode: "dense",
+      batchSize: 3n,
+    }).runBatch();
+    const client = new FakeClient(6n, []);
+    const sparse = createIndexer(client, store, undefined, {
+      canonicalMode: "sparse",
+      batchSize: 3n,
+    });
+    await sparse.runBatch();
+
+    client.replaceFrom(2n, []);
+    expect(await sparse.runBatch()).toMatchObject({ fromBlock: 2n, toBlock: 4n });
+    expect(await store.checkpoint(CHAIN_ID)).toMatchObject({
+      blockNumber: 4n,
+      blockHash: hash(2_004n),
+    });
+    expect(await store.canonicalBlock(CHAIN_ID, 1n)).toMatchObject({
+      blockHash: hash(1_001n),
+    });
+    expect(await store.canonicalBlock(CHAIN_ID, 3n)).toBeUndefined();
+  });
+
   it("uses configured concurrency while preserving every block and reorg recovery", async () => {
     const client = new FakeClient(48n, [], 2);
     const store = new MemoryEventStore();
@@ -590,12 +777,14 @@ function createIndexer(
   client: FakeClient,
   store: MemoryEventStore,
   blockConcurrency?: number,
+  overrides: { canonicalMode?: "dense" | "sparse"; batchSize?: bigint } = {},
 ): ChainIndexer {
   return new ChainIndexer(client as unknown as PublicClient, store, {
     chainId: CHAIN_ID,
     deploymentBlock: 1n,
     confirmations: 0n,
-    batchSize: 100n,
+    batchSize: overrides.batchSize ?? 100n,
+    canonicalMode: overrides.canonicalMode ?? "dense",
     ...(blockConcurrency === undefined ? {} : { blockConcurrency }),
     addresses: [FACTORY, MARKETPLACE],
     factoryAddress: FACTORY,
@@ -608,6 +797,7 @@ class FakeClient {
   private generation = 1n;
   private activeBlockRequests = 0;
   maximumBlockConcurrency = 0;
+  blockRequests = 0;
 
   constructor(
     private readonly head: bigint,
@@ -637,6 +827,7 @@ class FakeClient {
   }
 
   async getBlock({ blockNumber }: { blockNumber: bigint }): Promise<FakeBlock> {
+    this.blockRequests += 1;
     this.activeBlockRequests += 1;
     this.maximumBlockConcurrency = Math.max(
       this.maximumBlockConcurrency,
