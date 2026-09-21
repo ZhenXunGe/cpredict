@@ -200,3 +200,23 @@ describe("durable automatic claims", () => {
     expect(f.chain.send).not.toHaveBeenCalled();
   });
 });
+
+
+describe("submission admission", () => {
+  it("does not sign or broadcast when the selected writer is unavailable", async () => {
+    const f = fixture(); f.chain.submissionReady = async () => false;
+    await f.worker.tick();
+    expect(f.chain.prepare).not.toHaveBeenCalled(); expect(f.chain.send).not.toHaveBeenCalled();
+    expect(f.rows).toHaveLength(0);
+    expect(f.store.status).toHaveBeenCalledWith(owner, "submission_rpc_unavailable");
+    f.chain.submissionReady = async () => true;
+    await f.worker.tick(); expect(f.chain.send).toHaveBeenCalledTimes(1);
+  });
+  it("never re-sends unknown transactions when writer availability changes", async () => {
+    const f = fixture(); await f.worker.tick();
+    f.chain.submissionReady = vi.fn(async () => true);
+    await f.worker.tick(); await f.worker.tick();
+    expect(f.chain.send).toHaveBeenCalledTimes(1);
+    expect(f.chain.submissionReady).not.toHaveBeenCalled();
+  });
+});

@@ -271,6 +271,22 @@ describe.skipIf(!url)(
         await sql`SELECT raw_transaction FROM automation_transactions WHERE id=${r.id}`;
       expect(saved?.raw_transaction).toBeNull();
     });
+    it("reports a blocked claims queue to other owners without leaking transactions, and clears after confirmation", async () => {
+      const a = new PostgresAutomaticStore(sql, 421614, "queue-test", A(72));
+      const r = await a.save({key:"blocked-claim",owner:A(73),kind:"winner",target:vault,data:"0x1234",requiresClaimPreference:true}, {raw:"0xabcd",hash:H(701),nonce:0n,maximumCost:10n});
+      await a.markBroadcasting(r.id); await a.unknown(r.id);
+      await sql`UPDATE automation_transactions SET broadcast_at=now()-interval '5 minutes' WHERE id=${r.id}`;
+      expect(await a.oldestPendingSeconds()).toBeGreaterThan(290);
+      const status = await a.publicStatus(A(74));
+      expect(status.reason).toBe("queue_blocked_unknown_transaction");
+      expect(status.transactions).toEqual([]);
+      expect(JSON.stringify(status)).not.toContain(H(701));
+      const unrelated = new PostgresAutomaticStore(sql,421614,"other-deployment",A(75));
+      expect((await unrelated.publicStatus(A(74))).reason).toBe("waiting_for_entitlement");
+      await a.finish(r.id,{status:"success",blockNumber:4n,blockHash:H(4)});
+      expect((await a.publicStatus(A(74))).reason).toBe("waiting_for_entitlement");
+      expect(await a.oldestPendingSeconds()).toBe(0);
+    });
     it("advisory lock excludes simultaneous workers and releases after exception", async () => {
       const a = new PostgresAutomaticStore(sql, 421614, "v2", A(90)),
         b = new PostgresAutomaticStore(sql, 421614, "v1", A(90));
