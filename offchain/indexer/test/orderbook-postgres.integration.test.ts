@@ -45,6 +45,7 @@ describe.skipIf(!url)(
         "006_financial_facts",
         "007_legacy_deployment",
         "008_orderbook",
+        "009_sparse_canonical_ranges",
       ])
         await migration.unsafe(
           await readFile(`offchain/indexer/migrations/${n}.sql`, "utf8"),

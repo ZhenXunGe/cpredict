@@ -75,6 +75,62 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
     });
     expect(result.pnl.realizedNet).toBe("0");
   });
+  it("keeps complete financial coverage across a sparse empty range", async () => {
+    if (!url) throw new Error("TEST_DATABASE_URL required");
+    const sparseSchema = `cpredict_financial_sparse_${process.pid}_${Date.now()}`;
+    await admin.unsafe(`CREATE SCHEMA ${sparseSchema}`);
+    const scoped = new URL(url);
+    scoped.searchParams.set("options", `-csearch_path=${sparseSchema}`);
+    const sparseSql = postgres(scoped.toString(), {
+      max: 1,
+      onnotice: () => undefined,
+    });
+    let sparseStore: PostgresEventStore | undefined;
+    try {
+      for (const name of [
+        "001_indexer.sql",
+        "002_settlement_evidence.sql",
+        "003_read_api_indexes.sql",
+        "004_market_metadata.sql",
+        "005_activity_catalog.sql",
+        "006_financial_facts.sql",
+        "007_legacy_deployment.sql",
+        "009_sparse_canonical_ranges.sql",
+      ])
+        await sparseSql.unsafe(
+          await readFile(
+            new URL(`../migrations/${name}`, import.meta.url),
+            "utf8",
+          ),
+        );
+      sparseStore = new PostgresEventStore(scoped.toString(), 3, env);
+      await sparseStore.ready();
+      const endpoint = block(100);
+      await sparseStore.applyBatch({
+        range: {
+          chainId: env.deployment.chainId,
+          fromBlock: 1n,
+          toBlock: 100n,
+          predecessor: undefined,
+          endBlockHash: endpoint.blockHash,
+          confirmationStatus: "confirmed",
+          mode: "sparse",
+        },
+        anchors: [endpoint],
+        events: [],
+        checkpoint: {
+          chainId: env.deployment.chainId,
+          blockNumber: endpoint.blockNumber,
+          blockHash: endpoint.blockHash,
+        },
+      });
+      expect((await sparseStore.financial!.snapshot()).complete).toBe(true);
+    } finally {
+      await sparseStore?.close();
+      await sparseSql.end();
+      await admin.unsafe(`DROP SCHEMA ${sparseSchema} CASCADE`);
+    }
+  });
   it("keeps replay idempotent and does not let it manufacture complete coverage", async () => {
     const before =
       await sql`SELECT fact FROM ledger_facts ORDER BY block_number,transaction_index,log_index,fact_index`;

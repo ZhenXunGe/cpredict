@@ -121,6 +121,7 @@ export class PostgresFinancialLedger {
     events: readonly IndexedEvent[],
     blocks: readonly CanonicalBlock[],
     checkpoint?: ChainCheckpoint,
+    coverageFromBlock?: bigint,
   ): Promise<void> {
     const chainId = this.environment.deployment.chainId;
     const [markets, listings, accounts] = await Promise.all([
@@ -164,7 +165,7 @@ export class PostgresFinancialLedger {
       VALUES(${chainId},${f.blockNumber},${f.transactionHash},${f.transactionIndex},${f.logIndex},${f.factIndex},${f.timestamp},${f.kind},${f.market?.toLowerCase() ?? null},${f.owner?.toLowerCase() ?? null},${f.counterparty?.toLowerCase() ?? null},${db.json(f)})
       ON CONFLICT(chain_id,transaction_hash,log_index,fact_index,projection_version) DO UPDATE SET fact=EXCLUDED.fact, owner=EXCLUDED.owner,counterparty=EXCLUDED.counterparty,market=EXCLUDED.market`;
     if (checkpoint) {
-      const first = blocks[0]?.blockNumber;
+      const first = coverageFromBlock ?? blocks[0]?.blockNumber;
       // Completeness starts only with a full configured scanner at deployment, never by inferring it from event counts.
       await db`UPDATE ledger_environment SET
         coverage_start=COALESCE(coverage_start,${first?.toString() ?? null}),

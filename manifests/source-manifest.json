@@ -1346,7 +1346,7 @@
     },
     {
       "path": "offchain/indexer/src/financial-store.ts",
-      "sha256": "ad46933cadb4b8868989ec068d7bbcfe1aa3bb34b77e9bbbc5c71dd276cb47d1"
+      "sha256": "45a9d8a01fb39f2f8ad6a56325c94d021d257d0f743330ee0496326f39b9f59e"
     },
     {
       "path": "offchain/indexer/src/indexer.ts",
@@ -1386,7 +1386,7 @@
     },
     {
       "path": "offchain/indexer/src/postgres-store.ts",
-      "sha256": "ea341fbd8ccb127f126b7b73b060da65cfd546c1de88c6ccfb4926a41c530524"
+      "sha256": "f6fc9841d88e41f0bea34453f01584b6eb6ad39e1acc53aaa37cdf11c7cd6c42"
     },
     {
       "path": "offchain/indexer/src/public-catalog.ts",
@@ -1474,7 +1474,7 @@
     },
     {
       "path": "offchain/indexer/test/financial-postgres.integration.test.ts",
-      "sha256": "6e0a723862485710bb446fb0bf4cfb67848b2948718809d5ca576135bf3778de"
+      "sha256": "3eef40642738f8c3b8f8e49403788fc43e6e77c76c61ed91a4aea94fcb30b6dd"
     },
     {
       "path": "offchain/indexer/test/indexer.test.ts",
@@ -1506,7 +1506,7 @@
     },
     {
       "path": "offchain/indexer/test/orderbook-postgres.integration.test.ts",
-      "sha256": "7a58f19ab97a0f52ccfa555ecbdeefa2443557837f3ee9f240be278d0e3d5de7"
+      "sha256": "c6ea8f0f6a8ae44ced196ff792a5de78688360d75c65d5375970dc2f0c819f53"
     },
     {
       "path": "offchain/indexer/test/postgres.integration.test.ts",
