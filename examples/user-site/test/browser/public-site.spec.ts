@@ -442,8 +442,17 @@ test("read-only reports show stale supplier data, retain unknown money and pagin
   const feedback = page.getByRole("region", { name: "测试反馈" });
   await expect(feedback).toContainText("<script>浏览器必须按文本显示</script>");
   await expect(feedback.locator("script")).toHaveCount(0);
-  await feedback.getByRole("button", { name: "更多反馈" }).click();
+  const feedbackPagination = feedback.getByRole("navigation", {
+    name: "反馈记录分页",
+  });
+  await feedbackPagination.getByRole("button", { name: "下一页" }).click();
+  await expect(
+    feedbackPagination.getByText("第 2 页", { exact: true }),
+  ).toBeVisible();
   await expect(feedback).toContainText("第二条测试反馈");
+  await expect(feedback).not.toContainText(
+    "<script>浏览器必须按文本显示</script>",
+  );
   await feedback.getByLabel("反馈编号（留空查看全部）").fill("invalid-id");
   await feedback.getByRole("button", { name: "查询反馈" }).click();
   await expect(feedback.getByRole("alert")).toContainText(
@@ -732,6 +741,26 @@ test("market lists identify pending timeouts and legacy timeouts remain terminal
   await expect(
     page.getByRole("button", { name: "申请超时作废", exact: true }),
   ).toHaveCount(0);
+});
+
+test("long market lists stay bounded and navigate by page", async ({
+  page,
+}) => {
+  await page.goto(`${fixture}?pagination-test=1#/ctusd-test/markets`);
+  const list = page.locator(".market-list");
+  const pagination = page.getByRole("navigation", { name: "市场列表分页" });
+  await expect(list.locator(".market-row")).toHaveCount(5);
+  await expect(pagination.getByText("第 1 页", { exact: true })).toBeVisible();
+  await pagination.getByRole("button", { name: "下一页" }).click();
+  await expect(list.locator(".market-row")).toHaveCount(5);
+  await expect(pagination.getByText("第 2 页", { exact: true })).toBeVisible();
+  await pagination.getByRole("button", { name: "下一页" }).click();
+  await expect(list.locator(".market-row")).toHaveCount(2);
+  await expect(pagination.getByText("第 3 页", { exact: true })).toBeVisible();
+  await pagination.getByRole("button", { name: "上一页" }).click();
+  await expect(list.locator(".market-row")).toHaveCount(5);
+  await pagination.getByRole("button", { name: "上一页" }).click();
+  await expect(list.locator(".market-row")).toHaveCount(5);
 });
 
 test("unchanged catalogue data still crosses the timeout deadline while the page stays open", async ({

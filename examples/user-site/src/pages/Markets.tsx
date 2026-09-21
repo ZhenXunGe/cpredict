@@ -19,9 +19,11 @@ import {
   ErrorNotice,
   Loading,
   Notice,
+  PaginationControls,
   PageTitle,
   shortAddress,
 } from "../ui.js";
+import { usePaginatedList } from "../pagination.js";
 export function MarketsPage() {
   const { api } = useSession(),
     now = useMarketClock(),
@@ -30,6 +32,14 @@ export function MarketsPage() {
   const status = params.get("status") ?? "",
     query = useMarkets(status, params.get("q") ?? "");
   const items = query.data?.pages.flatMap((p) => p.items) ?? [];
+  const pagination = usePaginatedList({
+    pages: query.data?.pages.map((page) => page.items) ?? [],
+    pageSize: 5,
+    scope: `${api.key}:${status}:${params.get("q") ?? ""}`,
+    hasMore: !!query.hasNextPage,
+    isLoadingMore: query.isFetchingNextPage,
+    loadMore: query.fetchNextPage,
+  });
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const next = new URLSearchParams(params);
@@ -97,7 +107,7 @@ export function MarketsPage() {
         <Loading />
       ) : items.length ? (
         <div className="market-list">
-          {items.map((m) => (
+          {pagination.items.map((m) => (
             <MarketRow market={m} now={now} key={m.market} />
           ))}
         </div>
@@ -114,17 +124,15 @@ export function MarketsPage() {
           </Empty>
         )
       )}
-      {query.hasNextPage && (
-        <div className="pagination">
-          <Button
-            variant="secondary"
-            disabled={query.isFetchingNextPage}
-            onClick={() => void query.fetchNextPage()}
-          >
-            {query.isFetchingNextPage ? "正在加载" : "加载更多市场"}
-          </Button>
-        </div>
-      )}
+      <PaginationControls
+        ariaLabel="市场列表分页"
+        page={pagination.page}
+        hasPrevious={pagination.hasPrevious}
+        hasNext={pagination.hasNext}
+        busy={pagination.isLoading}
+        onPrevious={pagination.previous}
+        onNext={() => void pagination.next()}
+      />
     </>
   );
 }

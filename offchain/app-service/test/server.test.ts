@@ -292,6 +292,7 @@ it("automatic claims preferences require control of the asset account", async ()
       reason: "waiting_for_entitlement",
       transactions: [],
       updatedAt: null,
+      nextCursor: null,
     })),
   };
   const { server } = await setup(false, settings);
@@ -324,6 +325,48 @@ it("automatic claims preferences require control of the asset account", async ()
     });
     expect(result.statusCode, result.body).toBe(200);
     expect(settings.setEnabled).toHaveBeenCalledWith(appAccount.address, false);
+    expect(settings.publicStatus).toHaveBeenCalledWith(appAccount.address, {
+      limit: 5,
+    });
+  } finally {
+    await server.close();
+  }
+});
+
+it("bounds automatic claim history pagination and passes its cursor", async () => {
+  const settings = {
+    enabled: vi.fn(async () => true),
+    setEnabled: vi.fn(async () => {}),
+    publicStatus: vi.fn(async () => ({
+      enabled: true,
+      reason: "waiting_for_entitlement",
+      transactions: [],
+      updatedAt: null,
+      nextCursor: null,
+    })),
+  };
+  const { server } = await setup(false, settings);
+  const cursor = randomUUID();
+  try {
+    const result = await server.inject({
+      method: "GET",
+      url: `/v1/automatic-claims?accountId=${appAccount.id}&limit=7&cursor=${cursor}`,
+      headers: { authorization: "Bearer owner" },
+    });
+    expect(result.statusCode, result.body).toBe(200);
+    expect(settings.publicStatus).toHaveBeenCalledWith(appAccount.address, {
+      cursor,
+      limit: 7,
+    });
+    expect(
+      (
+        await server.inject({
+          method: "GET",
+          url: `/v1/automatic-claims?accountId=${appAccount.id}&limit=21`,
+          headers: { authorization: "Bearer owner" },
+        })
+      ).statusCode,
+    ).toBe(400);
   } finally {
     await server.close();
   }

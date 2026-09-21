@@ -41,9 +41,11 @@ import {
   ErrorNotice,
   Loading,
   Notice,
+  PaginationControls,
   PageTitle,
   shortAddress,
 } from "../ui.js";
+import { usePaginatedList } from "../pagination.js";
 
 export const rightLabels: Record<Entitlement["kind"], string> = {
   holding: "普通持仓",
@@ -228,6 +230,28 @@ export function EntitlementsPage() {
   const otherListings = listingRows.filter(
     ({ item }) => !visibleLots.some((lot) => matchesLot(item, lot)),
   );
+  const paginationScope = `${api.key}:${account?.address ?? "signed-out"}`;
+  const entitlementPagination = usePaginatedList({
+    items: visibleItems,
+    pageSize: 10,
+    scope: `${paginationScope}:entitlements`,
+    hasMore: !!rights.hasNextPage,
+    isLoadingMore: rights.isFetchingNextPage,
+    loadMore: rights.fetchNextPage,
+  });
+  const lotPagination = usePaginatedList({
+    items: visibleLots,
+    pageSize: 10,
+    scope: `${paginationScope}:lots`,
+  });
+  const listingPagination = usePaginatedList({
+    items: otherListings,
+    pageSize: 10,
+    scope: `${paginationScope}:listings`,
+    hasMore: !!rights.hasNextPage,
+    isLoadingMore: rights.isFetchingNextPage,
+    loadMore: rights.fetchNextPage,
+  });
   const listingAction = ({ item, snapshot }: (typeof items)[number]) => (
     <ListingAction
       key={item.id}
@@ -361,177 +385,181 @@ export function EntitlementsPage() {
                 "操作",
               ]}
             >
-              {visibleItems.map(({ item: e, snapshot: rowSnapshot }) => {
-                const pendingTimeoutFunding =
-                  e.kind === "bond" &&
-                  e.reason === "bond_slashed_pending_timeout_funding";
-                const timeoutFunded =
-                  e.kind === "bond" &&
-                  e.reason === "bond_slashed_into_timeout_pool";
-                const waitingForRefund =
-                  e.kind === "timeout-bonus" &&
-                  (e.reason === "refund_before_timeout_compensation" ||
-                    e.reason ===
-                      "refund_and_funding_before_timeout_compensation");
-                const waitingForFunding =
-                  e.kind === "timeout-bonus" &&
-                  (e.reason === "waiting_for_timeout_bond_funding" ||
-                    e.reason ===
-                      "refund_and_funding_before_timeout_compensation");
-                const funding = needsTimeoutFunding(e);
-                const intent = entitlementIntent(
-                  e,
-                  api.environment.deployment.marketplaceVersion,
-                );
-                const progress = entitlementProgress(
-                  e,
-                  operations,
-                  rowSnapshot,
-                );
-                return (
-                  <tr key={e.id}>
-                    <td>
-                      <strong>
-                        {e.market ? (
-                          <Link
-                            to={`/${api.environment.id}/markets/${e.market}`}
-                            title={e.market}
-                          >
-                            {marketLabel(e.market)}
-                          </Link>
-                        ) : (
-                          "跨市场汇总余额"
-                        )}
-                      </strong>
-                      <div className="small muted">{rightLabels[e.kind]}</div>
-                      {e.reason && reasons[e.reason] && (
-                        <p className="small">{reasons[e.reason]}</p>
-                      )}
-                    </td>
-                    <td>
-                      <HoldingOutcome
-                        market={e.market ? marketFor(e.market) : undefined}
-                        outcomeId={e.outcomeId}
-                      />
-                    </td>
-                    <td>
-                      <Amount value={e.units} />
-                    </td>
-                    <td>
-                      {waitingForFunding ? (
-                        <span className="muted">待补偿池注入</span>
-                      ) : (
-                        <>
-                          <Amount
-                            value={e.amount}
-                            asset={api.environment.asset}
-                          />
-                          {waitingForRefund && (
-                            <div className="small muted">预计补偿</div>
+              {entitlementPagination.items.map(
+                ({ item: e, snapshot: rowSnapshot }) => {
+                  const pendingTimeoutFunding =
+                    e.kind === "bond" &&
+                    e.reason === "bond_slashed_pending_timeout_funding";
+                  const timeoutFunded =
+                    e.kind === "bond" &&
+                    e.reason === "bond_slashed_into_timeout_pool";
+                  const waitingForRefund =
+                    e.kind === "timeout-bonus" &&
+                    (e.reason === "refund_before_timeout_compensation" ||
+                      e.reason ===
+                        "refund_and_funding_before_timeout_compensation");
+                  const waitingForFunding =
+                    e.kind === "timeout-bonus" &&
+                    (e.reason === "waiting_for_timeout_bond_funding" ||
+                      e.reason ===
+                        "refund_and_funding_before_timeout_compensation");
+                  const funding = needsTimeoutFunding(e);
+                  const intent = entitlementIntent(
+                    e,
+                    api.environment.deployment.marketplaceVersion,
+                  );
+                  const progress = entitlementProgress(
+                    e,
+                    operations,
+                    rowSnapshot,
+                  );
+                  return (
+                    <tr key={e.id}>
+                      <td>
+                        <strong>
+                          {e.market ? (
+                            <Link
+                              to={`/${api.environment.id}/markets/${e.market}`}
+                              title={e.market}
+                            >
+                              {marketLabel(e.market)}
+                            </Link>
+                          ) : (
+                            "跨市场汇总余额"
                           )}
-                        </>
-                      )}
-                    </td>
-                    <td>
-                      <span
-                        className={`badge ${e.status === "claimable" && !pendingTimeoutFunding ? "badge-blue" : ""}`}
-                      >
-                        {progress?.phase === "syncing"
-                          ? "已确认，等待同步"
-                          : progress
-                            ? progress.operation.state === "unknown"
-                              ? "结果待核对"
-                              : states.executing
-                            : pendingTimeoutFunding
-                              ? "已罚没，待注入"
-                              : timeoutFunded
-                                ? "已罚没并注入"
-                                : waitingForRefund
-                                  ? "待领取本金"
-                                  : waitingForFunding
-                                    ? "待准备补偿池"
-                                    : states[e.status]}
-                      </span>
-                    </td>
-                    <td>
-                      {progress ? (
-                        <div className="stack">
-                          <Button variant="secondary" disabled>
-                            {progress.phase === "syncing"
-                              ? "等待同步"
-                              : "核对原操作中"}
-                          </Button>
-                          <Link
-                            to={`/${api.environment.id}/history?operation=${progress.operation.id}`}
+                        </strong>
+                        <div className="small muted">{rightLabels[e.kind]}</div>
+                        {e.reason && reasons[e.reason] && (
+                          <p className="small">{reasons[e.reason]}</p>
+                        )}
+                      </td>
+                      <td>
+                        <HoldingOutcome
+                          market={e.market ? marketFor(e.market) : undefined}
+                          outcomeId={e.outcomeId}
+                        />
+                      </td>
+                      <td>
+                        <Amount value={e.units} />
+                      </td>
+                      <td>
+                        {waitingForFunding ? (
+                          <span className="muted">待补偿池注入</span>
+                        ) : (
+                          <>
+                            <Amount
+                              value={e.amount}
+                              asset={api.environment.asset}
+                            />
+                            {waitingForRefund && (
+                              <div className="small muted">预计补偿</div>
+                            )}
+                          </>
+                        )}
+                      </td>
+                      <td>
+                        <span
+                          className={`badge ${e.status === "claimable" && !pendingTimeoutFunding ? "badge-blue" : ""}`}
+                        >
+                          {progress?.phase === "syncing"
+                            ? "已确认，等待同步"
+                            : progress
+                              ? progress.operation.state === "unknown"
+                                ? "结果待核对"
+                                : states.executing
+                              : pendingTimeoutFunding
+                                ? "已罚没，待注入"
+                                : timeoutFunded
+                                  ? "已罚没并注入"
+                                  : waitingForRefund
+                                    ? "待领取本金"
+                                    : waitingForFunding
+                                      ? "待准备补偿池"
+                                      : states[e.status]}
+                        </span>
+                      </td>
+                      <td>
+                        {progress ? (
+                          <div className="stack">
+                            <Button variant="secondary" disabled>
+                              {progress.phase === "syncing"
+                                ? "等待同步"
+                                : "核对原操作中"}
+                            </Button>
+                            <Link
+                              to={`/${api.environment.id}/history?operation=${progress.operation.id}`}
+                            >
+                              查询原操作
+                            </Link>
+                          </div>
+                        ) : intent ? (
+                          <Button
+                            variant="secondary"
+                            disabled={!pending.isSuccess}
+                            onClick={() =>
+                              request({
+                                intent,
+                                summary: [
+                                  {
+                                    label: "操作",
+                                    value: funding
+                                      ? "准备超时补偿"
+                                      : rightLabels[e.kind],
+                                  },
+                                  {
+                                    label: "归属",
+                                    value: e.market
+                                      ? marketLabel(e.market)
+                                      : "跨市场汇总余额",
+                                  },
+                                ],
+                                feeNote: funding
+                                  ? "本次只将该市场罚没的创建者押金注入公共补偿池，不会把押金转入你的账户。完成后，已领取本金的参与者可按退款份额领取超时补偿；尚未退款的请先领取本金。任何参与者均可发起，无需创建者配合。网络 Gas 可选择项目代付或自行支付 ETH。"
+                                  : e.kind === "bond" && e.market
+                                    ? e.reason === "settle_and_claim_bond"
+                                      ? "本次将结算并领取押金，确认后一次到账。"
+                                      : "本次将押金结算至汇总可领取余额；超时弃盘且有参与者时，押金将进入补偿池。"
+                                    : "实际到账以链上交易为准；已含费用不会重复扣除。网络 Gas 可选择项目代付或自行支付 ETH。",
+                              })
+                            }
                           >
-                            查询原操作
-                          </Link>
-                        </div>
-                      ) : intent ? (
-                        <Button
-                          variant="secondary"
-                          disabled={!pending.isSuccess}
-                          onClick={() =>
-                            request({
-                              intent,
-                              summary: [
-                                {
-                                  label: "操作",
-                                  value: funding
-                                    ? "准备超时补偿"
-                                    : rightLabels[e.kind],
-                                },
-                                {
-                                  label: "归属",
-                                  value: e.market
-                                    ? marketLabel(e.market)
-                                    : "跨市场汇总余额",
-                                },
-                              ],
-                              feeNote: funding
-                                ? "本次只将该市场罚没的创建者押金注入公共补偿池，不会把押金转入你的账户。完成后，已领取本金的参与者可按退款份额领取超时补偿；尚未退款的请先领取本金。任何参与者均可发起，无需创建者配合。网络 Gas 可选择项目代付或自行支付 ETH。"
+                            {!pending.isSuccess
+                              ? pending.error
+                                ? "暂不可领取"
+                                : "正在核对操作"
+                              : funding
+                                ? "准备超时补偿"
                                 : e.kind === "bond" && e.market
                                   ? e.reason === "settle_and_claim_bond"
-                                    ? "本次将结算并领取押金，确认后一次到账。"
-                                    : "本次将押金结算至汇总可领取余额；超时弃盘且有参与者时，押金将进入补偿池。"
-                                  : "实际到账以链上交易为准；已含费用不会重复扣除。网络 Gas 可选择项目代付或自行支付 ETH。",
-                            })
-                          }
-                        >
-                          {!pending.isSuccess
-                            ? pending.error
-                              ? "暂不可领取"
-                              : "正在核对操作"
-                            : funding
-                              ? "准备超时补偿"
-                              : e.kind === "bond" && e.market
-                                ? e.reason === "settle_and_claim_bond"
-                                  ? "领取押金"
-                                  : "结算押金"
-                                : "领取"}
-                        </Button>
-                      ) : e.kind === "holding" && e.market ? (
-                        <Link to={`/${api.environment.id}/markets/${e.market}`}>
-                          查看市场
-                        </Link>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                                    ? "领取押金"
+                                    : "结算押金"
+                                  : "领取"}
+                          </Button>
+                        ) : e.kind === "holding" && e.market ? (
+                          <Link
+                            to={`/${api.environment.id}/markets/${e.market}`}
+                          >
+                            查看市场
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                    </tr>
+                  );
+                },
+              )}
             </DataTable>
           )}
-          {rights.hasNextPage && (
-            <Button
-              variant="secondary"
-              disabled={rights.isFetchingNextPage}
-              onClick={() => void rights.fetchNextPage()}
-            >
-              加载更多持仓与权益
-            </Button>
-          )}
+          <PaginationControls
+            ariaLabel="持仓与权益分页"
+            page={entitlementPagination.page}
+            hasPrevious={entitlementPagination.hasPrevious}
+            hasNext={entitlementPagination.hasNext}
+            busy={entitlementPagination.isLoading}
+            onPrevious={entitlementPagination.previous}
+            onNext={() => void entitlementPagination.next()}
+          />
           {pnl.data && visibleLots.length > 0 && (
             <section className="card stack">
               <h2>持仓成本明细</h2>
@@ -549,7 +577,7 @@ export function EntitlementsPage() {
                   "挂单操作",
                 ]}
               >
-                {visibleLots.map((lot) => (
+                {lotPagination.items.map((lot) => (
                   <tr key={`${lot.market}:${lot.outcomeId}`}>
                     <td>
                       <Link
@@ -596,13 +624,22 @@ export function EntitlementsPage() {
                   </tr>
                 ))}
               </DataTable>
+              <PaginationControls
+                ariaLabel="持仓成本明细分页"
+                page={lotPagination.page}
+                hasPrevious={lotPagination.hasPrevious}
+                hasNext={lotPagination.hasNext}
+                busy={lotPagination.isLoading}
+                onPrevious={lotPagination.previous}
+                onNext={() => void lotPagination.next()}
+              />
             </section>
           )}
           {otherListings.length > 0 && (
             <section className="card stack">
               <h2>待处理挂单</h2>
               <DataTable headers={["市场", "持有结果", "挂单操作"]}>
-                {otherListings.map((row) => (
+                {listingPagination.items.map((row) => (
                   <tr key={row.item.id}>
                     <td>
                       {row.item.market ? (
@@ -629,6 +666,15 @@ export function EntitlementsPage() {
                   </tr>
                 ))}
               </DataTable>
+              <PaginationControls
+                ariaLabel="待处理挂单分页"
+                page={listingPagination.page}
+                hasPrevious={listingPagination.hasPrevious}
+                hasNext={listingPagination.hasNext}
+                busy={listingPagination.isLoading}
+                onPrevious={listingPagination.previous}
+                onNext={() => void listingPagination.next()}
+              />
             </section>
           )}
         </>
