@@ -70,6 +70,7 @@ function fixture() {
     }),
     spentToday: vi.fn(async () => 0n),
     status: vi.fn(async () => {}),
+    auditCanonical: vi.fn(async () => []),
   };
   const chain: AutomationChain = {
     eligible: vi.fn(async () => true),
@@ -216,6 +217,19 @@ describe("durable automatic claims", () => {
     await f.worker.tick();
     expect(f.store.finish).not.toHaveBeenCalled();
     expect(f.chain.prepare).toHaveBeenCalledTimes(1);
+  });
+  it("withdraws received status when the canonical indexer orphans a finalized transaction", async () => {
+    const f = fixture();
+    vi.mocked(f.store.auditCanonical!).mockResolvedValueOnce([
+      { ...action, kind: "winner" },
+    ]);
+    vi.mocked(f.chain.eligible).mockResolvedValue(false);
+    await f.worker.tick();
+    expect(f.store.status).toHaveBeenCalledWith(
+      owner,
+      "rechecking_after_reorg",
+    );
+    expect(f.chain.send).not.toHaveBeenCalled();
   });
   it("budget and gas shortages queue without broadcasting", async () => {
     const f = fixture();

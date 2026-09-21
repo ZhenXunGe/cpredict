@@ -61,6 +61,12 @@ describe.skipIf(!url)(
           "utf8",
         ),
       );
+      await migration.unsafe(
+        await readFile(
+          "offchain/app-service/migrations/009_automation_canonical_audit.sql",
+          "utf8",
+        ),
+      );
       migration.release();
       store = new PostgresEventStore(u.toString(), 3, v2);
       await store.ready();
@@ -390,6 +396,132 @@ describe.skipIf(!url)(
       expect(await matching.blockedCounts()).toEqual([
         { reason: "gas_balance_insufficient", count: 1 },
       ]);
+    });
+    it("returns actual indexed payout context instead of a prepared estimate", async () => {
+      const claims = new PostgresAutomaticStore(
+          sql,
+          env.deployment.chainId,
+          "context-v2",
+          A(80),
+        ),
+        hash = H(950),
+        row = await claims.save(
+          {
+            key: "winner:context",
+            owner: trader,
+            kind: "winner",
+            target: vault,
+            data: "0x1234",
+            requiresClaimPreference: true,
+          },
+          { raw: "0xabcd", hash, nonce: 0n, maximumCost: 1n },
+        );
+      await claims.finish(row.id, {
+        status: "success",
+        blockNumber: 2n,
+        blockHash: H(2),
+      });
+      await sql`INSERT INTO ledger_facts(chain_id,block_number,transaction_hash,transaction_index,log_index,fact_index,occurred_at,kind,market,owner,counterparty,fact)
+        VALUES(${env.deployment.chainId},2,${hash},0,90,0,100,'winner-claimed',${vault.toLowerCase()},${trader.toLowerCase()},NULL,${sql.json({
+          market: vault.toLowerCase(),
+          owner: trader.toLowerCase(),
+          outcomeId: "1",
+          amount: "9632000",
+          units: "5000000",
+        })})`;
+      await sql`INSERT INTO public_market_metadata(market,rules_hash,question,rules,verified)
+        VALUES(${vault.toLowerCase()},${H(951)},'主播今晚直播间是否会超过30万人？',${sql.json({ outcomes: ["否", "是"] })},true)
+        ON CONFLICT(market) DO UPDATE SET rules_hash=EXCLUDED.rules_hash,question=EXCLUDED.question,rules=EXCLUDED.rules,verified=true`;
+      const status = await claims.publicStatus(trader);
+      expect(status.transactions[0]).toMatchObject({
+        state: "confirmed",
+        context: {
+          market: vault.toLowerCase(),
+          marketQuestion: "主播今晚直播间是否会超过30万人？",
+          outcomeId: "1",
+          outcomeLabel: "是",
+          amount: "9632000",
+          units: "5000000",
+        },
+      });
+    });
+    it("reanchors re-included receipts and withdraws received status after a deep reorg", async () => {
+      const chainId = 999,
+        signer = A(81),
+        owner = A(82),
+        hash = H(960),
+        oldHash = H(961),
+        firstReplacement = H(962),
+        reincludeHash = H(963),
+        finalReplacement = H(964),
+        claims = new PostgresAutomaticStore(
+          sql,
+          chainId,
+          "canonical-audit-v2",
+          signer,
+        ),
+        action = {
+          key: "winner:canonical-audit",
+          owner,
+          kind: "winner",
+          target: vault,
+          data: "0x1234" as const,
+          requiresClaimPreference: true,
+        };
+      await sql`INSERT INTO canonical_blocks(chain_id,block_number,block_hash,parent_hash,block_timestamp,confirmation_status)
+        VALUES(${chainId},10,${oldHash},${H(959)},100,'confirmed')`;
+      await sql`INSERT INTO chain_checkpoints(chain_id,block_number,block_hash) VALUES(${chainId},10,${oldHash})`;
+      const original = await claims.save(action, {
+        raw: "0xabcd",
+        hash,
+        nonce: 0n,
+        maximumCost: 1n,
+      });
+      await claims.finish(original.id, {
+        status: "success",
+        blockNumber: 10n,
+        blockHash: oldHash,
+      });
+      await sql`UPDATE automation_transactions SET canonical_checked_at=NULL WHERE id=${original.id}`;
+      expect(await claims.auditCanonical()).toEqual([]);
+
+      await sql`DELETE FROM canonical_blocks WHERE chain_id=${chainId} AND block_number=10`;
+      await sql`INSERT INTO canonical_blocks(chain_id,block_number,block_hash,parent_hash,block_timestamp,confirmation_status)
+        VALUES(${chainId},10,${firstReplacement},${H(959)},100,'confirmed'),
+              (${chainId},11,${reincludeHash},${firstReplacement},101,'confirmed')`;
+      await sql`INSERT INTO chain_events(chain_id,block_number,block_hash,transaction_hash,transaction_index,log_index,contract_address,topics,data,confirmation_status)
+        VALUES(${chainId},11,${reincludeHash},${hash},0,0,${vault.toLowerCase()},${sql.json([])},'0x','confirmed')`;
+      await sql`INSERT INTO chain_checkpoints(chain_id,block_number,block_hash) VALUES(${chainId},11,${reincludeHash})`;
+      await sql`UPDATE automation_transactions SET canonical_checked_at=now()-interval '6 minutes' WHERE id=${original.id}`;
+      expect(await claims.auditCanonical()).toEqual([]);
+      expect(
+        (
+          await sql`SELECT receipt_block::text,receipt_hash,canonical_status FROM automation_transactions WHERE id=${original.id}`
+        )[0],
+      ).toEqual({
+        receipt_block: "11",
+        receipt_hash: reincludeHash,
+        canonical_status: "canonical",
+      });
+
+      await sql`DELETE FROM canonical_blocks WHERE chain_id=${chainId} AND block_number=11`;
+      await sql`INSERT INTO canonical_blocks(chain_id,block_number,block_hash,parent_hash,block_timestamp,confirmation_status)
+        VALUES(${chainId},11,${finalReplacement},${firstReplacement},101,'confirmed')`;
+      await sql`INSERT INTO chain_checkpoints(chain_id,block_number,block_hash) VALUES(${chainId},11,${finalReplacement})`;
+      await sql`UPDATE automation_transactions SET canonical_checked_at=now()-interval '6 minutes' WHERE id=${original.id}`;
+      expect(await claims.auditCanonical()).toEqual([action]);
+      expect(await claims.publicStatus(owner)).toMatchObject({
+        reason: "rechecking_after_reorg",
+        transactions: [{ state: "unknown", effect: "payout" }],
+      });
+      await expect(
+        claims.save(action, {
+          raw: "0xabce",
+          hash: H(965),
+          nonce: 1n,
+          maximumCost: 1n,
+        }),
+      ).resolves.toMatchObject({ state: "prepared" });
     });
     it("advisory lock excludes simultaneous workers and releases after exception", async () => {
       const a = new PostgresAutomaticStore(sql, 421614, "v2", A(90)),
