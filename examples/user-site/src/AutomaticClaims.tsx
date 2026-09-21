@@ -17,7 +17,7 @@ const reasons: Record<string, string> = {
 };
 const kindLabel = (kind: string) =>
   kind.startsWith("settle-bond:")
-    ? "押金结算"
+    ? "市场押金处理"
     : ({
         winner: "赢家收益",
         "early-bird": "早鸟奖励",
@@ -27,6 +27,13 @@ const kindLabel = (kind: string) =>
         bond: "可退押金",
         "void-timeout": "超时作废",
       }[kind] ?? "权益处理");
+const transactionStateLabel = (kind: string, state: string) => {
+  if (state === "confirmed")
+    return kind.startsWith("settle-bond:") ? "已完成" : "已到账";
+  if (state === "reverted") return "未成功";
+  if (state === "cancelled") return "已取消";
+  return "处理中";
+};
 export function AutomaticClaimsPanel() {
   const { api, account } = useSession();
   const cache = useQueryClient();
@@ -104,14 +111,10 @@ export function AutomaticClaimsPanel() {
         <ul aria-label="自动领取记录">
           {status.data.transactions.map((t) => (
             <li key={t.id}>
-              {kindLabel(t.kind)} ·{" "}
-              {t.state === "confirmed"
-                ? "已到账"
-                : t.state === "reverted"
-                  ? "未成功"
-                  : t.state === "cancelled"
-                    ? "已取消"
-                    : "处理中"}
+              {kindLabel(t.kind)} · {transactionStateLabel(t.kind, t.state)}
+              {t.kind.startsWith("settle-bond:") && (
+                <> · 仅完成市场级押金结算，不代表押金进入你的账户</>
+              )}
               {t.tx_hash && (
                 <>
                   {" "}
