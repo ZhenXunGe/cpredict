@@ -30,6 +30,7 @@ import { AutomaticClaimsWorker } from "./automatic-claims.js";
 import { PostgresAutomaticStore } from "./automatic-store.js";
 import { ViemAutomationChain } from "./automatic-chain.js";
 import { LedgerAutomaticSource } from "./automatic-source.js";
+import { submissionEndpointReady } from "./automatic-submission.js";
 import { MatchingSource } from "./matching-source.js";
 const databaseUrl = z
   .string()
@@ -49,6 +50,7 @@ export const automationConfigSchema = z.object({
   CPREDICT_AUTOMATION_KEY_FILE: z.string().startsWith("/"),
   CPREDICT_AUTOMATION_EXPECTED_SIGNER: address,
   CPREDICT_AUTOMATION_RPC_URL: secureUrl,
+  CPREDICT_AUTOMATION_WRITE_RPC_URL: secureUrl.optional(),
   CPREDICT_AUTOMATION_DATABASE_URL: databaseUrl,
   CPREDICT_AUTOMATION_CONTROL_DATABASE_URL: databaseUrl,
   CPREDICT_AUTOMATION_DAILY_BUDGET_WEI: positive,
@@ -116,7 +118,7 @@ export async function startAutomaticService(
     chain: arbitrumSepolia,
     transport: pool.transport,
   });
-  const writer = http(cfg.CPREDICT_AUTOMATION_RPC_URL, {
+  const writer = http(cfg.CPREDICT_AUTOMATION_WRITE_RPC_URL ?? cfg.CPREDICT_AUTOMATION_RPC_URL, {
     retryCount: 0,
     timeout: 8000,
   })({ chain: arbitrumSepolia });
@@ -162,6 +164,7 @@ export async function startAutomaticService(
     source instanceof LedgerAutomaticSource
       ? (action) => source.stillEligible(action)
       : undefined,
+    () => submissionEndpointReady((input) => writer.request(input), environment.deployment.chainId),
   );
   const worker = new AutomaticClaimsWorker(
     store,
@@ -169,9 +172,11 @@ export async function startAutomaticService(
     source,
     BigInt(cfg.CPREDICT_AUTOMATION_DAILY_BUDGET_WEI),
   );
+  const pendingAge = new Gauge({ name: "cpredict_automation_oldest_pending_seconds", help: "Age of oldest pending transaction; over 120 seconds blocks readiness", registers: [registry] });
   const app = Fastify({ logger: false });
   let stopped = false,
-    lastOk = 0;
+    lastOk = 0,
+    oldestPending = 0;
   let lastBlocked = "";
   let timer: ReturnType<typeof setTimeout> | undefined,
     active: Promise<void> | undefined;
@@ -180,9 +185,9 @@ export async function startAutomaticService(
   );
   app.get("/readyz", async (_, reply) =>
     reply
-      .code(lastOk && Date.now() - lastOk < 120000 ? 200 : 503)
+      .code(lastOk && Date.now() - lastOk < 120000 && oldestPending < 120 ? 200 : 503)
       .send({
-        status: lastOk && Date.now() - lastOk < 120000 ? "ready" : "not-ready",
+        status: lastOk && Date.now() - lastOk < 120000 && oldestPending < 120 ? "ready" : "not-ready",
       }),
   );
   const tick = async () => {
@@ -191,6 +196,8 @@ export async function startAutomaticService(
       await worker.tick();
       pendingCount = (await store.pending()).length;
       pending.set(pendingCount);
+      oldestPending = await store.oldestPendingSeconds();
+      pendingAge.set(oldestPending);
       blocked.reset();
       const blockedRows = await store.blockedCounts();
       for (const row of blockedRows)
