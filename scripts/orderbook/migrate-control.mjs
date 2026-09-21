@@ -8,6 +8,7 @@ try {
   for (const name of [
     "007_order_automation.sql",
     "008_automation_status_scope.sql",
+    "009_automation_canonical_audit.sql",
   ])
     await sql.unsafe(
       await readFile(

@@ -27,6 +27,16 @@ export const automaticClaimsStatusSchema = z.object({
       id: z.string().uuid(),
       kind: z.string(),
       effect: z.enum(["payout", "asset-return"]).optional(),
+      context: z
+        .object({
+          market: address.nullable(),
+          marketQuestion: z.string().nullable(),
+          outcomeId: uint.nullable(),
+          outcomeLabel: z.string().nullable(),
+          amount: uint.nullable(),
+          units: uint.nullable(),
+        })
+        .optional(),
       state: z.enum([
         "prepared",
         "broadcasting",

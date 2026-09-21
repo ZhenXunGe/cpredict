@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { formatUnits } from "viem";
 import { useSession } from "./wallets.js";
 import { ErrorNotice, Notice } from "./ui.js";
 import { automaticClaimsStatusSchema as statusSchema } from "../../../offchain/app-core/src/orderbook-contracts.js";
@@ -16,8 +17,10 @@ const reasons: Record<string, string> = {
   gas_balance_insufficient: "代付 Gas 余额不足，等待恢复；也可手动领取",
   retry_after_chain_check: "链上状态核验中",
   transaction_reverted: "上次领取未成功，正在重新核验",
+  rechecking_after_reorg: "链上发生重组，原到账记录已撤回，后台正在重新核验",
   assets_returned: "挂单资产已返还",
 };
+const shortAddress = (value: string) => `${value.slice(0, 8)}…${value.slice(-6)}`;
 const kindLabel = (kind: string) =>
   kind.startsWith("settle-bond:")
     ? "市场押金处理"
@@ -56,6 +59,7 @@ const transactionStateLabel = (
   if (state === "cancelled") return "已取消";
   return "处理中";
 };
+const formatAmount = (value: string) => formatUnits(BigInt(value), 6);
 export function AutomaticClaimsPanel() {
   const { api, account } = useSession();
   const cache = useQueryClient();
@@ -137,6 +141,46 @@ export function AutomaticClaimsPanel() {
               {transactionStateLabel(t.kind, t.effect, t.state)}
               {t.kind.startsWith("settle-bond:") && (
                 <> · 仅完成市场级押金结算，不代表押金进入你的账户</>
+              )}
+              {t.context && (
+                <div className="muted">
+                  {t.context.market && (
+                    <>
+                      市场：
+                      {t.context.marketQuestion?.trim() ||
+                        shortAddress(t.context.market)}
+                    </>
+                  )}
+                  {t.context.outcomeId !== null && (
+                    <>
+                      {t.context.market ? " · " : ""}结果：
+                      {t.context.outcomeLabel ?? `#${t.context.outcomeId}`}
+                    </>
+                  )}
+                  {t.context.amount !== null && (
+                    <>
+                      {t.context.market || t.context.outcomeId !== null
+                        ? " · "
+                        : ""}
+                      到账金额：{formatAmount(t.context.amount)}{" "}
+                      {api.environment.asset}
+                    </>
+                  )}
+                  {t.context.units !== null && (
+                    <>
+                      {t.context.market ||
+                      t.context.outcomeId !== null ||
+                      t.context.amount !== null
+                        ? " · "
+                        : ""}
+                      {t.effect === "asset-return" ? "返还份额" : "结算份额"}：
+                      {formatAmount(t.context.units)}
+                    </>
+                  )}
+                </div>
+              )}
+              {t.state === "confirmed" && !t.context && (
+                <div className="muted">链上明细索引中</div>
               )}
               {t.tx_hash && (
                 <>

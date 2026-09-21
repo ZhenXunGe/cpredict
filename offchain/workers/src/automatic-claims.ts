@@ -68,6 +68,8 @@ export interface AutomationStore {
   finish(id: string, receipt: AutomationReceipt): Promise<void>;
   spentToday(excludeId?: string): Promise<bigint>;
   status(owner: Address, reason: string): Promise<void>;
+  /** Reconcile finalized rows against the indexer's current canonical chain. */
+  auditCanonical?(): Promise<AutomaticAction[]>;
 }
 export interface AutomationChain {
   eligible(action: AutomaticAction): Promise<boolean>;
@@ -96,6 +98,8 @@ export class AutomaticClaimsWorker {
   }
   async tick(): Promise<void> {
     await this.store.exclusive(async () => {
+      for (const action of (await this.store.auditCanonical?.()) ?? [])
+        await this.setStatus(action, "rechecking_after_reorg");
       for (const tx of await this.store.pending()) {
         // Once persisted, ALWAYS reconcile the original hash, including after opt-out.
         const receipt = await this.chain.receipt(tx.hash);

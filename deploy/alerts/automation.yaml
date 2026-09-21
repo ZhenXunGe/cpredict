@@ -13,6 +13,12 @@ groups:
         labels: { severity: warning }
         annotations:
           summary: "Query the saved transaction hash; never clear its journal or resend with a new nonce"
+      - alert: CpredictAutomationFinalizedReorg
+        expr: cpredict_automation_blocked{reason="rechecking_after_reorg"} > 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "A previously finalized automation transaction left the canonical chain and is being rediscovered"
       - alert: CpredictAutomationChainCheckFailed
         expr: increase(cpredict_automation_ticks_total{result="error"}[5m]) > 2
         labels: { severity: warning }

@@ -37,7 +37,7 @@
 2. 使用 `node scripts/orderbook/deploy.mjs --help` 查看 preflight/plan/deploy/finalize 流程。无秘密模板为 `deployments/arbitrum-sepolia/orderbook-v2/deploy.env.example`。该入口显式选择 V2 脚本、独立 bootstrap salt 和 `deployments/arbitrum-sepolia/orderbook-v2/` 状态目录；默认 V1 入口不变。当前 V2 入口只支持隔离 sandbox/debug；既有 formal 证据工具针对 V1，不能用其生成 V2 正式验收结论。
 3. 提供私有部署配置中的 `TRADING_SESSION_PAYMASTER` 和 `TRADING_SESSION_PAYMASTER_CODEHASH`：必须是新站实际使用、已核验的 AA Paymaster，不从旧地址或协议自带 Paymaster 猜测。预检及 Solidity 部署脚本都核验代码哈希。工厂部署脚本同时部署权限策略；新环境 quickTrading 配置引用其地址和代码哈希。正式部署前仍须 provider/kernel 联调。
 4. 新部署采用 `marketplaceVersion: "orderbook-v2"`、`protocolVersion: "time-v2"`。本次按用户最终决定完整重置测试环境：旧站入口关闭，旧数据库、配置和镜像归档，旧链上合约不删除。站点仅发布新版环境，不迁移旧持仓。新环境必须保持同一支付资产、Privy 项目和原账户派生参数，账户余额不做搬迁。
-5. 每个部署的索引/应用 schema 增量执行现有 migration runner（含 indexer `008_orderbook.sql` 以及 app `007_order_automation.sql`、`008_automation_status_scope.sql`）。旧数据库保存在停止的旧卷及三库备份中；新环境使用独立数据库。
+5. 每个部署的索引/应用 schema 增量执行现有 migration runner（含 indexer `008_orderbook.sql` 以及 app `007_order_automation.sql`、`008_automation_status_scope.sql`、`009_automation_canonical_audit.sql`）。旧数据库保存在停止的旧卷及三库备份中；新环境使用独立数据库。
 6. 建立共用控制数据库/schema，私有环境变量 `CPREDICT_AUTOMATION_CONTROL_DATABASE_URL` 指向它。运行 `node scripts/orderbook/migrate-control.mjs`。同一运行环境的应用和 keeper 使用同一值。若以后重新接入历史环境，须共用该控制库并保留显式关闭偏好。部署索引数据库另由 `CPREDICT_AUTOMATION_DATABASE_URL` 指定。
 7. 为每个部署的 claims 与 matching 分配**不同的独立 Gas 账户**，私钥仅放入权限 0600 的服务端文件。配置 expected signer、显式日预算、确认深度、RPC 主备和代码哈希。不要使用用户钱包、Bundler、Paymaster 或部署者私钥充当 keeper。
 8. 可使用 `compose.automation.yaml` 的 opt-in `automation` profile；本次仅 V2 运行 claims + matching；旧测试环境按重置决定退出。启动前核对容器能以只读方式读取自己的密钥文件。没有预算和 signer 不启动。不要把私有环境文件放入网页目录。
@@ -52,6 +52,8 @@
 - 日预算按实际标记广播的 UTC 日期统计最大费用预留，保守计费；准备后隔夜发送会重新检查。confirmed/reverted 清除原始签名 bytes，保留哈希和 nonce。
 - 源索引不完整、明显滞后或区块哈希冲突时停止发现任务。链上余额在发送前再次模拟核验；手动抢先领取不会导致改收款人或重复经济执行。
 - claims 与 matching 独立 signer/进程，历史批量领取不会占用撮合 nonce。无任务每 30 秒补扫；有在途交易每 2 秒查询。
+- 已确认交易每 5 分钟与索引器的规范区块复核。相同哈希在新块重收录时更新锚点；被深重组移除时撤销个人“已到账”语义，并让仍符合条件且未关闭自动领取的任务重新进入发现流程。此流程不重发 unknown 交易。
+- 个人领取历史的金额、市场和结果来自同一笔规范链 `ledger_facts`，不使用发送前估算。索引尚未追到该回执时显示“链上明细索引中”；发生回滚时明细随规范事实一起撤销。
 - 恶意 ERC1155 接收者可以拒绝收货导致该最佳价成交回滚；资金保持原状，不跳过最优价或更换收款人。其他订单仍可手动接单/撤销；拒绝接收方可能阻塞该价位直到撤单或到期，此限制必须纳入公网验收。
 
 ## 验收和正式上线清单

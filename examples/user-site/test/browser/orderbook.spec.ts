@@ -146,6 +146,22 @@ test("market bond maintenance is not presented as the participant receiving fund
             tx_hash: "0x" + "3".repeat(64),
             created_at: new Date().toISOString(),
           },
+          {
+            id: "44444444-4444-4444-8444-444444444444",
+            kind: "winner",
+            effect: "payout",
+            state: "confirmed",
+            tx_hash: "0x" + "4".repeat(64),
+            created_at: new Date().toISOString(),
+            context: {
+              market: A(101),
+              marketQuestion: "主播今晚直播间是否会超过30万人？",
+              outcomeId: "1",
+              outcomeLabel: "是",
+              amount: "9632000",
+              units: "5000000",
+            },
+          },
         ],
       },
     }),
@@ -163,6 +179,44 @@ test("market bond maintenance is not presented as the participant receiving fund
   await expect(history).toContainText("挂单资产返还 · 已返还");
   await expect(history).toContainText("权益处理 · 已完成");
   await expect(history).not.toContainText("权益处理 · 已到账");
+  await expect(history).toContainText("赢家收益 · 已到账");
+  await expect(history).toContainText(
+    "市场：主播今晚直播间是否会超过30万人？ · 结果：是 · 到账金额：9.632 ctUSD · 结算份额：5",
+  );
+  expect(f.errors).toEqual([]);
+});
+test("a deep reorg withdraws the received message while canonical recovery runs", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.route("**/v1/automatic-claims**", (route) =>
+    route.fulfill({
+      json: {
+        enabled: true,
+        reason: "rechecking_after_reorg",
+        updatedAt: new Date().toISOString(),
+        transactions: [
+          {
+            id: "55555555-5555-4555-8555-555555555555",
+            kind: "winner",
+            effect: "payout",
+            state: "unknown",
+            tx_hash: "0x" + "5".repeat(64),
+            created_at: new Date().toISOString(),
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto(
+    "/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements",
+  );
+  await expect(page.getByRole("status")).toContainText(
+    "原到账记录已撤回",
+  );
+  const history = page.getByRole("list", { name: "自动领取记录" });
+  await expect(history).toContainText("赢家收益 · 处理中");
+  await expect(history).not.toContainText("赢家收益 · 已到账");
   expect(f.errors).toEqual([]);
 });
 test("manual bid acceptance displays fee-adjusted minimum proceeds and frozen assets separately", async ({
