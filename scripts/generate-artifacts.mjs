@@ -6,6 +6,8 @@ import { sourceManifestPaths } from "./manifest-inventory.mjs";
 
 const root = process.cwd();
 const contracts = {
+  OrderbookMarketplaceV2: "OrderbookMarketplaceV2.sol",
+  TradingSessionPolicyV2: "TradingSessionPolicyV2.sol",
   TradingSessionPolicyV1: "TradingSessionPolicyV1.sol",
   ProtocolConfigV1: "ProtocolConfigV1.sol",
   EmergencyControllerV1: "EmergencyControllerV1.sol",

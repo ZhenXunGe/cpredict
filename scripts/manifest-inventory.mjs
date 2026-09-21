@@ -32,6 +32,8 @@ const explicitInventory = [
   "compose.public-site.yaml",
   "compose.static-handoff.yaml",
   "compose.usdc.yaml",
+  "compose.automation.yaml",
+  "deploy/alerts/automation.yaml",
   "deploy/compose/Dockerfile.offchain",
   "deploy/compose/Dockerfile.demo",
   "foundry.toml",
@@ -77,6 +79,7 @@ const explicitInventory = [
   "docs/public-test-site-contract.md",
   "docs/usdc-gasless-deposit.md",
   "docs/ctusd-quick-trading.md",
+  "docs/orderbook-autoclaim-release.md",
   "docs/market-initialization-repair.md",
   "docs/public-test-site-runbook.md",
   "docs/public-test-site-acceptance.md",
@@ -87,8 +90,12 @@ const explicitInventory = [
 
 const excludedInventoryPaths = new Set([
   "deployments/arbitrum-sepolia/pending.json",
+  "deployments/arbitrum-sepolia/orderbook-v2/pending.json",
 ]);
-const excludedInventoryPrefixes = ["deployments/arbitrum-sepolia/runtime/"];
+const excludedInventoryPrefixes = [
+  "deployments/arbitrum-sepolia/runtime/",
+  "deployments/arbitrum-sepolia/orderbook-v2/runtime/",
+];
 
 /**
  * Return the canonical, sorted source-manifest inventory as repository-relative

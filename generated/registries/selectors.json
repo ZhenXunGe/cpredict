@@ -50,6 +50,11 @@
     "selector": "0x4e1273f4"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "bestOrder(address,uint8,uint8)",
+    "selector": "0x148c8100"
+  },
+  {
     "contract": "MarketFactoryV1",
     "signature": "BOND_RATE_BPS()",
     "selector": "0xf684867c"
@@ -75,9 +80,19 @@
     "selector": "0xdd1a9729"
   },
   {
+    "contract": "TradingSessionPolicyV2",
+    "signature": "bondEscrow()",
+    "selector": "0xdd1a9729"
+  },
+  {
     "contract": "BondEscrowV1",
     "signature": "bondOf(address)",
     "selector": "0x72d2b6c0"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "bookSize(address,uint8,uint8)",
+    "selector": "0x9863600f"
   },
   {
     "contract": "CloneMarketVaultV1",
@@ -135,12 +150,27 @@
     "selector": "0x9299e552"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "cancelOrder(uint256)",
+    "selector": "0x514fcac7"
+  },
+  {
     "contract": "TradingSessionPolicyV1",
     "signature": "checkSignaturePolicy(bytes32,address,bytes32,bytes)",
     "selector": "0x309bfb76"
   },
   {
+    "contract": "TradingSessionPolicyV2",
+    "signature": "checkSignaturePolicy(bytes32,address,bytes32,bytes)",
+    "selector": "0x309bfb76"
+  },
+  {
     "contract": "TradingSessionPolicyV1",
+    "signature": "checkUserOpPolicy(bytes32,(address,uint256,bytes,bytes,bytes32,uint256,bytes32,bytes,bytes))",
+    "selector": "0x7129edce"
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "signature": "checkUserOpPolicy(bytes32,(address,uint256,bytes,bytes,bytes32,uint256,bytes32,bytes,bytes))",
     "selector": "0x7129edce"
   },
@@ -283,6 +313,11 @@
     "contract": "MarketFactoryV1",
     "signature": "createMarketWithPlatformFees((bytes32,string,bytes32,string,uint8,uint64,uint64,uint64,address,uint8,uint256,uint16,uint16,uint128,uint128,uint128,uint128,uint128),bytes32,uint16,uint16)",
     "selector": "0x26f2e8e1"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "createOrder(address,uint8,uint8,uint128,uint128,uint64,bool)",
+    "selector": "0x45d60d02"
   },
   {
     "contract": "ProtocolConfigV1",
@@ -475,6 +510,11 @@
     "selector": "0x7a936beb"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "emergencyController()",
+    "selector": "0x7a936beb"
+  },
+  {
     "contract": "SponsorshipPaymasterV1",
     "signature": "emergencyController()",
     "selector": "0x7a936beb"
@@ -575,7 +615,17 @@
     "selector": "0xc45a0155"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
     "contract": "TradingSessionPolicyV1",
+    "signature": "factory()",
+    "selector": "0xc45a0155"
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "signature": "factory()",
     "selector": "0xc45a0155"
   },
@@ -645,7 +695,17 @@
     "selector": "0x478222c2"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "feeVault()",
+    "selector": "0x478222c2"
+  },
+  {
     "contract": "TradingSessionPolicyV1",
+    "signature": "feeVault()",
+    "selector": "0x478222c2"
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "signature": "feeVault()",
     "selector": "0x478222c2"
   },
@@ -668,6 +728,11 @@
     "contract": "FixedPriceMarketplaceV1",
     "signature": "fillListingWithPermit2(bytes32,address,uint256,uint256,uint256,uint64,((address,uint256),uint256,uint256),bytes)",
     "selector": "0xdda6730f"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "fillOrder(uint256,uint128,uint128,uint256,uint64)",
+    "selector": "0x15dcceb8"
   },
   {
     "contract": "CloneMarketVaultV1",
@@ -815,12 +880,22 @@
     "selector": "0xd60b347f"
   },
   {
+    "contract": "TradingSessionPolicyV2",
+    "signature": "isInitialized(address)",
+    "selector": "0xd60b347f"
+  },
+  {
     "contract": "MarketFactoryV1",
     "signature": "isMarket(address)",
     "selector": "0x6ec934da"
   },
   {
     "contract": "TradingSessionPolicyV1",
+    "signature": "isModuleType(uint256)",
+    "selector": "0xecd05961"
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "signature": "isModuleType(uint256)",
     "selector": "0xecd05961"
   },
@@ -860,6 +935,11 @@
     "selector": "0xabc8c7af"
   },
   {
+    "contract": "TradingSessionPolicyV2",
+    "signature": "marketplace()",
+    "selector": "0xabc8c7af"
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "signature": "marketPrimaryCap()",
     "selector": "0xd1e55b43"
@@ -878,6 +958,11 @@
     "contract": "FullMarketVaultV1",
     "signature": "marketState()",
     "selector": "0x08fb1b77"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "matchOrders(address,uint8,uint256)",
+    "selector": "0x7572ddc5"
   },
   {
     "contract": "MarketFactoryV1",
@@ -888,6 +973,11 @@
     "contract": "MarketFactoryV1",
     "signature": "MAX_CREATOR_BOND()",
     "selector": "0x2caa42d9"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "MAX_MATCH_STEPS()",
+    "selector": "0x3d74cc75"
   },
   {
     "contract": "EmergencyControllerV1",
@@ -921,6 +1011,11 @@
   },
   {
     "contract": "FixedPriceMarketplaceV1",
+    "signature": "MAX_UNIT_PRICE()",
+    "selector": "0xd2715d4e"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
     "signature": "MAX_UNIT_PRICE()",
     "selector": "0xd2715d4e"
   },
@@ -1040,7 +1135,17 @@
     "selector": "0x8b0666f5"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "nextOrderId()",
+    "selector": "0x2a58b330"
+  },
+  {
     "contract": "FixedPriceMarketplaceV1",
+    "signature": "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)",
+    "selector": "0xbc197c81"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
     "signature": "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)",
     "selector": "0xbc197c81"
   },
@@ -1050,7 +1155,17 @@
     "selector": "0xf23a6e61"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "onERC1155Received(address,address,uint256,uint256,bytes)",
+    "selector": "0xf23a6e61"
+  },
+  {
     "contract": "TradingSessionPolicyV1",
+    "signature": "onInstall(bytes)",
+    "selector": "0x6d61fe70"
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "signature": "onInstall(bytes)",
     "selector": "0x6d61fe70"
   },
@@ -1058,6 +1173,16 @@
     "contract": "TradingSessionPolicyV1",
     "signature": "onUninstall(bytes)",
     "selector": "0x8a91b0e3"
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
+    "signature": "onUninstall(bytes)",
+    "selector": "0x8a91b0e3"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "orders(uint256)",
+    "selector": "0xa85c38ef"
   },
   {
     "contract": "CloneMarketVaultV1",
@@ -1115,6 +1240,11 @@
     "selector": "0x16e4cbf9"
   },
   {
+    "contract": "TradingSessionPolicyV2",
+    "signature": "paymaster()",
+    "selector": "0x16e4cbf9"
+  },
+  {
     "contract": "BondEscrowV1",
     "signature": "paymentToken()",
     "selector": "0x3013ce29"
@@ -1145,12 +1275,22 @@
     "selector": "0x3013ce29"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
     "contract": "ProtocolConfigV1",
     "signature": "paymentToken()",
     "selector": "0x3013ce29"
   },
   {
     "contract": "TradingSessionPolicyV1",
+    "signature": "paymentToken()",
+    "selector": "0x3013ce29"
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "signature": "paymentToken()",
     "selector": "0x3013ce29"
   },
@@ -1181,6 +1321,11 @@
   },
   {
     "contract": "MarketFactoryV1",
+    "signature": "permit2()",
+    "selector": "0x12261ee7"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
     "signature": "permit2()",
     "selector": "0x12261ee7"
   },
@@ -1230,12 +1375,22 @@
     "selector": "0x173bf7da"
   },
   {
+    "contract": "TradingSessionPolicyV2",
+    "signature": "postCheck(bytes)",
+    "selector": "0x173bf7da"
+  },
+  {
     "contract": "SponsorshipPaymasterV1",
     "signature": "postOp(uint8,bytes,uint256,uint256)",
     "selector": "0x7c627b21"
   },
   {
     "contract": "TradingSessionPolicyV1",
+    "signature": "preCheck(address,uint256,bytes)",
+    "selector": "0xd68f6025"
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "signature": "preCheck(address,uint256,bytes)",
     "selector": "0xd68f6025"
   },
@@ -1313,6 +1468,11 @@
     "contract": "LaunchExposureGuardV1",
     "signature": "registerMarket(address)",
     "selector": "0xa79b9ec9"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "releaseOrder(uint256)",
+    "selector": "0xae2f7589"
   },
   {
     "contract": "CloneMarketVaultV1",
@@ -1490,6 +1650,11 @@
     "selector": "0xb75c7dc6"
   },
   {
+    "contract": "TradingSessionPolicyV2",
+    "signature": "revoke(bytes32)",
+    "selector": "0xb75c7dc6"
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "signature": "rulesHash()",
     "selector": "0xc76f9c16"
@@ -1526,6 +1691,11 @@
   },
   {
     "contract": "TradingSessionPolicyV1",
+    "signature": "sessionState(bytes32,address)",
+    "selector": "0xb97683b5"
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "signature": "sessionState(bytes32,address)",
     "selector": "0xb97683b5"
   },
@@ -1700,6 +1870,11 @@
     "selector": "0x01ffc9a7"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "supportsInterface(bytes4)",
+    "selector": "0x01ffc9a7"
+  },
+  {
     "contract": "MarketFactoryV1",
     "signature": "supportsPerMarketPlatformFees()",
     "selector": "0xaa7c6db2"
@@ -1753,6 +1928,11 @@
     "contract": "BondEscrowV1",
     "signature": "totalLocked()",
     "selector": "0x56891412"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "totalLockedPayment()",
+    "selector": "0x31cc9f82"
   },
   {
     "contract": "CloneMarketVaultV1",

@@ -109,6 +109,13 @@
     "inputs": []
   },
   {
+    "contract": "TradingSessionPolicyV2",
+    "name": "BudgetExceeded",
+    "signature": "BudgetExceeded()",
+    "selector": "0x50b2c4e1",
+    "inputs": []
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "name": "DeadlineExpired",
     "signature": "DeadlineExpired(uint256,uint256)",
@@ -506,6 +513,13 @@
     ]
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "Expired",
+    "signature": "Expired()",
+    "selector": "0x203d82d8",
+    "inputs": []
+  },
+  {
     "contract": "LaunchExposureGuardV1",
     "name": "ExposureCapCannotDecrease",
     "signature": "ExposureCapCannotDecrease(uint256,uint256)",
@@ -610,7 +624,21 @@
     ]
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "FillMinimum",
+    "signature": "FillMinimum()",
+    "selector": "0x170b7713",
+    "inputs": []
+  },
+  {
     "contract": "TradingSessionPolicyV1",
+    "name": "ForbiddenCall",
+    "signature": "ForbiddenCall()",
+    "selector": "0x00544b2c",
+    "inputs": []
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "name": "ForbiddenCall",
     "signature": "ForbiddenCall()",
     "selector": "0x00544b2c",
@@ -628,6 +656,13 @@
     "name": "ImmutableAfterFirstBuy",
     "signature": "ImmutableAfterFirstBuy()",
     "selector": "0xb923a819",
+    "inputs": []
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "InactiveOrder",
+    "signature": "InactiveOrder()",
+    "selector": "0xd4dbb565",
     "inputs": []
   },
   {
@@ -701,6 +736,13 @@
         "internalType": "uint256"
       }
     ]
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "InexactTransfer",
+    "signature": "InexactTransfer()",
+    "selector": "0xee20c618",
+    "inputs": []
   },
   {
     "contract": "BondEscrowV1",
@@ -917,6 +959,20 @@
     "inputs": []
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "InvalidMarket",
+    "signature": "InvalidMarket()",
+    "selector": "0x9db8d5b1",
+    "inputs": []
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "InvalidOrder",
+    "signature": "InvalidOrder()",
+    "selector": "0xaf610693",
+    "inputs": []
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "name": "InvalidOutcome",
     "signature": "InvalidOutcome(uint256,uint256)",
@@ -985,6 +1041,13 @@
   },
   {
     "contract": "TradingSessionPolicyV1",
+    "name": "InvalidSession",
+    "signature": "InvalidSession()",
+    "selector": "0x2def1a76",
+    "inputs": []
+  },
+  {
+    "contract": "TradingSessionPolicyV2",
     "name": "InvalidSession",
     "signature": "InvalidSession()",
     "selector": "0x2def1a76",
@@ -1173,6 +1236,13 @@
     "inputs": []
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "NotOwner",
+    "signature": "NotOwner()",
+    "selector": "0x30cd7471",
+    "inputs": []
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "name": "PauseActive",
     "signature": "PauseActive(uint256)",
@@ -1238,6 +1308,13 @@
     ]
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "Paused",
+    "signature": "Paused()",
+    "selector": "0x9e87fac8",
+    "inputs": []
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "name": "PaymentAboveMaximum",
     "signature": "PaymentAboveMaximum(uint256,uint256)",
@@ -1310,6 +1387,13 @@
     "name": "Permit2Disabled",
     "signature": "Permit2Disabled()",
     "selector": "0xbf549ab9",
+    "inputs": []
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "PriceLimit",
+    "signature": "PriceLimit()",
+    "selector": "0x4b3eeb24",
     "inputs": []
   },
   {
@@ -1349,6 +1433,13 @@
   },
   {
     "contract": "MarketFactoryV1",
+    "name": "ReentrancyGuardReentrantCall",
+    "signature": "ReentrancyGuardReentrantCall()",
+    "selector": "0x3ee5aeb5",
+    "inputs": []
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
     "name": "ReentrancyGuardReentrantCall",
     "signature": "ReentrancyGuardReentrantCall()",
     "selector": "0x3ee5aeb5",
@@ -1525,6 +1616,19 @@
   },
   {
     "contract": "MarketFactoryV1",
+    "name": "SafeERC20FailedOperation",
+    "signature": "SafeERC20FailedOperation(address)",
+    "selector": "0x5274afe7",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
     "name": "SafeERC20FailedOperation",
     "signature": "SafeERC20FailedOperation(address)",
     "selector": "0x5274afe7",
@@ -1712,6 +1816,13 @@
     "name": "UnexpectedERC1155Transfer",
     "signature": "UnexpectedERC1155Transfer()",
     "selector": "0xf2cd7ad0",
+    "inputs": []
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "UnexpectedTransfer",
+    "signature": "UnexpectedTransfer()",
+    "selector": "0x222310dc",
     "inputs": []
   },
   {
