@@ -3,6 +3,8 @@ import type { IndexerSchedulerTelemetry } from "./telemetry.js";
 
 export interface IndexerSchedulerOptions {
   intervalMs: number;
+  caughtUpIntervalMs?: number;
+  jitterRatio?: number;
   maxBatchesPerTick: number;
 }
 
@@ -32,6 +34,12 @@ export class BoundedIndexerScheduler {
     ) {
       throw new RangeError("intervalMs must be within [250, 60000]");
     }
+    const caughtUp = options.caughtUpIntervalMs ?? options.intervalMs;
+    if (!Number.isInteger(caughtUp) || caughtUp < 250 || caughtUp > 60_000)
+      throw new RangeError("caughtUpIntervalMs must be within [250, 60000]");
+    const jitter = options.jitterRatio ?? 0;
+    if (!Number.isFinite(jitter) || jitter < 0 || jitter > 0.25)
+      throw new RangeError("jitterRatio must be within [0, 0.25]");
   }
 
   isRunning(): boolean {
@@ -81,15 +89,28 @@ export class BoundedIndexerScheduler {
 
   private enqueue(): void {
     this.inFlight = this.inFlight.then(async () => {
+      let delay = this.options.intervalMs;
       try {
-        await this.runTick();
+        const committed = await this.runTick();
+        delay =
+          committed === this.options.maxBatchesPerTick
+            ? 0
+            : jittered(
+                this.options.caughtUpIntervalMs ?? this.options.intervalMs,
+                this.options.jitterRatio ?? 0,
+              );
       } catch {
         // Metrics and readiness expose the failure. The scheduler remains bounded and retries only
         // on the next polling tick; it never launches overlapping recovery loops.
       }
       if (this.running) {
-        this.timer = setTimeout(() => this.enqueue(), this.options.intervalMs);
+        this.timer = setTimeout(() => this.enqueue(), delay);
       }
     });
   }
+}
+
+function jittered(value: number, ratio: number): number {
+  if (ratio === 0) return value;
+  return Math.max(250, Math.round(value * (1 + (Math.random() * 2 - 1) * ratio)));
 }

@@ -8,9 +8,9 @@ cannot accidentally start an API-only process without ingestion, strict configur
 
 ## Database and startup
 
-Apply `migrations/001_indexer.sql`, `migrations/002_settlement_evidence.sql`, and
-`migrations/003_read_api_indexes.sql` in order with a separately authorized migration identity.
-The latter migrations are idempotent and cover settlement evidence plus bounded read-path indexes.
+Apply all numbered indexer migrations in order with a separately authorized migration identity.
+Migration `009_sparse_canonical_ranges.sql` adds the mixed-history scan-range registry; it retains
+all existing `canonical_blocks` rows and does not rewrite business projections.
 Runtime readiness fails closed if a required table, evidence column, or read index is absent.
 Runtime credentials should have only the DML privileges needed by the tables. Startup also fails
 closed if PostgreSQL is unavailable or RPC `eth_chainId` differs from the configured chain.
@@ -37,6 +37,8 @@ CPREDICT_INDEXER_DEPLOYMENT_BLOCK=...
 CPREDICT_INDEXER_CONFIRMATIONS=2
 CPREDICT_INDEXER_BATCH_SIZE=500
 CPREDICT_INDEXER_BLOCK_CONCURRENCY=4
+CPREDICT_INDEXER_CANONICAL_MODE=dense
+CPREDICT_INDEXER_CAUGHT_UP_POLL_MS=5000
 CPREDICT_INDEXER_MAX_BATCHES_PER_TICK=4
 CPREDICT_INDEXER_POLL_INTERVAL_MS=1000
 CPREDICT_INDEXER_RPC_TIMEOUT_MS=5000
@@ -64,9 +66,26 @@ first sample the actual RPC at 16 concurrent reads and check latency, 429s and t
 Only raise the setting when the provider supports it; lower it on rate limiting.
 Compose uses the independent `CPREDICT_USDC_INDEXER_BLOCK_CONCURRENCY` override for USDC.
 This changes read throughput, not the deployment start block, event coverage or confirmation depth.
-Every block and parent hash is still checked and persisted. A failed batch stops scheduling
-new reads, drains requests already in flight and leaves its checkpoint unchanged.
+`dense` persists every block header. `sparse` persists the range endpoint, every event block and
+explicit repair/time lookup anchors. Sparse batches verify predecessor and endpoint fences before
+commit and validate each log hash against its event block. A failed fence, hash, RPC or database
+operation leaves the checkpoint and all projections unchanged. When caught up, polling uses
+`CPREDICT_INDEXER_CAUGHT_UP_POLL_MS` with jitter; catch-up batches still run without that delay.
 SIGINT/SIGTERM stops new polls, drains the active transaction, closes HTTP and then closes PostgreSQL.
+
+Sparse history is readable by the same candidate image in either mode. After the first sparse range
+is committed, roll back quickly by setting the candidate image to `dense`. Before starting an older
+dense-only image, materialize all sparse ranges with the current image:
+
+```text
+npm run site:maintain -- densify-canonical --config <runtime.json> --environment <id>
+npm run site:maintain -- densify-canonical --config <runtime.json> --environment <id> --apply
+```
+
+The first command is a read-only inventory. The `--apply` command requires the maintenance database
+and RPC variables, verifies the deployment and both range endpoint and parent-hash lineage, fills
+missing headers under the ingestion advisory lock, then marks each complete range dense. Do not
+start an old image until a second inventory reports zero sparse ranges.
 
 ## Operations
 

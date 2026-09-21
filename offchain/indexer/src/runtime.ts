@@ -65,7 +65,10 @@ export async function startIndexerRuntime(
     });
   });
   const backfill = async () => {
-    await rawStore.backfillFinancialAccounts(client);
+    await rawStore.backfillFinancialAccounts(
+      client,
+      () => telemetry.ingestion.blockHeaderRead("backfill"),
+    );
   };
   const indexer = new ChainIndexer(client, store, {
     chainId: config.chainId,
@@ -73,6 +76,8 @@ export async function startIndexerRuntime(
     confirmations: config.confirmations,
     batchSize: config.batchSize,
     blockConcurrency: config.blockConcurrency,
+    canonicalMode: config.canonicalMode,
+    telemetry: telemetry.ingestion,
     addresses: config.coreAddresses,
     factoryAddress: config.factoryAddress,
     protocol: environment?.deployment.protocolVersion ?? "time-v2",
@@ -80,6 +85,8 @@ export async function startIndexerRuntime(
   });
   const scheduler = new BoundedIndexerScheduler(indexer, telemetry, {
     intervalMs: config.pollIntervalMs,
+    caughtUpIntervalMs: config.caughtUpPollMs,
+    jitterRatio: 0.1,
     maxBatchesPerTick: config.maxBatchesPerTick,
   });
   const readiness = async (): Promise<void> => {
@@ -175,7 +182,11 @@ export async function startIndexerRuntime(
   let publicTimer: ReturnType<typeof setTimeout> | undefined;
   let publicTick: Promise<void> | undefined;
   if(rawStore.financial && config.metadataUrl){
-    const ledger=rawStore.financial,metadataUrl=config.metadataUrl,leaderboards=new Leaderboards(ledger);
+    const ledger=rawStore.financial,metadataUrl=config.metadataUrl,leaderboards=new Leaderboards(
+      ledger,
+      client,
+      () => telemetry.ingestion.blockHeaderRead("time_lookup"),
+    );
     let refreshLeaderboards=true;
     const run=async()=>{
       try{await refreshPublicMetadata(ledger,metadataUrl);}catch{app.log.warn("public metadata catalog refresh unavailable");}

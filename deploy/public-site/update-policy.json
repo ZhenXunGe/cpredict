@@ -8,6 +8,7 @@
     "offchain/indexer/migrations/005_activity_catalog.sql": "1faf44daa13a39a46b80c3caab1777923f7ce5c48dd205770c9d6859800a5353",
     "offchain/indexer/migrations/006_financial_facts.sql": "d400a8ecf2f2742ab59c4964d98bdf481f13105a93fb61c166a6be76df34e281",
     "offchain/indexer/migrations/007_legacy_deployment.sql": "6ba0ed20d84f1baf5b6aae1e34817511541eb3edb69bada2a399b7770c496b15",
+    "offchain/indexer/migrations/009_sparse_canonical_ranges.sql": "f00fca43176f37bad8988203d825bf2659c3f24c2a9f376f03321d472b2796b7",
     "offchain/paymaster-service/migrations/001_sponsor_budget.sql": "ee1bdced5f7bc795b8fc0387dcf7699e538632af688cd22e2269c342b7cce1e2",
     "offchain/paymaster-service/migrations/002_permit2_relay_intents.sql": "33cd8d5549e93395d6a4d5b09dc51b97fcd68daee9e0943bcec2c572408affe0",
     "offchain/metadata-service/migrations/001_metadata.sql": "7d322251d2f4d3e630d3aee566933fdc28de568254b4f41fd20da06e4daf53ba",
