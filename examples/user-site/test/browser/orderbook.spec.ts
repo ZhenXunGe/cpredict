@@ -135,3 +135,13 @@ test("manual bid acceptance displays fee-adjusted minimum proceeds and frozen as
   await expect(page.getByText("3 ctUSD", { exact: true })).toBeVisible();
   expect(f.errors).toEqual([]);
 });
+
+
+test("an enabled account sees a blocked shared claims queue and retains manual access", async ({page}) => {
+  await setup(page);
+  await page.route("**/v1/automatic-claims**",r=>r.fulfill({json:{enabled:true,reason:"queue_blocked_unknown_transaction",updatedAt:new Date().toISOString(),transactions:[]}}));
+  await page.goto("/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements");
+  await expect(page.getByRole("checkbox",{name:"自动领取权益（默认开启）"})).toBeChecked();
+  await expect(page.getByRole("status").filter({hasText:"自动领取队列暂缓"})).toBeVisible();
+  await expect(page.getByText("无需重复开关，可先手动领取。",{exact:false})).toBeVisible();
+});

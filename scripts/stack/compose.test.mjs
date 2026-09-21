@@ -217,5 +217,7 @@ test("public RPC compatibility uses shared application read pool and keeps fallb
   assert.equal(pub.services["web-demo"].environment.CPREDICT_RPC_UPSTREAM, "http://app-service:8795/v1/rpc-compat");
   for (const name of ["indexer", "app-service", "metadata"])
     assert.equal(pub.services[name].environment.CPREDICT_RPC_FALLBACKS_JSON, "${CPREDICT_RPC_FALLBACKS_JSON:-}");
+  for (const name of ["indexer", "metadata", "app-service"])
+    assert.equal(pub.services[name].environment.CPREDICT_RPC_PRIMARY_NAME, "${CPREDICT_RPC_PRIMARY_NAME:-alchemy}");
   assert.equal(pub.services["web-demo"].environment.CPREDICT_RPC_FALLBACKS_JSON, undefined);
 });

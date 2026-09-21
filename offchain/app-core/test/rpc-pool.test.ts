@@ -6,6 +6,7 @@ import {
   RpcResponseError,
   parseRpcFallbackConfig,
   type RpcProbe,
+  type RpcPoolOptions,
 } from "../src/rpc-pool.js";
 const probe: RpcProbe = {
   logBlockSpan: 100,
@@ -47,7 +48,7 @@ type Mode =
   | "fork"
   | "log_limit"
   | "invalid_params";
-async function fixture() {
+async function fixture(overrides: Partial<RpcPoolOptions> = {}) {
   let clock = 1_000_000;
   const modes: Record<string, Mode> = {
     alchemy: "ok",
@@ -206,6 +207,7 @@ async function fixture() {
     },
     registry,
     now: () => clock,
+    ...overrides,
   });
   pools.push(pool);
   return {
@@ -493,6 +495,102 @@ describe("bounded RPC read pool", () => {
     expect(
       f.calls.filter((c) => c.method === "eth_getLogs").map((c) => c.name),
     ).toEqual(["official", "alchemy", "ankr"]);
+  });
+  it("recovered unused backup stops probing after three successes", async () => {
+    const f = await fixture();
+    f.modes.drpc = "429";
+    await f.start();
+    f.modes.drpc = "ok";
+    f.advance(120_000);
+    await f.pool.probe();
+    f.advance(30_000);
+    await f.pool.probe();
+    f.advance(30_000);
+    await f.pool.probe();
+    f.calls.length = 0;
+    for (let n = 0; n < 20; n++) {
+      f.advance(30_000);
+      await f.pool.probe();
+    }
+    expect(f.calls).toEqual([]);
+  });
+  it("unsupported history uses exponential backoff, without excluding ordinary reads", async () => {
+    const f = await fixture();
+    f.modes.drpc = "archive";
+    await f.start();
+    f.advance(60_000);
+    await f.pool.probe();
+    expect(f.calls).toEqual([]);
+    f.advance(240_000);
+    await f.pool.probe();
+    expect(
+      f.calls.some(
+        (c) => c.name === "drpc" && c.method === "eth_getBlockByNumber",
+      ),
+    ).toBe(true);
+    f.calls.length = 0;
+    f.advance(300_000);
+    await f.pool.probe();
+    expect(f.calls).toEqual([]);
+    const metrics = await f.registry.metrics();
+    expect(metrics).toContain('provider="drpc",category="read"} 1');
+  });
+  it("service capability scope omits unused logs/receipts and records bounded method labels", async () => {
+    const f = await fixture({ capabilities: ["read", "history"] });
+    await f.pool.start();
+    expect(
+      f.calls.some((c) =>
+        ["eth_getLogs", "eth_getTransactionReceipt"].includes(c.method),
+      ),
+    ).toBe(false);
+    await f.pool.request("eth_getBalance", [probe.logAddress, "latest"]);
+    expect(await f.registry.metrics()).toContain(
+      'method="eth_getBalance",outcome="ok"',
+    );
+    await expect(f.pool.request("eth_getLogs", [{}])).rejects.toThrow(
+      "rpc_unavailable",
+    );
+  });
+  it("supports three distinct Alchemy identities and an initially quarantined endpoint", async () => {
+    const f = await fixture();
+    const config = parseRpcFallbackConfig({
+      CPREDICT_RPC_PRIMARY_NAME: "alchemy-2",
+      CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify([
+        { name: "alchemy", url: f.url("old"), initialCooldownSeconds: 900 },
+        {
+          name: "alchemy-3",
+          url: f.url("waiting"),
+          initialCooldownSeconds: 3600,
+        },
+        { name: "ankr", url: f.url("ankr") },
+        { name: "drpc", url: f.url("drpc") },
+      ]),
+      CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+    })!;
+    const pool = new RpcReadPool({
+      url: f.url("alchemy"),
+      chainId: 421614,
+      service: "extra",
+      timeoutMs: 240,
+      fallback: config,
+    });
+    pools.push(pool);
+    await pool.start();
+    expect(f.calls.some((c) => ["old", "waiting"].includes(c.name))).toBe(
+      false,
+    );
+    await pool.request("eth_getBalance", [probe.logAddress, "latest"]);
+    expect(f.calls.at(-1)?.name).toBe("alchemy");
+    expect(() =>
+      parseRpcFallbackConfig({
+        CPREDICT_RPC_PRIMARY_NAME: "alchemy-2",
+        CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify([
+          { name: "ankr", url: f.url("same") },
+          { name: "drpc", url: f.url("same") },
+        ]),
+        CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+      }),
+    ).toThrow();
   });
   it("validates private config without including values in the error", () => {
     expect(parseRpcFallbackConfig({})).toBeUndefined();

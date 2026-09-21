@@ -41,10 +41,12 @@ function setup(state = 0, enabled = true, now = 2000n) {
       trackedAccounts: new Set([trader.toLowerCase()]),
     },
   );
+  const revision = { count: "2", latest: "2", epoch: "1", now };
   const ledger = {
     environment: env,
     snapshot: async () => ({
       complete: true,
+      epoch: revision.epoch,
       blockNumber: "100",
       blockHash: H(100),
     }),
@@ -53,7 +55,9 @@ function setup(state = 0, enabled = true, now = 2000n) {
     sql: async (s: TemplateStringsArray) =>
       s.join("").includes("SELECT DISTINCT market")
         ? [{ market: vault }]
-        : [{ owner: trader }],
+        : s.join("").includes("count(*)")
+          ? [revision]
+          : [{ owner: trader }],
   } as unknown as PostgresFinancialLedger;
   const values: Record<string, unknown> = {
     marketState: state,
@@ -77,7 +81,7 @@ function setup(state = 0, enabled = true, now = 2000n) {
     getBlock: vi.fn(async () => ({
       number: 100n,
       hash: H(100),
-      timestamp: now,
+      timestamp: revision.now,
     })),
     readContract: vi.fn(
       async ({
@@ -100,6 +104,7 @@ function setup(state = 0, enabled = true, now = 2000n) {
   const source = new LedgerAutomaticSource(ledger, client, prefs);
   return {
     source,
+    revision,
     client,
     ledger,
     values,
@@ -147,6 +152,58 @@ describe("historical automatic entitlement discovery", () => {
   it("voided markets discover principal refunds and funded timeout compensation", async () => {
     expect((await setup(2).actions()).map((a) => a.kind)).toEqual(
       expect.arrayContaining(["refund", "timeout-bonus", "fees"]),
+    );
+  });
+  it("idle holders sleep while block/hash checks continue, and business events wake them", async () => {
+    const f = setup(0, true, 1000n);
+    f.values.creditOf = 0n;
+    expect(await f.actions()).toEqual([]);
+    const first = vi.mocked(f.client.readContract).mock.calls.length;
+    expect(first).toBeGreaterThan(10);
+    for (let n = 0; n < 19; n++) {
+      f.revision.now += 30n;
+      expect(await f.actions()).toEqual([]);
+    }
+    expect(vi.mocked(f.client.readContract).mock.calls.length).toBe(first);
+    expect(vi.mocked(f.client.getBlock).mock.calls.length).toBe(40);
+    f.revision.count = "3"; // Also covers owner-less resolution/fee events.
+    f.values.creditOf = 2n;
+    expect((await f.actions()).some((a) => a.kind === "fees")).toBe(true);
+  });
+  it("deadline wakes idle holders without any new event", async () => {
+    const f = setup(0, true, 1999n);
+    f.values.creditOf = 0n;
+    expect(await f.actions()).toEqual([]);
+    f.revision.now = 2000n;
+    expect((await f.actions()).some((a) => a.kind === "void-timeout")).toBe(
+      true,
+    );
+  });
+  it("periodic backstop and reorg epoch invalidate idle state", async () => {
+    const f = setup(0, true, 1000n);
+    f.values.creditOf = 0n;
+    await f.actions();
+    f.values.creditOf = 2n;
+    expect(await f.actions()).toEqual([]);
+    f.revision.epoch = "2";
+    expect((await f.actions()).some((a) => a.kind === "fees")).toBe(true);
+    f.values.creditOf = 0n;
+    await f.actions();
+    f.values.creditOf = 2n;
+    f.revision.now += 600n;
+    expect((await f.actions()).some((a) => a.kind === "fees")).toBe(true);
+  });
+  it("failed canonical assertions never put a holder to sleep", async () => {
+    const f = setup(0, true, 1000n);
+    f.values.creditOf = 0n;
+    vi.mocked(f.ledger.assertSnapshot).mockRejectedValueOnce(
+      new Error("reorg"),
+    );
+    await expect(f.actions()).rejects.toThrow("reorg");
+    const calls = vi.mocked(f.client.readContract).mock.calls.length;
+    await f.actions();
+    expect(vi.mocked(f.client.readContract).mock.calls.length).toBeGreaterThan(
+      calls,
     );
   });
   it("stale index or canonical hash mismatch stops discovery before any send", async () => {
