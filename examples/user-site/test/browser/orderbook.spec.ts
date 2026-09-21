@@ -115,6 +115,40 @@ test("claim preference is default on, persists opt-out, and explains market-leve
   await expect(checkbox).not.toBeChecked();
   expect(f.errors).toEqual([]);
 });
+test("market bond maintenance is not presented as the participant receiving funds", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.route("**/v1/automatic-claims**", (route) =>
+    route.fulfill({
+      json: {
+        enabled: true,
+        reason: "received",
+        updatedAt: new Date().toISOString(),
+        transactions: [
+          {
+            id: "11111111-1111-4111-8111-111111111111",
+            kind: `settle-bond:${A(101).toLowerCase()}`,
+            state: "confirmed",
+            tx_hash: "0x" + "1".repeat(64),
+            created_at: new Date().toISOString(),
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto(
+    "/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements",
+  );
+
+  const history = page.getByRole("list", { name: "自动领取记录" });
+  await expect(history).toContainText("市场押金处理 · 已完成");
+  await expect(history).toContainText(
+    "仅完成市场级押金结算，不代表押金进入你的账户",
+  );
+  await expect(history).not.toContainText("市场押金处理 · 已到账");
+  expect(f.errors).toEqual([]);
+});
 test("manual bid acceptance displays fee-adjusted minimum proceeds and frozen assets separately", async ({
   page,
 }) => {
