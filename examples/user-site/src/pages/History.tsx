@@ -37,9 +37,11 @@ import {
   Loading,
   Modal,
   Notice,
+  PaginationControls,
   PageTitle,
   shortAddress,
 } from "../ui.js";
+import { usePaginatedList } from "../pagination.js";
 import { dateText, marketSchema, useRules } from "../data.js";
 import {
   listingTotal,
@@ -129,6 +131,22 @@ export function HistoryPage() {
   });
   const items = rows.data?.pages.flatMap((p) => p.items) ?? [],
     attempts = operations.data?.pages.flatMap((p) => p.items) ?? [];
+  const operationPagination = usePaginatedList({
+    pages: operations.data?.pages.map((page) => page.items) ?? [],
+    pageSize: 10,
+    scope: `${api.key}:${identityKey}:${account?.id ?? "signed-out"}`,
+    hasMore: !!operations.hasNextPage,
+    isLoadingMore: operations.isFetchingNextPage,
+    loadMore: operations.fetchNextPage,
+  });
+  const historyPagination = usePaginatedList({
+    pages: rows.data?.pages.map((page) => page.items) ?? [],
+    pageSize: 10,
+    scope: `${api.key}:${account?.address ?? "signed-out"}:${filters}`,
+    hasMore: !!rows.hasNextPage,
+    isLoadingMore: rows.isFetchingNextPage,
+    loadMore: rows.fetchNextPage,
+  });
   const cost = useQuery({
     queryKey: [
       api.key,
@@ -201,7 +219,7 @@ export function HistoryPage() {
                   "详情",
                 ]}
               >
-                {attempts.map((o) => (
+                {operationPagination.items.map((o) => (
                   <tr key={o.id}>
                     <td>{operationLabels[o.kind]}</td>
                     <td>
@@ -230,15 +248,15 @@ export function HistoryPage() {
                 ))}
               </DataTable>
             )}
-            {operations.hasNextPage && (
-              <Button
-                variant="secondary"
-                disabled={operations.isFetchingNextPage}
-                onClick={() => void operations.fetchNextPage()}
-              >
-                更多操作
-              </Button>
-            )}
+            <PaginationControls
+              ariaLabel="操作进度分页"
+              page={operationPagination.page}
+              hasPrevious={operationPagination.hasPrevious}
+              hasNext={operationPagination.hasNext}
+              busy={operationPagination.isLoading}
+              onPrevious={operationPagination.previous}
+              onNext={() => void operationPagination.next()}
+            />
           </section>
           <section className="stack">
             <h2>已确认链上历史</h2>
@@ -308,7 +326,7 @@ export function HistoryPage() {
                     "详情",
                   ]}
                 >
-                  {items.map((f) => (
+                  {historyPagination.items.map((f) => (
                     <tr key={f.id}>
                       <td>{labels[f.kind]}</td>
                       <td>{dateText(f.timestamp)}</td>
@@ -356,15 +374,15 @@ export function HistoryPage() {
                 </DataTable>
               </>
             )}
-            {rows.hasNextPage && (
-              <Button
-                variant="secondary"
-                disabled={rows.isFetchingNextPage}
-                onClick={() => void rows.fetchNextPage()}
-              >
-                加载更多历史
-              </Button>
-            )}
+            <PaginationControls
+              ariaLabel="链上历史分页"
+              page={historyPagination.page}
+              hasPrevious={historyPagination.hasPrevious}
+              hasNext={historyPagination.hasNext}
+              busy={historyPagination.isLoading}
+              onPrevious={historyPagination.previous}
+              onNext={() => void historyPagination.next()}
+            />
           </section>
           <OperationDetail
             id={params.get("operation")}
@@ -698,14 +716,12 @@ function useHistoryListing(id: Hex | undefined) {
     enabled: !!id,
     queryFn: async () => {
       if (api.environment.deployment.marketplaceVersion === "orderbook-v2") {
-        const o = await api
-          .publicClient()
-          .readContract({
-            address: api.environment.deployment.marketplace,
-            abi: orderbookAbi,
-            functionName: "orders",
-            args: [BigInt(id!)],
-          });
+        const o = await api.publicClient().readContract({
+          address: api.environment.deployment.marketplace,
+          abi: orderbookAbi,
+          functionName: "orders",
+          args: [BigInt(id!)],
+        });
         if (o[0] === zeroAddress) throw new AppError("order_not_found", 404);
         return {
           market: o[0],

@@ -35,7 +35,11 @@ export const automaticClaimsStatusSchema = z.object({
         "cancelled",
       ]),
       tx_hash: hash.nullable(),
+      market: address.nullable(),
+      amount: uint.nullable(),
       created_at: z.string(),
+      completed_at: z.string().nullable(),
     }),
   ),
+  nextCursor: z.string().uuid().nullable(),
 });

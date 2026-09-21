@@ -7,7 +7,15 @@ import { useOperation } from "./operations.js";
 import { useMarketLive } from "./data.js";
 import { parseAssetAmount } from "./amounts.js";
 import { bidReserve } from "../../../offchain/sdk/src/orderbook.js";
-import { Amount, Button, Field, ErrorNotice, Notice } from "./ui.js";
+import {
+  Amount,
+  Button,
+  Field,
+  ErrorNotice,
+  Notice,
+  PaginationControls,
+} from "./ui.js";
+import { usePaginatedList } from "./pagination.js";
 import {
   orderSchema,
   orderPageSchema as page,
@@ -177,8 +185,18 @@ export function OrderbookPanel({
       setError(e);
     }
   }
-  const items =
+  const allItems =
     q.data?.pages.flatMap((p) => p.items).filter((o) => o.active) ?? [];
+  const pagination = usePaginatedList({
+    pages:
+      q.data?.pages.map((page) => page.items.filter((order) => order.active)) ??
+      [],
+    pageSize: 5,
+    scope: `${api.key}:${market}`,
+    hasMore: !!q.hasNextPage,
+    isLoadingMore: q.isFetchingNextPage,
+    loadMore: q.fetchNextPage,
+  });
   return (
     <section className="surface stack">
       <h2>求购 / 挂卖</h2>
@@ -242,8 +260,8 @@ export function OrderbookPanel({
         </form>
       )}
       <ErrorNotice error={error ?? q.error} />
-      {items.length === 0 && <p>暂无未完成订单</p>}
-      {items.map((o) => (
+      {allItems.length === 0 && <p>暂无未完成订单</p>}
+      {pagination.items.map((o) => (
         <article className="card stack" key={o.id}>
           <strong>
             {o.side === "bid" ? "求购" : "挂卖"} ·{" "}
@@ -302,9 +320,15 @@ export function OrderbookPanel({
           )}
         </article>
       ))}
-      {q.hasNextPage && (
-        <Button onClick={() => void q.fetchNextPage()}>加载更多订单</Button>
-      )}
+      <PaginationControls
+        ariaLabel="订单分页"
+        page={pagination.page}
+        hasPrevious={pagination.hasPrevious}
+        hasNext={pagination.hasNext}
+        busy={pagination.isLoading}
+        onPrevious={pagination.previous}
+        onNext={() => void pagination.next()}
+      />
       <Notice>
         自动撮合优先价格更优的订单，同价按挂单先后成交；关闭自动撮合的订单仍可主动接单。
       </Notice>
