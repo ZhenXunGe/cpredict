@@ -246,7 +246,10 @@
         "CPREDICT_INDEXER_WS_MAX_BUFFERED_AMOUNT_BYTES": "65536",
         "CPREDICT_INDEXER_WS_SHUTDOWN_GRACE_MS": "5000",
         "CPREDICT_INDEXER_PUBLIC_CONFIG_FILE": "/run/cpredict/application.json",
-        "CPREDICT_INDEXER_METADATA_URL": "http://metadata-usdc:8793"
+        "CPREDICT_INDEXER_METADATA_URL": "http://metadata-usdc:8793",
+        "CPREDICT_RPC_PRIMARY_NAME": "${CPREDICT_RPC_PRIMARY_NAME:-alchemy}",
+        "CPREDICT_RPC_FALLBACKS_JSON": "${CPREDICT_RPC_FALLBACKS_JSON:-}",
+        "CPREDICT_RPC_PROBE_JSON": "${CPREDICT_RPC_PROBE_JSON:-}"
       },
       "ports": [
         "127.0.0.1:${CPREDICT_STACK_USDC_INDEXER_PORT:-8887}:8787"
@@ -328,7 +331,10 @@
         "CPREDICT_METADATA_DATABASE_URL": "postgresql://cpredict_usdc_metadata:${CPREDICT_STACK_USDC_METADATA_PASSWORD}@postgres/cpredict_usdc_metadata?sslmode=disable",
         "CPREDICT_METADATA_CHALLENGE_TTL_SECONDS": "300",
         "CPREDICT_METADATA_DATABASE_POOL_SIZE": "5",
-        "CPREDICT_METADATA_RPC_URL": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}"
+        "CPREDICT_METADATA_RPC_URL": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}",
+        "CPREDICT_RPC_PRIMARY_NAME": "${CPREDICT_RPC_PRIMARY_NAME:-alchemy}",
+        "CPREDICT_RPC_FALLBACKS_JSON": "${CPREDICT_RPC_FALLBACKS_JSON:-}",
+        "CPREDICT_RPC_PROBE_JSON": "${CPREDICT_RPC_PROBE_JSON:-}"
       },
       "ports": [
         "127.0.0.1:${CPREDICT_STACK_USDC_METADATA_PORT:-8893}:8793"
@@ -395,6 +401,7 @@
         "CPREDICT_APP_HOST": "0.0.0.0",
         "CPREDICT_APP_PORT": "8795",
         "CPREDICT_APP_CONTAINER_MODE": "true",
+        "CPREDICT_AUTOMATION_CONTROL_DATABASE_URL": "${CPREDICT_AUTOMATION_CONTROL_DATABASE_URL:-}",
         "CPREDICT_APP_CONFIG_FILE": "/run/cpredict/application.json",
         "CPREDICT_APP_DATABASE_URL": "postgresql://cpredict_usdc_indexer:${CPREDICT_STACK_USDC_INDEXER_PASSWORD}@postgres/cpredict_usdc_indexer?sslmode=disable",
         "CPREDICT_APP_METADATA_URL": "http://metadata-usdc:8793"

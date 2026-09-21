@@ -1,5 +1,10 @@
+import {
+  RpcReadPool,
+  parseRpcFallbackConfig,
+} from "../../app-core/src/rpc-pool.js";
+import { Registry } from "prom-client";
 import { pathToFileURL } from "node:url";
-import { createPublicClient, http } from "viem";
+import { createPublicClient } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { parseMetadataServiceConfig } from "./config.js";
 import { PostgresMetadataStore } from "./postgres-store.js";
@@ -13,19 +18,41 @@ export async function startMetadataService(
     config.databaseUrl,
     config.databasePoolSize,
   );
-  const signatureClient = config.rpcUrl === undefined ? undefined : createPublicClient({
-    chain: arbitrumSepolia,
-    transport: http(config.rpcUrl, { timeout: 4_000, retryCount: 0 }),
+  const registry = new Registry();
+  const rpcPool = config.rpcUrl
+    ? new RpcReadPool({
+        url: config.rpcUrl,
+        chainId: config.chainId,
+        timeoutMs: 4_000,
+        service: "metadata",
+        fallback: parseRpcFallbackConfig(environment),
+        registry,
+      })
+    : undefined;
+  const signatureClient =
+    config.rpcUrl === undefined
+      ? undefined
+      : createPublicClient({
+          chain: arbitrumSepolia,
+          transport: rpcPool!.transport,
+        });
+  const app = await createMetadataServer({
+    config,
+    store,
+    signatureClient,
+    registry,
   });
-  const app = await createMetadataServer({ config, store, signatureClient });
   try {
+    await rpcPool?.start();
     await store.ready();
     await app.listen({ host: config.host, port: config.port });
   } catch (error) {
+    rpcPool?.close();
     await store.close();
     throw error;
   }
   return async () => {
+    rpcPool?.close();
     await app.close();
     await store.close();
   };
