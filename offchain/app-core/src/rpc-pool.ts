@@ -2,8 +2,10 @@ import { Counter, Gauge, Histogram, type Registry } from "prom-client";
 import { custom } from "viem";
 import { z } from "zod";
 
+const nodeName = z.enum(["alchemy", "alchemy-2", "alchemy-3", "ankr", "drpc"]);
 const endpoint = z.object({
-  name: z.enum(["alchemy", "ankr", "drpc"]),
+  name: nodeName,
+  initialCooldownSeconds: z.number().int().min(0).max(86400).optional(),
   url: z
     .string()
     .url()
@@ -32,6 +34,7 @@ export const rpcProbeSchema = z.object({
 });
 export type RpcProbe = z.infer<typeof rpcProbeSchema>;
 export interface RpcFallbackConfig {
+  primaryName?: z.infer<typeof nodeName>;
   endpoints: z.infer<typeof endpoint>[];
   probe: RpcProbe;
 }
@@ -41,13 +44,18 @@ export function parseRpcFallbackConfig(
   const value = env.CPREDICT_RPC_FALLBACKS_JSON;
   if (!value?.trim() || value === "[]") return undefined;
   try {
-    const endpoints = z.array(endpoint).min(1).max(2).parse(JSON.parse(value));
+    const endpoints = z.array(endpoint).min(1).max(4).parse(JSON.parse(value));
+    const primaryName = nodeName.parse(
+      env.CPREDICT_RPC_PRIMARY_NAME ?? "alchemy",
+    );
     if (
       new Set(endpoints.map((e) => e.name)).size !== endpoints.length ||
-      endpoints.some((e) => e.name === "alchemy")
+      endpoints.some((e) => e.name === primaryName) ||
+      new Set(endpoints.map((e) => e.url)).size !== endpoints.length
     )
       throw new Error();
     return {
+      primaryName,
       endpoints,
       probe: rpcProbeSchema.parse(
         JSON.parse(env.CPREDICT_RPC_PROBE_JSON ?? ""),
@@ -122,6 +130,8 @@ interface State {
   nextProbe: number;
   probing: boolean;
   recovering: boolean;
+  capabilityFailures: number;
+  quotaFailures: number;
 }
 interface Node {
   name: string;
@@ -136,6 +146,7 @@ export interface RpcPoolOptions {
   chainId: number;
   timeoutMs: number;
   service: string;
+  capabilities?: readonly Capability[];
   fallback?: RpcFallbackConfig | undefined;
   logUrl?: string | undefined;
   registry?: Registry | undefined;
@@ -217,7 +228,11 @@ export class RpcReadPool {
       ...(options.logUrl && options.logUrl !== options.url
         ? [{ name: "official", url: options.logUrl, logsOnly: true }]
         : []),
-      { name: "alchemy", url: options.url, logsOnly: false },
+      {
+        name: options.fallback?.primaryName ?? "alchemy",
+        url: options.url,
+        logsOnly: false,
+      },
       ...(options.fallback?.endpoints ?? []).map((e) => ({
         ...e,
         logsOnly: false,
@@ -233,12 +248,18 @@ export class RpcReadPool {
           c,
           {
             failures: 0,
-            until: 0,
+            until:
+              this.now() +
+              (("initialCooldownSeconds" in e ? e.initialCooldownSeconds : 0) ??
+                0) *
+                1000,
             qualified: !options.fallback,
             successes: 0,
             nextProbe: 0,
             probing: false,
             recovering: false,
+            capabilityFailures: 0,
+            quotaFailures: 0,
           },
         ]),
       ) as Record<Capability, State>,
@@ -250,13 +271,13 @@ export class RpcReadPool {
         requests: new Counter({
           name: "cpredict_rpc_requests_total",
           help: "RPC attempts, including probes",
-          labelNames: [...labelNames, "outcome"],
+          labelNames: [...labelNames, "method", "outcome"],
           registers,
         }),
         duration: new Histogram({
           name: "cpredict_rpc_duration_seconds",
           help: "RPC attempt latency",
-          labelNames,
+          labelNames: [...labelNames, "method"],
           buckets: [0.01, 0.05, 0.1, 0.3, 1, 2, 5, 10],
           registers,
         }),
@@ -294,7 +315,10 @@ export class RpcReadPool {
   private eligible(n: Node, c: Capability) {
     const s = n.states[c];
     return (
-      (!n.logsOnly || c === "logs") && s.qualified && s.until <= this.now()
+      (!this.options.capabilities || this.options.capabilities.includes(c)) &&
+      (!n.logsOnly || c === "logs") &&
+      s.qualified &&
+      s.until <= this.now()
     );
   }
   private publish() {
@@ -359,6 +383,8 @@ export class RpcReadPool {
     if (!this.options.fallback) return;
     const s = n.states[c];
     s.failures++;
+    if (error.reason === "capability") s.capabilityFailures++;
+    if (error.reason === "quota") s.quotaFailures++;
     s.recovering = true;
     s.successes = 0;
     const immediate = [
@@ -373,7 +399,17 @@ export class RpcReadPool {
       s.until =
         this.now() +
         Math.max(
-          error.reason === "quota" ? 900_000 : 60_000,
+          error.reason === "quota"
+            ? Math.min(
+                3_600_000,
+                900_000 * 2 ** Math.min(2, s.quotaFailures - 1),
+              )
+            : error.reason === "capability"
+              ? Math.min(
+                  3_600_000,
+                  300_000 * 2 ** Math.min(4, s.capabilityFailures - 1),
+                )
+              : 60_000,
           error.retryAfterMs,
         );
       s.nextProbe = s.until;
@@ -514,9 +550,13 @@ export class RpcReadPool {
       outcome = e instanceof RpcUnavailableError ? e.reason : "rejected";
       throw e;
     } finally {
-      this.metrics?.requests.inc({ ...this.labels(n, cap), outcome });
+      const labels = {
+        ...this.labels(n, cap),
+        method: READ_METHODS.has(method) ? method : "non_read",
+      };
+      this.metrics?.requests.inc({ ...labels, outcome });
       this.metrics?.duration.observe(
-        this.labels(n, cap),
+        labels,
         Math.max(0, this.now() - start) / 1000,
       );
     }
@@ -625,6 +665,8 @@ export class RpcReadPool {
       for (const c of capabilities) {
         const s = n.states[c];
         if (n.logsOnly && c !== "logs") continue;
+        if (this.options.capabilities && !this.options.capabilities.includes(c))
+          continue;
         if (s.until > this.now()) continue;
         if (
           !initial &&
@@ -643,6 +685,9 @@ export class RpcReadPool {
             s.qualified = true;
             s.until = 0;
             s.failures = 0;
+            s.recovering = false;
+            s.capabilityFailures = 0;
+            s.quotaFailures = 0;
           }
         } catch (e) {
           s.qualified = false;
