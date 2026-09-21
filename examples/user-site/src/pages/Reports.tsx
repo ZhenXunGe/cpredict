@@ -20,8 +20,10 @@ import {
   Field,
   Loading,
   Notice,
+  PaginationControls,
   PageTitle,
 } from "../ui.js";
+import { usePaginatedList } from "../pagination.js";
 import { dateText, useMarket } from "../data.js";
 import { FeedbackInbox } from "./FeedbackInbox.js";
 import { ProviderStatus } from "./ProviderStatus.js";
@@ -47,6 +49,14 @@ export function LeaderboardPage() {
     excluded = snapshot?.excluded.find(
       (e) => e.account.toLowerCase() === account?.address.toLowerCase(),
     );
+  const pagination = usePaginatedList({
+    pages: query.data?.pages.map((page) => page.items) ?? [],
+    pageSize: 10,
+    scope: `${api.key}:${period}`,
+    hasMore: !!query.hasNextPage,
+    isLoadingMore: query.isFetchingNextPage,
+    loadMore: query.fetchNextPage,
+  });
   const descriptions = {
     disabled: "排行榜暂未开放。",
     "awaiting-roster": "首期测试市场名单尚未公布。",
@@ -110,7 +120,7 @@ export function LeaderboardPage() {
                   "参与的计榜市场数",
                 ]}
               >
-                {items.map((item) => (
+                {pagination.items.map((item) => (
                   <tr key={item.account}>
                     <td>{item.rank}</td>
                     <td>
@@ -134,15 +144,15 @@ export function LeaderboardPage() {
                   </tr>
                 ))}
               </DataTable>
-              {query.hasNextPage && (
-                <Button
-                  variant="secondary"
-                  onClick={() => void query.fetchNextPage()}
-                  disabled={query.isFetchingNextPage}
-                >
-                  更多账户
-                </Button>
-              )}
+              <PaginationControls
+                ariaLabel="排行榜分页"
+                page={pagination.page}
+                hasPrevious={pagination.hasPrevious}
+                hasNext={pagination.hasNext}
+                busy={pagination.isLoading}
+                onPrevious={pagination.previous}
+                onNext={() => void pagination.next()}
+              />
               <details>
                 <summary>指定市场与统计规则</summary>
                 <ul>

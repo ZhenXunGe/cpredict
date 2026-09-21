@@ -268,3 +268,38 @@ export function DataTable({
     </div>
   );
 }
+
+export function PaginationControls({
+  ariaLabel,
+  page,
+  hasPrevious,
+  hasNext,
+  busy = false,
+  onPrevious,
+  onNext,
+}: {
+  ariaLabel: string;
+  page: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+  busy?: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  if (!hasPrevious && !hasNext) return null;
+  return (
+    <nav className="pagination" aria-label={ariaLabel}>
+      <Button
+        variant="secondary"
+        disabled={!hasPrevious || busy}
+        onClick={onPrevious}
+      >
+        上一页
+      </Button>
+      <span aria-live="polite">第 {page + 1} 页</span>
+      <Button variant="secondary" disabled={!hasNext || busy} onClick={onNext}>
+        {busy ? "正在加载" : "下一页"}
+      </Button>
+    </nav>
+  );
+}

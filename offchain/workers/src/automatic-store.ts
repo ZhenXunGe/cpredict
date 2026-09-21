@@ -102,26 +102,88 @@ export class PostgresAutomaticStore implements AutomationStore {
       .sql`SELECT reason,count(*)::int AS count FROM automation_status WHERE chain_id=${this.chainId} AND reason IN ('daily_gas_budget_exhausted','gas_balance_insufficient','retry_after_chain_check','checking_original_transaction','transaction_reverted') GROUP BY reason`;
   }
   async oldestPendingSeconds(): Promise<number> {
-    const [r] = await this.sql`SELECT COALESCE(EXTRACT(EPOCH FROM now()-min(COALESCE(broadcast_at,created_at))),0)::float AS age
+    const [r] = await this
+      .sql`SELECT COALESCE(EXTRACT(EPOCH FROM now()-min(COALESCE(broadcast_at,created_at))),0)::float AS age
       FROM automation_transactions WHERE chain_id=${this.chainId} AND signer=${this.signer.toLowerCase()} AND state IN ('prepared','broadcasting','unknown')`;
     return Number(r?.age ?? 0);
   }
-  async publicStatus(owner: Address) {
+  async publicStatus(
+    owner: Address,
+    page: { cursor?: string; limit: number } = { limit: 5 },
+  ) {
     const [status] = await this
       .sql`SELECT reason,updated_at FROM automation_status WHERE chain_id=${this.chainId} AND owner=${owner.toLowerCase()}`;
-    const transactions = await this
-      .sql`SELECT id,kind,state,tx_hash,created_at FROM automation_transactions WHERE chain_id=${this.chainId} AND owner=${owner.toLowerCase()} ORDER BY created_at DESC LIMIT 20`;
+    const cursor = page.cursor ?? null;
+    const rows = await this.sql`
+      SELECT t.id,t.kind,t.state,t.tx_hash,t.created_at,
+        CASE
+          WHEN t.state IN ('confirmed','reverted')
+            THEN COALESCE(to_timestamp(f.occurred_at::double precision),t.updated_at)
+          ELSE NULL
+        END AS completed_at,
+        CASE
+          WHEN t.kind LIKE 'settle-bond:%' THEN split_part(t.kind,':',2)
+          WHEN t.kind IN ('winner','early-bird','refund','timeout-bonus','void-timeout') THEN t.target
+          ELSE f.market
+        END AS market,
+        CASE
+          WHEN t.state='confirmed' AND t.kind IN ('winner','early-bird','refund','timeout-bonus','fees','bond')
+            THEN f.amount
+          ELSE NULL
+        END AS amount
+      FROM automation_transactions t
+      LEFT JOIN LATERAL (
+        SELECT min(l.occurred_at)::text AS occurred_at,
+          max(l.market) FILTER (WHERE l.market IS NOT NULL) AS market,
+          sum((l.fact->>'amount')::numeric) FILTER (
+            WHERE l.owner=${owner.toLowerCase()}
+              AND l.fact->>'amount' IS NOT NULL
+              AND (
+                (t.kind='winner' AND l.kind='winner-claimed') OR
+                (t.kind='early-bird' AND l.kind='early-bird-claimed') OR
+                (t.kind='refund' AND l.kind='refunded') OR
+                (t.kind='timeout-bonus' AND l.kind='timeout-claimed') OR
+                (t.kind='fees' AND l.kind='fee-claimed') OR
+                (t.kind='bond' AND l.kind='bond-claimed')
+              )
+          )::text AS amount
+        FROM ledger_facts l
+        WHERE l.chain_id=t.chain_id
+          AND t.tx_hash IS NOT NULL
+          AND l.transaction_hash=t.tx_hash
+      ) f ON true
+      WHERE t.chain_id=${this.chainId}
+        AND t.owner=${owner.toLowerCase()}
+        AND (
+          ${cursor}::uuid IS NULL OR
+          (t.created_at,t.id)<(
+            SELECT c.created_at,c.id FROM automation_transactions c
+            WHERE c.id=${cursor}::uuid
+              AND c.chain_id=${this.chainId}
+              AND c.owner=${owner.toLowerCase()}
+          )
+        )
+      ORDER BY t.created_at DESC,t.id DESC
+      LIMIT ${page.limit + 1}`;
+    const transactions = rows.slice(0, page.limit);
     // A blocked claims nonce stalls every beneficiary in this deployment. Return
     // only a generic queue reason; never expose another owner's transaction.
-    const [queue] = await this.sql`SELECT COALESCE(broadcast_at,created_at) AS since FROM automation_transactions
+    const [queue] = await this
+      .sql`SELECT COALESCE(broadcast_at,created_at) AS since FROM automation_transactions
       WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND requires_claim_preference=true
         AND state IN ('broadcasting','unknown') AND COALESCE(broadcast_at,created_at)<now()-interval '120 seconds'
       ORDER BY created_at LIMIT 1`;
     return {
       enabled: await this.enabled(owner),
-      reason: queue ? "queue_blocked_unknown_transaction" : status?.reason ?? "waiting_for_entitlement",
+      reason: queue
+        ? "queue_blocked_unknown_transaction"
+        : (status?.reason ?? "waiting_for_entitlement"),
       updatedAt: queue?.since ?? status?.updated_at ?? null,
       transactions,
+      nextCursor:
+        rows.length > page.limit
+          ? (transactions[transactions.length - 1]?.id ?? null)
+          : null,
     };
   }
 }

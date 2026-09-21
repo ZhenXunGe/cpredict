@@ -354,11 +354,11 @@
     },
     {
       "path": "examples/user-site/src/AutomaticClaims.tsx",
-      "sha256": "e9f893dee9774a17d268d15d8f31191c1aa8732211e4964301d4cea5f5508eba"
+      "sha256": "c989e82f5cef21c9650be6aa71cf38e7283f20a871c244a9bd37de6b2d6ffe6c"
     },
     {
       "path": "examples/user-site/src/DepositHistory.tsx",
-      "sha256": "96e80fc83b56bb6f09b1fa33aeef8fcd93868d671fa80588ef995ecf1ea6e5d7"
+      "sha256": "4dcd6e0c4181e322942ffa937273e3b1d1b2d3824feb3730fc0302a9f3a3d7f9"
     },
     {
       "path": "examples/user-site/src/GasPayment.tsx",
@@ -370,11 +370,11 @@
     },
     {
       "path": "examples/user-site/src/Orderbook.tsx",
-      "sha256": "553b147271285b673edf9e9ccff4fd987c45ca9c3d2be0627d3cc356f3f0f728"
+      "sha256": "7d714e2374155ae29afb88936efae568d9d9eb18e0d1ed6d25cf6fe32d841213"
     },
     {
       "path": "examples/user-site/src/QuickTrading.tsx",
-      "sha256": "b035409f9283d81577ea673fc64802b0c3b7c1b8b22055c234fe6c259791c6f5"
+      "sha256": "e5d38d81a4967372a4fca4089e3d9487819763618df5acc8616068189845efc4"
     },
     {
       "path": "examples/user-site/src/amounts.ts",
@@ -438,15 +438,15 @@
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "30a825b5e7eb8955ff691ea7267efc03ca39b34abe8da8227a922f67c0adeea9"
+      "sha256": "cf5e2eafea5ea491cc3c06063c6da83010a6a410f910b783248dff34412de1de"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
-      "sha256": "65186f7828da007c1ea4dcb04689584b0e5b76a439fbee4c183b75cd297eebe2"
+      "sha256": "c99e40c13ca0556037ec1e1af1f6f5dad5c6d4062cfb2c90b999aaa6dcac7c13"
     },
     {
       "path": "examples/user-site/src/pages/FeedbackInbox.tsx",
-      "sha256": "f51a8134db821d5fe468655e9e591439c47ca308b82f425d64cea1cd0cf52c5f"
+      "sha256": "b297cd4e5dfdf25a569d59a89302cdadce6c215ae5e119f3c6b98f7181de5d8b"
     },
     {
       "path": "examples/user-site/src/pages/Help.tsx",
@@ -454,15 +454,15 @@
     },
     {
       "path": "examples/user-site/src/pages/History.tsx",
-      "sha256": "be5a992a5d910c0333c811d5acfd6e4d7b60dba9a0739d402f092d0befeadd88"
+      "sha256": "08b76492a8cbd7605671107ef143cacd93fbfd810b122e3ec69dc06a7ce01469"
     },
     {
       "path": "examples/user-site/src/pages/MarketDetail.tsx",
-      "sha256": "7aa48135e696d15de726069b37fea6a8008e8cef3830d8da01077422943756d7"
+      "sha256": "a4aad22c45d00452f23f498fb3162119d601143ac7fa8b3849772687bdd06758"
     },
     {
       "path": "examples/user-site/src/pages/Markets.tsx",
-      "sha256": "6b2dd62f13558253e67b5c24dbdc8212e6dc508be8a4ec46dcea60b19eff416c"
+      "sha256": "591ea9f1349840589b4c0297861b140d240e460f99f20698a98d0c6c1e4aaccc"
     },
     {
       "path": "examples/user-site/src/pages/ProviderStatus.tsx",
@@ -470,7 +470,11 @@
     },
     {
       "path": "examples/user-site/src/pages/Reports.tsx",
-      "sha256": "48407f313d56d118058951f2ed0147c9547f930e1afd71588116562c0e48ff79"
+      "sha256": "6ed5c315a7addb2a4062cab81135054cd6b85a4738dad2c35e3cbc8e0f50e716"
+    },
+    {
+      "path": "examples/user-site/src/pagination.ts",
+      "sha256": "aa1d63f4bc7c07ecbc7531531d532c76e1ffdf04b4e84d857cbab08881eab7c0"
     },
     {
       "path": "examples/user-site/src/primary-purchase.ts",
@@ -490,7 +494,7 @@
     },
     {
       "path": "examples/user-site/src/site.css",
-      "sha256": "a901561754ff2d3bf661d5ae97aa296ecc2ac522966875746153ce4207cea3a0"
+      "sha256": "639347c6c7b172946ec3feb6c30cfc0e53a5895c79d84ea0c5bffbe5560bb62e"
     },
     {
       "path": "examples/user-site/src/trading-session-storage.ts",
@@ -498,7 +502,7 @@
     },
     {
       "path": "examples/user-site/src/ui.tsx",
-      "sha256": "31d3d796057e5a419751fe98c7eee92cac7c93a3d976b381b3a42561bb124b69"
+      "sha256": "bcf533dc0d4690983ccdac6e5f4d2538ca84b210c10b9f05eb40034ab46aec05"
     },
     {
       "path": "examples/user-site/src/wallet-session.ts",
@@ -546,7 +550,7 @@
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "e7bcc2f633e1cf7de13e172b4e61c7c53f9890c373e5567087a8aba038b8d568"
+      "sha256": "97ed56e3a515896ca87cfd0e01095703392c516e31213425b0f05ca1860cfdff"
     },
     {
       "path": "examples/user-site/test/browser/gas-payment.spec.ts",
@@ -566,7 +570,7 @@
     },
     {
       "path": "examples/user-site/test/browser/orderbook.spec.ts",
-      "sha256": "78090c8026c1a032536a6554174ee8d139b0735b88a27e30a019c3283a15181e"
+      "sha256": "ca71d74f4065dabfb0204333f49cfc544d82fe8a356eeea258d3155ca389adc1"
     },
     {
       "path": "examples/user-site/test/browser/playwright.config.ts",
@@ -574,7 +578,7 @@
     },
     {
       "path": "examples/user-site/test/browser/public-site.spec.ts",
-      "sha256": "92e22e1408d4d55e0abf05cf72b633e2d8732b272e109399b5a3118ecaf07ce0"
+      "sha256": "cd22d0b23236402d6fde741e65a68853ff5c218c22fc85f1d830e59d43d72ac0"
     },
     {
       "path": "examples/user-site/test/browser/report-fixture.ts",
@@ -986,7 +990,7 @@
     },
     {
       "path": "offchain/app-core/src/orderbook-contracts.ts",
-      "sha256": "96952e34aee9a5ea08f4b26914960c332e8b7a5a63d5febc30e349e8801aa2af"
+      "sha256": "523e63f80c7d545be3436a19fe2ef4c6feae2bfb3ed9f610eaedaacc63aeeec0"
     },
     {
       "path": "offchain/app-core/src/pnl.ts",
@@ -1102,7 +1106,7 @@
     },
     {
       "path": "offchain/app-service/src/automatic-claims.ts",
-      "sha256": "754cb5a9821074080462adc1968ab2c3172b5859ecbfae3be63ff93ff6122456"
+      "sha256": "1835a1ae11fc3233f615796d759f54306e3d2dd15abc40e3ece9acc5628dccc3"
     },
     {
       "path": "offchain/app-service/src/budget.ts",
@@ -1186,7 +1190,7 @@
     },
     {
       "path": "offchain/app-service/src/server.ts",
-      "sha256": "d459ccce5a3fe96af3745c180075ce74ba7ce4692a6c41870ee8640d3243effd"
+      "sha256": "c3d5ffaef4818a5d63f1fef5b2df6d1681a8030483459bc7de58d12fa8a03c45"
     },
     {
       "path": "offchain/app-service/src/store.ts",
@@ -1258,7 +1262,7 @@
     },
     {
       "path": "offchain/app-service/test/server.test.ts",
-      "sha256": "901188c5ca65403df8c123f76981c28175cc6892e31a93e5a7b2a995e9080970"
+      "sha256": "8d4b3e41364add9b0c193c5d83c6143be3892d4c11156e9de036629c8dc3b529"
     },
     {
       "path": "offchain/app-service/test/trading-sessions.test.ts",
@@ -1838,7 +1842,7 @@
     },
     {
       "path": "offchain/workers/src/automatic-store.ts",
-      "sha256": "e6cb9d0d4fae33e658e05363169b168227993e2494d2e30415ef086d965564bb"
+      "sha256": "94f41db95e1dcf5ef6792ed5b6d68fe2955b2b437c05d4577f479f815e01cd04"
     },
     {
       "path": "offchain/workers/src/automatic-submission.ts",
@@ -1887,6 +1891,10 @@
     {
       "path": "offchain/workers/test/automatic-source.test.ts",
       "sha256": "d012b72d7d689fd9a4e6ceafdf68c66858b856fa2d72541a095311c68490addb"
+    },
+    {
+      "path": "offchain/workers/test/automatic-store.integration.test.ts",
+      "sha256": "104e5bfbd1c950e2aae82614306f5bfc920b6d9946fe4713b8e18c0f21109cf3"
     },
     {
       "path": "offchain/workers/test/automatic-submission.test.ts",
@@ -2218,7 +2226,7 @@
     },
     {
       "path": "scripts/orderbook/test-postgres.mjs",
-      "sha256": "a7a0a9369c1efc8692f8ad018229cb2fb8131e37563adfae97b6c53fbd8e1e05"
+      "sha256": "85cd36db1f80263e99aee59eafd38338cb3bd4451c9ad8a670ae5a7e07263aae"
     },
     {
       "path": "scripts/postgres-assert-vitest-report.mjs",

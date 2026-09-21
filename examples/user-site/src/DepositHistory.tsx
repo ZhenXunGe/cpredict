@@ -7,11 +7,12 @@ import { operationStateCopy } from "./operations.js";
 import {
   AddressText,
   Amount,
-  Button,
   Empty,
   ErrorNotice,
   Loading,
+  PaginationControls,
 } from "./ui.js";
+import { usePaginatedList } from "./pagination.js";
 
 /** Uses signature-free deposit records; balance and PnL remain owned by the transfer ledger. */
 export function DepositHistory({
@@ -37,7 +38,15 @@ export function DepositHistory({
     getNextPageParam: (page) => page.nextCursor ?? undefined,
     refetchInterval: 15000,
   });
-  const items = query.data?.pages.flatMap((p) => p.items) ?? [];
+  const allItems = query.data?.pages.flatMap((p) => p.items) ?? [];
+  const pagination = usePaginatedList({
+    pages: query.data?.pages.map((page) => page.items) ?? [],
+    pageSize: 5,
+    scope: `${api.key}:${identityKey}:${range ? `${range.start}:${range.end}` : (account?.id ?? "signed-out")}`,
+    hasMore: !!query.hasNextPage,
+    isLoadingMore: query.isFetchingNextPage,
+    loadMore: query.fetchNextPage,
+  });
   return (
     <section className="surface stack">
       <h2>{range ? "USDC 入金对账" : "USDC 入金记录"}</h2>
@@ -48,8 +57,8 @@ export function DepositHistory({
       </p>
       <ErrorNotice error={query.error} retry={() => void query.refetch()} />
       {query.isPending && <Loading />}
-      {query.data && !items.length && <Empty title="暂无入金记录" />}
-      {items.map((d) => (
+      {query.data && !allItems.length && <Empty title="暂无入金记录" />}
+      {pagination.items.map((d) => (
         <article
           className="stack"
           key={d.id}
@@ -125,15 +134,15 @@ export function DepositHistory({
           </details>
         </article>
       ))}
-      {query.hasNextPage && (
-        <Button
-          variant="secondary"
-          disabled={query.isFetchingNextPage}
-          onClick={() => void query.fetchNextPage()}
-        >
-          更多入金记录
-        </Button>
-      )}
+      <PaginationControls
+        ariaLabel="入金记录分页"
+        page={pagination.page}
+        hasPrevious={pagination.hasPrevious}
+        hasNext={pagination.hasNext}
+        busy={pagination.isLoading}
+        onPrevious={pagination.previous}
+        onNext={() => void pagination.next()}
+      />
     </section>
   );
 }

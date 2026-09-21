@@ -406,11 +406,20 @@ class FixtureApi extends SiteApi {
       };
     else if (p === "/v2/markets") {
       const query = url.searchParams.get("q") ?? "",
-        status = url.searchParams.get("status");
+        status = url.searchParams.get("status"),
+        paginationTest = new URLSearchParams(location.search).has(
+          "pagination-test",
+        );
       result = {
         items:
           (!status || status === "open") && rules.question.includes(query)
-            ? [market]
+            ? paginationTest
+              ? Array.from({ length: 12 }, (_, index) => ({
+                  ...market,
+                  market: A(101 + index),
+                  createdBlock: String(90 - index),
+                }))
+              : [market]
             : [],
         nextCursor: null,
         metadataPending: 0,

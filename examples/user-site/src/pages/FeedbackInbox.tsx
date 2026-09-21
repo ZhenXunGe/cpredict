@@ -5,7 +5,15 @@ import {
   feedbackQuerySchema,
 } from "../../../../offchain/app-core/src/report-contracts.js";
 import { useSession } from "../wallets.js";
-import { Button, Empty, ErrorNotice, Field, Loading } from "../ui.js";
+import {
+  Button,
+  Empty,
+  ErrorNotice,
+  Field,
+  Loading,
+  PaginationControls,
+} from "../ui.js";
+import { usePaginatedList } from "../pagination.js";
 
 /** Mounted only inside the administrator view; server authentication is mandatory. */
 export function FeedbackInbox() {
@@ -30,6 +38,14 @@ export function FeedbackInbox() {
     retry: 1,
   });
   const items = query.data?.pages.flatMap((page) => page.items) ?? [];
+  const pagination = usePaginatedList({
+    pages: query.data?.pages.map((page) => page.items) ?? [],
+    pageSize: 5,
+    scope: `${api.key}:${filter}`,
+    hasMore: !!query.hasNextPage,
+    isLoadingMore: query.isFetchingNextPage,
+    loadMore: query.fetchNextPage,
+  });
   return (
     <section className="surface stack" aria-labelledby="feedback-inbox-heading">
       <h2 id="feedback-inbox-heading">测试反馈</h2>
@@ -59,7 +75,7 @@ export function FeedbackInbox() {
       {!query.isPending && !query.error && !items.length ? (
         <Empty title="没有符合条件的反馈" />
       ) : null}
-      {items.map((item) => (
+      {pagination.items.map((item) => (
         <article key={item.id}>
           <p>
             <time dateTime={item.receivedAt}>
@@ -81,15 +97,15 @@ export function FeedbackInbox() {
           ) : null}
         </article>
       ))}
-      {query.hasNextPage ? (
-        <Button
-          variant="secondary"
-          disabled={query.isFetchingNextPage}
-          onClick={() => void query.fetchNextPage()}
-        >
-          更多反馈
-        </Button>
-      ) : null}
+      <PaginationControls
+        ariaLabel="反馈记录分页"
+        page={pagination.page}
+        hasPrevious={pagination.hasPrevious}
+        hasNext={pagination.hasNext}
+        busy={pagination.isLoading}
+        onPrevious={pagination.previous}
+        onNext={() => void pagination.next()}
+      />
     </section>
   );
 }

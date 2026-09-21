@@ -44,9 +44,11 @@ import {
   Field,
   Loading,
   Notice,
+  PaginationControls,
   PageTitle,
   shortAddress,
 } from "../ui.js";
+import { usePaginatedList } from "../pagination.js";
 import {
   checkCreationTime,
   creationNoticeSchema,
@@ -275,6 +277,16 @@ export function CreatorPage() {
           signal,
         }),
     });
+  const createdMarkets =
+    markets.data?.pages.flatMap((page) => page.items) ?? [];
+  const marketPagination = usePaginatedList({
+    pages: markets.data?.pages.map((page) => page.items) ?? [],
+    pageSize: 10,
+    scope: `${api.key}:${account?.address ?? "signed-out"}`,
+    hasMore: !!markets.hasNextPage,
+    isLoadingMore: markets.isFetchingNextPage,
+    loadMore: markets.fetchNextPage,
+  });
   return (
     <>
       <PageTitle
@@ -348,50 +360,49 @@ export function CreatorPage() {
           {markets.isPending && <Loading />}
           {markets.data && (
             <DataTable headers={["市场", "状态", "押金", "管理"]}>
-              {markets.data.pages
-                .flatMap((p) => p.items)
-                .map((m) => (
-                  <tr key={m.market}>
-                    <td>
-                      <Link
-                        to={`/${api.environment.id}/creator/${m.market}`}
-                        title={m.market}
-                      >
-                        {m.question?.trim() ||
-                          `后台核验中（${shortAddress(m.market)}）`}
-                      </Link>
-                    </td>
-                    <td>
-                      {marketStatusCopy(
-                        m,
-                        undefined,
-                        api.environment.deployment.protocolVersion,
-                        now,
-                      )}
-                    </td>
-                    <td>
-                      <Amount
-                        value={m.creatorBond}
-                        asset={api.environment.asset}
-                      />
-                    </td>
-                    <td>
-                      <Link to={`/${api.environment.id}/creator/${m.market}`}>
-                        {m.state === 1 || m.state === 2 ? "查看" : "查看与结算"}
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+              {marketPagination.items.map((m) => (
+                <tr key={m.market}>
+                  <td>
+                    <Link
+                      to={`/${api.environment.id}/creator/${m.market}`}
+                      title={m.market}
+                    >
+                      {m.question?.trim() ||
+                        `后台核验中（${shortAddress(m.market)}）`}
+                    </Link>
+                  </td>
+                  <td>
+                    {marketStatusCopy(
+                      m,
+                      undefined,
+                      api.environment.deployment.protocolVersion,
+                      now,
+                    )}
+                  </td>
+                  <td>
+                    <Amount
+                      value={m.creatorBond}
+                      asset={api.environment.asset}
+                    />
+                  </td>
+                  <td>
+                    <Link to={`/${api.environment.id}/creator/${m.market}`}>
+                      {m.state === 1 || m.state === 2 ? "查看" : "查看与结算"}
+                    </Link>
+                  </td>
+                </tr>
+              ))}
             </DataTable>
           )}
-          {markets.hasNextPage && (
-            <Button
-              variant="secondary"
-              onClick={() => void markets.fetchNextPage()}
-            >
-              更多市场
-            </Button>
-          )}
+          <PaginationControls
+            ariaLabel="我创建的市场分页"
+            page={marketPagination.page}
+            hasPrevious={marketPagination.hasPrevious}
+            hasNext={marketPagination.hasNext}
+            busy={marketPagination.isLoading}
+            onPrevious={marketPagination.previous}
+            onNext={() => void marketPagination.next()}
+          />
         </>
       )}
     </>
