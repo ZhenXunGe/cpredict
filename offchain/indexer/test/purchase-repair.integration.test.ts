@@ -36,6 +36,7 @@ describe.skipIf(!url)("confirmed purchase receipt PostgreSQL repair", () => {
       "005_activity_catalog.sql",
       "006_financial_facts.sql",
       "007_legacy_deployment.sql",
+      "009_sparse_canonical_ranges.sql",
     ])
       await sql.unsafe(
         await readFile(
@@ -46,7 +47,20 @@ describe.skipIf(!url)("confirmed purchase receipt PostgreSQL repair", () => {
     store = new PostgresEventStore(scoped.toString(), 2, env);
     await store.ready();
     await store.applyBatch(createMarket(), [block(1)], block(1));
-    await store.applyBatch([], [block(2), block(3)], block(3));
+    await store.applyBatch({
+      range: {
+        chainId: env.deployment.chainId,
+        fromBlock: 2n,
+        toBlock: 3n,
+        predecessor: block(1),
+        endBlockHash: block(3).blockHash,
+        confirmationStatus: "confirmed",
+        mode: "sparse",
+      },
+      anchors: [block(3)],
+      events: [],
+      checkpoint: block(3),
+    });
   });
   afterEach(async () => {
     await store?.close();
@@ -78,6 +92,7 @@ describe.skipIf(!url)("confirmed purchase receipt PostgreSQL repair", () => {
     await store.applyBatch(later, [block(3)], block(3));
     const checkpoint = await store.checkpoint(env.deployment.chainId);
     await store.repairPurchaseLogs(purchase(2), block(2));
+    expect(await store.canonicalBlock(env.deployment.chainId, 2n)).toEqual(block(2));
     expect(await store.market(env.deployment.chainId, vault)).toMatchObject({
       primaryFilledUnits: 200n,
       primaryPayment: 200n,
@@ -136,7 +151,7 @@ describe.skipIf(!url)("confirmed purchase receipt PostgreSQL repair", () => {
     await sql`INSERT INTO app_operations(id,state,kind,sender,record) VALUES(${record.id},'unknown','buy',${trader.toLowerCase()},${sql.json({...record,state:"unknown"})})`;
     const receipt={status:"success",transactionHash:H(20),blockNumber:2n,blockHash:H(2),logs:[...purchase(2),raw("UserOperationEvent",entryPoint07Address,{userOpHash:H(200),sender:trader,paymaster:A(0),nonce:0n,success:true,actualGasCost:3n,actualGasUsed:1n},2,3)].map(e=>({...e,removed:false}))} as unknown as TransactionReceipt;
     let reads=0;
-    const client={getTransactionReceipt:async()=>{reads++;return receipt},getBlock:async()=>({hash:H(2)})} as unknown as PublicClient;
+    const client={getTransactionReceipt:async()=>{reads++;return receipt},getBlock:async()=>({number:2n,hash:H(2),parentHash:H(1),timestamp:2n})} as unknown as PublicClient;
     expect(await reconcileConfirmedPurchases(store,client)).toBe(0);
     expect(reads).toBe(0);
     await sql`UPDATE app_operations SET state='confirmed',record=${sql.json(record)}`;

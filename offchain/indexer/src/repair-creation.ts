@@ -53,19 +53,28 @@ export async function repairCreation(args: readonly string[]): Promise<void> {
     const hash = registration[0]?.transaction_hash;
     if (!hash) throw new Error("market registration is missing");
     const receipt = await client.getTransactionReceipt({ hash });
-    const block = await store.canonicalBlock(
+    const stored = await store.canonicalBlock(
       config.chainId,
       before.createdBlock,
     );
     const live = await client.getBlock({ blockNumber: before.createdBlock });
     if (
-      !block ||
-      block.blockHash !== live.hash ||
-      block.blockHash !== receipt.blockHash ||
+      live.hash === null ||
+      live.hash !== receipt.blockHash ||
       receipt.blockNumber !== before.createdBlock ||
       receipt.status !== "success"
     )
       throw new Error("creation receipt does not match canonical history");
+    if (stored !== undefined && stored.blockHash !== live.hash)
+      throw new Error("creation receipt does not match canonical history");
+    const block = stored ?? {
+      chainId: config.chainId,
+      blockNumber: live.number,
+      blockHash: live.hash,
+      parentHash: live.parentHash,
+      timestamp: live.timestamp,
+      confirmationStatus: "confirmed" as const,
+    };
     const creation = receipt.logs.find(
       (log) =>
         log.address.toLowerCase() === config.factoryAddress.toLowerCase() &&

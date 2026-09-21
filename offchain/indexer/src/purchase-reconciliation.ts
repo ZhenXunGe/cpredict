@@ -36,17 +36,23 @@ export async function reconcileConfirmedPurchases(
       receipt,
       ledger.environment,
     );
-    const block = await store.canonicalBlock(
+    const stored = await store.canonicalBlock(
       ledger.environment.deployment.chainId,
       receipt.blockNumber,
     );
     const live = await client.getBlock({ blockNumber: receipt.blockNumber });
-    if (
-      !block ||
-      block.blockHash !== live.hash ||
-      block.blockHash !== receipt.blockHash
-    )
+    if (live.hash === null || live.hash !== receipt.blockHash)
       throw new Error("purchase receipt canonical history mismatch");
+    if (stored !== undefined && stored.blockHash !== live.hash)
+      throw new Error("purchase receipt canonical history mismatch");
+    const block = stored ?? {
+      chainId: ledger.environment.deployment.chainId,
+      blockNumber: live.number,
+      blockHash: live.hash,
+      parentHash: live.parentHash,
+      timestamp: live.timestamp,
+      confirmationStatus: "confirmed" as const,
+    };
     await store.repairPurchaseLogs(events, block);
   }
   return rows.length;
