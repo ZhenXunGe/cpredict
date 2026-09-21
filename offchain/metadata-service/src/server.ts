@@ -1,3 +1,4 @@
+import type { Registry } from "prom-client";
 import { randomBytes } from "node:crypto";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
@@ -39,6 +40,7 @@ const addressSchema = z
 
 export interface MetadataServerOptions {
   config: MetadataServiceConfig;
+  registry?: Registry;
   store: MetadataStore;
   now?: (() => number) | undefined;
   nonce?: (() => Hex) | undefined;
@@ -73,6 +75,7 @@ export async function createMetadataServer(
   });
   await app.register(rateLimit, { max: 60, timeWindow: "1 minute" });
 
+  if (options.registry) app.get("/metrics", async (_request, reply) => reply.type(options.registry!.contentType).send(await options.registry!.metrics()));
   app.get("/healthz", async () => ({ status: "ok" }));
   app.get("/readyz", async (_request, reply) => {
     try {

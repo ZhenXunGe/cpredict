@@ -17,6 +17,7 @@ export async function readRpc(
   rpc: RpcTransport,
   method: string,
   input: unknown[],
+  signal?: AbortSignal,
 ): Promise<unknown> {
   let params: unknown[];
   switch (method) {
@@ -67,5 +68,5 @@ export async function readRpc(
     default:
       throw new AppError("rpc_method_not_allowed", 403);
   }
-  return rpc.request(method, params);
+  return rpc.request(method, params, signal);
 }

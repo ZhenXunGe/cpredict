@@ -211,3 +211,11 @@ test("Compose injects the orchestrator source revision into every application bu
       name,
     );
 });
+
+test("public RPC compatibility uses shared application read pool and keeps fallback secrets server-side", async () => {
+  const pub = JSON.parse(await readFile(new URL("../../compose.public-site.yaml", import.meta.url), "utf8"));
+  assert.equal(pub.services["web-demo"].environment.CPREDICT_RPC_UPSTREAM, "http://app-service:8795/v1/rpc-compat");
+  for (const name of ["indexer", "app-service", "metadata"])
+    assert.equal(pub.services[name].environment.CPREDICT_RPC_FALLBACKS_JSON, "${CPREDICT_RPC_FALLBACKS_JSON:-}");
+  assert.equal(pub.services["web-demo"].environment.CPREDICT_RPC_FALLBACKS_JSON, undefined);
+});

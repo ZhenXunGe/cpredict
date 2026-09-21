@@ -69,9 +69,13 @@
         "CPREDICT_APP_HOST": "0.0.0.0",
         "CPREDICT_APP_PORT": "8795",
         "CPREDICT_APP_CONTAINER_MODE": "true",
+        "CPREDICT_AUTOMATION_CONTROL_DATABASE_URL": "${CPREDICT_AUTOMATION_CONTROL_DATABASE_URL:-}",
         "CPREDICT_APP_CONFIG_FILE": "/run/cpredict/application.json",
         "CPREDICT_APP_DATABASE_URL": "postgresql://cpredict_indexer:${CPREDICT_STACK_INDEXER_PASSWORD}@postgres/cpredict_indexer?sslmode=disable&options=-csearch_path%3D${CPREDICT_STACK_CTUSD_SCHEMA:-public}",
-        "CPREDICT_APP_METADATA_URL": "http://metadata:8793"
+        "CPREDICT_APP_METADATA_URL": "http://metadata:8793",
+        "CPREDICT_RPC_PRIMARY_NAME": "${CPREDICT_RPC_PRIMARY_NAME:-alchemy}",
+        "CPREDICT_RPC_FALLBACKS_JSON": "${CPREDICT_RPC_FALLBACKS_JSON:-}",
+        "CPREDICT_RPC_PROBE_JSON": "${CPREDICT_RPC_PROBE_JSON:-}"
       },
       "ports": [
         "127.0.0.1:${CPREDICT_STACK_APP_PORT:-8795}:8795"
@@ -137,7 +141,10 @@
       "environment": {
         "CPREDICT_INDEXER_PUBLIC_CONFIG_FILE": "/run/cpredict/application.json",
         "CPREDICT_INDEXER_METADATA_URL": "http://metadata:8793",
-        "CPREDICT_INDEXER_DATABASE_URL": "postgresql://cpredict_indexer:${CPREDICT_STACK_INDEXER_PASSWORD}@postgres/cpredict_indexer?sslmode=disable&options=-csearch_path%3D${CPREDICT_STACK_CTUSD_SCHEMA:-public}"
+        "CPREDICT_INDEXER_DATABASE_URL": "postgresql://cpredict_indexer:${CPREDICT_STACK_INDEXER_PASSWORD}@postgres/cpredict_indexer?sslmode=disable&options=-csearch_path%3D${CPREDICT_STACK_CTUSD_SCHEMA:-public}",
+        "CPREDICT_RPC_PRIMARY_NAME": "${CPREDICT_RPC_PRIMARY_NAME:-alchemy}",
+        "CPREDICT_RPC_FALLBACKS_JSON": "${CPREDICT_RPC_FALLBACKS_JSON:-}",
+        "CPREDICT_RPC_PROBE_JSON": "${CPREDICT_RPC_PROBE_JSON:-}"
       },
       "volumes": [
         {
@@ -156,7 +163,10 @@
     "metadata": {
       "environment": {
         "CPREDICT_METADATA_RPC_URL": "${ARBITRUM_SEPOLIA_RPC_URL:?set in .env.compose.local}",
-        "CPREDICT_METADATA_TRUSTED_PROXIES": "${CPREDICT_STACK_TRUSTED_PROXY_IPS:-}"
+        "CPREDICT_METADATA_TRUSTED_PROXIES": "${CPREDICT_STACK_TRUSTED_PROXY_IPS:-}",
+        "CPREDICT_RPC_PRIMARY_NAME": "${CPREDICT_RPC_PRIMARY_NAME:-alchemy}",
+        "CPREDICT_RPC_FALLBACKS_JSON": "${CPREDICT_RPC_FALLBACKS_JSON:-}",
+        "CPREDICT_RPC_PROBE_JSON": "${CPREDICT_RPC_PROBE_JSON:-}"
       }
     },
     "web-demo": {
@@ -175,7 +185,10 @@
           "target": "/usr/share/nginx/html/site-config.json",
           "read_only": true
         }
-      ]
+      ],
+      "environment": {
+        "CPREDICT_RPC_UPSTREAM": "http://app-service:8795/v1/rpc-compat"
+      }
     },
     "migrate-indexer": {
       "environment": {

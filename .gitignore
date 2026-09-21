@@ -17,6 +17,8 @@ reports/generated/
 deployments/local/
 deployments/arbitrum-sepolia/pending.json
 deployments/arbitrum-sepolia/runtime/
+deployments/arbitrum-sepolia/orderbook-v2/pending.json
+deployments/arbitrum-sepolia/orderbook-v2/runtime/
 runtime/
 crytic-export/
 scripts/security/crytic-export/
