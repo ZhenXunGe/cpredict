@@ -1,3 +1,4 @@
+import { orderbookAbi } from "../../../../offchain/sdk/src/orderbook.js";
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
   useInfiniteQuery,
@@ -53,6 +54,9 @@ const labels: Record<LedgerFact["kind"], string> = {
   "market-metadata": "发布规则",
   "economic-snapshot": "费率快照",
   "primary-buy": "一级购买",
+  "order-created": "创建买卖单",
+  "order-released": "释放订单资产",
+  "order-funds-returned": "求购余款退回",
   "listing-created": "创建挂单",
   "listing-filled": "挂单成交",
   "listing-cancelled": "撤销挂单",
@@ -693,6 +697,22 @@ function useHistoryListing(id: Hex | undefined) {
     queryKey: [api.key, "history-listing", id],
     enabled: !!id,
     queryFn: async () => {
+      if (api.environment.deployment.marketplaceVersion === "orderbook-v2") {
+        const o = await api
+          .publicClient()
+          .readContract({
+            address: api.environment.deployment.marketplace,
+            abi: orderbookAbi,
+            functionName: "orders",
+            args: [BigInt(id!)],
+          });
+        if (o[0] === zeroAddress) throw new AppError("order_not_found", 404);
+        return {
+          market: o[0],
+          outcomeId: String(o[5]),
+          unitPrice: o[3].toString(),
+        };
+      }
       const row = await api.publicClient().readContract({
         address: api.environment.deployment.marketplace,
         abi: marketplaceAbi,
@@ -713,14 +733,22 @@ function useHistoryListing(id: Hex | undefined) {
 }
 function ListingOperationMarket({ operation: o }: { operation: Operation }) {
   const listing = useHistoryListing(
-    "listingId" in o.intent ? o.intent.listingId : undefined,
+    "listingId" in o.intent
+      ? o.intent.listingId
+      : "orderId" in o.intent
+        ? (`0x${BigInt(o.intent.orderId).toString(16).padStart(64, "0")}` as Hex)
+        : undefined,
   );
-  if (!("listingId" in o.intent)) return <>跨市场 / 账户</>;
+  if (!("listingId" in o.intent) && !("orderId" in o.intent))
+    return <>跨市场 / 账户</>;
   return listing.data ? (
     <HistoryMarket market={listing.data.market} />
   ) : (
     <>
-      挂单 {shortAddress(o.intent.listingId)}
+      挂单{" "}
+      {"listingId" in o.intent
+        ? shortAddress(o.intent.listingId)
+        : o.intent.orderId}
       {listing.isPending ? " · 正在读取" : " · 明细暂未取得"}
     </>
   );
@@ -729,8 +757,63 @@ function IntentSummary({ operation: o }: { operation: Operation }) {
   const { api } = useSession(),
     intent = o.intent;
   const listing = useHistoryListing(
-    "listingId" in intent ? intent.listingId : undefined,
+    "listingId" in intent
+      ? intent.listingId
+      : "orderId" in intent
+        ? (`0x${BigInt(intent.orderId).toString(16).padStart(64, "0")}` as Hex)
+        : undefined,
   );
+  if (
+    intent.kind === "create-order" ||
+    intent.kind === "fill-order" ||
+    intent.kind === "cancel-order" ||
+    intent.kind === "release-order"
+  ) {
+    const market =
+        intent.kind === "create-order" ? intent.market : listing.data?.market,
+      choice =
+        intent.kind === "create-order"
+          ? intent.outcomeId
+          : listing.data?.outcomeId,
+      price =
+        intent.kind === "create-order"
+          ? intent.unitPrice
+          : listing.data?.unitPrice;
+    return (
+      <div className="small muted">
+        结果选项：
+        {market && choice !== undefined ? (
+          <HistoryOutcome market={market} outcomeId={choice} />
+        ) : (
+          "待核对"
+        )}{" "}
+        ·{" "}
+        {"units" in intent && (
+          <>
+            份数 <Amount value={intent.units} /> ·{" "}
+          </>
+        )}
+        每份 <Amount value={price ?? null} asset={api.environment.asset} />
+        {"units" in intent && (
+          <>
+            {" "}
+            · 总额（未扣手续费）
+            <Amount
+              value={listingTotal(intent.units, price)}
+              asset={api.environment.asset}
+            />
+          </>
+        )}
+        {intent.kind === "create-order" && (
+          <>
+            {" "}
+            · {intent.side === "bid" ? "求购" : "挂卖"} ·{" "}
+            {intent.autoMatch ? "自动撮合" : "仅主动接单"}
+          </>
+        )}
+      </div>
+    );
+  }
   if (intent.kind === "buy")
     return (
       <div className="small muted">

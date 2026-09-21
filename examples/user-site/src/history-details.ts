@@ -17,6 +17,10 @@ export const businessFactKinds: Partial<
   Record<Operation["kind"], LedgerFact["kind"]>
 > = {
   buy: "primary-buy",
+  "create-order": "order-created",
+  "fill-order": "listing-filled",
+  "cancel-order": "order-released",
+  "release-order": "order-released",
   "create-listing": "listing-created",
   "fill-listing": "listing-filled",
   "cancel-listing": "listing-cancelled",
@@ -44,7 +48,10 @@ export function operationBusinessFacts(
       (f) =>
         f.transactionHash.toLowerCase() ===
           operation.transactionHash!.toLowerCase() &&
-        f.owner?.toLowerCase() === operation.account.toLowerCase(),
+        (f.owner?.toLowerCase() === operation.account.toLowerCase() ||
+          (operation.kind === "fill-order" &&
+            f.kind === "listing-filled" &&
+            f.counterparty?.toLowerCase() === operation.account.toLowerCase())),
     )
     .sort((a, b) => a.logIndex - b.logIndex || a.factIndex - b.factIndex);
   const marker = own.find(
@@ -66,6 +73,9 @@ export function operationBusinessFacts(
       (!("listingId" in operation.intent) ||
         f.listingId?.toLowerCase() ===
           operation.intent.listingId.toLowerCase()) &&
+      (!("orderId" in operation.intent) ||
+        (f.listingId &&
+          BigInt(f.listingId) === BigInt(operation.intent.orderId))) &&
       (!("market" in operation.intent) ||
         f.market?.toLowerCase() === operation.intent.market.toLowerCase()),
   );

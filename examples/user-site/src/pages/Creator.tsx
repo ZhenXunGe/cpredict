@@ -1015,6 +1015,11 @@ function CreatorMarket({ market }: { market: Address }) {
               </dd>
             </dl>
           </section>
+          {api.environment.features.automaticClaims && (
+            <Notice>
+              最终结算期限后，有权益人开启自动领取即可触发整个市场超时作废和押金处理。后台不会替创建者判断或提交结果。
+            </Notice>
+          )}
           <CreatorMarketInvestment
             market={market}
             outcomeCount={query.data.outcomeCount}
@@ -1023,7 +1028,10 @@ function CreatorMarket({ market }: { market: Address }) {
           {live.data?.state === 0 &&
             live.data.now >= live.data.resolutionDeadline && (
               <Notice tone="warning">
-                已达到最终结算截止时间，创建者结算和作废入口已关闭。市场不会自动作废，请前往市场页申请超时作废。
+                已达到最终结算截止时间，创建者结算和作废入口已关闭。
+                {api.environment.features.automaticClaims
+                  ? "有权益人开启自动领取时，后台会按规则触发超时作废并处理创作者押金；关闭个人开关不能阻止其他权益人触发。"
+                  : "请前往市场页申请超时作废。"}
                 <Link to={`/${api.environment.id}/markets/${market}`}>
                   前往申请超时作废
                 </Link>

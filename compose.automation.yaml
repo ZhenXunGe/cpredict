@@ -1,0 +1,124 @@
+{
+  "services": {
+    "automatic-claims": {
+      "profiles": [
+        "automation"
+      ],
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "automation",
+        "args": {
+          "CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set immutable revision}"
+        }
+      },
+      "restart": "unless-stopped",
+      "init": true,
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "user": "1000:1000",
+      "env_file": [
+        "${CPREDICT_AUTOMATION_CLAIMS_ENV_FILE:?private claims environment file}"
+      ],
+      "environment": {
+        "CPREDICT_AUTOMATION_ENVIRONMENT_FILE": "/run/cpredict/environment.json",
+        "CPREDICT_AUTOMATION_KEY_FILE": "/run/cpredict/keeper.key",
+        "CPREDICT_AUTOMATION_LANE": "claims",
+        "CPREDICT_AUTOMATION_PORT": "8815"
+      },
+      "volumes": [
+        "${CPREDICT_AUTOMATION_ENVIRONMENT_FILE:?private deployment environment}:/run/cpredict/environment.json:ro",
+        "${CPREDICT_AUTOMATION_CLAIMS_KEY_FILE:?private claims signer}:/run/cpredict/keeper.key:ro"
+      ],
+      "networks": [
+        "app",
+        "data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8815/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "30s",
+        "timeout": "10s",
+        "retries": 3,
+        "start_period": "60s"
+      },
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "1",
+            "memory": "512M"
+          }
+        }
+      }
+    },
+    "automatic-matching": {
+      "profiles": [
+        "automation"
+      ],
+      "build": {
+        "context": ".",
+        "dockerfile": "deploy/compose/Dockerfile.offchain",
+        "target": "automation",
+        "args": {
+          "CPREDICT_IMAGE_REVISION": "${CPREDICT_IMAGE_REVISION:?set immutable revision}"
+        }
+      },
+      "restart": "unless-stopped",
+      "init": true,
+      "read_only": true,
+      "cap_drop": [
+        "ALL"
+      ],
+      "security_opt": [
+        "no-new-privileges:true"
+      ],
+      "user": "1000:1000",
+      "env_file": [
+        "${CPREDICT_AUTOMATION_MATCHING_ENV_FILE:?private matching environment file}"
+      ],
+      "environment": {
+        "CPREDICT_AUTOMATION_ENVIRONMENT_FILE": "/run/cpredict/environment.json",
+        "CPREDICT_AUTOMATION_KEY_FILE": "/run/cpredict/keeper.key",
+        "CPREDICT_AUTOMATION_LANE": "matching",
+        "CPREDICT_AUTOMATION_PORT": "8815"
+      },
+      "volumes": [
+        "${CPREDICT_AUTOMATION_ENVIRONMENT_FILE:?private deployment environment}:/run/cpredict/environment.json:ro",
+        "${CPREDICT_AUTOMATION_MATCHING_KEY_FILE:?separate private matching signer}:/run/cpredict/keeper.key:ro"
+      ],
+      "networks": [
+        "app",
+        "data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8815/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ],
+        "interval": "30s",
+        "timeout": "10s",
+        "retries": 3,
+        "start_period": "60s"
+      },
+      "deploy": {
+        "resources": {
+          "limits": {
+            "cpus": "1",
+            "memory": "512M"
+          }
+        }
+      }
+    }
+  }
+}
