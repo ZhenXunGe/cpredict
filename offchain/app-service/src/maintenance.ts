@@ -23,6 +23,7 @@ import { appRuntimeSchema } from "./config.js";
 import { verifyDeployment } from "./chain.js";
 import { PostgresEventStore } from "../../indexer/src/postgres-store.js";
 import { Leaderboards } from "../../indexer/src/leaderboards.js";
+import { densifyCanonicalRanges } from "../../indexer/src/densify-canonical.js";
 import {
   activateLedger,
   digestCode,
@@ -104,6 +105,7 @@ async function run() {
       "register-period",
       "publish-period",
       "import-invoice",
+      "densify-canonical",
     ].includes(command ?? "")
   )
     throw new AppError("unknown_maintenance_command");
@@ -197,6 +199,23 @@ async function run() {
       );
       return;
     }
+    if (command === "densify-canonical") {
+      const client = await chainClient();
+      await verifyDeployment(client, env);
+      console.log(
+        JSON.stringify(
+          await densifyCanonicalRanges(
+            sql,
+            client,
+            env.deployment.chainId,
+            values.apply,
+          ),
+          null,
+          2,
+        ),
+      );
+      return;
+    }
     if (command === "shadow") {
       await sql`UPDATE ledger_environment SET status='shadow' WHERE singleton`;
       console.log(
@@ -217,7 +236,10 @@ async function run() {
       return;
     }
     if (command === "register-period" || command === "publish-period") {
-      const boards = new Leaderboards(ledger);
+      const publicationClient =
+        command === "publish-period" ? await chainClient() : undefined;
+      if (publicationClient) await verifyDeployment(publicationClient, env);
+      const boards = new Leaderboards(ledger, publicationClient);
       if (command === "register-period") {
         const fields = leaderboardPeriodSchema.shape,
           period = z

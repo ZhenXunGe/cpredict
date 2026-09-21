@@ -67,14 +67,20 @@ export async function reconcileConfirmedOperations(
         await store.registeredMarkets(chainId),
         await ledger.trackedAccounts(),
       );
-      const block = await store.canonicalBlock(chainId, receipt.blockNumber);
+      const stored = await store.canonicalBlock(chainId, receipt.blockNumber);
       const live = await client.getBlock({ blockNumber: receipt.blockNumber });
-      if (
-        !block ||
-        block.blockHash !== receipt.blockHash ||
-        block.blockHash !== live.hash
-      )
+      if (live.hash === null || live.hash !== receipt.blockHash)
         throw new Error("operation_repair_canonical_mismatch");
+      if (stored !== undefined && stored.blockHash !== live.hash)
+        throw new Error("operation_repair_canonical_mismatch");
+      const block = stored ?? {
+        chainId,
+        blockNumber: live.number,
+        blockHash: live.hash,
+        parentHash: live.parentHash,
+        timestamp: live.timestamp,
+        confirmationStatus: "confirmed" as const,
+      };
       digest = createHash("sha256")
         .update(
           JSON.stringify(events, (_, v) =>

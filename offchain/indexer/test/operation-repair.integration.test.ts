@@ -123,6 +123,7 @@ describe.skipIf(!url)("operation receipt PostgreSQL recovery", () => {
       "005_activity_catalog.sql",
       "006_financial_facts.sql",
       "007_legacy_deployment.sql",
+      "009_sparse_canonical_ranges.sql",
       "008_operation_receipts.sql",
     ])
       await sql.unsafe(
@@ -148,6 +149,12 @@ describe.skipIf(!url)("operation receipt PostgreSQL recovery", () => {
   });
   const positions = async () =>
     await sql`SELECT owner,balance FROM positions WHERE vault=${vault} ORDER BY owner`;
+  it("adds a verified event anchor inside a committed sparse range", async () => {
+    await sql`DELETE FROM canonical_blocks WHERE chain_id=${env.deployment.chainId} AND block_number=3`;
+    expect(await store.canonicalBlock(env.deployment.chainId, 3n)).toBeUndefined();
+    expect(await store.repairOperationLogs(listingEvents, block(3))).toBe(2);
+    expect(await store.canonicalBlock(env.deployment.chainId, 3n)).toEqual(block(3));
+  });
   it("fills an omitted earlier C2C transaction without reopening a later cancelled listing", async () => {
     await store.applyBatch(listingEvents, [block(3)], block(3));
     await store.applyBatch(cancelEvents, [block(4), block(5)], block(5));

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import postgres from "postgres";
 import { beforeAll, afterAll, describe, it, expect } from "vitest";
 import { z } from "zod";
-import { keccak256, stringToHex } from "viem";
+import { keccak256, stringToHex, type PublicClient } from "viem";
 import {
   A,
   H,
@@ -57,6 +57,7 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
       "005_activity_catalog.sql",
       "006_financial_facts.sql",
       "007_legacy_deployment.sql",
+      "009_sparse_canonical_ranges.sql",
     ])
       await sql.unsafe(
         await readFile(
@@ -94,7 +95,17 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
     store = new PostgresEventStore(scoped.toString(), 3, env);
     await store.ready();
     reports = new PostgresReports(scoped.toString(), env, null);
-    boards = new Leaderboards(store.financial!);
+    boards = new Leaderboards(
+      store.financial!,
+      {
+        getBlock: async ({ blockNumber }: { blockNumber: bigint }) => ({
+          number: blockNumber,
+          hash: H(Number(blockNumber)),
+          parentHash: H(Number(blockNumber - 1n)),
+          timestamp: blockNumber * 100n,
+        }),
+      } as unknown as PublicClient,
+    );
     await sql`INSERT INTO app_accounts(id,environment,deployment_id,controller,address,record) VALUES(${appAccount.id},${env.id},${env.deployment.id},${appAccount.controller},${appAccount.address},${sql.json(appAccount)})`;
     await sql`INSERT INTO ledger_tracked_accounts(address,from_block) VALUES(${trader.toLowerCase()},1)`;
     await store.applyBatch(createMarket(), [block(1)], block(1));

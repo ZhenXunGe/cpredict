@@ -13,10 +13,14 @@ import {
 } from "../../app-core/src/report-contracts.js";
 import { scoreLeaderboard } from "../../app-core/src/leaderboard.js";
 import type { PostgresFinancialLedger } from "./financial-store.js";
-import type { Address, Hex } from "viem";
+import type { Address, Block, Hex, PublicClient } from "viem";
 
 export class Leaderboards {
-  constructor(readonly ledger: PostgresFinancialLedger) {}
+  constructor(
+    readonly ledger: PostgresFinancialLedger,
+    private readonly client?: PublicClient,
+    private readonly onTimeLookupRead: () => void = () => undefined,
+  ) {}
   async register(input: unknown, now = new Date()): Promise<void> {
     const period = leaderboardPeriodSchema.parse(input),
       current = BigInt(Math.floor(now.getTime() / 1000));
@@ -100,19 +104,48 @@ export class Leaderboards {
             BigInt(r.through_block!) < n ? BigInt(r.through_block!) : n,
           BigInt(snapshot.blockNumber),
         );
-        const lastPeriodBlock = (
-          await db<
-            { block_number: string }[]
-          >`SELECT block_number FROM canonical_blocks WHERE chain_id=${this.ledger.environment.deployment.chainId} AND block_number<=${commonBlock.toString()} AND block_timestamp<${period.endsAt} ORDER BY block_number DESC LIMIT 1`
+        if (!this.client) throw new AppError("leaderboard_rpc_required", 503);
+        const exact = await findBlockBeforeTimestamp(
+          this.client,
+          BigInt(this.ledger.environment.deployment.deploymentBlock),
+          commonBlock,
+          BigInt(period.endsAt),
+          this.onTimeLookupRead,
+        );
+        if (!exact) throw new AppError("period_not_started", 409);
+        const confirmed = await this.client.getBlock({ blockNumber: exact.number });
+        this.onTimeLookupRead();
+        if (confirmed.hash === null || confirmed.hash !== exact.hash)
+          throw new AppError("index_not_ready", 503);
+        const chainId = this.ledger.environment.deployment.chainId;
+        const coverage = (
+          await db<{ covered: boolean }[]>`
+            SELECT (
+              EXISTS(SELECT 1 FROM canonical_blocks WHERE chain_id=${chainId} AND block_number=${exact.number.toString()})
+              OR EXISTS(
+                SELECT 1 FROM canonical_scan_ranges
+                WHERE chain_id=${chainId}
+                  AND from_block<=${exact.number.toString()}
+                  AND to_block>=${exact.number.toString()}
+              )
+            ) AS covered
+          `
         )[0];
-        if (!lastPeriodBlock) throw new AppError("period_not_started", 409);
-        const blockNumber = BigInt(lastPeriodBlock.block_number);
+        if (!coverage?.covered) throw new AppError("index_not_ready", 503);
+        await db`
+          INSERT INTO canonical_blocks(chain_id,block_number,block_hash,parent_hash,block_timestamp,confirmation_status)
+          VALUES(${chainId},${exact.number.toString()},${exact.hash},${exact.parentHash},${exact.timestamp.toString()},'confirmed')
+          ON CONFLICT(chain_id,block_number) DO NOTHING
+        `;
         const block = (
-          await db<
-            { block_hash: Hex; block_timestamp: string }[]
-          >`SELECT block_hash,block_timestamp FROM canonical_blocks WHERE chain_id=${this.ledger.environment.deployment.chainId} AND block_number=${blockNumber.toString()}`
+          await db<{ block_hash: Hex; block_timestamp: string }[]>`
+            SELECT block_hash,block_timestamp FROM canonical_blocks
+            WHERE chain_id=${chainId} AND block_number=${exact.number.toString()}
+          `
         )[0];
-        if (!block) throw new AppError("index_not_ready", 503);
+        if (!block || block.block_hash !== exact.hash)
+          throw new AppError("index_not_ready", 503);
+        const blockNumber = exact.number;
         snapshot = {
           ...snapshot,
           blockNumber: blockNumber.toString(),
@@ -260,4 +293,32 @@ export class Leaderboards {
       status: "available",
     };
   }
+}
+
+export async function findBlockBeforeTimestamp(
+  client: PublicClient,
+  fromBlock: bigint,
+  toBlock: bigint,
+  exclusiveTimestamp: bigint,
+  onRead: () => void = () => undefined,
+): Promise<Block<bigint, false, "latest"> | undefined> {
+  if (fromBlock > toBlock) return undefined;
+  let low = fromBlock;
+  let high = toBlock;
+  let result: Block<bigint, false, "latest"> | undefined;
+  while (low <= high) {
+    const middle = low + (high - low) / 2n;
+    onRead();
+    const block = await client.getBlock({ blockNumber: middle });
+    if (block.hash === null || block.number === null)
+      throw new AppError("index_not_ready", 503);
+    if (block.timestamp < exclusiveTimestamp) {
+      result = block as Block<bigint, false, "latest">;
+      low = middle + 1n;
+    } else {
+      if (middle === 0n) break;
+      high = middle - 1n;
+    }
+  }
+  return result;
 }
