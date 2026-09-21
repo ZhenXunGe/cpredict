@@ -1,3 +1,4 @@
+import { RpcReadPool, parseRpcFallbackConfig } from "../../app-core/src/rpc-pool.js";
 import { applyPublicSiteMigrations } from "./migrations.js";
 import { prepareHistoricalSuccessor } from "./historical-deployment.js";
 import { rolloverDeployment } from "./deployment-rollover.js";
@@ -7,7 +8,7 @@ import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import postgres from "postgres";
 import { z } from "zod";
-import { createPublicClient, http, parseUnits } from "viem";
+import { createPublicClient, parseUnits } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import {
   AppError,
@@ -126,18 +127,19 @@ async function run() {
     onnotice: () => undefined,
   });
   let store: PostgresEventStore | undefined;
+  let rpcPool: RpcReadPool | undefined;
+  const chainClient = async () => {
+    rpcPool = new RpcReadPool({url: secureUrl.parse(required(process.env.CPREDICT_MAINTENANCE_RPC_URL, "maintenance_rpc_url")), chainId: env.deployment.chainId, timeoutMs: 10_000, service: "maintenance", fallback: parseRpcFallbackConfig(process.env)});
+    await rpcPool.start();
+    return createPublicClient({chain: arbitrumSepolia, transport: rpcPool.transport});
+  };
   try {
     if (command === "rollover" || command === "prepare-history") {
       const previous = appRuntimeSchema.parse(
         await readJson(required(values.input, "previous_config")),
       );
       await verifyDeployment(
-        createPublicClient({
-          chain: arbitrumSepolia,
-          transport: http(
-            required(process.env.CPREDICT_MAINTENANCE_RPC_URL, "rpc_url"),
-          ),
-        }),
+        await chainClient(),
         env,
       );
       console.log(
@@ -277,18 +279,7 @@ async function run() {
         ].map((p) => readFile(resolve("dist", p), "utf8")),
       ),
     );
-    const client = createPublicClient({
-      chain: arbitrumSepolia,
-      transport: http(
-        secureUrl.parse(
-          required(
-            process.env.CPREDICT_MAINTENANCE_RPC_URL,
-            "maintenance_rpc_url",
-          ),
-        ),
-        { retryCount: 0, timeout: 10000 },
-      ),
-    });
+    const client = await chainClient();
     await verifyDeployment(client, env);
     if (command === "backfill") {
       const count = z.coerce
@@ -351,6 +342,7 @@ async function run() {
       );
     }
   } finally {
+    rpcPool?.close();
     await store?.close();
     await sql.end({ timeout: 5 });
   }

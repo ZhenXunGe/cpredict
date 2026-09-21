@@ -1,12 +1,20 @@
+import { automaticClaimsSettings } from "./automatic-claims.js";
+import {
+  RpcReadPool,
+  RpcResponseError,
+  parseRpcFallbackConfig,
+} from "../../app-core/src/rpc-pool.js";
+import { AppError } from "../../app-core/src/contracts.js";
+import type { Hex } from "viem";
 import { pathToFileURL } from "node:url";
-import { createPublicClient, http } from "viem";
+import { createPublicClient } from "viem";
 import { arbitrumSepolia } from "viem/chains";
 import { environmentKey } from "../../app-core/src/contracts.js";
 import { PrivyIdentityVerifier } from "./auth.js";
 import { ProtocolAdmissionReader, verifyDeployment } from "./chain.js";
 import { loadServiceConfig } from "./config.js";
 import { AuthenticatedAAGateway } from "./gateway.js";
-import { ProviderRpc, type RpcTransport } from "./http.js";
+import { ProviderRpc, ProviderCallError, type RpcTransport } from "./http.js";
 import { OperationService } from "./operations.js";
 import { PostgresApplicationStore } from "./postgres-store.js";
 import { OperationRecovery } from "./recovery.js";
@@ -20,15 +28,26 @@ export async function startApplicationService(
 ): Promise<() => Promise<void>> {
   const config = await loadServiceConfig(env),
     runtime = config.runtime;
+  const claims=runtime.environment.features.automaticClaims
+    ? automaticClaimsSettings(config.automationDatabaseUrl!,runtime.environment.deployment.chainId,runtime.environment.deployment.id):undefined;
   const metrics = new ApplicationMetrics();
   const management = config.management
     ? new ZeroDevManagementReader(config.management, (ok) =>
         metrics.observeDependency("management", ok),
       )
     : undefined;
+  const rpcPool = new RpcReadPool({
+    url: config.rpcUrl,
+    chainId: runtime.environment.deployment.chainId,
+    timeoutMs: 8_000,
+    service: "app",
+    fallback: parseRpcFallbackConfig(env),
+    registry: metrics.registry,
+    observe: (ok) => metrics.observeDependency("chain", ok),
+  });
   const client = createPublicClient({
     chain: arbitrumSepolia,
-    transport: http(config.rpcUrl, { timeout: 8_000, retryCount: 0 }),
+    transport: rpcPool.transport,
   });
   const store = new PostgresApplicationStore(
     config.databaseUrl,
@@ -59,6 +78,7 @@ export async function startApplicationService(
   let stopped = false;
   let activeTick: Promise<void> | undefined;
   try {
+    await rpcPool.start();
     await store.ready();
     await verifyDeployment(client, runtime.environment);
     const operations = new OperationService(
@@ -78,6 +98,7 @@ export async function startApplicationService(
       runtime.confirmations,
     );
     const app = await createApplicationServer({
+      ...(claims ? {automaticClaims:claims.store}:{}),
       operations,
       recovery,
       auth: new PrivyIdentityVerifier(
@@ -85,9 +106,22 @@ export async function startApplicationService(
         config.privySecret,
       ),
       gateway: new AuthenticatedAAGateway(operations, bundler, paymaster),
-      chainRpc: new ProviderRpc(config.rpcUrl, (ok) =>
-        metrics.observeDependency("chain", ok),
-      ),
+      rpcPool,
+      chainRpc: {
+        async request(method, params, signal) {
+          try {
+            return await rpcPool.request(method, params, signal ? { signal } : {});
+          } catch (e) {
+            if (
+              e instanceof RpcResponseError &&
+              method === "eth_call" &&
+              typeof e.data === "string"
+            )
+              throw new ProviderCallError(e.code, e.data as Hex);
+            throw new AppError("provider_rejected", 503);
+          }
+        },
+      },
       reports,
       metrics,
       ...(management ? { management } : {}),
@@ -128,14 +162,18 @@ export async function startApplicationService(
     activeTick = tick();
     return async () => {
       stopped = true;
+      rpcPool.close();
       if (timer) clearTimeout(timer);
       await management?.stop();
       await app.close();
       await activeTick;
+      await claims?.close();
       await reports.close();
       await store.close();
     };
   } catch (error) {
+    await claims?.close();
+    rpcPool.close();
     await management?.stop();
     await reports.close();
     await store.close();

@@ -97,6 +97,7 @@ export function discoverEntitlements(
     }
     if (
       f.kind === "listing-filled" &&
+      f.extra.escrowed !== false &&
       mine(f.counterparty) &&
       f.market &&
       f.listingId

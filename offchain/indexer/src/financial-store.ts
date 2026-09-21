@@ -1,3 +1,4 @@
+import { projectOrderbook } from "./orderbook.js";
 import { createHash } from "node:crypto";
 import type { Sql, TransactionSql } from "postgres";
 import { getAddress, type Address, type Hex } from "viem";
@@ -136,7 +137,18 @@ export class PostgresFinancialLedger {
       >`SELECT listing_id,vault,seller,outcome_id FROM listings WHERE chain_id=${chainId}`,
       db<{ address: Address }[]>`SELECT address FROM ledger_tracked_accounts`,
     ]);
+    const orders =
+      this.environment.deployment.marketplaceVersion === "orderbook-v2"
+        ? await db`SELECT order_id,args FROM orderbook_events WHERE chain_id=${chainId} AND event_name='OrderCreated'`
+        : [];
+    if (this.environment.deployment.marketplaceVersion === "orderbook-v2")
+      await projectOrderbook(
+        db,
+        events,
+        this.environment.deployment.marketplace,
+      );
     const facts = normalizeFinancialFacts(events, blocks, {
+      orders: new Map(orders.map((r) => [String(r.order_id), r.args])),
       environment: this.environment,
       markets: new Set(markets.map((r) => r.market.toLowerCase())),
       listings: new Map(

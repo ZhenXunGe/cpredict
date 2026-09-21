@@ -1,3 +1,4 @@
+import { orderbookAbi } from "../../sdk/src/orderbook.js";
 import {
   legacyMarketRulesSchema,
   encodeLegacyMarketRules,
@@ -47,6 +48,21 @@ export class ProtocolAdmissionReader implements AdmissionReader {
     private readonly environment: Environment,
     private readonly metadataUrl: string,
   ) {}
+  async order(id: bigint) {
+    const o = await this.client.readContract({
+      address: this.environment.deployment.marketplace,
+      abi: orderbookAbi,
+      functionName: "orders",
+      args: [id],
+    });
+    return {
+      market: o[0],
+      owner: o[1],
+      side: o[6],
+      outcomeId: o[5],
+      active: o[8],
+    };
+  }
   registeredMarket(market: Address): Promise<boolean> {
     return this.client.readContract({
       address: this.environment.deployment.factory,

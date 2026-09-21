@@ -1,3 +1,5 @@
+import { orderbookAbi } from "../../sdk/src/orderbook.js";
+import { orderListingId } from "./orderbook.js";
 import {
   legacyMarketEvents,
   publicMarketState,
@@ -34,6 +36,7 @@ import type { CanonicalBlock, IndexedEvent } from "./store.js";
 export const financialEventsAbi = [
   ...marketFactoryAbi.filter((v) => v.type === "event"),
   ...marketplaceAbi.filter((v) => v.type === "event"),
+  ...orderbookAbi.filter((v) => v.type === "event"),
   ...marketVaultAbi.filter((v) => v.type === "event"),
   ...entryPoint07Abi.filter(
     (v) => v.type === "event" && v.name === "UserOperationEvent",
@@ -75,6 +78,7 @@ export interface FinancialContext {
   environment: Environment;
   markets: ReadonlySet<string>;
   listings: ReadonlyMap<string, LedgerListing>;
+  orders?: ReadonlyMap<string, Args>;
   trackedAccounts: ReadonlySet<string>;
 }
 const addr = (v: unknown): Address => {
@@ -86,6 +90,8 @@ const nullableAddr = (v: unknown): Address | null => {
   return sameAddress(a, zeroAddress) ? null : a;
 };
 const amount = (v: unknown): string => {
+  // Persisted order identities use canonical decimal strings, while freshly decoded logs use bigint.
+  if (typeof v === "string" && /^(0|[1-9][0-9]*)$/.test(v)) return v;
   if (
     typeof v !== "bigint" &&
     !(typeof v === "number" && Number.isSafeInteger(v) && v >= 0)
@@ -141,6 +147,10 @@ export function normalizeFinancialFacts(
         outcomeId: amount(args.outcomeId),
       });
   }
+  const orders = new Map(context.orders);
+  for (const { event, name, args } of decoded)
+    if (name === "OrderCreated" && sameAddress(event.address, d.marketplace))
+      orders.set(amount(args.orderId), args);
   const output: LedgerFact[] = [];
   type Movement = {
     event: IndexedEvent;
@@ -280,6 +290,142 @@ export function normalizeFinancialFacts(
       );
       continue;
     }
+    if (
+      sameAddress(e.address, d.marketplace) &&
+      d.marketplaceVersion === "orderbook-v2"
+    ) {
+      if (name === "OrderCreated")
+        add(
+          e,
+          "order-created",
+          {
+            market: addr(a.vault),
+            owner: addr(a.owner),
+            outcomeId: amount(a.outcomeId),
+            units: amount(a.units),
+            amount: amount(a.lockedPayment),
+            listingId: orderListingId(BigInt(amount(a.orderId))),
+          },
+          a,
+        );
+      if (name === "BidExcessReturned") {
+        const order = orders.get(amount(a.orderId));
+        if (!order) throw new Error("order_funds_without_creation");
+        add(
+          e,
+          "order-funds-returned",
+          {
+            market: addr(order.vault),
+            owner: addr(a.owner),
+            outcomeId: amount(order.outcomeId),
+            amount: amount(a.amount),
+            listingId: orderListingId(BigInt(amount(a.orderId))),
+          },
+          a,
+        );
+      }
+      if (name === "OrderCreated" && Number(a.side) === 1) {
+        const market = addr(a.vault),
+          owner = addr(a.owner),
+          units = amount(a.units),
+          outcomeId = amount(a.outcomeId);
+        const used = consume(e, market, owner, d.marketplace, units, outcomeId);
+        add(
+          e,
+          "listing-created",
+          {
+            market,
+            owner,
+            units,
+            outcomeId,
+            listingId: orderListingId(BigInt(amount(a.orderId))),
+          },
+          { ...a, orderId: amount(a.orderId), orderbook: true },
+        );
+        coverage(e, market, owner, units, used);
+      } else if (name === "OrderReleased") {
+        const order = orders.get(amount(a.orderId));
+        if (!order) throw new Error("order_release_without_creation");
+        add(
+          e,
+          "order-released",
+          {
+            market: addr(order.vault),
+            owner: addr(a.owner),
+            outcomeId: amount(order.outcomeId),
+            units: amount(a.returnedUnits),
+            amount: amount(a.returnedPayment),
+            listingId: orderListingId(BigInt(amount(a.orderId))),
+          },
+          { ...a, unitPrice: amount(order.unitPrice), side: order.side },
+        );
+        if (Number(order.side) === 1 && BigInt(amount(a.returnedUnits)) > 0n) {
+          const market = addr(order.vault),
+            owner = addr(a.owner),
+            units = amount(a.returnedUnits),
+            outcomeId = amount(order.outcomeId);
+          const used = consume(
+            e,
+            market,
+            d.marketplace,
+            owner,
+            units,
+            outcomeId,
+          );
+          add(
+            e,
+            "listing-returned",
+            {
+              market,
+              owner,
+              units,
+              outcomeId,
+              listingId: orderListingId(BigInt(amount(a.orderId))),
+            },
+            { ...a, orderbook: true },
+          );
+          coverage(e, market, owner, units, used);
+        }
+      } else if (name === "TradeExecuted") {
+        const market = addr(a.vault),
+          buyer = addr(a.buyer),
+          seller = addr(a.seller),
+          units = amount(a.units),
+          outcomeId = amount(a.outcomeId);
+        const used = consume(
+          e,
+          market,
+          a.escrowed === true ? d.marketplace : seller,
+          buyer,
+          units,
+          outcomeId,
+        );
+        add(
+          e,
+          "listing-filled",
+          {
+            market,
+            owner: buyer,
+            counterparty: seller,
+            units,
+            outcomeId,
+            amount: amount(a.gross),
+            listingId: orderListingId(BigInt(amount(a.orderId))),
+          },
+          {
+            ...a,
+            orderbook: true,
+            remainingUnits: amount(a.remainingAskUnits),
+            sellerProceeds: (
+              BigInt(amount(a.gross)) -
+              BigInt(amount(a.platformFee)) -
+              BigInt(amount(a.creatorFee))
+            ).toString(),
+          },
+        );
+        coverage(e, market, buyer, units, used);
+      }
+    }
     if (name.startsWith("Listing") || name === "TerminalListingReturned") {
       if (!sameAddress(e.address, d.marketplace)) continue;
       const listingId = hex(a.listingId),
@@ -364,7 +510,12 @@ export function normalizeFinancialFacts(
           reference = hex(a.feeReference);
         if (markets.has(source.toLowerCase())) market = source;
         else if (sameAddress(source, d.marketplace))
-          market = listings.get(reference.toLowerCase())?.market ?? null;
+          market =
+            d.marketplaceVersion === "orderbook-v2"
+              ? orders.get(BigInt(reference).toString())?.vault
+                ? addr(orders.get(BigInt(reference).toString())!.vault)
+                : null
+              : (listings.get(reference.toLowerCase())?.market ?? null);
         else if (sameAddress(source, d.factory)) {
           const candidate = getAddress(`0x${reference.slice(-40)}`);
           if (markets.has(candidate.toLowerCase())) market = candidate;

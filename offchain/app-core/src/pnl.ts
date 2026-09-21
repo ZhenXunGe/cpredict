@@ -218,7 +218,7 @@ export function computePnl(
         });
       } else {
         if (other) {
-          const d = dispose(f, lot, units, true);
+          const d = dispose(f, lot, units, f.extra.escrowed !== false);
           record(f, proceeds ?? 0n, {
             ...d,
             complete: d.complete && proceeds !== null,

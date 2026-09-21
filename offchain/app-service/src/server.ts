@@ -1,3 +1,6 @@
+import type { AutomaticClaimsSettings } from "./automatic-claims.js";
+import type { RpcReadPool } from "../../app-core/src/rpc-pool.js";
+import { registerRpcCompatibility } from "./rpc-compatibility.js";
 import Fastify, { type FastifyRequest } from "fastify";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
@@ -34,11 +37,13 @@ import { ApplicationMetrics } from "./metrics.js";
 import type { ZeroDevManagementReader } from "./provider-management.js";
 
 export async function createApplicationServer(options: {
+  automaticClaims?: AutomaticClaimsSettings;
   operations: OperationService;
   auth: IdentityVerifier;
   gateway: AuthenticatedAAGateway;
   recovery: OperationRecovery;
   chainRpc: RpcTransport;
+  rpcPool?: RpcReadPool;
   reports?: ReportingStore;
   metrics?: ApplicationMetrics;
   management?: ZeroDevManagementReader;
@@ -305,6 +310,19 @@ export async function createApplicationServer(options: {
       ),
     };
   });
+  app.get("/v1/automatic-claims",async(request)=>{
+    const {accountId}=z.strictObject({accountId:z.string().uuid()}).parse(request.query);
+    const account=await service.controlledAccount(await authenticate(request),accountId,false);
+    if(!options.automaticClaims) throw new AppError("automatic_claims_unavailable",503);
+    return options.automaticClaims.publicStatus(account.address);
+  });
+  app.post("/v1/automatic-claims",async(request)=>{
+    const {accountId,enabled}=z.strictObject({accountId:z.string().uuid(),enabled:z.boolean()}).parse(request.body);
+    const account=await service.controlledAccount(await authenticate(request),accountId,true);
+    if(!options.automaticClaims) throw new AppError("automatic_claims_unavailable",503);
+    await options.automaticClaims.setEnabled(account.address,enabled);
+    return options.automaticClaims.publicStatus(account.address);
+  });
   app.get("/v1/trading-sessions", async (request) => {
     const identity = await authenticate(request),
       { accountId, cursor } = z
@@ -489,15 +507,20 @@ export async function createApplicationServer(options: {
       return result;
     },
   );
-  app.post("/v1/rpc", async (request) => {
+  if (options.rpcPool) registerRpcCompatibility(app, options.rpcPool);
+  app.post("/v1/rpc", async (request, reply) => {
     const rpc = rpcRequestSchema
       .extend({ params: z.array(z.unknown()).max(3).default([]) })
       .parse(request.body);
+    const abort = new AbortController();
+    const disconnected = () => { if (!reply.raw.writableEnded) abort.abort(); };
+    request.raw.once("aborted", disconnected);
+    reply.raw.once("close", disconnected);
     try {
       return {
         jsonrpc: "2.0",
         id: rpc.id,
-        result: await readRpc(options.chainRpc, rpc.method, rpc.params),
+        result: await readRpc(options.chainRpc, rpc.method, rpc.params, abort.signal),
       };
     } catch (error) {
       if (!(error instanceof ProviderCallError)) throw error;
@@ -512,6 +535,9 @@ export async function createApplicationServer(options: {
           data: error.data,
         },
       };
+    } finally {
+      request.raw.off("aborted", disconnected);
+      reply.raw.off("close", disconnected);
     }
   });
   app.setErrorHandler(async (error, _request, reply) => {

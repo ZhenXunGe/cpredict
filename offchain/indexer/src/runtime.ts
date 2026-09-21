@@ -1,7 +1,7 @@
 import { reconcileConfirmedOperations } from "./operation-reconciliation.js";
 import { Counter, Gauge } from "prom-client";
 import { type PublicClient } from "viem";
-import { createIndexerClient } from "./rpc-client.js";
+import { createIndexerClient, closeIndexerClient } from "./rpc-client.js";
 import { createIndexerApi } from "./api.js";
 import type { IndexerServiceConfig } from "./config.js";
 import { ChainIndexer } from "./indexer.js";
@@ -38,10 +38,8 @@ export async function startIndexerRuntime(
     const d=environment.deployment,expected=[d.factory,d.marketplace,d.feeVault,d.bondEscrow].map(a=>a.toLowerCase()).sort(),actual=config.coreAddresses.map(a=>a.toLowerCase()).sort();
     if(d.chainId!==config.chainId || !sameAddress(d.factory,config.factoryAddress) || BigInt(d.deploymentBlock)!==config.deploymentBlock || JSON.stringify(expected)!==JSON.stringify(actual)) throw new Error("public indexer configuration does not match deployment manifest");
   }
-  const client =
-    dependencies.client ??
-    await createIndexerClient(config);
   const telemetry = dependencies.telemetry ?? new PrometheusIndexerTelemetry();
+  const client = dependencies.client ?? await createIndexerClient(config, telemetry.registry);
   const rawStore =
     dependencies.store ??
     new PostgresEventStore(config.databaseUrl, config.databasePoolSize,environment);
@@ -144,6 +142,7 @@ export async function startIndexerRuntime(
       }),
     );
   } catch (error: unknown) {
+    closeIndexerClient(client);
     unsubscribeFromBatches();
     await scheduler.stop();
     await app.close();
@@ -192,6 +191,7 @@ export async function startIndexerRuntime(
     async stop(): Promise<void> {
       if (stopped) return;
       stopped = true;
+      closeIndexerClient(client);
       if(publicTimer)clearTimeout(publicTimer);
       if(receiptTimer)clearTimeout(receiptTimer);
       unsubscribeFromBatches();
