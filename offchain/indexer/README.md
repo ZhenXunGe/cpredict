@@ -67,8 +67,9 @@ Only raise the setting when the provider supports it; lower it on rate limiting.
 Compose uses the independent `CPREDICT_USDC_INDEXER_BLOCK_CONCURRENCY` override for USDC.
 This changes read throughput, not the deployment start block, event coverage or confirmation depth.
 `dense` persists every block header. `sparse` persists the range endpoint, every event block and
-explicit repair/time lookup anchors. Sparse batches verify predecessor and endpoint fences before
-commit and validate each log hash against its event block. A failed fence, hash, RPC or database
+explicit repair/time lookup anchors. Sparse batches verify the predecessor before scanning and
+re-read the endpoint before commit; the endpoint hash commits to the intervening parent chain.
+Each log hash is also validated against its event block. A failed fence, hash, RPC or database
 operation leaves the checkpoint and all projections unchanged. When caught up, polling uses
 `CPREDICT_INDEXER_CAUGHT_UP_POLL_MS` with jitter; catch-up batches still run without that delay.
 SIGINT/SIGTERM stops new polls, drains the active transaction, closes HTTP and then closes PostgreSQL.

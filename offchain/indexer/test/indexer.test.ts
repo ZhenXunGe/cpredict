@@ -229,8 +229,8 @@ describe("ChainIndexer canonical ingestion", () => {
     await createIndexer(nextClient, store, undefined, {
       canonicalMode: "sparse",
     }).runBatch();
-    // One opening predecessor check, one endpoint load, and the two closing fences.
-    expect(nextClient.blockRequests).toBe(4);
+    // One opening predecessor check, one endpoint load, and one commit endpoint fence.
+    expect(nextClient.blockRequests).toBe(3);
   });
 
   it("deduplicates same-block sparse event anchors", async () => {
