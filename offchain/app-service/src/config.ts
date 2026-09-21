@@ -98,6 +98,7 @@ export interface ServiceConfig {
   host: string;
   port: number;
   databaseUrl: string;
+  automationDatabaseUrl?: string;
   rpcUrl: string;
   metadataUrl: string;
   privySecret: string;
@@ -128,6 +129,24 @@ export async function loadServiceConfig(
     throw new Error(
       "app database requires PostgreSQL with TLS or a local endpoint",
     );
+  const automationDatabaseUrl = runtime.environment.features.automaticClaims
+    ? required("CPREDICT_AUTOMATION_CONTROL_DATABASE_URL")
+    : undefined;
+  if (automationDatabaseUrl) {
+    const control = new URL(automationDatabaseUrl);
+    if (
+      !["postgres:", "postgresql:"].includes(control.protocol) ||
+      (!["localhost", "127.0.0.1", "[::1]", "postgres"].includes(
+        control.hostname,
+      ) &&
+        !["require", "verify-full"].includes(
+          control.searchParams.get("sslmode") ?? "",
+        ))
+    )
+      throw new Error(
+        "automation control database requires PostgreSQL with TLS or a local endpoint",
+      );
+  }
   const bundlerUrl = env.CPREDICT_APP_ZERODEV_BUNDLER_URL
     ? secureUrl.parse(env.CPREDICT_APP_ZERODEV_BUNDLER_URL)
     : undefined;
@@ -178,6 +197,7 @@ export async function loadServiceConfig(
     : null;
   return {
     management,
+    ...(automationDatabaseUrl ? { automationDatabaseUrl } : {}),
     runtime,
     databaseUrl,
     host: z

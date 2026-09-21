@@ -367,3 +367,94 @@ test("includes tracked counterparties but does not mistake untracked internal tr
     verifiedOperationEvents(op, receiptFor(op, events), env, [vault], [A(12)]),
   ).toHaveLength(4);
 });
+
+test("V2 receipt association verifies funded order identity and rejects another order or account", () => {
+  const v2 = {
+    ...env,
+    deployment: {
+      ...env.deployment,
+      marketplaceVersion: "orderbook-v2" as const,
+    },
+  };
+  const intent = {
+    kind: "create-order" as const,
+    market: vault,
+    side: "bid" as const,
+    outcomeId: "1",
+    units: "1000000",
+    unitPrice: "500000",
+    expiresAt: "9999",
+    autoMatch: true,
+  };
+  const op = confirmed(intent),
+    e = raw(
+      "OrderCreated",
+      env.deployment.marketplace,
+      {
+        orderId: 1n,
+        vault,
+        owner: trader,
+        outcomeId: 1,
+        side: 0,
+        units: 1000000n,
+        unitPrice: 500000n,
+        expiresAt: 9999n,
+        autoMatch: true,
+        lockedPayment: 500000n,
+      },
+      3,
+      1,
+    );
+  expect(
+    verifiedOperationEvents(op, receiptFor(op, [e]), v2, [vault]),
+  ).toHaveLength(2);
+  expect(() =>
+    verifiedOperationEvents(
+      { ...op, intent: { ...intent, autoMatch: false } },
+      receiptFor(op, [e]),
+      v2,
+      [vault],
+    ),
+  ).toThrow("operation_effect_mismatch");
+  const fill = confirmed({
+    kind: "fill-order",
+    orderId: "1",
+    side: "bid",
+    units: "1000000",
+    minUnits: "1000000",
+    paymentLimit: "480000",
+    deadline: "9999",
+  });
+  const event = raw(
+    "OrderFilled",
+    env.deployment.marketplace,
+    {
+      orderId: 1n,
+      buyer: A(91),
+      seller: trader,
+      units: 1000000n,
+      unitPrice: 500000n,
+      gross: 500000n,
+      platformFee: 10000n,
+      creatorFee: 10000n,
+      remainingUnits: 0n,
+      lockedPayment: 0n,
+    },
+    3,
+    1,
+  );
+  expect(
+    verifiedOperationEvents(fill, receiptFor(fill, [event]), v2, [vault]),
+  ).toHaveLength(2);
+  expect(() =>
+    verifiedOperationEvents(
+      { ...fill, intent: { ...fill.intent, orderId: "2" } as BusinessIntent },
+      receiptFor(fill, [event]),
+      v2,
+      [vault],
+    ),
+  ).toThrow();
+  expect(() =>
+    verifiedOperationEvents(fill, receiptFor(fill, [event]), env, [vault]),
+  ).toThrow();
+});

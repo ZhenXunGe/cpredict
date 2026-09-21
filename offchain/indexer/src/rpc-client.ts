@@ -1,13 +1,41 @@
+import { RpcReadPool } from "../../app-core/src/rpc-pool.js";
+import type { Registry } from "prom-client";
 import { createPublicClient, custom, http, type PublicClient } from "viem";
 import type { IndexerServiceConfig } from "./config.js";
+
+const pools = new WeakMap<PublicClient, RpcReadPool>();
+export function closeIndexerClient(client: PublicClient) {
+  pools.get(client)?.close();
+}
 
 /** Separate range-log capacity from historical state/header reads when configured. */
 export async function createIndexerClient(
   config: Pick<
     IndexerServiceConfig,
-    "rpcUrl" | "logRpcUrl" | "rpcTimeoutMs" | "chainId"
+    "rpcUrl" | "logRpcUrl" | "rpcTimeoutMs" | "chainId" | "rpcFallback"
   >,
+  registry?: Registry,
 ): Promise<PublicClient> {
+  if (config.rpcFallback) {
+    const pool = new RpcReadPool({
+      url: config.rpcUrl,
+      logUrl: config.logRpcUrl,
+      chainId: config.chainId,
+      timeoutMs: config.rpcTimeoutMs,
+      fallback: config.rpcFallback,
+      registry,
+      service: "indexer",
+    });
+    try {
+      await pool.start();
+    } catch (e) {
+      pool.close();
+      throw e;
+    }
+    const client = createPublicClient({ transport: pool.transport });
+    pools.set(client, pool);
+    return client;
+  }
   const options = {
     retryCount: 2,
     retryDelay: 750,

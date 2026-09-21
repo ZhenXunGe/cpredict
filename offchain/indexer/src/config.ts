@@ -1,3 +1,4 @@
+import { parseRpcFallbackConfig, type RpcFallbackConfig } from "../../app-core/src/rpc-pool.js";
 import { getAddress, isAddress, zeroAddress, type Address } from "viem";
 import { z } from "zod";
 import { parseMetadataServiceUrl } from "../../app-core/src/service-url.js";
@@ -166,6 +167,7 @@ export interface IndexerServiceConfig {
   logLevel: z.infer<typeof logLevel>;
   chainId: number;
   rpcUrl: string;
+  rpcFallback?: RpcFallbackConfig | undefined;
   logRpcUrl?: string;
   databaseUrl: string;
   factoryAddress: Address;
@@ -195,6 +197,8 @@ export function parseIndexerServiceConfig(
     new Set(Object.keys(schema.shape)),
   );
   const parsed = schema.parse(environment);
+  const rpcFallback = parseRpcFallbackConfig(environment);
+  if (rpcFallback) rpcFallback.probe.logBlockSpan = Number(parsed.CPREDICT_INDEXER_BATCH_SIZE);
   const coreAddresses = parseAddressList(
     parsed.CPREDICT_INDEXER_CORE_ADDRESSES,
   );
@@ -211,6 +215,7 @@ export function parseIndexerServiceConfig(
     logLevel: parsed.CPREDICT_INDEXER_LOG_LEVEL,
     chainId: parsed.CPREDICT_INDEXER_CHAIN_ID,
     rpcUrl: parsed.CPREDICT_INDEXER_RPC_URL,
+    rpcFallback,
     ...(parsed.CPREDICT_INDEXER_LOG_RPC_URL ? { logRpcUrl: parsed.CPREDICT_INDEXER_LOG_RPC_URL } : {}),
     databaseUrl: parsed.CPREDICT_INDEXER_DATABASE_URL,
     factoryAddress: parsed.CPREDICT_INDEXER_FACTORY_ADDRESS,

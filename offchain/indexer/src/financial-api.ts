@@ -1,3 +1,4 @@
+import { orderbookPage } from "./orderbook.js";
 import { createHash } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import type { PublicClient } from "viem";
@@ -26,6 +27,26 @@ export function registerFinancialApi(
     environment: z.literal(ledger.environment.id),
     deploymentId: z.literal(ledger.environment.deployment.id),
   };
+  app.get("/v2/orders", async (request) => {
+    const q = z
+      .object({
+        ...binding,
+        market: address.optional(),
+        owner: address.optional(),
+        cursor: uint.default("0"),
+      })
+      .parse(request.query);
+    if (ledger.environment.deployment.marketplaceVersion !== "orderbook-v2")
+      throw new AppError("orderbook_not_supported", 400);
+    return orderbookPage(
+      ledger.sql,
+      ledger.environment.deployment.chainId,
+      ledger.environment.deployment.marketplace,
+      q.market,
+      q.owner,
+      q.cursor,
+    );
+  });
   app.get("/v2/platform-fees", async (request, reply) => {
     z.object(binding).parse(request.query);
     const result = await publicPlatformFees(ledger);

@@ -16,6 +16,10 @@ import { normalizeLog, type IndexedEvent } from "./store.js";
 
 export const reconciledOperationKinds = [
   "buy",
+  "create-order",
+  "fill-order",
+  "cancel-order",
+  "release-order",
   "create-market",
   "create-listing",
   "fill-listing",
@@ -176,6 +180,57 @@ export function verifiedOperationEvents(
       break;
     case "create-market":
       valid = true;
+      break;
+    case "create-order":
+      valid =
+        d.marketplaceVersion === "orderbook-v2" &&
+        has(d.marketplace, "OrderCreated", {
+          owner: op.account,
+          vault: intent.market,
+          outcomeId: Number(intent.outcomeId),
+          side: intent.side === "bid" ? 0 : 1,
+          units: BigInt(intent.units),
+          unitPrice: BigInt(intent.unitPrice),
+          expiresAt: BigInt(intent.expiresAt),
+          autoMatch: intent.autoMatch,
+        });
+      break;
+    case "fill-order":
+      valid =
+        d.marketplaceVersion === "orderbook-v2" &&
+        selected.some(
+          (e) =>
+            sameAddress(e.log.address, d.marketplace) &&
+            e.name === "OrderFilled" &&
+            e.args.orderId === BigInt(intent.orderId) &&
+            sameAddress(
+              (intent.side === "bid" ? e.args.seller : e.args.buyer) as Address,
+              op.account,
+            ) &&
+            (e.args.units as bigint) >= BigInt(intent.minUnits) &&
+            (e.args.units as bigint) <= BigInt(intent.units) &&
+            (intent.side === "ask"
+              ? (e.args.gross as bigint) <= BigInt(intent.paymentLimit)
+              : (e.args.gross as bigint) -
+                  (e.args.platformFee as bigint) -
+                  (e.args.creatorFee as bigint) >=
+                BigInt(intent.paymentLimit)),
+        );
+      break;
+    case "cancel-order":
+    case "release-order":
+      valid =
+        d.marketplaceVersion === "orderbook-v2" &&
+        selected.some(
+          (e) =>
+            sameAddress(e.log.address, d.marketplace) &&
+            e.name === "OrderReleased" &&
+            e.args.orderId === BigInt(intent.orderId) &&
+            sameAddress(e.args.owner as Address, op.account) &&
+            (intent.kind === "cancel-order"
+              ? e.args.reason === 0
+              : e.args.reason === 1 || e.args.reason === 2),
+        );
       break;
     case "create-listing":
       valid = has(d.marketplace, "ListingCreated", {

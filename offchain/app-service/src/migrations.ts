@@ -13,6 +13,7 @@ export const migrationPaths = [
     "005_activity_catalog.sql",
     "006_financial_facts.sql",
     "007_legacy_deployment.sql",
+    "008_orderbook.sql",
   ].map((n) => `offchain/indexer/migrations/${n}`),
   "offchain/app-service/migrations/001_application.sql",
   "offchain/app-service/migrations/002_operational_queries.sql",
@@ -20,6 +21,7 @@ export const migrationPaths = [
   "offchain/app-service/migrations/004_deployment_carryover.sql",
   "offchain/app-service/migrations/005_gas_accounting.sql",
   "offchain/app-service/migrations/006_trading_sessions.sql",
+  "offchain/app-service/migrations/007_order_automation.sql",
 ];
 
 /** Existing migration registry and checksums, shared by maintenance commands. */

@@ -1,3 +1,4 @@
+import { orderbookAbi } from "../../sdk/src/orderbook.js";
 import { publicMarketState } from "../../sdk/src/legacy-protocol.js";
 import { parseAbi, type Address, type Hex, type PublicClient } from "viem";
 import type { Environment } from "../../app-core/src/contracts.js";
@@ -129,6 +130,24 @@ export class OnchainRightsReader implements RightsReader {
     };
   }
   async listing(listingId: Hex, owner: Address) {
+    if (this.environment.deployment.marketplaceVersion === "orderbook-v2") {
+      const o = await this.client.readContract({
+        address: this.environment.deployment.marketplace,
+        abi: orderbookAbi,
+        functionName: "orders",
+        args: [BigInt(listingId)],
+        blockNumber: this.blockNumber,
+      });
+      if (!sameAddress(o[1], owner) || o[6] !== 1)
+        throw new Error("order owner mismatch");
+      const state = await this.client.readContract({
+        address: o[0],
+        abi: rightsAbi,
+        functionName: "marketState",
+        blockNumber: this.blockNumber,
+      });
+      return { units: o[2], terminal: state !== 0, active: o[8] };
+    }
     const listing = await this.client.readContract({
       address: this.environment.deployment.marketplace,
       abi: marketplaceAbi,

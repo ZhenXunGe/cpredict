@@ -1,3 +1,4 @@
+import { orderbookAbi, bidReserve } from "../../sdk/src/orderbook.js";
 import {
   encodeFunctionData,
   erc20Abi,
@@ -29,6 +30,15 @@ const feeAbi = parseAbi([
 export const FAUCET_AMOUNT = 1_000_000_000n;
 export interface AdmissionReader {
   registeredMarket(market: Address): Promise<boolean>;
+  order?(
+    id: bigint,
+  ): Promise<{
+    market: Address;
+    owner: Address;
+    side: number;
+    outcomeId: number;
+    active: boolean;
+  }>;
   verifiedRules(market: Address): Promise<boolean>;
   listing(
     id: Hex,
@@ -92,6 +102,32 @@ export async function buildBusinessCalls(
   let market: Address | undefined =
     "market" in intent ? intent.market : undefined;
   let listing: Awaited<ReturnType<AdmissionReader["listing"]>> | undefined;
+  let order:
+    | Awaited<ReturnType<NonNullable<AdmissionReader["order"]>>>
+    | undefined;
+  if (intent.kind.endsWith("-order")) {
+    if (d.marketplaceVersion !== "orderbook-v2")
+      throw new AppError("orderbook_not_supported", 400);
+    if ("orderId" in intent) {
+      if (!reader.order)
+        throw new AppError("orderbook_reader_unavailable", 503);
+      order = await reader.order(BigInt(intent.orderId));
+      market = order.market;
+      if (!order.active) throw new AppError("order_unavailable", 409);
+      if (
+        (intent.kind === "cancel-order" || intent.kind === "release-order") &&
+        !sameAddress(order.owner, account)
+      )
+        throw new AppError("order_owner_mismatch", 403);
+      if (intent.kind === "fill-order" && sameAddress(order.owner, account))
+        throw new AppError("self_trade_not_sponsored");
+    }
+  }
+  if (
+    d.marketplaceVersion === "orderbook-v2" &&
+    ("listingId" in intent || intent.kind === "create-listing")
+  )
+    throw new AppError("legacy_listing_not_supported", 400);
   if ("listingId" in intent) {
     listing = await reader.listing(intent.listingId);
     market = listing.market;
@@ -119,7 +155,94 @@ export async function buildBusinessCalls(
     throw new AppError("invalid_deadline");
   if ("minUnits" in intent && BigInt(intent.minUnits) > BigInt(intent.units))
     throw new AppError("invalid_minimum_units");
+  const withShares = (vault: Address, action: BusinessCall): BusinessCall[] => [
+    call(
+      vault,
+      encodeFunctionData({
+        abi: marketVaultAbi,
+        functionName: "setApprovalForAll",
+        args: [d.marketplace, true],
+      }),
+    ),
+    action,
+    call(
+      vault,
+      encodeFunctionData({
+        abi: marketVaultAbi,
+        functionName: "setApprovalForAll",
+        args: [d.marketplace, false],
+      }),
+    ),
+  ];
   switch (intent.kind) {
+    case "create-order": {
+      if (
+        BigInt(intent.expiresAt) <= nowSeconds ||
+        BigInt(intent.outcomeId) > 31n ||
+        BigInt(intent.units) > 2n ** 128n - 1n ||
+        BigInt(intent.unitPrice) > 1_000_000_000n
+      )
+        throw new AppError("invalid_order");
+      const action = call(
+        d.marketplace,
+        encodeFunctionData({
+          abi: orderbookAbi,
+          functionName: "createOrder",
+          args: [
+            intent.market,
+            Number(intent.outcomeId),
+            intent.side === "bid" ? 0 : 1,
+            BigInt(intent.units),
+            BigInt(intent.unitPrice),
+            BigInt(intent.expiresAt),
+            intent.autoMatch,
+          ],
+        }),
+      );
+      return intent.side === "bid"
+        ? withPayment(
+            d.marketplace,
+            bidReserve(BigInt(intent.units), BigInt(intent.unitPrice)),
+            action,
+          )
+        : withShares(intent.market, action);
+    }
+    case "fill-order": {
+      if (!order) throw new AppError("order_unavailable");
+      if (order.side !== (intent.side === "bid" ? 0 : 1))
+        throw new AppError("order_side_mismatch", 409);
+      const action = call(
+        d.marketplace,
+        encodeFunctionData({
+          abi: orderbookAbi,
+          functionName: "fillOrder",
+          args: [
+            BigInt(intent.orderId),
+            BigInt(intent.units),
+            BigInt(intent.minUnits),
+            BigInt(intent.paymentLimit),
+            BigInt(intent.deadline),
+          ],
+        }),
+      );
+      return order.side === 1
+        ? withPayment(d.marketplace, BigInt(intent.paymentLimit), action)
+        : withShares(order.market, action);
+    }
+    case "cancel-order":
+    case "release-order":
+      return [
+        call(
+          d.marketplace,
+          encodeFunctionData({
+            abi: orderbookAbi,
+            functionName:
+              intent.kind === "cancel-order" ? "cancelOrder" : "releaseOrder",
+            args: [BigInt(intent.orderId)],
+          }),
+        ),
+      ];
+
     case "revoke-trading-session":
       throw new AppError("session_descriptor_required", 400);
     case "deposit-usdc":

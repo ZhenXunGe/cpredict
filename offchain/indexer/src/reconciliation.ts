@@ -1,5 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
-import { erc20Abi, getAddress, parseAbi, type Address, type PublicClient } from "viem";
+import {
+  erc20Abi,
+  getAddress,
+  parseAbi,
+  type Address,
+  type PublicClient,
+} from "viem";
 import { z } from "zod";
 import {
   AppError,
@@ -182,7 +188,14 @@ export function reconciliationChecks(
       o &&
       f.outcomeId !== null
     ) {
-      shares(m, env.deployment.marketplace, f.outcomeId, -u);
+      shares(
+        m,
+        f.kind === "listing-filled" && f.extra.escrowed === false
+          ? f.counterparty
+          : env.deployment.marketplace,
+        f.outcomeId,
+        -u,
+      );
       shares(m, o, f.outcomeId, u);
     }
     if (
@@ -368,10 +381,12 @@ export async function reconcileLedger(
   );
   // Reusing ctUSD preserves balances that predate this protocol deployment.
   // Treat that chain state as the opening balance, never a new trade or mint.
-  const openingBlock = BigInt(ledger.environment.deployment.deploymentBlock) - 1n;
+  const openingBlock =
+    BigInt(ledger.environment.deployment.deploymentBlock) - 1n;
   if (openingBlock < 0n)
     throw new AppError("opening_balance_block_unavailable", 409);
-  const openingHash = (await client.getBlock({ blockNumber: openingBlock })).hash;
+  const openingHash = (await client.getBlock({ blockNumber: openingBlock }))
+    .hash;
   const openingCode = await client.getCode({
     address: ledger.environment.deployment.paymentToken,
     blockNumber: openingBlock,
@@ -444,7 +459,9 @@ export async function reconcileLedger(
     );
   }
   await ledger.assertSnapshot(frozen.snapshot);
-  if ((await client.getBlock({ blockNumber: openingBlock })).hash !== openingHash)
+  if (
+    (await client.getBlock({ blockNumber: openingBlock })).hash !== openingHash
+  )
     throw new AppError("opening_balance_snapshot_invalidated", 409);
   if (
     (

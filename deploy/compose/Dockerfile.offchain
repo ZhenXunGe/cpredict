@@ -25,6 +25,7 @@ ENV NODE_ENV=production
 WORKDIR /app
 RUN rm -rf /opt/yarn-v1.22.22 /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
     && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
+COPY --from=build --chown=node:node /app/dist/offchain/workers ./dist/offchain/workers
 COPY --from=build --chown=node:node /app/dist/offchain/indexer ./dist/offchain/indexer
 COPY --from=build --chown=node:node /app/dist/offchain/app-core ./dist/offchain/app-core
 COPY --from=build --chown=node:node /app/dist/offchain/app-service ./dist/offchain/app-service
@@ -58,6 +59,7 @@ RUN rm -rf /opt/yarn-v1.22.22 /usr/local/lib/node_modules/npm /usr/local/lib/nod
     && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
 COPY --from=runtime-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist/offchain/metadata-service ./dist/offchain/metadata-service
+COPY --from=build --chown=node:node /app/dist/offchain/app-core ./dist/offchain/app-core
 COPY --from=build --chown=node:node /app/dist/offchain/sdk ./dist/offchain/sdk
 COPY package.json ./package.json
 USER node
@@ -81,3 +83,7 @@ CMD ["node", "dist/offchain/permit2-relay-service/src/main.js"]
 # The app's reporting/reconciliation modules share the indexer's compiled graph.
 FROM indexer AS app-service
 CMD ["node", "dist/offchain/app-service/src/main.js"]
+
+# Opt-in keeper service; signer comes only from a private runtime file.
+FROM indexer AS automation
+CMD ["node", "dist/offchain/workers/src/automatic-runtime.js"]

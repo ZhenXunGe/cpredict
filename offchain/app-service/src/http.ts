@@ -5,7 +5,7 @@ import { fetchJson } from "../../app-core/src/fetch-json.js";
 export { fetchJson } from "../../app-core/src/fetch-json.js";
 
 export interface RpcTransport {
-  request(method: string, params: readonly unknown[]): Promise<unknown>;
+  request(method: string, params: readonly unknown[], signal?: AbortSignal): Promise<unknown>;
 }
 
 const callErrorSchema = z.object({
@@ -29,10 +29,11 @@ export class ProviderRpc implements RpcTransport {
     private readonly url: string,
     private readonly observed?: (available: boolean) => void,
   ) {}
-  async request(method: string, params: readonly unknown[]): Promise<unknown> {
+  async request(method: string, params: readonly unknown[], signal?: AbortSignal): Promise<unknown> {
     let data: unknown;
     try {
       data = await fetchJson(this.url, {
+        ...(signal ? { signal } : {}),
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),

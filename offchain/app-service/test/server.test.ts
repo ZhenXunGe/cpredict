@@ -17,7 +17,10 @@ import { createApplicationServer } from "../src/server.js";
 import { MemoryApplicationStore } from "./memory-store.js";
 import type { AdmissionReader } from "../../app-core/src/calls.js";
 import type { ReportingStore } from "../src/reports.js";
-async function setup(trusted = false) {
+async function setup(
+  trusted = false,
+  automaticClaims?: import("../src/automatic-claims.js").AutomaticClaimsSettings,
+) {
   const store = new MemoryApplicationStore();
   store.accountRows.set(appAccount.id, appAccount);
   store.bindings.set("did:privy:owner", new Set([appAccount.id]));
@@ -57,6 +60,7 @@ async function setup(trusted = false) {
     serviceEvent: vi.fn(async () => {}),
   } satisfies ReportingStore;
   const server = await createApplicationServer({
+    ...(automaticClaims ? { automaticClaims } : {}),
     operations: service,
     auth: {
       verify: async (token) => ({
@@ -277,4 +281,50 @@ describe("private application routes and public telemetry boundaries", () => {
       await server.close();
     }
   });
+});
+
+it("automatic claims preferences require control of the asset account", async () => {
+  const settings = {
+    enabled: vi.fn(async () => true),
+    setEnabled: vi.fn(async () => {}),
+    publicStatus: vi.fn(async () => ({
+      enabled: false,
+      reason: "waiting_for_entitlement",
+      transactions: [],
+      updatedAt: null,
+    })),
+  };
+  const { server } = await setup(false, settings);
+  try {
+    expect(
+      (
+        await server.inject({
+          method: "POST",
+          url: "/v1/automatic-claims",
+          payload: { accountId: appAccount.id, enabled: false },
+        })
+      ).statusCode,
+    ).toBe(401);
+    expect(
+      (
+        await server.inject({
+          method: "POST",
+          url: "/v1/automatic-claims",
+          headers: { authorization: "Bearer stranger" },
+          payload: { accountId: appAccount.id, enabled: false },
+        })
+      ).statusCode,
+    ).toBe(404);
+    expect(settings.setEnabled).not.toHaveBeenCalled();
+    const result = await server.inject({
+      method: "POST",
+      url: "/v1/automatic-claims",
+      headers: { authorization: "Bearer owner" },
+      payload: { accountId: appAccount.id, enabled: false },
+    });
+    expect(result.statusCode, result.body).toBe(200);
+    expect(settings.setEnabled).toHaveBeenCalledWith(appAccount.address, false);
+  } finally {
+    await server.close();
+  }
 });

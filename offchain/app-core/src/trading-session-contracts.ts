@@ -1,3 +1,4 @@
+import { bidReserve } from "../../sdk/src/orderbook.js";
 import { z } from "zod";
 import {
   address,
@@ -45,6 +46,10 @@ export const sessionViewSchema = z.object({
 export type SessionView = z.infer<typeof sessionViewSchema>;
 export function supportsQuickTrading(intent: BusinessIntent): boolean {
   return [
+    "create-order",
+    "fill-order",
+    "cancel-order",
+    "release-order",
     "buy",
     "fill-listing",
     "create-listing",
@@ -61,6 +66,12 @@ export function supportsQuickTrading(intent: BusinessIntent): boolean {
   ].includes(intent.kind);
 }
 export function sessionSpend(intent: BusinessIntent): bigint {
+  if (intent.kind === "create-order")
+    return intent.side === "bid"
+      ? bidReserve(BigInt(intent.units), BigInt(intent.unitPrice))
+      : 0n;
+  if (intent.kind === "fill-order")
+    return intent.side === "ask" ? BigInt(intent.paymentLimit) : 0n;
   return intent.kind === "buy" || intent.kind === "fill-listing"
     ? BigInt(intent.maxPayment)
     : 0n;
