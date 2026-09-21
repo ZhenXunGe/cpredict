@@ -203,7 +203,13 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
           transaction,
           batch.events.map((e) => e.transactionHash),
         );
-        await this.financial.project(transaction, [], batch.anchors, checkpoint);
+        await this.financial.project(
+          transaction,
+          [],
+          batch.anchors,
+          checkpoint,
+          batch.range.fromBlock,
+        );
       }
       const checkpointBlocks = await transaction<Array<{ block_hash: Hex }>>`
         SELECT block_hash FROM canonical_blocks
@@ -934,6 +940,26 @@ async function ensureHistoricalAnchor(
     !state?.covered ||
     state.checkpoint === null ||
     BigInt(state.checkpoint) < block.blockNumber
+  )
+    throw new Error(message);
+  const adjacent = await db<
+    Array<{ previous_hash: Hex | null; next_parent_hash: Hex | null }>
+  >`
+    SELECT
+      (SELECT block_hash FROM canonical_blocks
+       WHERE chain_id=${block.chainId}
+         AND block_number=${(block.blockNumber - 1n).toString()}) AS previous_hash,
+      (SELECT parent_hash FROM canonical_blocks
+       WHERE chain_id=${block.chainId}
+         AND block_number=${(block.blockNumber + 1n).toString()}) AS next_parent_hash
+  `;
+  if (
+    (adjacent[0]?.previous_hash !== null &&
+      adjacent[0]?.previous_hash !== undefined &&
+      adjacent[0].previous_hash !== block.parentHash) ||
+    (adjacent[0]?.next_parent_hash !== null &&
+      adjacent[0]?.next_parent_hash !== undefined &&
+      adjacent[0].next_parent_hash !== block.blockHash)
   )
     throw new Error(message);
   await insertCanonicalBlock(db, block);
