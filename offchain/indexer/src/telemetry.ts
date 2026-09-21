@@ -5,7 +5,11 @@ import {
   Histogram,
   Registry,
 } from "prom-client";
-import type { BatchResult } from "./indexer.js";
+import type {
+  BatchResult,
+  BlockHeaderReadPurpose,
+  IndexerIngestionTelemetry,
+} from "./indexer.js";
 
 export interface IndexerSchedulerTelemetry {
   batch(result: BatchResult): void;
@@ -27,6 +31,12 @@ export class PrometheusIndexerTelemetry implements IndexerSchedulerTelemetry {
   private readonly batches: Counter<"status">;
   private readonly events: Counter;
   private readonly lastIndexedBlock: Gauge;
+  private readonly blockHeaders: Counter<"purpose">;
+  private readonly scannedBlocks: Counter;
+  private readonly savedAnchors: Counter;
+  private readonly fenceFailures: Counter;
+  private readonly rollbackBatches: Counter;
+  private readonly rollbackBlocks: Counter;
   private readonly duration: Histogram;
   private readonly databaseAdmissionWait: Histogram;
   private readonly databaseOperationDuration: Histogram<"operation">;
@@ -56,6 +66,37 @@ export class PrometheusIndexerTelemetry implements IndexerSchedulerTelemetry {
     this.lastIndexedBlock = new Gauge({
       name: "cpredict_indexer_last_indexed_block",
       help: "Last block committed by the indexer",
+      registers: [registry],
+    });
+    this.blockHeaders = new Counter({
+      name: "cpredict_indexer_block_headers_total",
+      help: "Canonical block header reads by bounded purpose",
+      labelNames: ["purpose"],
+      registers: [registry],
+    });
+    this.scannedBlocks = new Counter({
+      name: "cpredict_indexer_scanned_blocks_total",
+      help: "Block numbers covered by committed scan ranges",
+      registers: [registry],
+    });
+    this.savedAnchors = new Counter({
+      name: "cpredict_indexer_saved_anchors_total",
+      help: "Canonical anchors persisted by committed scan ranges",
+      registers: [registry],
+    });
+    this.fenceFailures = new Counter({
+      name: "cpredict_indexer_fence_failures_total",
+      help: "Batches rejected because a canonical stability fence changed",
+      registers: [registry],
+    });
+    this.rollbackBatches = new Counter({
+      name: "cpredict_indexer_rollback_batches_total",
+      help: "Committed scan ranges removed during reorganization recovery",
+      registers: [registry],
+    });
+    this.rollbackBlocks = new Counter({
+      name: "cpredict_indexer_rollback_blocks_total",
+      help: "Indexed block numbers removed during reorganization recovery",
       registers: [registry],
     });
     this.duration = new Histogram({
@@ -102,6 +143,8 @@ export class PrometheusIndexerTelemetry implements IndexerSchedulerTelemetry {
   batch(result: BatchResult): void {
     this.batches.inc({ status: "committed" });
     this.events.inc(result.eventCount);
+    this.scannedBlocks.inc(result.blockCount);
+    this.savedAnchors.inc(result.anchorCount);
     this.lastIndexedBlock.set(Number(result.toBlock));
     for (const listener of this.batchListeners) {
       try {
@@ -132,6 +175,16 @@ export class PrometheusIndexerTelemetry implements IndexerSchedulerTelemetry {
     inFlight: (value) => this.databaseInFlight.set(value),
     configuredConnections: (value) =>
       this.databaseConfiguredConnections.set(value),
+  };
+
+  readonly ingestion: IndexerIngestionTelemetry = {
+    blockHeaderRead: (purpose: BlockHeaderReadPurpose) =>
+      this.blockHeaders.inc({ purpose }),
+    fenceFailure: () => this.fenceFailures.inc(),
+    rollback: (batchCount, blockCount) => {
+      this.rollbackBatches.inc(batchCount);
+      this.rollbackBlocks.inc(Number(blockCount));
+    },
   };
 
   subscribeToBatches(listener: (result: BatchResult) => void): () => void {

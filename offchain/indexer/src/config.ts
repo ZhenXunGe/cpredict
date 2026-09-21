@@ -71,6 +71,11 @@ const schema = z
       (value) => value >= 1 && value <= 32,
       "must be within [1, 32]",
     ),
+    CPREDICT_INDEXER_CANONICAL_MODE: z.enum(["dense", "sparse"]).default("dense"),
+    CPREDICT_INDEXER_CAUGHT_UP_POLL_MS: safeInteger.default(5_000).refine(
+      (value) => value >= 1_000 && value <= 60_000,
+      "must be within [1000, 60000]",
+    ),
     CPREDICT_INDEXER_POLL_INTERVAL_MS: safeInteger.refine(
       (value) => value >= 250 && value <= 60_000,
     ),
@@ -176,6 +181,8 @@ export interface IndexerServiceConfig {
   confirmations: bigint;
   batchSize: bigint;
   blockConcurrency: number;
+  canonicalMode: "dense" | "sparse";
+  caughtUpPollMs: number;
   maxBatchesPerTick: number;
   pollIntervalMs: number;
   rpcTimeoutMs: number;
@@ -224,6 +231,8 @@ export function parseIndexerServiceConfig(
     confirmations: parsed.CPREDICT_INDEXER_CONFIRMATIONS,
     batchSize: parsed.CPREDICT_INDEXER_BATCH_SIZE,
     blockConcurrency: parsed.CPREDICT_INDEXER_BLOCK_CONCURRENCY,
+    canonicalMode: parsed.CPREDICT_INDEXER_CANONICAL_MODE,
+    caughtUpPollMs: parsed.CPREDICT_INDEXER_CAUGHT_UP_POLL_MS,
     maxBatchesPerTick: parsed.CPREDICT_INDEXER_MAX_BATCHES_PER_TICK,
     pollIntervalMs: parsed.CPREDICT_INDEXER_POLL_INTERVAL_MS,
     rpcTimeoutMs: parsed.CPREDICT_INDEXER_RPC_TIMEOUT_MS,

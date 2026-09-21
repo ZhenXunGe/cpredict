@@ -6,6 +6,7 @@ const batch: BatchResult = {
   fromBlock: 1n,
   toBlock: 1n,
   blockCount: 1,
+  anchorCount: 1,
   eventCount: 2,
   discoveredMarkets: 1,
   confirmationStatus: "confirmed",
@@ -87,5 +88,42 @@ describe("BoundedIndexerScheduler", () => {
     expect(() => scheduler.assertHealthy()).toThrow("last tick failed");
     await expect(scheduler.runTick()).resolves.toBe(0);
     expect(() => scheduler.assertHealthy()).not.toThrow();
+  });
+
+  it("polls slowly when caught up and immediately continues a full catch-up tick", async () => {
+    vi.useFakeTimers();
+    try {
+      const indexer = {
+        runBatch: vi
+          .fn()
+          .mockResolvedValueOnce(batch)
+          .mockResolvedValue(undefined),
+      } as unknown as ChainIndexer;
+      const scheduler = new BoundedIndexerScheduler(
+        indexer,
+        {
+          batch: vi.fn(),
+          idle: vi.fn(),
+          failure: vi.fn(),
+          tickDuration: vi.fn(),
+        },
+        {
+          intervalMs: 1_000,
+          caughtUpIntervalMs: 5_000,
+          jitterRatio: 0,
+          maxBatchesPerTick: 1,
+        },
+      );
+      scheduler.start();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(indexer.runBatch).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(4_999);
+      expect(indexer.runBatch).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(indexer.runBatch).toHaveBeenCalledTimes(3);
+      await scheduler.stop();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
