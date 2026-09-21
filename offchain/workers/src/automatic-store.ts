@@ -101,15 +101,26 @@ export class PostgresAutomaticStore implements AutomationStore {
     return this
       .sql`SELECT reason,count(*)::int AS count FROM automation_status WHERE chain_id=${this.chainId} AND reason IN ('daily_gas_budget_exhausted','gas_balance_insufficient','retry_after_chain_check','checking_original_transaction','transaction_reverted') GROUP BY reason`;
   }
+  async oldestPendingSeconds(): Promise<number> {
+    const [r] = await this.sql`SELECT COALESCE(EXTRACT(EPOCH FROM now()-min(COALESCE(broadcast_at,created_at))),0)::float AS age
+      FROM automation_transactions WHERE chain_id=${this.chainId} AND signer=${this.signer.toLowerCase()} AND state IN ('prepared','broadcasting','unknown')`;
+    return Number(r?.age ?? 0);
+  }
   async publicStatus(owner: Address) {
     const [status] = await this
       .sql`SELECT reason,updated_at FROM automation_status WHERE chain_id=${this.chainId} AND owner=${owner.toLowerCase()}`;
     const transactions = await this
       .sql`SELECT id,kind,state,tx_hash,created_at FROM automation_transactions WHERE chain_id=${this.chainId} AND owner=${owner.toLowerCase()} ORDER BY created_at DESC LIMIT 20`;
+    // A blocked claims nonce stalls every beneficiary in this deployment. Return
+    // only a generic queue reason; never expose another owner's transaction.
+    const [queue] = await this.sql`SELECT COALESCE(broadcast_at,created_at) AS since FROM automation_transactions
+      WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND requires_claim_preference=true
+        AND state IN ('broadcasting','unknown') AND COALESCE(broadcast_at,created_at)<now()-interval '120 seconds'
+      ORDER BY created_at LIMIT 1`;
     return {
       enabled: await this.enabled(owner),
-      reason: status?.reason ?? "waiting_for_entitlement",
-      updatedAt: status?.updated_at ?? null,
+      reason: queue ? "queue_blocked_unknown_transaction" : status?.reason ?? "waiting_for_entitlement",
+      updatedAt: queue?.since ?? status?.updated_at ?? null,
       transactions,
     };
   }

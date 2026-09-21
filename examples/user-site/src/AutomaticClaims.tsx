@@ -8,6 +8,8 @@ const reasons: Record<string, string> = {
   received: "已到账",
   confirming: "正在确认到账",
   checking_original_transaction: "正在查询原交易状态",
+  queue_blocked_unknown_transaction: "自动领取队列暂缓：一笔后台交易尚未确认，正在核查。无需重复开关，可先手动领取。",
+  submission_rpc_unavailable: "自动领取暂缓：发送服务当前不可用，等待恢复；也可手动领取。",
   daily_gas_budget_exhausted: "今日代付额度已用完，等待恢复；也可手动领取",
   gas_balance_insufficient: "代付 Gas 余额不足，等待恢复；也可手动领取",
   retry_after_chain_check: "链上状态核验中",

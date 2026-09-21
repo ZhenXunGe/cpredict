@@ -47,6 +47,7 @@ export interface AutomationChain {
   receipt(hash: Hex): Promise<AutomationReceipt | null>;
   canonicalFinal(receipt: AutomationReceipt): Promise<boolean>;
   balance(): Promise<bigint>;
+  submissionReady?(): Promise<boolean>;
 }
 export interface AutomationSource {
   candidates(): AsyncIterable<AutomaticAction>;
@@ -98,6 +99,7 @@ export class AutomaticClaimsWorker {
             await this.store.status(tx.owner, "gas_balance_insufficient");
             return;
           }
+          if (!(await this.canSubmit(tx.owner))) return;
           await this.broadcast(tx);
           return;
         } else {
@@ -128,6 +130,7 @@ export class AutomaticClaimsWorker {
             await this.store.status(action.owner, "gas_balance_insufficient");
             break;
           }
+          if (!(await this.canSubmit(action.owner))) break;
           const prepared = await this.chain.prepare(action);
           if (keccak256(prepared.raw) !== prepared.hash)
             throw new Error("signed_hash_mismatch");
@@ -154,6 +157,13 @@ export class AutomaticClaimsWorker {
         }
       }
     });
+  }
+  private async canSubmit(owner: Address): Promise<boolean> {
+    if (this.chain.submissionReady && !(await this.chain.submissionReady())) {
+      await this.store.status(owner, "submission_rpc_unavailable");
+      return false;
+    }
+    return true;
   }
   private async broadcast(tx: AutomationRecord): Promise<void> {
     if (!(await this.store.markBroadcasting(tx.id))) return;

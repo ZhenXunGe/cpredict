@@ -21,6 +21,7 @@ export class ViemAutomationChain implements AutomationChain {
     readonly account: Account,
     readonly confirmations: bigint,
     readonly eligibilityGuard?: (action: AutomaticAction) => Promise<boolean>,
+    readonly submissionProbe?: () => Promise<boolean>,
   ) {}
   async eligible(action: AutomaticAction): Promise<boolean> {
     if (this.eligibilityGuard && !(await this.eligibilityGuard(action)))
@@ -107,6 +108,9 @@ export class ViemAutomationChain implements AutomationChain {
         await this.client.getBlock({ blockNumber: r.blockNumber })
       ).hash.toLowerCase() === r.blockHash.toLowerCase()
     );
+  }
+  async submissionReady(): Promise<boolean> {
+    return this.submissionProbe ? this.submissionProbe() : true;
   }
   balance() {
     return this.client.getBalance({ address: this.account.address });
