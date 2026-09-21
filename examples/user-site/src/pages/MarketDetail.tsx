@@ -1,3 +1,4 @@
+import { OrderbookPanel } from "../Orderbook.js";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -109,6 +110,14 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
               )}
             </div>
             <dl className="data-list">
+              <dt>市场合约</dt>
+              <dd>
+                <AddressText
+                  value={marketAddress}
+                  explorer={env.explorerUrl}
+                  full
+                />
+              </dd>
               <dt>封盘时间</dt>
               <dd>{dateText(market.closeAt)}</dd>
               <dt>事件开始</dt>
@@ -266,14 +275,6 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
                 <details>
                   <summary>验证信息</summary>
                   <dl className="data-list">
-                    <dt>市场合约</dt>
-                    <dd>
-                      <AddressText
-                        value={market.market}
-                        explorer={env.explorerUrl}
-                        full
-                      />
-                    </dd>
                     <dt>规则哈希</dt>
                     <dd>
                       <code>{market.rulesHash}</code>
@@ -293,20 +294,30 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
               </Notice>
             )}
           </section>
-          <Listings
-            market={market}
-            verified={!!rules.data}
-            labels={rules.data?.outcomes ?? []}
-            terminal={terminal}
-            onPrimaryPurchase={(outcome, units) =>
-              setPrimarySelection((previous) => ({
-                market: market.market,
-                outcome,
-                units,
-                revision: (previous?.revision ?? 0) + 1,
-              }))
-            }
-          />
+          {api.environment.deployment.marketplaceVersion === "orderbook-v2" ? (
+            <OrderbookPanel
+              market={market.market}
+              labels={rules.data?.outcomes ?? []}
+              verified={!!rules.data}
+              terminal={terminal}
+              question={rules.data?.question ?? market.market}
+            />
+          ) : (
+            <Listings
+              market={market}
+              verified={!!rules.data}
+              labels={rules.data?.outcomes ?? []}
+              terminal={terminal}
+              onPrimaryPurchase={(outcome, units) =>
+                setPrimarySelection((previous) => ({
+                  market: market.market,
+                  outcome,
+                  units,
+                  revision: (previous?.revision ?? 0) + 1,
+                }))
+              }
+            />
+          )}
         </div>
         <aside className="stack">
           {terminal ? (
@@ -539,13 +550,15 @@ function TradePanel({
         >
           一级购买
         </Button>
-        <Button
-          variant={mode === "sell" ? "primary" : "quiet"}
-          aria-pressed={mode === "sell"}
-          onClick={() => setMode("sell")}
-        >
-          挂单卖出
-        </Button>
+        {env.deployment.marketplaceVersion !== "orderbook-v2" && (
+          <Button
+            variant={mode === "sell" ? "primary" : "quiet"}
+            aria-pressed={mode === "sell"}
+            onClick={() => setMode("sell")}
+          >
+            挂单卖出
+          </Button>
+        )}
       </div>
       <form className="stack" style={{ marginTop: 22 }} onSubmit={submit}>
         <Field label="结果选项">

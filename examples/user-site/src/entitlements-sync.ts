@@ -51,7 +51,23 @@ function entitlementAction(e: Entitlement): BusinessIntent | null {
   return null;
 }
 
-export function entitlementIntent(e: Entitlement): BusinessIntent | null {
+export function entitlementIntent(
+  e: Entitlement,
+  version?: "fixed-v1" | "orderbook-v2",
+): BusinessIntent | null {
+  if (
+    version === "orderbook-v2" &&
+    e.kind === "escrow" &&
+    e.listingId &&
+    e.status === "claimable"
+  )
+    return {
+      kind:
+        e.reason === "return_terminal_listing"
+          ? "release-order"
+          : "cancel-order",
+      orderId: BigInt(e.listingId).toString(),
+    };
   if (needsTimeoutFunding(e))
     return e.status === "conditional" || e.status === "claimable"
       ? entitlementAction(e)

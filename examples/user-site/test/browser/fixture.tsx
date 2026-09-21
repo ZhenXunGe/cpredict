@@ -69,16 +69,28 @@ const timeoutFundingRole = new URLSearchParams(location.search).get(
   "timeout-funding",
 );
 const historyView = new URLSearchParams(location.search).has("historical-view");
-const env = historyView
+const orderbookTest = new URLSearchParams(location.search).has(
+  "orderbook-test",
+);
+const env = orderbookTest
   ? {
       ...ctEnv,
-      historical: true,
-      quickTrading: undefined,
-      features: { ...ctEnv.features, newExposure: false, faucet: false },
+      deployment: {
+        ...ctEnv.deployment,
+        marketplaceVersion: "orderbook-v2" as const,
+      },
+      features: { ...ctEnv.features, automaticClaims: true },
     }
-  : usdc
-    ? depositEnvironment
-    : ctEnv;
+  : historyView
+    ? {
+        ...ctEnv,
+        historical: true,
+        quickTrading: undefined,
+        features: { ...ctEnv.features, newExposure: false, faucet: false },
+      }
+    : usdc
+      ? depositEnvironment
+      : ctEnv;
 const historicalEnv = {
   ...ctEnv,
   id: "ctusd-history",
@@ -289,6 +301,11 @@ class FixtureApi extends SiteApi {
     schema: z.ZodType<T>,
     _options: Parameters<SiteApi["request"]>[2] = {},
   ): Promise<T> {
+    if (
+      orderbookTest &&
+      (path.startsWith("/v2/orders") || path.startsWith("/v1/automatic-claims"))
+    )
+      return super.request(path, schema, _options);
     // Exercise the real HTTP/error boundary with intercepted local responses only.
     // This fixture still cannot sign or submit transactions.
     if (
@@ -891,9 +908,12 @@ function Fixture() {
               }
             : env,
           async () =>
-            ["entitlements-test", "history-test", "creator-redirect"].some(
-              (key) => new URLSearchParams(location.search).has(key),
-            )
+            [
+              "entitlements-test",
+              "history-test",
+              "creator-redirect",
+              "orderbook-test",
+            ].some((key) => new URLSearchParams(location.search).has(key))
               ? "fixture-token"
               : null,
         ),

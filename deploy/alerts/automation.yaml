@@ -1,0 +1,20 @@
+groups:
+  - name: cpredict-automation
+    rules:
+      - alert: CpredictAutomaticClaimsQueued
+        expr: cpredict_automation_blocked{reason=~"daily_gas_budget_exhausted|gas_balance_insufficient"} > 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "Automatic rights are queued because the keeper budget or balance is insufficient"
+      - alert: CpredictAutomationOutcomeUnknown
+        expr: cpredict_automation_blocked{reason="checking_original_transaction"} > 0
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Query the saved transaction hash; never clear its journal or resend with a new nonce"
+      - alert: CpredictAutomationChainCheckFailed
+        expr: increase(cpredict_automation_ticks_total{result="error"}[5m]) > 2
+        labels: { severity: warning }
+        annotations:
+          summary: "Automatic matching or rights processing cannot complete a chain check"

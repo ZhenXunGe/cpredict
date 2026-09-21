@@ -1,3 +1,4 @@
+import { AutomaticClaimsPanel } from "../AutomaticClaims.js";
 import { useEffect } from "react";
 import { formatUnits } from "viem";
 import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
@@ -263,6 +264,7 @@ export function EntitlementsPage() {
         description="仅显示当前持仓和待处理权益。领取完成并同步后自动移除，历史记录可在交易历史中查看。"
       />
       <AccountGate />
+      <AutomaticClaimsPanel />
       {account && (
         <>
           <div className="stats-grid">
@@ -377,7 +379,10 @@ export function EntitlementsPage() {
                     e.reason ===
                       "refund_and_funding_before_timeout_compensation");
                 const funding = needsTimeoutFunding(e);
-                const intent = entitlementIntent(e);
+                const intent = entitlementIntent(
+                  e,
+                  api.environment.deployment.marketplaceVersion,
+                );
                 const progress = entitlementProgress(
                   e,
                   operations,
@@ -672,7 +677,10 @@ function ListingAction({
   const { api } = useSession();
   const request = useOperation();
   const rules = useRules(market);
-  const intent = entitlementIntent(item);
+  const intent = entitlementIntent(
+    item,
+    api.environment.deployment.marketplaceVersion,
+  );
   const progress = entitlementProgress(item, operations, snapshot);
   const label =
     item.reason === "return_terminal_listing" ? "取回终局挂单份额" : "撤销挂单";
