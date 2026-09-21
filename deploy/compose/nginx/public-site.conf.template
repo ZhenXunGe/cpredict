@@ -42,7 +42,7 @@ server {
   proxy_send_timeout 20s;
 
   location = /healthz { access_log off; default_type application/json; return 200 '{"status":"ok"}'; }
-  location = /readyz { allow 127.0.0.1; allow ::1; deny all; proxy_pass http://indexer:8787/readyz; }
+  location = /readyz { allow 127.0.0.1; allow ::1; deny all; set $ready_upstream indexer:8787; proxy_pass http://$ready_upstream/readyz; }
   location ~ ^/ctusd/(?:app|indexer|metadata)/history/(?:metrics|readyz)(?:/|$) { return 404; }
   # The old ctUSD deployment has been retired. Do not forward stale bookmarks,
   # wallet clients or provider callbacks to either the old or current services.
@@ -68,8 +68,16 @@ server {
     rewrite ^/ctusd/app/(.*)$ /$1 break;
     proxy_pass http://$app_upstream;
   }
-  location /ctusd/indexer/ { proxy_pass http://indexer:8787/; }
-  location /ctusd/metadata/ { proxy_pass http://metadata:8793/; }
+  location /ctusd/indexer/ {
+    set $indexer_upstream indexer:8787;
+    rewrite ^/ctusd/indexer/(.*)$ /$1 break;
+    proxy_pass http://$indexer_upstream;
+  }
+  location /ctusd/metadata/ {
+    set $metadata_upstream metadata:8793;
+    rewrite ^/ctusd/metadata/(.*)$ /$1 break;
+    proxy_pass http://$metadata_upstream;
+  }
   location /usdc/app/ {
     proxy_set_header Authorization $http_authorization;
     proxy_set_header Host $host;
@@ -91,14 +99,21 @@ server {
   }
   location /indexer/ {
     limit_except GET HEAD { deny all; }
-    proxy_pass http://indexer:8787/;
+    set $legacy_indexer_upstream indexer:8787;
+    rewrite ^/indexer/(.*)$ /$1 break;
+    proxy_pass http://$legacy_indexer_upstream;
     proxy_set_header Host $host;
     proxy_set_header Authorization "";
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection $connection_upgrade;
     proxy_read_timeout 75s;
   }
-  location /metadata/ { limit_except GET HEAD POST { deny all; } proxy_pass http://metadata:8793/; }
+  location /metadata/ {
+    limit_except GET HEAD POST { deny all; }
+    set $legacy_metadata_upstream metadata:8793;
+    rewrite ^/metadata/(.*)$ /$1 break;
+    proxy_pass http://$legacy_metadata_upstream;
+  }
   location = /rpc {
     limit_except POST { deny all; }
     client_max_body_size 64k;

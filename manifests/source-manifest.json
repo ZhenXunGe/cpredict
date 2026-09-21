@@ -94,7 +94,7 @@
     },
     {
       "path": "deploy/compose/nginx/public-site.conf.template",
-      "sha256": "532a62e30e2bfaa8db04ba2593c6405e43214a0678c9303961e35c91ca849461"
+      "sha256": "433d20dd61375507f1eee2fdf010be4b87b819e6d73a61c9fd60b2502a741f91"
     },
     {
       "path": "deploy/compose/postgres/init/00-create-databases.sh",
@@ -1998,7 +1998,7 @@
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.mjs",
-      "sha256": "ebdebab34267d253a49bfdbc7dc29d67307a38c8709101a88a974790e51f652a"
+      "sha256": "7c8f6a2ddb8a6b03d5257cc59d8e723b282e779b09ccbaeb3e85f9e4355b13a9"
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.sh",
@@ -2006,7 +2006,7 @@
     },
     {
       "path": "scripts/deployment/deploy-arbitrum-sepolia.test.mjs",
-      "sha256": "8f66943045470f7b5f98e5aff1e4ca6fd0e56d902eef656c5baf74304aeea1ae"
+      "sha256": "153dc4223730c29cb0b33689d4aff8af621a619560027a5175a770a52dd4c9ef"
     },
     {
       "path": "scripts/deployment/deployment-evidence.test.mjs",
