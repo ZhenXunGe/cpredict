@@ -75,6 +75,7 @@ export class BoundedIndexerScheduler {
         }
         committed += 1;
         this.telemetry.batch(result);
+        if (result.caughtUp) break;
       }
       this.lastFailure = undefined;
       return committed;
