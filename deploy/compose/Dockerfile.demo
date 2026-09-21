@@ -16,7 +16,7 @@ COPY deployments/arbitrum-sepolia/final-manifest.schema.json ./deployments/arbit
 RUN npm run site:build
 
 # Keep the image target and Compose service names compatible with existing hosts.
-FROM nginxinc/nginx-unprivileged:1.30.4-alpine@sha256:93722936b82ec8a1178d48448e619226680d2de3706a1640800e186cd5fa7fd3 AS demo
+FROM nginxinc/nginx-unprivileged:1.31.5-alpine@sha256:2ddec616f1cb58bcac057aa388f28cb81e35137641ef4226d321714499329bd1 AS demo
 ARG CPREDICT_IMAGE_REVISION
 RUN printf '%s' "$CPREDICT_IMAGE_REVISION" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${CPREDICT_IMAGE_REVISION}"
