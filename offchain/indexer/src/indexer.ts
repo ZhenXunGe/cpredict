@@ -54,6 +54,8 @@ export interface BatchResult {
   eventCount: number;
   discoveredMarkets: number;
   confirmationStatus: "provisional" | "confirmed";
+  /** True when this batch ended at the safe head observed before scanning. */
+  caughtUp: boolean;
 }
 
 export type BlockHeaderReadPurpose =
@@ -113,12 +115,11 @@ export class ChainIndexer {
   }
 
   async runBatch(): Promise<BatchResult | undefined> {
-    await syncStage("reconcile", () => this.reconcileCheckpoint());
+    const checkpoint = await syncStage("reconcile", () =>
+      this.reconcileCheckpoint(),
+    );
     if (this.options.financial)
       await syncStage("event-logs", () => this.options.financial!.backfill());
-    const checkpoint = await syncStage("checkpoint-read", () =>
-      this.store.checkpoint(this.options.chainId),
-    );
     const chainHead = await syncStage("chain-head", () =>
       this.client.getBlockNumber(),
     );
@@ -131,10 +132,6 @@ export class ChainIndexer {
     if (fromBlock > safeHead) return undefined;
     const toBlock = min(fromBlock + this.options.batchSize - 1n, safeHead);
     const confirmationStatus = confirmationFor(this.options.confirmations);
-
-    await syncStage("canonical-blocks", () =>
-      this.verifyCheckpointFence(checkpoint, "fence"),
-    );
 
     const discoveryLogs = await syncStage("discovery-logs", () =>
       this.discoveryLogs(fromBlock, toBlock),
@@ -280,6 +277,7 @@ export class ChainIndexer {
       discoveredMarkets: uniqueAddresses([...discovered, ...lateMarkets])
         .length,
       confirmationStatus,
+      caughtUp: toBlock === safeHead,
     };
   }
 
@@ -295,9 +293,9 @@ export class ChainIndexer {
     });
   }
 
-  private async reconcileCheckpoint(): Promise<void> {
+  private async reconcileCheckpoint(): Promise<ChainCheckpoint | undefined> {
     const checkpoint = await this.store.checkpoint(this.options.chainId);
-    if (checkpoint === undefined) return;
+    if (checkpoint === undefined) return undefined;
     let commonAncestor: bigint | undefined;
     const ranges = await this.store.scanRanges(this.options.chainId);
     for (const range of ranges) {
@@ -348,7 +346,7 @@ export class ChainIndexer {
       }
     }
 
-    if (commonAncestor === checkpoint.blockNumber) return;
+    if (commonAncestor === checkpoint.blockNumber) return checkpoint;
     const rolledBackRanges = ranges.filter(
       (range) => commonAncestor === undefined || range.toBlock > commonAncestor,
     ).length;
@@ -359,6 +357,7 @@ export class ChainIndexer {
         : checkpoint.blockNumber - commonAncestor,
     );
     await this.store.rollbackAfter(this.options.chainId, commonAncestor);
+    return this.store.checkpoint(this.options.chainId);
   }
 
   private async loadCanonicalAnchors(
@@ -407,18 +406,6 @@ export class ChainIndexer {
         confirmationStatus,
       };
     });
-  }
-
-  private async verifyCheckpointFence(
-    checkpoint: ChainCheckpoint | undefined,
-    purpose: BlockHeaderReadPurpose,
-  ): Promise<void> {
-    if (checkpoint === undefined) return;
-    const block = await this.readBlock(checkpoint.blockNumber, purpose);
-    if (block.hash !== checkpoint.blockHash) {
-      this.options.telemetry?.fenceFailure();
-      throw new Error("canonical predecessor fence changed");
-    }
   }
 
   private async verifyStableFences(

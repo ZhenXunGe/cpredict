@@ -18,6 +18,7 @@ describe("sparse canonical telemetry", () => {
       eventCount: 2,
       discoveredMarkets: 0,
       confirmationStatus: "confirmed",
+      caughtUp: false,
     });
 
     const metrics = await registry.metrics();

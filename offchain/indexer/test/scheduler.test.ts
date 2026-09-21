@@ -10,6 +10,7 @@ const batch: BatchResult = {
   eventCount: 2,
   discoveredMarkets: 1,
   confirmationStatus: "confirmed",
+  caughtUp: false,
 };
 
 describe("BoundedIndexerScheduler", () => {
@@ -30,6 +31,27 @@ describe("BoundedIndexerScheduler", () => {
     await expect(scheduler.runTick()).resolves.toBe(3);
     expect(indexer.runBatch).toHaveBeenCalledTimes(3);
     expect(telemetry.batch).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not issue a redundant idle scan after reaching the observed safe head", async () => {
+    const indexer = {
+      runBatch: vi.fn(async () => ({ ...batch, caughtUp: true })),
+    } as unknown as ChainIndexer;
+    const telemetry = {
+      batch: vi.fn(),
+      idle: vi.fn(),
+      failure: vi.fn(),
+      tickDuration: vi.fn(),
+    };
+    const scheduler = new BoundedIndexerScheduler(indexer, telemetry, {
+      intervalMs: 1_000,
+      maxBatchesPerTick: 3,
+    });
+
+    await expect(scheduler.runTick()).resolves.toBe(1);
+    expect(indexer.runBatch).toHaveBeenCalledTimes(1);
+    expect(telemetry.batch).toHaveBeenCalledTimes(1);
+    expect(telemetry.idle).not.toHaveBeenCalled();
   });
 
   it("does not overlap ticks and drains the active tick during shutdown", async () => {

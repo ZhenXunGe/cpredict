@@ -224,6 +224,13 @@ describe("ChainIndexer canonical ingestion", () => {
     });
     // Endpoint load plus the closing stability fence; no per-block reads.
     expect(client.blockRequests).toBe(2);
+
+    const nextClient = new FakeClient(200n, []);
+    await createIndexer(nextClient, store, undefined, {
+      canonicalMode: "sparse",
+    }).runBatch();
+    // One opening predecessor check, one endpoint load, and the two closing fences.
+    expect(nextClient.blockRequests).toBe(4);
   });
 
   it("deduplicates same-block sparse event anchors", async () => {
