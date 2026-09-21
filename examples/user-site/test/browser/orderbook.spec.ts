@@ -162,6 +162,22 @@ test("market bond maintenance is not presented as the participant receiving fund
               units: "5000000",
             },
           },
+          {
+            id: "66666666-6666-4666-8666-666666666666",
+            kind: "bond",
+            effect: "payout",
+            state: "confirmed",
+            tx_hash: "0x" + "6".repeat(64),
+            created_at: new Date().toISOString(),
+            context: {
+              market: null,
+              marketQuestion: null,
+              outcomeId: null,
+              outcomeLabel: null,
+              amount: "10000000",
+              units: null,
+            },
+          },
         ],
       },
     }),
@@ -182,6 +198,11 @@ test("market bond maintenance is not presented as the participant receiving fund
   await expect(history).toContainText("赢家收益 · 已到账");
   await expect(history).toContainText(
     "市场：主播今晚直播间是否会超过30万人？ · 结果：是 · 到账金额：9.632 ctUSD · 结算份额：5",
+  );
+  await expect(history).toContainText("可退押金 · 已到账");
+  await expect(history).toContainText("到账金额：10 ctUSD");
+  await expect(history).toContainText(
+    "按账户合并领取已结算市场的可退押金；该笔到账可能汇总多个市场。",
   );
   expect(f.errors).toEqual([]);
 });
