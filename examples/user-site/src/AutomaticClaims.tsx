@@ -182,6 +182,16 @@ export function AutomaticClaimsPanel() {
               {t.state === "confirmed" && !t.context && (
                 <div className="muted">链上明细索引中</div>
               )}
+              {t.kind === "bond" && t.context && !t.context.market && (
+                <div className="muted">
+                  按账户合并领取已结算市场的可退押金；该笔到账可能汇总多个市场。
+                </div>
+              )}
+              {t.kind === "fees" && t.context && !t.context.market && (
+                <div className="muted">
+                  按账户合并领取累计费用；该笔到账可能汇总多个市场或费用来源。
+                </div>
+              )}
               {t.tx_hash && (
                 <>
                   {" "}

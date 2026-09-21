@@ -354,7 +354,7 @@
     },
     {
       "path": "examples/user-site/src/AutomaticClaims.tsx",
-      "sha256": "006b836276e2718792bfd8d4931add52a8e511f5bd06eb3b15cc50dfe0d39b4c"
+      "sha256": "20461981be1914d95eb3f77ed5d6090c9d29699b0c63c76a8f97d3c9356200c5"
     },
     {
       "path": "examples/user-site/src/DepositHistory.tsx",
@@ -566,7 +566,7 @@
     },
     {
       "path": "examples/user-site/test/browser/orderbook.spec.ts",
-      "sha256": "84dd4ea5d334e3d41d7daea3e3bd89518d9ea41ea1701afef8c1bf8b159a6261"
+      "sha256": "6f7a7cff9209bc74ad8f5bdd49d32477c1f262e879a4c5281d24eca0fd981c58"
     },
     {
       "path": "examples/user-site/test/browser/playwright.config.ts",
