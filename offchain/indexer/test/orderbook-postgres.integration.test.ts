@@ -55,6 +55,12 @@ describe.skipIf(!url)(
           "utf8",
         ),
       );
+      await migration.unsafe(
+        await readFile(
+          "offchain/app-service/migrations/008_automation_status_scope.sql",
+          "utf8",
+        ),
+      );
       migration.release();
       store = new PostgresEventStore(u.toString(), 3, v2);
       await store.ready();
@@ -273,19 +279,117 @@ describe.skipIf(!url)(
     });
     it("reports a blocked claims queue to other owners without leaking transactions, and clears after confirmation", async () => {
       const a = new PostgresAutomaticStore(sql, 421614, "queue-test", A(72));
-      const r = await a.save({key:"blocked-claim",owner:A(73),kind:"winner",target:vault,data:"0x1234",requiresClaimPreference:true}, {raw:"0xabcd",hash:H(701),nonce:0n,maximumCost:10n});
-      await a.markBroadcasting(r.id); await a.unknown(r.id);
+      const r = await a.save(
+        {
+          key: "blocked-claim",
+          owner: A(73),
+          kind: "winner",
+          target: vault,
+          data: "0x1234",
+          requiresClaimPreference: true,
+        },
+        { raw: "0xabcd", hash: H(701), nonce: 0n, maximumCost: 10n },
+      );
+      await a.markBroadcasting(r.id);
+      await a.unknown(r.id);
       await sql`UPDATE automation_transactions SET broadcast_at=now()-interval '5 minutes' WHERE id=${r.id}`;
       expect(await a.oldestPendingSeconds()).toBeGreaterThan(290);
       const status = await a.publicStatus(A(74));
       expect(status.reason).toBe("queue_blocked_unknown_transaction");
       expect(status.transactions).toEqual([]);
       expect(JSON.stringify(status)).not.toContain(H(701));
-      const unrelated = new PostgresAutomaticStore(sql,421614,"other-deployment",A(75));
-      expect((await unrelated.publicStatus(A(74))).reason).toBe("waiting_for_entitlement");
-      await a.finish(r.id,{status:"success",blockNumber:4n,blockHash:H(4)});
-      expect((await a.publicStatus(A(74))).reason).toBe("waiting_for_entitlement");
+      const unrelated = new PostgresAutomaticStore(
+        sql,
+        421614,
+        "other-deployment",
+        A(75),
+      );
+      expect((await unrelated.publicStatus(A(74))).reason).toBe(
+        "waiting_for_entitlement",
+      );
+      await a.finish(r.id, {
+        status: "success",
+        blockNumber: 4n,
+        blockHash: H(4),
+      });
+      expect((await a.publicStatus(A(74))).reason).toBe(
+        "waiting_for_entitlement",
+      );
       expect(await a.oldestPendingSeconds()).toBe(0);
+    });
+    it("isolates claim status by deployment and lane and hides market maintenance from personal history", async () => {
+      const owner = A(76),
+        claims = new PostgresAutomaticStore(
+          sql,
+          421614,
+          "scope-v2",
+          A(77),
+          "claims",
+        ),
+        matching = new PostgresAutomaticStore(
+          sql,
+          421614,
+          "scope-v2",
+          A(78),
+          "matching",
+        ),
+        otherDeployment = new PostgresAutomaticStore(
+          sql,
+          421614,
+          "scope-v3",
+          A(79),
+          "claims",
+        );
+      const save = async (
+        store: PostgresAutomaticStore,
+        kind: string,
+        nonce: bigint,
+        requiresClaimPreference: boolean,
+      ) => {
+        const row = await store.save(
+          {
+            key: `${kind}:${nonce}`,
+            owner,
+            kind,
+            target: vault,
+            data: "0x1234",
+            requiresClaimPreference,
+          },
+          {
+            raw: `0x${(1000n + nonce).toString(16)}` as `0x${string}`,
+            hash: H(Number(800n + nonce)),
+            nonce,
+            maximumCost: 1n,
+          },
+        );
+        await store.finish(row.id, {
+          status: "success",
+          blockNumber: 5n,
+          blockHash: H(5),
+        });
+      };
+      await save(claims, "winner", 0n, true);
+      await save(claims, `settle-bond:${vault.toLowerCase()}`, 1n, true);
+      await save(matching, "match-orders", 0n, false);
+      await save(otherDeployment, "fees", 0n, true);
+      await claims.status(owner, "received");
+      await matching.status(owner, "gas_balance_insufficient");
+      await otherDeployment.status(owner, "retry_after_chain_check");
+
+      const status = await claims.publicStatus(owner);
+      expect(status.reason).toBe("received");
+      expect(status.transactions).toHaveLength(1);
+      expect(status.transactions[0]).toMatchObject({
+        kind: "winner",
+        effect: "payout",
+      });
+      expect(JSON.stringify(status)).not.toContain("settle-bond");
+      expect(JSON.stringify(status)).not.toContain("match-orders");
+      expect(JSON.stringify(status)).not.toContain("fees");
+      expect(await claims.blockedCounts()).toEqual([]);
+      expect(await matching.blockedCounts()).toEqual([
+        { reason: "gas_balance_insufficient", count: 1 },
+      ]);
     });
     it("advisory lock excludes simultaneous workers and releases after exception", async () => {
       const a = new PostgresAutomaticStore(sql, 421614, "v2", A(90)),

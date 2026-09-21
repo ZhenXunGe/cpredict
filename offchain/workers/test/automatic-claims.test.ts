@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
-import { keccak256, type Address, type Hex } from "viem";
+import { keccak256, zeroAddress, type Address, type Hex } from "viem";
 import {
   AutomaticClaimsWorker,
+  automationEffect,
   type AutomationStore,
   type AutomationChain,
   type AutomationRecord,
@@ -98,6 +99,14 @@ function fixture() {
   };
 }
 describe("durable automatic claims", () => {
+  it("classifies payout, asset return and market maintenance effects", () => {
+    expect(automationEffect("winner")).toBe("payout");
+    expect(automationEffect("return-listing:1")).toBe("asset-return");
+    expect(automationEffect("settle-bond:0x1")).toBe("market-maintenance");
+    expect(automationEffect("void-timeout")).toBe("market-maintenance");
+    expect(automationEffect("match-orders")).toBe("matching");
+    expect(automationEffect("future-kind")).toBe("unknown");
+  });
   it("persists before broadcast; crash/unknown never resends", async () => {
     const f = fixture();
     vi.mocked(f.chain.send).mockRejectedValue(new Error("network timeout"));
@@ -151,10 +160,49 @@ describe("durable automatic claims", () => {
     vi.mocked(f.chain.eligible).mockResolvedValue(false);
     await f.worker.tick();
     expect(f.store.finish).toHaveBeenCalledOnce();
+    expect(f.store.status).toHaveBeenCalledWith(owner, "received");
     expect(f.chain.send).toHaveBeenCalledTimes(1);
     vi.mocked(f.chain.eligible).mockResolvedValue(true);
     await f.worker.tick();
     expect(f.chain.send).toHaveBeenCalledTimes(2);
+  });
+  it("never attributes market maintenance completion to its triggering holder", async () => {
+    const f = fixture();
+    f.source.candidates = async function* () {
+      yield {
+        ...action,
+        kind: "settle-bond:0x1111111111111111111111111111111111111111",
+      };
+    };
+    f.worker = new AutomaticClaimsWorker(f.store, f.chain, f.source, 100n);
+    await f.worker.tick();
+    vi.mocked(f.chain.receipt).mockResolvedValue({
+      status: "success",
+      blockNumber: 10n,
+      blockHash: hash,
+    });
+    await f.worker.tick();
+    expect(f.store.status).toHaveBeenCalledWith(
+      zeroAddress,
+      "market_state_updated",
+    );
+    expect(f.store.status).not.toHaveBeenCalledWith(owner, "received");
+  });
+  it("describes returned listing assets separately from a payout", async () => {
+    const f = fixture();
+    f.source.candidates = async function* () {
+      yield { ...action, kind: "return-listing:1" };
+    };
+    f.worker = new AutomaticClaimsWorker(f.store, f.chain, f.source, 100n);
+    await f.worker.tick();
+    vi.mocked(f.chain.receipt).mockResolvedValue({
+      status: "success",
+      blockNumber: 10n,
+      blockHash: hash,
+    });
+    await f.worker.tick();
+    expect(f.store.status).toHaveBeenCalledWith(owner, "assets_returned");
+    expect(f.store.status).not.toHaveBeenCalledWith(owner, "received");
   });
   it("a noncanonical or insufficiently confirmed receipt cannot unlock another send", async () => {
     const f = fixture();
@@ -201,21 +249,28 @@ describe("durable automatic claims", () => {
   });
 });
 
-
 describe("submission admission", () => {
   it("does not sign or broadcast when the selected writer is unavailable", async () => {
-    const f = fixture(); f.chain.submissionReady = async () => false;
+    const f = fixture();
+    f.chain.submissionReady = async () => false;
     await f.worker.tick();
-    expect(f.chain.prepare).not.toHaveBeenCalled(); expect(f.chain.send).not.toHaveBeenCalled();
+    expect(f.chain.prepare).not.toHaveBeenCalled();
+    expect(f.chain.send).not.toHaveBeenCalled();
     expect(f.rows).toHaveLength(0);
-    expect(f.store.status).toHaveBeenCalledWith(owner, "submission_rpc_unavailable");
+    expect(f.store.status).toHaveBeenCalledWith(
+      owner,
+      "submission_rpc_unavailable",
+    );
     f.chain.submissionReady = async () => true;
-    await f.worker.tick(); expect(f.chain.send).toHaveBeenCalledTimes(1);
+    await f.worker.tick();
+    expect(f.chain.send).toHaveBeenCalledTimes(1);
   });
   it("never re-sends unknown transactions when writer availability changes", async () => {
-    const f = fixture(); await f.worker.tick();
+    const f = fixture();
+    await f.worker.tick();
     f.chain.submissionReady = vi.fn(async () => true);
-    await f.worker.tick(); await f.worker.tick();
+    await f.worker.tick();
+    await f.worker.tick();
     expect(f.chain.send).toHaveBeenCalledTimes(1);
     expect(f.chain.submissionReady).not.toHaveBeenCalled();
   });

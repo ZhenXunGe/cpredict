@@ -3,17 +3,20 @@ import type { Sql } from "postgres";
 import type { Address, Hex } from "viem";
 import type {
   AutomaticAction,
+  AutomationLane,
   PreparedAutomation,
   AutomationRecord,
   AutomationReceipt,
   AutomationStore,
 } from "./automatic-claims.js";
+import { automationEffect } from "./automatic-claims.js";
 export class PostgresAutomaticStore implements AutomationStore {
   constructor(
     readonly sql: Sql,
     readonly chainId: number,
     readonly deploymentId: string,
     readonly signer: Address,
+    readonly lane: AutomationLane = "claims",
   ) {}
   async exclusive<T>(work: () => Promise<T>): Promise<T | undefined> {
     const db = await this.sql.reserve();
@@ -94,34 +97,62 @@ export class PostgresAutomaticStore implements AutomationStore {
   }
   async status(owner: Address, reason: string): Promise<void> {
     await this
-      .sql`INSERT INTO automation_status(chain_id,owner,reason) VALUES(${this.chainId},${owner.toLowerCase()},${reason})
-      ON CONFLICT(chain_id,owner) DO UPDATE SET reason=EXCLUDED.reason,updated_at=now()`;
+      .sql`INSERT INTO automation_lane_status(chain_id,deployment_id,lane,owner,reason) VALUES(${this.chainId},${this.deploymentId},${this.lane},${owner.toLowerCase()},${reason})
+      ON CONFLICT(chain_id,deployment_id,lane,owner) DO UPDATE SET reason=EXCLUDED.reason,updated_at=now()`;
   }
   async blockedCounts() {
     return this
-      .sql`SELECT reason,count(*)::int AS count FROM automation_status WHERE chain_id=${this.chainId} AND reason IN ('daily_gas_budget_exhausted','gas_balance_insufficient','retry_after_chain_check','checking_original_transaction','transaction_reverted') GROUP BY reason`;
+      .sql`SELECT reason,count(*)::int AS count FROM automation_lane_status WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND lane=${this.lane} AND reason IN ('daily_gas_budget_exhausted','gas_balance_insufficient','retry_after_chain_check','checking_original_transaction','transaction_reverted','submission_rpc_unavailable') GROUP BY reason`;
   }
   async oldestPendingSeconds(): Promise<number> {
-    const [r] = await this.sql`SELECT COALESCE(EXTRACT(EPOCH FROM now()-min(COALESCE(broadcast_at,created_at))),0)::float AS age
+    const [r] = await this
+      .sql`SELECT COALESCE(EXTRACT(EPOCH FROM now()-min(COALESCE(broadcast_at,created_at))),0)::float AS age
       FROM automation_transactions WHERE chain_id=${this.chainId} AND signer=${this.signer.toLowerCase()} AND state IN ('prepared','broadcasting','unknown')`;
     return Number(r?.age ?? 0);
   }
   async publicStatus(owner: Address) {
     const [status] = await this
-      .sql`SELECT reason,updated_at FROM automation_status WHERE chain_id=${this.chainId} AND owner=${owner.toLowerCase()}`;
-    const transactions = await this
-      .sql`SELECT id,kind,state,tx_hash,created_at FROM automation_transactions WHERE chain_id=${this.chainId} AND owner=${owner.toLowerCase()} ORDER BY created_at DESC LIMIT 20`;
+      .sql`SELECT reason,updated_at FROM automation_lane_status WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND lane='claims' AND owner=${owner.toLowerCase()}`;
+    const rows = await this.sql<
+      {
+        id: string;
+        kind: string;
+        state: string;
+        tx_hash: Hex | null;
+        created_at: Date;
+      }[]
+    >`SELECT id,kind,state,tx_hash,created_at FROM automation_transactions WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND owner=${owner.toLowerCase()} AND requires_claim_preference=true ORDER BY created_at DESC LIMIT 40`;
+    const transactions = rows
+      .map((row) => ({ ...row, effect: automationEffect(row.kind) }))
+      .filter((row) => ["payout", "asset-return"].includes(row.effect))
+      .slice(0, 20);
     // A blocked claims nonce stalls every beneficiary in this deployment. Return
     // only a generic queue reason; never expose another owner's transaction.
-    const [queue] = await this.sql`SELECT COALESCE(broadcast_at,created_at) AS since FROM automation_transactions
+    const [queue] = await this
+      .sql`SELECT COALESCE(broadcast_at,created_at) AS since FROM automation_transactions
       WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND requires_claim_preference=true
         AND state IN ('broadcasting','unknown') AND COALESCE(broadcast_at,created_at)<now()-interval '120 seconds'
       ORDER BY created_at LIMIT 1`;
     return {
       enabled: await this.enabled(owner),
-      reason: queue ? "queue_blocked_unknown_transaction" : status?.reason ?? "waiting_for_entitlement",
+      reason: queue
+        ? "queue_blocked_unknown_transaction"
+        : (status?.reason ?? this.reasonFromLatest(transactions[0])),
       updatedAt: queue?.since ?? status?.updated_at ?? null,
       transactions,
     };
+  }
+  private reasonFromLatest(
+    transaction:
+      | { state: string; effect: ReturnType<typeof automationEffect> }
+      | undefined,
+  ): string {
+    if (!transaction) return "waiting_for_entitlement";
+    if (transaction.state === "confirmed")
+      return transaction.effect === "payout" ? "received" : "assets_returned";
+    if (transaction.state === "reverted") return "transaction_reverted";
+    if (["prepared", "broadcasting", "unknown"].includes(transaction.state))
+      return "confirming";
+    return "waiting_for_entitlement";
   }
 }
