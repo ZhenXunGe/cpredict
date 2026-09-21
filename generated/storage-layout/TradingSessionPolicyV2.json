@@ -1,12 +1,12 @@
 {
   "storage": [
     {
-      "astId": 57176,
-      "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+      "astId": 61052,
+      "contract": "src/core/TradingSessionPolicyV2.sol:TradingSessionPolicyV2",
       "label": "sessionState",
       "offset": 0,
       "slot": "0",
-      "type": "t_mapping(t_bytes32,t_mapping(t_address,t_struct(SessionState)57162_storage))"
+      "type": "t_mapping(t_bytes32,t_mapping(t_address,t_struct(SessionState)61038_storage))"
     }
   ],
   "types": {
@@ -25,76 +25,76 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_mapping(t_address,t_struct(SessionState)57162_storage)": {
+    "t_mapping(t_address,t_struct(SessionState)61038_storage)": {
       "encoding": "mapping",
       "key": "t_address",
-      "label": "mapping(address => struct TradingSessionPolicyV1.SessionState)",
+      "label": "mapping(address => struct TradingSessionPolicyV2.SessionState)",
       "numberOfBytes": "32",
-      "value": "t_struct(SessionState)57162_storage"
+      "value": "t_struct(SessionState)61038_storage"
     },
-    "t_mapping(t_bytes32,t_mapping(t_address,t_struct(SessionState)57162_storage))": {
+    "t_mapping(t_bytes32,t_mapping(t_address,t_struct(SessionState)61038_storage))": {
       "encoding": "mapping",
       "key": "t_bytes32",
-      "label": "mapping(bytes32 => mapping(address => struct TradingSessionPolicyV1.SessionState))",
+      "label": "mapping(bytes32 => mapping(address => struct TradingSessionPolicyV2.SessionState))",
       "numberOfBytes": "32",
-      "value": "t_mapping(t_address,t_struct(SessionState)57162_storage)"
+      "value": "t_mapping(t_address,t_struct(SessionState)61038_storage)"
     },
-    "t_struct(SessionState)57162_storage": {
+    "t_struct(SessionState)61038_storage": {
       "encoding": "inplace",
-      "label": "struct TradingSessionPolicyV1.SessionState",
+      "label": "struct TradingSessionPolicyV2.SessionState",
       "numberOfBytes": "64",
       "members": [
         {
-          "astId": 57149,
-          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "astId": 61025,
+          "contract": "src/core/TradingSessionPolicyV2.sol:TradingSessionPolicyV2",
           "label": "perOperation",
           "offset": 0,
           "slot": "0",
           "type": "t_uint128"
         },
         {
-          "astId": 57151,
-          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "astId": 61027,
+          "contract": "src/core/TradingSessionPolicyV2.sol:TradingSessionPolicyV2",
           "label": "total",
           "offset": 16,
           "slot": "0",
           "type": "t_uint128"
         },
         {
-          "astId": 57153,
-          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "astId": 61029,
+          "contract": "src/core/TradingSessionPolicyV2.sol:TradingSessionPolicyV2",
           "label": "spent",
           "offset": 0,
           "slot": "1",
           "type": "t_uint128"
         },
         {
-          "astId": 57155,
-          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "astId": 61031,
+          "contract": "src/core/TradingSessionPolicyV2.sol:TradingSessionPolicyV2",
           "label": "validAfter",
           "offset": 16,
           "slot": "1",
           "type": "t_uint48"
         },
         {
-          "astId": 57157,
-          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "astId": 61033,
+          "contract": "src/core/TradingSessionPolicyV2.sol:TradingSessionPolicyV2",
           "label": "validUntil",
           "offset": 22,
           "slot": "1",
           "type": "t_uint48"
         },
         {
-          "astId": 57159,
-          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "astId": 61035,
+          "contract": "src/core/TradingSessionPolicyV2.sol:TradingSessionPolicyV2",
           "label": "installed",
           "offset": 28,
           "slot": "1",
           "type": "t_bool"
         },
         {
-          "astId": 57161,
-          "contract": "src/core/TradingSessionPolicyV1.sol:TradingSessionPolicyV1",
+          "astId": 61037,
+          "contract": "src/core/TradingSessionPolicyV2.sol:TradingSessionPolicyV2",
           "label": "revoked",
           "offset": 29,
           "slot": "1",

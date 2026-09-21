@@ -38,14 +38,28 @@ export const DEFAULT_MIN_BALANCE_WEI = 20_000_000_000_000_000n;
 export const FINGERPRINT_MARKER = "CPREDICT_FACTORY_DEPENDENCY_FINGERPRINT";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const STATIC_PENDING = resolve(ROOT, "deployments/arbitrum-sepolia/pending.json");
+// Explicit opt-in only; the established V1 command and state paths retain their defaults.
+const ORDERBOOK = process.env.CPREDICT_DEPLOYMENT_VARIANT === "orderbook-v2";
+if (process.env.CPREDICT_DEPLOYMENT_VARIANT && !ORDERBOOK)
+  throw new Error("unknown deployment variant");
+const STATIC_PENDING = resolve(
+  ROOT,
+  ORDERBOOK
+    ? "deployments/arbitrum-sepolia/orderbook-v2/pending.json"
+    : "deployments/arbitrum-sepolia/pending.json",
+);
 const DEFAULT_STATE_DIR = resolve(
   ROOT,
-  "deployments/arbitrum-sepolia/runtime",
+  ORDERBOOK
+    ? "deployments/arbitrum-sepolia/orderbook-v2/runtime"
+    : "deployments/arbitrum-sepolia/runtime",
 );
-const DEPLOY_SCRIPT =
-  "script/DeployArbitrumSepolia.s.sol:DeployArbitrumSepolia";
-const FINALIZE_SCRIPT = "script/FinalizeBootstrap.s.sol:FinalizeBootstrap";
+const DEPLOY_SCRIPT = ORDERBOOK
+  ? "script/DeployOrderbookArbitrumSepolia.s.sol:DeployOrderbookArbitrumSepolia"
+  : "script/DeployArbitrumSepolia.s.sol:DeployArbitrumSepolia";
+const FINALIZE_SCRIPT = ORDERBOOK
+  ? "script/FinalizeOrderbookBootstrap.s.sol:FinalizeOrderbookBootstrap"
+  : "script/FinalizeBootstrap.s.sol:FinalizeBootstrap";
 const HASH_RE = /^0x[0-9a-fA-F]{64}$/;
 const PRIVATE_KEY_RE = /^(?:0x)?[0-9a-fA-F]{64}$/;
 const ADDRESS_KEYS = [
@@ -60,6 +74,7 @@ const ADDRESS_KEYS = [
   "factory",
   "marketplace",
   "paymaster",
+  ...(ORDERBOOK ? ["tradingSessionPolicy"] : []),
   "temporaryAdmin",
   "governanceSafe",
   "emergencySafe",
@@ -94,7 +109,11 @@ const TIMELOCK_ABI = parseAbi([
   "function CANCELLER_ROLE() view returns (bytes32)",
   "function hasRole(bytes32 role,address account) view returns (bool)",
 ]);
-const BOOTSTRAP_SALT = keccak256(stringToHex("CPREDICT_V1_BOOTSTRAP"));
+const BOOTSTRAP_SALT = keccak256(
+  stringToHex(
+    ORDERBOOK ? "CPREDICT_ORDERBOOK_V2_BOOTSTRAP" : "CPREDICT_V1_BOOTSTRAP",
+  ),
+);
 
 function fail(message, code = 1) {
   const error = new Error(message);
@@ -164,7 +183,8 @@ export function parseArgs(argv) {
       options.envFile = resolve(take());
       options.envFileExplicit = true;
     } else if (flag === "--state-dir") options.stateDir = resolve(take());
-    else if (flag === "--pending-manifest") options.pendingPath = resolve(take());
+    else if (flag === "--pending-manifest")
+      options.pendingPath = resolve(take());
     else if (flag === "--profile") options.profile = take();
     else if (flag === "--manifest") options.manifest = resolve(take());
     else if (flag === "--canary-evidence")
@@ -190,7 +210,8 @@ export function parseArgs(argv) {
     "verify",
     "all",
   ]);
-  if (!commands.has(options.command)) fail(`unknown command ${options.command}`, 2);
+  if (!commands.has(options.command))
+    fail(`unknown command ${options.command}`, 2);
   if (!new Set(["formal", "debug", "sandbox", undefined]).has(options.profile))
     fail("--profile must be formal, debug, or sandbox", 2);
   return options;
@@ -210,7 +231,8 @@ function normalizeAddress(value, name) {
   } catch {
     fail(`${name} must be a valid EVM address`, 2);
   }
-  if (address.toLowerCase() === ZERO_ADDRESS) fail(`${name} must not be zero`, 2);
+  if (address.toLowerCase() === ZERO_ADDRESS)
+    fail(`${name} must not be zero`, 2);
   return address;
 }
 
@@ -227,11 +249,16 @@ export function existingSandboxTokenConfig(env, profile) {
   const value = env.CPREDICT_EXISTING_SANDBOX_TOKEN;
   const hash = env.CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH;
   if (!value && !hash) return undefined;
-  if (profile !== "sandbox") fail("existing token reuse requires sandbox profile", 2);
+  if (profile !== "sandbox")
+    fail("existing token reuse requires sandbox profile", 2);
   const address = normalizeAddress(value, "CPREDICT_EXISTING_SANDBOX_TOKEN");
-  if (address.toLowerCase() === USDC.toLowerCase()) fail("sandbox token must not be canonical USDC", 2);
+  if (address.toLowerCase() === USDC.toLowerCase())
+    fail("sandbox token must not be canonical USDC", 2);
   if (!HASH_RE.test(hash ?? "") || hash.toLowerCase() === ZERO_HASH)
-    fail("CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH must be a nonzero bytes32", 2);
+    fail(
+      "CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH must be a nonzero bytes32",
+      2,
+    );
   return { address, runtimeCodehash: hash.toLowerCase() };
 }
 
@@ -249,9 +276,18 @@ async function loadConfig(
     fail(`${options.envFile}: env file does not exist`, 2);
   }
   const env = { ...fileEnv, ...process.env };
-  const profile = options.profile ?? env.CPREDICT_DEPLOYMENT_PROFILE ?? "formal";
+  const profile =
+    options.profile ?? env.CPREDICT_DEPLOYMENT_PROFILE ?? "formal";
   if (!new Set(["formal", "debug", "sandbox"]).has(profile))
     fail("CPREDICT_DEPLOYMENT_PROFILE must be formal, debug, or sandbox", 2);
+  if (ORDERBOOK && profile === "formal")
+    fail(
+      "orderbook-v2 currently supports isolated sandbox/debug deployments only; the formal evidence pipeline still targets V1",
+      2,
+    );
+  const tradingSessionPaymaster = ORDERBOOK
+    ? sessionPaymasterConfig(env)
+    : undefined;
   const rpcA = env.ARBITRUM_SEPOLIA_RPC_URL_A ?? env.ARBITRUM_SEPOLIA_RPC_URL;
   const rpcB = env.ARBITRUM_SEPOLIA_RPC_URL_B;
   if (!rpcA) fail("ARBITRUM_SEPOLIA_RPC_URL_A is required", 2);
@@ -265,7 +301,10 @@ async function loadConfig(
   }
   const roles = needSigner
     ? {
-        governanceSafe: normalizeAddress(env.GOVERNANCE_SAFE, "GOVERNANCE_SAFE"),
+        governanceSafe: normalizeAddress(
+          env.GOVERNANCE_SAFE,
+          "GOVERNANCE_SAFE",
+        ),
         emergencySafe: normalizeAddress(env.EMERGENCY_SAFE, "EMERGENCY_SAFE"),
         treasury: normalizeAddress(env.PROTOCOL_TREASURY, "PROTOCOL_TREASURY"),
         sponsorSigner: normalizeAddress(env.SPONSOR_SIGNER, "SPONSOR_SIGNER"),
@@ -282,11 +321,16 @@ async function loadConfig(
     env.MARKET_RESOLUTION_WINDOW_SECONDS ?? 86_400,
   );
   if (
-    !Number.isSafeInteger(resolutionWindowSeconds)
-      || resolutionWindowSeconds < 900
-      || resolutionWindowSeconds > 2_592_000
-  ) fail("MARKET_RESOLUTION_WINDOW_SECONDS must be an integer from 900 to 2592000", 2);
-  for (const secret of [privateKey, rpcA, rpcB]) if (secret) ACTIVE_SECRETS.add(secret);
+    !Number.isSafeInteger(resolutionWindowSeconds) ||
+    resolutionWindowSeconds < 900 ||
+    resolutionWindowSeconds > 2_592_000
+  )
+    fail(
+      "MARKET_RESOLUTION_WINDOW_SECONDS must be an integer from 900 to 2592000",
+      2,
+    );
+  for (const secret of [privateKey, rpcA, rpcB])
+    if (secret) ACTIVE_SECRETS.add(secret);
   return {
     env,
     profile,
@@ -299,10 +343,25 @@ async function loadConfig(
     minimumBalance,
     resolutionWindowSeconds,
     existingSandboxToken: existingSandboxTokenConfig(env, profile),
+    tradingSessionPaymaster,
     pendingPath: options.pendingPath,
     stateDir: options.stateDir,
     statePath: resolve(options.stateDir, "state.json"),
   };
+}
+
+export function sessionPaymasterConfig(env) {
+  const address = normalizeAddress(
+    env.TRADING_SESSION_PAYMASTER,
+    "TRADING_SESSION_PAYMASTER",
+  );
+  const runtimeCodehash = env.TRADING_SESSION_PAYMASTER_CODEHASH;
+  if (
+    !HASH_RE.test(runtimeCodehash ?? "") ||
+    runtimeCodehash.toLowerCase() === ZERO_HASH
+  )
+    fail("TRADING_SESSION_PAYMASTER_CODEHASH must be nonzero bytes32", 2);
+  return { address, runtimeCodehash: runtimeCodehash.toLowerCase() };
 }
 
 async function ensurePrivateStateDirectory(path) {
@@ -332,16 +391,21 @@ function codehash(code) {
   return keccak256(code);
 }
 
-async function inspectExternalContracts(publicClient, { includeUsdc = true } = {}) {
+async function inspectExternalContracts(
+  publicClient,
+  { includeUsdc = true } = {},
+) {
   const [usdcCode, permit2Code, entryPointCode, decimals] = await Promise.all([
     includeUsdc ? publicClient.getBytecode({ address: USDC }) : undefined,
     publicClient.getBytecode({ address: PERMIT2 }),
     publicClient.getBytecode({ address: ENTRY_POINT }),
-    includeUsdc ? publicClient.readContract({
-      address: USDC,
-      abi: ERC20_METADATA_ABI,
-      functionName: "decimals",
-    }) : undefined,
+    includeUsdc
+      ? publicClient.readContract({
+          address: USDC,
+          abi: ERC20_METADATA_ABI,
+          functionName: "decimals",
+        })
+      : undefined,
   ]);
   if (includeUsdc && Number(decimals) !== 6)
     fail("Arbitrum Sepolia USDC decimals must equal 6");
@@ -371,11 +435,17 @@ async function inspectSafe(publicClient, address, threshold, label) {
       }),
     ]);
   } catch (error) {
-    fail(`${label} is not a readable Safe (${error.shortMessage ?? error.message})`);
+    fail(
+      `${label} is not a readable Safe (${error.shortMessage ?? error.message})`,
+    );
   }
   if (owners.length !== 6 || Number(actualThreshold) !== threshold)
     fail(`${label} must be an exact ${threshold}/6 Safe`);
-  return { owners, threshold: Number(actualThreshold), runtimeCodehash: codehash(code) };
+  return {
+    owners,
+    threshold: Number(actualThreshold),
+    runtimeCodehash: codehash(code),
+  };
 }
 
 function assertFormalRoleSeparation(config) {
@@ -389,7 +459,8 @@ function assertFormalRoleSeparation(config) {
   const seen = new Map();
   for (const [name, address] of entries) {
     const key = address.toLowerCase();
-    if (seen.has(key)) fail(`formal profile requires distinct ${seen.get(key)} and ${name}`);
+    if (seen.has(key))
+      fail(`formal profile requires distinct ${seen.get(key)} and ${name}`);
     seen.set(key, name);
   }
 }
@@ -417,27 +488,47 @@ export async function preflight(config) {
   const primary = client(config.rpcA);
   const secondary = config.rpcB ? client(config.rpcB) : undefined;
   const includeUsdc = config.profile !== "sandbox";
-  const [chainA, chainB, balance, externalA, externalB, source] = await Promise.all([
-    primary.getChainId(),
-    secondary?.getChainId(),
-    primary.getBalance({ address: config.deployer }),
-    inspectExternalContracts(primary, { includeUsdc }),
-    secondary ? inspectExternalContracts(secondary, { includeUsdc }) : undefined,
-    gitSourceStatus(),
-  ]);
+  const [chainA, chainB, balance, externalA, externalB, source] =
+    await Promise.all([
+      primary.getChainId(),
+      secondary?.getChainId(),
+      primary.getBalance({ address: config.deployer }),
+      inspectExternalContracts(primary, { includeUsdc }),
+      secondary
+        ? inspectExternalContracts(secondary, { includeUsdc })
+        : undefined,
+      gitSourceStatus(),
+    ]);
   if (chainA !== CHAIN_ID || (chainB !== undefined && chainB !== CHAIN_ID))
     fail(`RPC chainId must equal ${CHAIN_ID}`);
   if (balance < config.minimumBalance)
-    fail(`deployer balance ${balance} is below minimum ${config.minimumBalance}`);
+    fail(
+      `deployer balance ${balance} is below minimum ${config.minimumBalance}`,
+    );
   if (externalB && JSON.stringify(externalA) !== JSON.stringify(externalB))
     fail("canonical external contract codehash differs across RPC providers");
+  if (config.tradingSessionPaymaster) {
+    for (const rpc of [primary, secondary].filter(Boolean)) {
+      const actual = codehash(
+        await rpc.getBytecode({
+          address: config.tradingSessionPaymaster.address,
+        }),
+      );
+      if (actual !== config.tradingSessionPaymaster.runtimeCodehash)
+        fail("trading session paymaster codehash mismatch");
+    }
+  }
   let reusedToken;
   if (config.existingSandboxToken) {
     const expected = config.existingSandboxToken;
     const inspect = async (rpc) => {
       const [code, decimals] = await Promise.all([
         rpc.getBytecode({ address: expected.address }),
-        rpc.readContract({ address: expected.address, abi: ERC20_METADATA_ABI, functionName: "decimals" }),
+        rpc.readContract({
+          address: expected.address,
+          abi: ERC20_METADATA_ABI,
+          functionName: "decimals",
+        }),
       ]);
       if (codehash(code) !== expected.runtimeCodehash || decimals !== 6)
         fail("existing sandbox token codehash or decimals mismatch");
@@ -462,7 +553,8 @@ export async function preflight(config) {
       cwd: ROOT,
       encoding: "utf8",
     });
-    if (signature.status !== 0) fail("CPREDICT_AUDIT_TAG must be a valid signed tag");
+    if (signature.status !== 0)
+      fail("CPREDICT_AUDIT_TAG must be a valid signed tag");
     safeEvidence = {
       governance: await inspectSafe(
         primary,
@@ -487,6 +579,9 @@ export async function preflight(config) {
     deployerBalanceWei: balance.toString(),
     source,
     externalContracts: externalA,
+    ...(config.tradingSessionPaymaster
+      ? { tradingSessionPaymaster: config.tradingSessionPaymaster }
+      : {}),
     reusedToken,
     safes: safeEvidence,
     warning:
@@ -500,7 +595,9 @@ export async function preflight(config) {
 
 function redact(text, secrets) {
   let result = String(text);
-  for (const secret of secrets.filter(Boolean).sort((a, b) => b.length - a.length))
+  for (const secret of secrets
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length))
     result = result.split(secret).join("[REDACTED]");
   return result;
 }
@@ -518,7 +615,11 @@ async function runCommand(command, args, options = {}) {
     await writeFile(logPath, "", { mode: 0o600 });
   }
   return await new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn(command, args, { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn(command, args, {
+      cwd,
+      env,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     let combined = "";
     let pendingLogWrite = Promise.resolve();
     const consume = (chunk, target) => {
@@ -539,7 +640,7 @@ async function runCommand(command, args, options = {}) {
       pendingLogWrite.then(() => {
         if (code === 0) resolvePromise({ output: combined, code: 0 });
         else {
-        const error = new Error(
+          const error = new Error(
             `${basename(command)} failed (exit=${code ?? "signal"}, signal=${signal ?? "none"})${logPath ? `; log=${logPath}` : ""}`,
           );
           error.output = combined;
@@ -556,13 +657,17 @@ function timestampId() {
 }
 
 async function sha256File(path) {
-  return createHash("sha256").update(await readFile(path)).digest("hex");
+  return createHash("sha256")
+    .update(await readFile(path))
+    .digest("hex");
 }
 
 async function writeJsonAtomic(path, value) {
   await mkdir(dirname(path), { recursive: true, mode: 0o700 });
   const temporary = `${path}.tmp-${process.pid}`;
-  await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
+  await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, {
+    mode: 0o600,
+  });
   await rename(temporary, path);
   await chmod(path, 0o600);
 }
@@ -577,8 +682,11 @@ async function readJson(path) {
 
 export function extractFingerprint(output) {
   const marker = output.lastIndexOf(FINGERPRINT_MARKER);
-  if (marker < 0) fail("deployment preview did not emit the fingerprint marker");
-  const match = output.slice(marker + FINGERPRINT_MARKER.length).match(/0x[0-9a-fA-F]{64}/);
+  if (marker < 0)
+    fail("deployment preview did not emit the fingerprint marker");
+  const match = output
+    .slice(marker + FINGERPRINT_MARKER.length)
+    .match(/0x[0-9a-fA-F]{64}/);
   if (!match) fail("deployment preview did not emit a bytes32 fingerprint");
   return match[0].toLowerCase();
 }
@@ -586,44 +694,86 @@ export function extractFingerprint(output) {
 export function validatePendingManifest(value, { profile } = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value))
     fail("pending manifest must be an object");
-  if (value.chainId !== CHAIN_ID) fail(`pending.chainId must equal ${CHAIN_ID}`);
+  if (value.chainId !== CHAIN_ID)
+    fail(`pending.chainId must equal ${CHAIN_ID}`);
+  if (ORDERBOOK && value.marketplaceVersion !== "orderbook-v2")
+    fail("pending.marketplaceVersion must equal orderbook-v2");
+  if (value.marketplaceVersion === "orderbook-v2") {
+    value.tradingSessionPolicy = normalizeAddress(
+      value.tradingSessionPolicy,
+      "pending.tradingSessionPolicy",
+    );
+    value.tradingSessionPaymaster = normalizeAddress(
+      value.tradingSessionPaymaster,
+      "pending.tradingSessionPaymaster",
+    );
+    if (
+      !HASH_RE.test(value.tradingSessionPaymasterCodehash ?? "") ||
+      value.tradingSessionPaymasterCodehash.toLowerCase() === ZERO_HASH
+    )
+      fail("pending.tradingSessionPaymasterCodehash must be nonzero bytes32");
+  }
   if (value.status !== "BOOTSTRAP_SCHEDULED_NOT_FINAL")
     fail("pending.status must equal BOOTSTRAP_SCHEDULED_NOT_FINAL");
-  if (![CANONICAL_USDC_KIND, SANDBOX_TOKEN_KIND].includes(value.paymentTokenKind))
-    fail("pending.paymentTokenKind must be canonical-usdc or sandbox-test-token");
-  const expectedKind = profile === "sandbox" ? SANDBOX_TOKEN_KIND :
-    profile === "formal" || profile === "debug" ? CANONICAL_USDC_KIND : undefined;
+  if (
+    ![CANONICAL_USDC_KIND, SANDBOX_TOKEN_KIND].includes(value.paymentTokenKind)
+  )
+    fail(
+      "pending.paymentTokenKind must be canonical-usdc or sandbox-test-token",
+    );
+  const expectedKind =
+    profile === "sandbox"
+      ? SANDBOX_TOKEN_KIND
+      : profile === "formal" || profile === "debug"
+        ? CANONICAL_USDC_KIND
+        : undefined;
   if (expectedKind !== undefined && value.paymentTokenKind !== expectedKind)
     fail(`pending.paymentTokenKind does not match ${profile} profile`);
-  for (const key of ADDRESS_KEYS) value[key] = normalizeAddress(value[key], `pending.${key}`);
+  for (const key of ADDRESS_KEYS)
+    value[key] = normalizeAddress(value[key], `pending.${key}`);
   if (!HASH_RE.test(value.factoryActivationFingerprint ?? ""))
     fail("pending.factoryActivationFingerprint must be bytes32");
-  value.factoryActivationFingerprint = value.factoryActivationFingerprint.toLowerCase();
+  value.factoryActivationFingerprint =
+    value.factoryActivationFingerprint.toLowerCase();
   if (
     value.paymentTokenKind === CANONICAL_USDC_KIND &&
     value.usdc.toLowerCase() !== USDC.toLowerCase()
-  ) fail("pending.usdc mismatch");
+  )
+    fail("pending.usdc mismatch");
   if (
     value.paymentTokenKind === SANDBOX_TOKEN_KIND &&
     value.usdc.toLowerCase() === USDC.toLowerCase()
-  ) fail("pending sandbox payment token must not equal canonical USDC");
-  if (value.paymentTokenReused !== undefined && typeof value.paymentTokenReused !== "boolean")
+  )
+    fail("pending sandbox payment token must not equal canonical USDC");
+  if (
+    value.paymentTokenReused !== undefined &&
+    typeof value.paymentTokenReused !== "boolean"
+  )
     fail("pending.paymentTokenReused must be boolean");
-  if (value.paymentTokenReused && (
-    value.paymentTokenKind !== SANDBOX_TOKEN_KIND ||
-    !HASH_RE.test(value.paymentTokenRuntimeCodehash ?? "") ||
-    value.paymentTokenRuntimeCodehash.toLowerCase() === ZERO_HASH
-  )) fail("reused sandbox token requires runtime codehash evidence");
-  if (value.permit2.toLowerCase() !== PERMIT2.toLowerCase()) fail("pending.permit2 mismatch");
+  if (
+    value.paymentTokenReused &&
+    (value.paymentTokenKind !== SANDBOX_TOKEN_KIND ||
+      !HASH_RE.test(value.paymentTokenRuntimeCodehash ?? "") ||
+      value.paymentTokenRuntimeCodehash.toLowerCase() === ZERO_HASH)
+  )
+    fail("reused sandbox token requires runtime codehash evidence");
+  if (value.permit2.toLowerCase() !== PERMIT2.toLowerCase())
+    fail("pending.permit2 mismatch");
   if (value.entryPoint.toLowerCase() !== ENTRY_POINT.toLowerCase())
     fail("pending.entryPoint mismatch");
-  if (!Number.isSafeInteger(value.paymasterPolicyVersion) || value.paymasterPolicyVersion < 1)
+  if (
+    !Number.isSafeInteger(value.paymasterPolicyVersion) ||
+    value.paymasterPolicyVersion < 1
+  )
     fail("pending.paymasterPolicyVersion must be a positive safe integer");
   if (
-    !Number.isSafeInteger(value.marketResolutionWindowSeconds)
-      || value.marketResolutionWindowSeconds < 900
-      || value.marketResolutionWindowSeconds > 2_592_000
-  ) fail("pending.marketResolutionWindowSeconds must be an integer from 900 to 2592000");
+    !Number.isSafeInteger(value.marketResolutionWindowSeconds) ||
+    value.marketResolutionWindowSeconds < 900 ||
+    value.marketResolutionWindowSeconds > 2_592_000
+  )
+    fail(
+      "pending.marketResolutionWindowSeconds must be an integer from 900 to 2592000",
+    );
   for (const key of [
     "paymasterMaxCostPerOperation",
     "paymasterMaxCostPerUserDay",
@@ -633,9 +783,12 @@ export function validatePendingManifest(value, { profile } = {}) {
       fail(`pending.${key} must be a positive decimal string`);
   }
   if (
-    BigInt(value.paymasterMaxCostPerOperation) > BigInt(value.paymasterMaxCostPerUserDay)
-    || BigInt(value.paymasterMaxCostPerUserDay) > BigInt(value.paymasterMaxCostGlobalDay)
-  ) fail("pending Paymaster budget ordering is invalid");
+    BigInt(value.paymasterMaxCostPerOperation) >
+      BigInt(value.paymasterMaxCostPerUserDay) ||
+    BigInt(value.paymasterMaxCostPerUserDay) >
+      BigInt(value.paymasterMaxCostGlobalDay)
+  )
+    fail("pending Paymaster budget ordering is invalid");
   return value;
 }
 
@@ -643,12 +796,16 @@ export function validateBroadcastDocument(value, minimumReceipts) {
   if (!value || typeof value !== "object" || !Array.isArray(value.receipts))
     fail("Foundry broadcast JSON must contain receipts[]");
   if (value.receipts.length < minimumReceipts)
-    fail(`Foundry broadcast has ${value.receipts.length} receipts; expected >= ${minimumReceipts}`);
+    fail(
+      `Foundry broadcast has ${value.receipts.length} receipts; expected >= ${minimumReceipts}`,
+    );
   for (const [index, receipt] of value.receipts.entries()) {
     const status = receipt.status;
     if (!(status === 1 || status === "1" || /^0x0*1$/i.test(status ?? "")))
       fail(`Foundry receipt[${index}] is not successful`);
-    if (!/^0x[0-9a-fA-F]{64}$/.test(receipt.transactionHash ?? receipt.hash ?? ""))
+    if (
+      !/^0x[0-9a-fA-F]{64}$/.test(receipt.transactionHash ?? receipt.hash ?? "")
+    )
       fail(`Foundry receipt[${index}] is missing transaction hash`);
   }
   return { receipts: value.receipts.length };
@@ -704,11 +861,14 @@ export function forgeEnvironment(config, extra = {}) {
     FOUNDRY_CACHE_PATH: resolve(config.stateDir, "foundry/cache"),
     ...extra,
     // The selected CLI profile owns this flag; an env file cannot silently switch tokens.
-    CPREDICT_SANDBOX_TOKEN_ENABLED: config.profile === "sandbox" ? "true" : "false",
+    CPREDICT_SANDBOX_TOKEN_ENABLED:
+      config.profile === "sandbox" ? "true" : "false",
     // The selected CLI profile owns the Timelock policy; an env file cannot weaken formal deployments.
     CPREDICT_DEPLOYMENT_PROFILE: config.profile,
-    CPREDICT_EXISTING_SANDBOX_TOKEN: config.existingSandboxToken?.address ?? ZERO_ADDRESS,
-    CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH: config.existingSandboxToken?.runtimeCodehash ?? ZERO_HASH,
+    CPREDICT_EXISTING_SANDBOX_TOKEN:
+      config.existingSandboxToken?.address ?? ZERO_ADDRESS,
+    CPREDICT_EXISTING_SANDBOX_TOKEN_CODEHASH:
+      config.existingSandboxToken?.runtimeCodehash ?? ZERO_HASH,
     CPREDICT_PENDING_MANIFEST: config.pendingPath ?? STATIC_PENDING,
   };
 }
@@ -795,15 +955,23 @@ async function confirmAction(options, config, action, fingerprint) {
   const expected = `${action} ${NETWORK} ${fingerprint}`;
   if (options.yes) {
     if (config.env.CPREDICT_DEPLOYMENT_ACKNOWLEDGEMENT !== ACKNOWLEDGEMENT)
-      fail(`--yes requires CPREDICT_DEPLOYMENT_ACKNOWLEDGEMENT=${ACKNOWLEDGEMENT}`, 2);
+      fail(
+        `--yes requires CPREDICT_DEPLOYMENT_ACKNOWLEDGEMENT=${ACKNOWLEDGEMENT}`,
+        2,
+      );
     return;
   }
   if (!process.stdin.isTTY) fail("non-interactive broadcast requires --yes", 2);
   process.stdout.write(
     `\nBroadcast target: ${NETWORK} (${CHAIN_ID})\nFingerprint: ${fingerprint}\n`,
   );
-  const prompt = createInterface({ input: process.stdin, output: process.stdout });
-  const answer = await prompt.question(`Type exactly '${expected}' to continue: `);
+  const prompt = createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  const answer = await prompt.question(
+    `Type exactly '${expected}' to continue: `,
+  );
   prompt.close();
   if (answer !== expected) fail("broadcast confirmation did not match", 2);
 }
@@ -826,14 +994,20 @@ async function finishDeployment(config, plan, logRoot) {
     fail("pending fingerprint does not match reviewed plan");
   if (pending.marketResolutionWindowSeconds !== config.resolutionWindowSeconds)
     fail("pending market resolution window does not match reviewed config");
-  if (config.existingSandboxToken && (
-    pending.paymentTokenReused !== true ||
-    pending.usdc.toLowerCase() !== config.existingSandboxToken.address.toLowerCase() ||
-    pending.paymentTokenRuntimeCodehash.toLowerCase() !== config.existingSandboxToken.runtimeCodehash
-  )) fail("pending reused payment token does not match reviewed config");
+  if (
+    config.existingSandboxToken &&
+    (pending.paymentTokenReused !== true ||
+      pending.usdc.toLowerCase() !==
+        config.existingSandboxToken.address.toLowerCase() ||
+      pending.paymentTokenRuntimeCodehash.toLowerCase() !==
+        config.existingSandboxToken.runtimeCodehash)
+  )
+    fail("pending reused payment token does not match reviewed config");
   const broadcastPath = resolve(
     config.stateDir,
-    "foundry/broadcast/DeployArbitrumSepolia.s.sol/421614/run-latest.json",
+    ORDERBOOK
+      ? "foundry/broadcast/DeployOrderbookArbitrumSepolia.s.sol/421614/run-latest.json"
+      : "foundry/broadcast/DeployArbitrumSepolia.s.sol/421614/run-latest.json",
   );
   const broadcast = await broadcastEvidence(
     broadcastPath,
@@ -848,7 +1022,9 @@ async function finishDeployment(config, plan, logRoot) {
     deploymentBroadcast: broadcast,
     logs: { root: logRoot },
   });
-  process.stdout.write(`\nDeployment transactions succeeded (${broadcast.receipts} receipts).\n`);
+  process.stdout.write(
+    `\nDeployment transactions succeeded (${broadcast.receipts} receipts).\n`,
+  );
   process.stdout.write(`Pending manifest: ${config.pendingPath}\n`);
   process.stdout.write(
     `Next: scripts/deployment/deploy-arbitrum-sepolia.sh finalize --env-file <file>\n`,
@@ -858,13 +1034,18 @@ async function finishDeployment(config, plan, logRoot) {
 
 async function runDeploy(options, config) {
   if ((await fileExists(config.pendingPath)) && !options.resume)
-    fail("pending.json already exists; use status/finalize, or --resume only after a partial broadcast");
+    fail(
+      "pending.json already exists; use status/finalize, or --resume only after a partial broadcast",
+    );
   if (options.resume) {
     const state = await readJson(config.statePath);
     if (state.status !== "BROADCAST_FAILED_REQUIRES_INSPECTION")
-      fail("--resume is allowed only after a recorded partial broadcast failure");
+      fail(
+        "--resume is allowed only after a recorded partial broadcast failure",
+      );
     const fingerprint = state.factoryDependencyFingerprint;
-    if (!HASH_RE.test(fingerprint ?? "")) fail("resume state has no valid fingerprint");
+    if (!HASH_RE.test(fingerprint ?? ""))
+      fail("resume state has no valid fingerprint");
     const logRoot = resolve(config.stateDir, "logs", timestampId());
     await preflight(config);
     await runLocalGates(config, logRoot);
@@ -883,7 +1064,11 @@ async function runDeploy(options, config) {
     } catch (error) {
       await persistState(config, {
         status: "BROADCAST_FAILED_REQUIRES_INSPECTION",
-        lastFailure: redact(error.message, [config.privateKey, config.rpcA, config.rpcB]),
+        lastFailure: redact(error.message, [
+          config.privateKey,
+          config.rpcA,
+          config.rpcB,
+        ]),
       });
       throw error;
     }
@@ -893,7 +1078,9 @@ async function runDeploy(options, config) {
     config.expectedFingerprint &&
     config.expectedFingerprint !== plan.fingerprint
   )
-    fail("configured EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT differs from fresh plan");
+    fail(
+      "configured EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT differs from fresh plan",
+    );
   if (config.profile === "formal" && !config.expectedFingerprint)
     fail(
       "formal deploy requires independently reviewed EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT; run plan first",
@@ -931,7 +1118,11 @@ async function runDeploy(options, config) {
       status: "BROADCAST_FAILED_REQUIRES_INSPECTION",
       factoryDependencyFingerprint: plan.fingerprint,
       plannedNonce: plan.nonce,
-      lastFailure: redact(error.message, [config.privateKey, config.rpcA, config.rpcB]),
+      lastFailure: redact(error.message, [
+        config.privateKey,
+        config.rpcA,
+        config.rpcB,
+      ]),
     });
     throw error;
   }
@@ -947,11 +1138,31 @@ function bootstrapPayload(pending) {
     pending.factory,
   ];
   const payloads = [
-    encodeFunctionData({ abi: SET_FACTORY_ABI, functionName: "setFactory", args: [pending.factory] }),
-    encodeFunctionData({ abi: SET_FACTORY_ABI, functionName: "setFactory", args: [pending.factory] }),
-    encodeFunctionData({ abi: SET_FACTORY_ABI, functionName: "setFactory", args: [pending.factory] }),
-    encodeFunctionData({ abi: SET_FACTORY_ABI, functionName: "setFactory", args: [pending.factory] }),
-    encodeFunctionData({ abi: FACTORY_ABI, functionName: "setMarketplace", args: [pending.marketplace] }),
+    encodeFunctionData({
+      abi: SET_FACTORY_ABI,
+      functionName: "setFactory",
+      args: [pending.factory],
+    }),
+    encodeFunctionData({
+      abi: SET_FACTORY_ABI,
+      functionName: "setFactory",
+      args: [pending.factory],
+    }),
+    encodeFunctionData({
+      abi: SET_FACTORY_ABI,
+      functionName: "setFactory",
+      args: [pending.factory],
+    }),
+    encodeFunctionData({
+      abi: SET_FACTORY_ABI,
+      functionName: "setFactory",
+      args: [pending.factory],
+    }),
+    encodeFunctionData({
+      abi: FACTORY_ABI,
+      functionName: "setMarketplace",
+      args: [pending.marketplace],
+    }),
     encodeFunctionData({
       abi: FACTORY_ABI,
       functionName: "activate",
@@ -967,38 +1178,45 @@ async function bootstrapStatus(publicClient, pending) {
     address: pending.timelock,
     abi: TIMELOCK_ABI,
     functionName: "hashOperationBatch",
-    args: [batch.targets, batch.values, batch.payloads, ZERO_HASH, BOOTSTRAP_SALT],
+    args: [
+      batch.targets,
+      batch.values,
+      batch.payloads,
+      ZERO_HASH,
+      BOOTSTRAP_SALT,
+    ],
   });
-  const [timestamp, ready, done, active, activationFingerprint] = await Promise.all([
-    publicClient.readContract({
-      address: pending.timelock,
-      abi: TIMELOCK_ABI,
-      functionName: "getTimestamp",
-      args: [operationId],
-    }),
-    publicClient.readContract({
-      address: pending.timelock,
-      abi: TIMELOCK_ABI,
-      functionName: "isOperationReady",
-      args: [operationId],
-    }),
-    publicClient.readContract({
-      address: pending.timelock,
-      abi: TIMELOCK_ABI,
-      functionName: "isOperationDone",
-      args: [operationId],
-    }),
-    publicClient.readContract({
-      address: pending.factory,
-      abi: FACTORY_ABI,
-      functionName: "active",
-    }),
-    publicClient.readContract({
-      address: pending.factory,
-      abi: FACTORY_ABI,
-      functionName: "activationFingerprint",
-    }),
-  ]);
+  const [timestamp, ready, done, active, activationFingerprint] =
+    await Promise.all([
+      publicClient.readContract({
+        address: pending.timelock,
+        abi: TIMELOCK_ABI,
+        functionName: "getTimestamp",
+        args: [operationId],
+      }),
+      publicClient.readContract({
+        address: pending.timelock,
+        abi: TIMELOCK_ABI,
+        functionName: "isOperationReady",
+        args: [operationId],
+      }),
+      publicClient.readContract({
+        address: pending.timelock,
+        abi: TIMELOCK_ABI,
+        functionName: "isOperationDone",
+        args: [operationId],
+      }),
+      publicClient.readContract({
+        address: pending.factory,
+        abi: FACTORY_ABI,
+        functionName: "active",
+      }),
+      publicClient.readContract({
+        address: pending.factory,
+        abi: FACTORY_ABI,
+        functionName: "activationFingerprint",
+      }),
+    ]);
   return {
     operationId,
     scheduledTimestamp: timestamp.toString(),
@@ -1017,19 +1235,21 @@ async function publicStatus(config) {
     profile: config.profile,
   });
   const publicClient = client(config.rpcA);
-  if ((await publicClient.getChainId()) !== CHAIN_ID) fail("status RPC is on the wrong chain");
+  if ((await publicClient.getChainId()) !== CHAIN_ID)
+    fail("status RPC is on the wrong chain");
   const missingCode = [];
   const codeKeys = [
-    ...ADDRESS_KEYS.slice(0, 11),
+    ...ADDRESS_KEYS.slice(0, ORDERBOOK ? 12 : 11),
     ...(pending.paymentTokenKind === SANDBOX_TOKEN_KIND ? ["usdc"] : []),
   ];
   for (const key of codeKeys) {
     const code = await publicClient.getBytecode({ address: pending[key] });
     if (!code || code === "0x") missingCode.push(key);
   }
-  const bootstrap = missingCode.length === 0
-    ? await bootstrapStatus(publicClient, pending)
-    : undefined;
+  const bootstrap =
+    missingCode.length === 0
+      ? await bootstrapStatus(publicClient, pending)
+      : undefined;
   return {
     status: bootstrap?.factoryActive
       ? "FINALIZED_PENDING_EVIDENCE_VERIFICATION"
@@ -1043,13 +1263,17 @@ async function publicStatus(config) {
     missingCode,
     bootstrap,
     addresses: Object.fromEntries(
-      ADDRESS_KEYS.slice(0, 11).map((key) => [key, pending[key]]),
+      ADDRESS_KEYS.slice(0, ORDERBOOK ? 12 : 11).map((key) => [
+        key,
+        pending[key],
+      ]),
     ),
   };
 }
 
 async function runFinalize(options, config) {
-  if (!(await fileExists(config.pendingPath))) fail("pending.json is required before finalize");
+  if (!(await fileExists(config.pendingPath)))
+    fail("pending.json is required before finalize");
   const pending = validatePendingManifest(await readJson(config.pendingPath), {
     profile: config.profile,
   });
@@ -1065,10 +1289,14 @@ async function runFinalize(options, config) {
   if (before.done || before.factoryActive)
     fail("bootstrap is already finalized; use status/verify");
   if (!before.ready)
-    fail(`bootstrap is not ready; Timelock timestamp is ${before.scheduledTimestamp}`, 75);
+    fail(
+      `bootstrap is not ready; Timelock timestamp is ${before.scheduledTimestamp}`,
+      75,
+    );
   const finalizeEnv = {
     GOVERNANCE_SAFE: pending.governanceSafe,
-    EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT: pending.factoryActivationFingerprint,
+    EXPECTED_FACTORY_DEPENDENCY_FINGERPRINT:
+      pending.factoryActivationFingerprint,
     TIMELOCK_ADDRESS: pending.timelock,
     FACTORY_ADDRESS: pending.factory,
     MARKETPLACE_ADDRESS: pending.marketplace,
@@ -1104,7 +1332,8 @@ async function runFinalize(options, config) {
       deployerIsGovernanceSafe ? 2 : 4,
     );
     const after = await bootstrapStatus(publicClient, pending);
-    if (!after.done || !after.factoryActive) fail("post-finalize bootstrap state is incomplete");
+    if (!after.done || !after.factoryActive)
+      fail("post-finalize bootstrap state is incomplete");
     if (
       after.activationFingerprint.toLowerCase() !==
       pending.factoryActivationFingerprint.toLowerCase()
@@ -1145,13 +1374,21 @@ async function runFinalize(options, config) {
       bootstrap: after,
       logs: { root: logRoot },
     });
-    process.stdout.write("\nBootstrap finalized and temporary deployer-only roles revoked.\n");
-    process.stdout.write("Next: build final runtime manifest, then run verify.\n");
+    process.stdout.write(
+      "\nBootstrap finalized and temporary deployer-only roles revoked.\n",
+    );
+    process.stdout.write(
+      "Next: build final runtime manifest, then run verify.\n",
+    );
     return after;
   } catch (error) {
     await persistState(config, {
       status: "FINALIZE_FAILED_REQUIRES_INSPECTION",
-      lastFailure: redact(error.message, [config.privateKey, config.rpcA, config.rpcB]),
+      lastFailure: redact(error.message, [
+        config.privateKey,
+        config.rpcA,
+        config.rpcB,
+      ]),
     });
     throw error;
   }
@@ -1169,7 +1406,9 @@ async function waitUntilReady(config) {
       0,
       Number(status.scheduledTimestamp) - Math.floor(Date.now() / 1000),
     );
-    process.stdout.write(`Timelock not ready; approximately ${remaining}s remaining.\n`);
+    process.stdout.write(
+      `Timelock not ready; approximately ${remaining}s remaining.\n`,
+    );
     await new Promise((resolvePromise) =>
       setTimeout(resolvePromise, optionsPollMilliseconds(config)),
     );
@@ -1181,7 +1420,8 @@ function optionsPollMilliseconds(config) {
 }
 
 async function runVerify(options, config) {
-  if (!options.manifest) fail("verify requires --manifest <final-manifest.json>", 2);
+  if (!options.manifest)
+    fail("verify requires --manifest <final-manifest.json>", 2);
   const logRoot = resolve(config.stateDir, "logs", timestampId());
   const verifyEnv = {
     ...process.env,
@@ -1273,7 +1513,9 @@ export async function main(argv = process.argv.slice(2)) {
   if (options.command !== "status")
     await ensurePrivateStateDirectory(config.stateDir);
   if (options.command === "status") {
-    process.stdout.write(`${JSON.stringify(await publicStatus(config), null, 2)}\n`);
+    process.stdout.write(
+      `${JSON.stringify(await publicStatus(config), null, 2)}\n`,
+    );
     return;
   }
   if (options.command === "verify") return await runVerify(options, config);
@@ -1288,7 +1530,8 @@ export async function main(argv = process.argv.slice(2)) {
   if (options.command === "deploy") return await runDeploy(options, config);
   if (options.command === "finalize") return await runFinalize(options, config);
   if (options.command === "all") {
-    if (!(await fileExists(config.pendingPath))) await runDeploy(options, config);
+    if (!(await fileExists(config.pendingPath)))
+      await runDeploy(options, config);
     const current = await publicStatus(config);
     if (current.bootstrap?.factoryActive) {
       process.stdout.write(`${JSON.stringify(current, null, 2)}\n`);

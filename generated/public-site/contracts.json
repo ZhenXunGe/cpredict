@@ -2,6 +2,234 @@
   "schemaVersion": 1,
   "note": "Generated from Zod. Cross-field, cryptographic, ownership and admission refinements are also enforced by runtime code.",
   "schemas": {
+    "Order": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "market": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "outcomeId": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "side": {
+          "type": "string",
+          "enum": [
+            "bid",
+            "ask"
+          ]
+        },
+        "unitPrice": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "expiresAt": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "autoMatch": {
+          "type": "boolean"
+        },
+        "remainingUnits": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "lockedPayment": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "active": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "market",
+        "owner",
+        "outcomeId",
+        "side",
+        "unitPrice",
+        "expiresAt",
+        "autoMatch",
+        "remainingUnits",
+        "lockedPayment",
+        "active"
+      ]
+    },
+    "OrderPage": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "market": {
+                "type": "string"
+              },
+              "owner": {
+                "type": "string"
+              },
+              "outcomeId": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "side": {
+                "type": "string",
+                "enum": [
+                  "bid",
+                  "ask"
+                ]
+              },
+              "unitPrice": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "expiresAt": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "autoMatch": {
+                "type": "boolean"
+              },
+              "remainingUnits": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "lockedPayment": {
+                "type": "string",
+                "pattern": "^(0|[1-9]\\d{0,77})$"
+              },
+              "active": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "market",
+              "owner",
+              "outcomeId",
+              "side",
+              "unitPrice",
+              "expiresAt",
+              "autoMatch",
+              "remainingUnits",
+              "lockedPayment",
+              "active"
+            ]
+          }
+        },
+        "totalLockedPayment": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d{0,77})$"
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9]\\d{0,77})$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "totalLockedPayment",
+        "nextCursor"
+      ]
+    },
+    "AutomaticClaimsStatus": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "prepared",
+                  "broadcasting",
+                  "unknown",
+                  "confirmed",
+                  "reverted",
+                  "cancelled"
+                ]
+              },
+              "tx_hash": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "created_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "state",
+              "tx_hash",
+              "created_at"
+            ]
+          }
+        }
+      },
+      "required": [
+        "enabled",
+        "reason",
+        "updatedAt",
+        "transactions"
+      ]
+    },
     "TradingSession": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
@@ -595,291 +823,11 @@
                       "time-v2"
                     ]
                   },
-                  "manifestHash": {
-                    "type": "string",
-                    "pattern": "^0x[\\da-fA-F]{64}$"
-                  },
-                  "sourceCommit": {
-                    "type": "string",
-                    "pattern": "^[\\da-f]{40}$"
-                  },
-                  "chainId": {
-                    "type": "number",
-                    "const": 421614
-                  },
-                  "deploymentBlock": {
-                    "type": "string",
-                    "pattern": "^(0|[1-9]\\d{0,77})$"
-                  },
-                  "factory": {
-                    "type": "string"
-                  },
-                  "marketplace": {
-                    "type": "string"
-                  },
-                  "bondEscrow": {
-                    "type": "string"
-                  },
-                  "feeVault": {
-                    "type": "string"
-                  },
-                  "paymentToken": {
-                    "type": "string"
-                  },
-                  "protocolTreasury": {
-                    "type": "string"
-                  },
-                  "runtimeCodeHashes": {
-                    "type": "object",
-                    "propertyNames": {
-                      "type": "string",
-                      "pattern": "^0x[\\da-f]{40}$"
-                    },
-                    "additionalProperties": {
-                      "type": "string",
-                      "pattern": "^0x[\\da-fA-F]{64}$"
-                    }
-                  }
-                },
-                "required": [
-                  "id",
-                  "manifestHash",
-                  "sourceCommit",
-                  "chainId",
-                  "deploymentBlock",
-                  "factory",
-                  "marketplace",
-                  "bondEscrow",
-                  "feeVault",
-                  "paymentToken",
-                  "protocolTreasury",
-                  "runtimeCodeHashes"
-                ],
-                "additionalProperties": false
-              },
-              "account": {
-                "type": "object",
-                "properties": {
-                  "kernelVersion": {
-                    "type": "string",
-                    "const": "0.3.1"
-                  },
-                  "entryPointVersion": {
-                    "type": "string",
-                    "const": "0.7"
-                  },
-                  "index": {
-                    "type": "string",
-                    "pattern": "^(0|[1-9]\\d{0,77})$"
-                  },
-                  "derivationVersion": {
-                    "type": "number",
-                    "const": 1
-                  }
-                },
-                "required": [
-                  "kernelVersion",
-                  "entryPointVersion",
-                  "index",
-                  "derivationVersion"
-                ],
-                "additionalProperties": false
-              },
-              "services": {
-                "type": "object",
-                "properties": {
-                  "app": {
-                    "type": "string",
-                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
-                  },
-                  "indexer": {
-                    "type": "string",
-                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
-                  },
-                  "metadata": {
-                    "type": "string",
-                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
-                  },
-                  "rpc": {
-                    "type": "string",
-                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
-                  }
-                },
-                "required": [
-                  "app",
-                  "indexer",
-                  "metadata",
-                  "rpc"
-                ],
-                "additionalProperties": false
-              },
-              "privyAppId": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "quickTrading": {
-                "type": "object",
-                "properties": {
-                  "enabled": {
-                    "default": false,
-                    "type": "boolean"
-                  },
-                  "version": {
-                    "type": "number",
-                    "const": 1
-                  },
-                  "policy": {
-                    "type": "string"
-                  },
-                  "policyCodeHash": {
-                    "type": "string",
-                    "pattern": "^0x[\\da-fA-F]{64}$"
-                  },
-                  "signer": {
-                    "type": "string"
-                  },
-                  "signerCodeHash": {
-                    "type": "string",
-                    "pattern": "^0x[\\da-fA-F]{64}$"
-                  },
-                  "paymaster": {
-                    "type": "string"
-                  },
-                  "defaultPerOperation": {
-                    "default": "100000000",
-                    "type": "string",
-                    "pattern": "^(0|[1-9]\\d{0,77})$"
-                  },
-                  "maxPerOperation": {
-                    "default": "100000000",
-                    "type": "string",
-                    "pattern": "^(0|[1-9]\\d{0,77})$"
-                  },
-                  "defaultTotal": {
-                    "default": "1000000000",
-                    "type": "string",
-                    "pattern": "^(0|[1-9]\\d{0,77})$"
-                  },
-                  "maxTotal": {
-                    "default": "10000000000",
-                    "type": "string",
-                    "pattern": "^(0|[1-9]\\d{0,77})$"
-                  },
-                  "maxDurationSeconds": {
-                    "default": 86400,
-                    "type": "integer",
-                    "minimum": 60,
-                    "maximum": 86400
-                  }
-                },
-                "required": [
-                  "version",
-                  "policy",
-                  "policyCodeHash",
-                  "signer",
-                  "signerCodeHash",
-                  "paymaster"
-                ],
-                "additionalProperties": false
-              },
-              "walletConnectProjectId": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 128
-              },
-              "explorerUrl": {
-                "type": "string",
-                "format": "uri"
-              },
-              "legacyUrl": {
-                "type": "string",
-                "maxLength": 512
-              },
-              "features": {
-                "type": "object",
-                "properties": {
-                  "newExposure": {
-                    "type": "boolean"
-                  },
-                  "faucet": {
-                    "type": "boolean"
-                  },
-                  "leaderboard": {
-                    "type": "boolean"
-                  },
-                  "sponsorship": {
-                    "type": "boolean"
-                  },
-                  "gaslessDeposit": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "newExposure",
-                  "faucet",
-                  "leaderboard",
-                  "sponsorship"
-                ],
-                "additionalProperties": false
-              }
-            },
-            "required": [
-              "id",
-              "label",
-              "asset",
-              "decimals",
-              "deployment",
-              "account",
-              "services",
-              "privyAppId",
-              "explorerUrl",
-              "features"
-            ],
-            "additionalProperties": false
-          }
-        },
-        "historicalEnvironments": {
-          "maxItems": 4,
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "string",
-                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
-              },
-              "label": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 64
-              },
-              "historical": {
-                "type": "boolean"
-              },
-              "asset": {
-                "type": "string",
-                "enum": [
-                  "ctUSD",
-                  "USDC"
-                ]
-              },
-              "decimals": {
-                "type": "number",
-                "const": 6
-              },
-              "deployment": {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string",
-                    "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
-                  },
-                  "protocolVersion": {
+                  "marketplaceVersion": {
                     "type": "string",
                     "enum": [
-                      "legacy-v1",
-                      "time-v2"
+                      "fixed-v1",
+                      "orderbook-v2"
                     ]
                   },
                   "manifestHash": {
@@ -1086,6 +1034,306 @@
               "features": {
                 "type": "object",
                 "properties": {
+                  "automaticClaims": {
+                    "type": "boolean"
+                  },
+                  "newExposure": {
+                    "type": "boolean"
+                  },
+                  "faucet": {
+                    "type": "boolean"
+                  },
+                  "leaderboard": {
+                    "type": "boolean"
+                  },
+                  "sponsorship": {
+                    "type": "boolean"
+                  },
+                  "gaslessDeposit": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "newExposure",
+                  "faucet",
+                  "leaderboard",
+                  "sponsorship"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "asset",
+              "decimals",
+              "deployment",
+              "account",
+              "services",
+              "privyAppId",
+              "explorerUrl",
+              "features"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "historicalEnvironments": {
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "historical": {
+                "type": "boolean"
+              },
+              "asset": {
+                "type": "string",
+                "enum": [
+                  "ctUSD",
+                  "USDC"
+                ]
+              },
+              "decimals": {
+                "type": "number",
+                "const": 6
+              },
+              "deployment": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,95}$"
+                  },
+                  "protocolVersion": {
+                    "type": "string",
+                    "enum": [
+                      "legacy-v1",
+                      "time-v2"
+                    ]
+                  },
+                  "marketplaceVersion": {
+                    "type": "string",
+                    "enum": [
+                      "fixed-v1",
+                      "orderbook-v2"
+                    ]
+                  },
+                  "manifestHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "sourceCommit": {
+                    "type": "string",
+                    "pattern": "^[\\da-f]{40}$"
+                  },
+                  "chainId": {
+                    "type": "number",
+                    "const": 421614
+                  },
+                  "deploymentBlock": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "factory": {
+                    "type": "string"
+                  },
+                  "marketplace": {
+                    "type": "string"
+                  },
+                  "bondEscrow": {
+                    "type": "string"
+                  },
+                  "feeVault": {
+                    "type": "string"
+                  },
+                  "paymentToken": {
+                    "type": "string"
+                  },
+                  "protocolTreasury": {
+                    "type": "string"
+                  },
+                  "runtimeCodeHashes": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-f]{40}$"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "pattern": "^0x[\\da-fA-F]{64}$"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "manifestHash",
+                  "sourceCommit",
+                  "chainId",
+                  "deploymentBlock",
+                  "factory",
+                  "marketplace",
+                  "bondEscrow",
+                  "feeVault",
+                  "paymentToken",
+                  "protocolTreasury",
+                  "runtimeCodeHashes"
+                ],
+                "additionalProperties": false
+              },
+              "account": {
+                "type": "object",
+                "properties": {
+                  "kernelVersion": {
+                    "type": "string",
+                    "const": "0.3.1"
+                  },
+                  "entryPointVersion": {
+                    "type": "string",
+                    "const": "0.7"
+                  },
+                  "index": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "derivationVersion": {
+                    "type": "number",
+                    "const": 1
+                  }
+                },
+                "required": [
+                  "kernelVersion",
+                  "entryPointVersion",
+                  "index",
+                  "derivationVersion"
+                ],
+                "additionalProperties": false
+              },
+              "services": {
+                "type": "object",
+                "properties": {
+                  "app": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  },
+                  "indexer": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  },
+                  "metadata": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  },
+                  "rpc": {
+                    "type": "string",
+                    "pattern": "^\\/[a-zA-Z0-9/_-]*$"
+                  }
+                },
+                "required": [
+                  "app",
+                  "indexer",
+                  "metadata",
+                  "rpc"
+                ],
+                "additionalProperties": false
+              },
+              "privyAppId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "quickTrading": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "version": {
+                    "type": "number",
+                    "const": 1
+                  },
+                  "policy": {
+                    "type": "string"
+                  },
+                  "policyCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "signer": {
+                    "type": "string"
+                  },
+                  "signerCodeHash": {
+                    "type": "string",
+                    "pattern": "^0x[\\da-fA-F]{64}$"
+                  },
+                  "paymaster": {
+                    "type": "string"
+                  },
+                  "defaultPerOperation": {
+                    "default": "100000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxPerOperation": {
+                    "default": "100000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "defaultTotal": {
+                    "default": "1000000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxTotal": {
+                    "default": "10000000000",
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  "maxDurationSeconds": {
+                    "default": 86400,
+                    "type": "integer",
+                    "minimum": 60,
+                    "maximum": 86400
+                  }
+                },
+                "required": [
+                  "version",
+                  "policy",
+                  "policyCodeHash",
+                  "signer",
+                  "signerCodeHash",
+                  "paymaster"
+                ],
+                "additionalProperties": false
+              },
+              "walletConnectProjectId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "explorerUrl": {
+                "type": "string",
+                "format": "uri"
+              },
+              "legacyUrl": {
+                "type": "string",
+                "maxLength": 512
+              },
+              "features": {
+                "type": "object",
+                "properties": {
+                  "automaticClaims": {
+                    "type": "boolean"
+                  },
                   "newExposure": {
                     "type": "boolean"
                   },
@@ -1173,6 +1421,13 @@
               "enum": [
                 "legacy-v1",
                 "time-v2"
+              ]
+            },
+            "marketplaceVersion": {
+              "type": "string",
+              "enum": [
+                "fixed-v1",
+                "orderbook-v2"
               ]
             },
             "manifestHash": {
@@ -1379,6 +1634,9 @@
         "features": {
           "type": "object",
           "properties": {
+            "automaticClaims": {
+              "type": "boolean"
+            },
             "newExposure": {
               "type": "boolean"
             },
@@ -1460,6 +1718,13 @@
                   "enum": [
                     "legacy-v1",
                     "time-v2"
+                  ]
+                },
+                "marketplaceVersion": {
+                  "type": "string",
+                  "enum": [
+                    "fixed-v1",
+                    "orderbook-v2"
                   ]
                 },
                 "manifestHash": {
@@ -1666,6 +1931,9 @@
             "features": {
               "type": "object",
               "properties": {
+                "automaticClaims": {
+                  "type": "boolean"
+                },
                 "newExposure": {
                   "type": "boolean"
                 },
@@ -2333,6 +2601,137 @@
               "properties": {
                 "kind": {
                   "type": "string",
+                  "const": "create-order"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "bid",
+                    "ask"
+                  ]
+                },
+                "outcomeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "unitPrice": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "autoMatch": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "side",
+                "outcomeId",
+                "units",
+                "unitPrice",
+                "expiresAt"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "fill-order"
+                },
+                "orderId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "bid",
+                    "ask"
+                  ]
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "minUnits": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "paymentLimit": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "deadline": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "orderId",
+                "side",
+                "units",
+                "minUnits",
+                "paymentLimit",
+                "deadline"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "cancel-order"
+                },
+                "orderId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "orderId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "release-order"
+                },
+                "orderId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "orderId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
                   "const": "create-listing"
                 },
                 "market": {
@@ -2935,8 +3334,12 @@
             "deposit-usdc",
             "buy",
             "create-market",
+            "create-order",
+            "fill-order",
             "create-listing",
             "fill-listing",
+            "cancel-order",
+            "release-order",
             "cancel-listing",
             "return-listing",
             "resolve",
@@ -3223,6 +3626,137 @@
                 "params",
                 "userSalt",
                 "maxPayment"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "create-order"
+                },
+                "market": {
+                  "type": "string"
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "bid",
+                    "ask"
+                  ]
+                },
+                "outcomeId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "unitPrice": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "expiresAt": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "autoMatch": {
+                  "default": true,
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "kind",
+                "market",
+                "side",
+                "outcomeId",
+                "units",
+                "unitPrice",
+                "expiresAt"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "fill-order"
+                },
+                "orderId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "bid",
+                    "ask"
+                  ]
+                },
+                "units": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "minUnits": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "paymentLimit": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "deadline": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "orderId",
+                "side",
+                "units",
+                "minUnits",
+                "paymentLimit",
+                "deadline"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "cancel-order"
+                },
+                "orderId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "orderId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "release-order"
+                },
+                "orderId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                }
+              },
+              "required": [
+                "kind",
+                "orderId"
               ],
               "additionalProperties": false
             },
@@ -4470,6 +5004,9 @@
                   "market-metadata",
                   "economic-snapshot",
                   "primary-buy",
+                  "order-created",
+                  "order-released",
+                  "order-funds-returned",
                   "listing-created",
                   "listing-filled",
                   "listing-cancelled",
@@ -4851,6 +5388,9 @@
                       "market-metadata",
                       "economic-snapshot",
                       "primary-buy",
+                      "order-created",
+                      "order-released",
+                      "order-funds-returned",
                       "listing-created",
                       "listing-filled",
                       "listing-cancelled",
@@ -5091,6 +5631,9 @@
                   "market-metadata",
                   "economic-snapshot",
                   "primary-buy",
+                  "order-created",
+                  "order-released",
+                  "order-funds-returned",
                   "listing-created",
                   "listing-filled",
                   "listing-cancelled",

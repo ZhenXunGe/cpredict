@@ -7,7 +7,11 @@ import * as reports from "../../dist/offchain/app-core/src/report-contracts.js";
 import * as catalog from "../../dist/offchain/app-core/src/catalog-contracts.js";
 import { appRuntimeSchema } from "../../dist/offchain/app-service/src/config.js";
 import * as sessions from "../../dist/offchain/app-core/src/trading-session-contracts.js";
+import * as orders from "../../dist/offchain/app-core/src/orderbook-contracts.js";
 const schemas = {
+  Order: orders.orderSchema,
+  OrderPage: orders.orderPageSchema,
+  AutomaticClaimsStatus: orders.automaticClaimsStatusSchema,
   TradingSession: sessions.tradingSessionSchema,
   TradingSessionPage: sessions.tradingSessionPageSchema,
   TradingSessionPrepare: sessions.sessionPrepareSchema,

@@ -3,6 +3,36 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 const CONTRACTS = {
+  OrderbookMarketplaceV2: {
+    constructor: ["address", "address", "address", "address", "address"],
+    functions: [
+      "factory()address",
+      "emergencyController()address",
+      "feeVault()address",
+      "paymentToken()address",
+      "permit2()address",
+      "bestOrder(address,uint8,uint8)uint256",
+      "matchOrders(address,uint8,uint256)uint256",
+    ],
+  },
+  TradingSessionPolicyV2: {
+    constructor: [
+      "address",
+      "address",
+      "address",
+      "address",
+      "address",
+      "address",
+    ],
+    functions: [
+      "factory()address",
+      "marketplace()address",
+      "paymentToken()address",
+      "bondEscrow()address",
+      "feeVault()address",
+      "paymaster()address",
+    ],
+  },
   ProtocolConfigV1: {
     constructor: ["address", "address", "address"],
     functions: [

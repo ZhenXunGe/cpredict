@@ -982,7 +982,7 @@ test("templates are explicitly rejected as runtime evidence", async () => {
 });
 
 test("deployment verifier getter ABI stays compatible with generated artifacts", async () => {
-  assert.equal((await validateDeploymentAbis()).contracts, 10);
+  assert.equal((await validateDeploymentAbis()).contracts, 12);
 });
 
 test("deployment documentation references every required local artifact", async () => {
