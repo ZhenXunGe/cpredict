@@ -73,11 +73,9 @@ test("funded bid defaults matching on; confirmation includes outcome, exact rese
   await page.goto(
     `/test/browser/fixture.html?orderbook-test=1#/ctusd-test/markets/${A(101)}`,
   );
-  const panel = page
-    .locator("section")
-    .filter({
-      has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
-    });
+  const panel = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+  });
   await expect(
     panel.getByRole("checkbox", { name: "自动撮合（默认开启）" }),
   ).toBeChecked();
@@ -133,6 +131,21 @@ test("market bond maintenance is not presented as the participant receiving fund
             tx_hash: "0x" + "1".repeat(64),
             created_at: new Date().toISOString(),
           },
+          {
+            id: "22222222-2222-4222-8222-222222222222",
+            kind: "return-listing:1",
+            effect: "asset-return",
+            state: "confirmed",
+            tx_hash: "0x" + "2".repeat(64),
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: "33333333-3333-4333-8333-333333333333",
+            kind: "future-operation",
+            state: "confirmed",
+            tx_hash: "0x" + "3".repeat(64),
+            created_at: new Date().toISOString(),
+          },
         ],
       },
     }),
@@ -147,6 +160,9 @@ test("market bond maintenance is not presented as the participant receiving fund
     "仅完成市场级押金结算，不代表押金进入你的账户",
   );
   await expect(history).not.toContainText("市场押金处理 · 已到账");
+  await expect(history).toContainText("挂单资产返还 · 已返还");
+  await expect(history).toContainText("权益处理 · 已完成");
+  await expect(history).not.toContainText("权益处理 · 已到账");
   expect(f.errors).toEqual([]);
 });
 test("manual bid acceptance displays fee-adjusted minimum proceeds and frozen assets separately", async ({
@@ -170,12 +186,30 @@ test("manual bid acceptance displays fee-adjusted minimum proceeds and frozen as
   expect(f.errors).toEqual([]);
 });
 
-
-test("an enabled account sees a blocked shared claims queue and retains manual access", async ({page}) => {
+test("an enabled account sees a blocked shared claims queue and retains manual access", async ({
+  page,
+}) => {
   await setup(page);
-  await page.route("**/v1/automatic-claims**",r=>r.fulfill({json:{enabled:true,reason:"queue_blocked_unknown_transaction",updatedAt:new Date().toISOString(),transactions:[]}}));
-  await page.goto("/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements");
-  await expect(page.getByRole("checkbox",{name:"自动领取权益（默认开启）"})).toBeChecked();
-  await expect(page.getByRole("status").filter({hasText:"自动领取队列暂缓"})).toBeVisible();
-  await expect(page.getByText("无需重复开关，可先手动领取。",{exact:false})).toBeVisible();
+  await page.route("**/v1/automatic-claims**", (r) =>
+    r.fulfill({
+      json: {
+        enabled: true,
+        reason: "queue_blocked_unknown_transaction",
+        updatedAt: new Date().toISOString(),
+        transactions: [],
+      },
+    }),
+  );
+  await page.goto(
+    "/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements",
+  );
+  await expect(
+    page.getByRole("checkbox", { name: "自动领取权益（默认开启）" }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole("status").filter({ hasText: "自动领取队列暂缓" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("无需重复开关，可先手动领取。", { exact: false }),
+  ).toBeVisible();
 });

@@ -315,12 +315,13 @@ test.skipIf(
           await migration.unsafe(
             await readFile(`offchain/indexer/migrations/${n}.sql`, "utf8"),
           );
-        await migration.unsafe(
-          await readFile(
-            "offchain/app-service/migrations/007_order_automation.sql",
-            "utf8",
-          ),
-        );
+        for (const name of [
+          "007_order_automation.sql",
+          "008_automation_status_scope.sql",
+        ])
+          await migration.unsafe(
+            await readFile(`offchain/app-service/migrations/${name}`, "utf8"),
+          );
       } finally {
         migration.release();
       }
@@ -370,6 +371,7 @@ test.skipIf(
         421614,
         environment.deployment.id,
         matcher.address,
+        "matching",
       );
       const matching = new AutomaticClaimsWorker(
         matcherStore,

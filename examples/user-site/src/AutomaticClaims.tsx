@@ -8,28 +8,50 @@ const reasons: Record<string, string> = {
   received: "已到账",
   confirming: "正在确认到账",
   checking_original_transaction: "正在查询原交易状态",
-  queue_blocked_unknown_transaction: "自动领取队列暂缓：一笔后台交易尚未确认，正在核查。无需重复开关，可先手动领取。",
-  submission_rpc_unavailable: "自动领取暂缓：发送服务当前不可用，等待恢复；也可手动领取。",
+  queue_blocked_unknown_transaction:
+    "自动领取队列暂缓：一笔后台交易尚未确认，正在核查。无需重复开关，可先手动领取。",
+  submission_rpc_unavailable:
+    "自动领取暂缓：发送服务当前不可用，等待恢复；也可手动领取。",
   daily_gas_budget_exhausted: "今日代付额度已用完，等待恢复；也可手动领取",
   gas_balance_insufficient: "代付 Gas 余额不足，等待恢复；也可手动领取",
   retry_after_chain_check: "链上状态核验中",
   transaction_reverted: "上次领取未成功，正在重新核验",
+  assets_returned: "挂单资产已返还",
 };
 const kindLabel = (kind: string) =>
   kind.startsWith("settle-bond:")
     ? "市场押金处理"
-    : ({
-        winner: "赢家收益",
-        "early-bird": "早鸟奖励",
-        refund: "本金退款",
-        "timeout-bonus": "超时补偿",
-        fees: "费用收入",
-        bond: "可退押金",
-        "void-timeout": "超时作废",
-      }[kind] ?? "权益处理");
-const transactionStateLabel = (kind: string, state: string) => {
-  if (state === "confirmed")
-    return kind.startsWith("settle-bond:") ? "已完成" : "已到账";
+    : kind.startsWith("return-listing:")
+      ? "挂单资产返还"
+      : ({
+          winner: "赢家收益",
+          "early-bird": "早鸟奖励",
+          refund: "本金退款",
+          "timeout-bonus": "超时补偿",
+          fees: "费用收入",
+          bond: "可退押金",
+          "void-timeout": "超时作废",
+        }[kind] ?? "权益处理");
+const payoutKinds = new Set([
+  "winner",
+  "early-bird",
+  "refund",
+  "timeout-bonus",
+  "fees",
+  "bond",
+]);
+const transactionStateLabel = (
+  kind: string,
+  effect: "payout" | "asset-return" | undefined,
+  state: string,
+) => {
+  if (state === "confirmed") {
+    if (effect === "payout" || (!effect && payoutKinds.has(kind)))
+      return "已到账";
+    if (effect === "asset-return" || kind.startsWith("return-listing:"))
+      return "已返还";
+    return "已完成";
+  }
   if (state === "reverted") return "未成功";
   if (state === "cancelled") return "已取消";
   return "处理中";
@@ -111,7 +133,8 @@ export function AutomaticClaimsPanel() {
         <ul aria-label="自动领取记录">
           {status.data.transactions.map((t) => (
             <li key={t.id}>
-              {kindLabel(t.kind)} · {transactionStateLabel(t.kind, t.state)}
+              {kindLabel(t.kind)} ·{" "}
+              {transactionStateLabel(t.kind, t.effect, t.state)}
               {t.kind.startsWith("settle-bond:") && (
                 <> · 仅完成市场级押金结算，不代表押金进入你的账户</>
               )}
