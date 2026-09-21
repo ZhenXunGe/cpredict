@@ -822,6 +822,12 @@ async function sourceSnapshot() {
   };
 }
 
+export function localGateEnvironment(environment = process.env) {
+  const clean = { ...environment };
+  delete clean.CPREDICT_DEPLOYMENT_VARIANT;
+  return clean;
+}
+
 async function runLocalGates(config, logRoot) {
   const secrets = [config.privateKey, config.rpcA, config.rpcB];
   const commands = [
@@ -838,7 +844,9 @@ async function runLocalGates(config, logRoot) {
   for (let index = 0; index < commands.length; index += 1) {
     const [command, args] = commands[index];
     await runCommand(command, args, {
-      env: { ...process.env, ...config.env },
+      // Shared V1/V2 regression fixtures select their own protocol variant.
+      // Never inject the operator's private deployment configuration into tests.
+      env: localGateEnvironment(),
       logPath: resolve(logRoot, `local-gate-${index + 1}.log`),
       secrets,
     });
@@ -1325,7 +1333,7 @@ async function runFinalize(options, config) {
     });
     const broadcastPath = resolve(
       config.stateDir,
-      "foundry/broadcast/FinalizeBootstrap.s.sol/421614/run-latest.json",
+      `foundry/broadcast/${basename(FINALIZE_SCRIPT.split(":")[0])}/${CHAIN_ID}/run-latest.json`,
     );
     const broadcast = await broadcastEvidence(
       broadcastPath,

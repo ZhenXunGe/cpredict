@@ -11,6 +11,7 @@ import {
   extractFingerprint,
   existingSandboxTokenConfig,
   forgeEnvironment,
+  localGateEnvironment,
   parseArgs,
   parseEnvText,
   validateBroadcastDocument,
@@ -19,6 +20,12 @@ import {
 
 const address = (n) => `0x${n.toString(16).padStart(40, "0")}`;
 const hash = (n) => `0x${n.toString(16).padStart(64, "0")}`;
+
+test("shared local gates do not inherit the selected deployment variant", () => {
+  const parent = { PATH: "/tools", CPREDICT_DEPLOYMENT_VARIANT: "orderbook-v2" };
+  assert.deepEqual(localGateEnvironment(parent), { PATH: "/tools" });
+  assert.equal(parent.CPREDICT_DEPLOYMENT_VARIANT, "orderbook-v2");
+});
 
 function pendingManifest() {
   return {
