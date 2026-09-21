@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 export const POSTGRES_INTEGRATION_INVENTORY = Object.freeze([
   Object.freeze({
     path: "offchain/indexer/test/postgres.integration.test.ts",
-    tests: 4,
+    tests: 5,
   }),
   Object.freeze({
     path: "offchain/paymaster-service/test/postgres-budget.integration.test.ts",
@@ -39,11 +39,11 @@ export const PUBLIC_SITE_POSTGRES_INVENTORY = Object.freeze([
   }),
   Object.freeze({
     path: "offchain/indexer/test/financial-postgres.integration.test.ts",
-    tests: 6,
+    tests: 7,
   }),
   Object.freeze({
     path: "offchain/indexer/test/reports-postgres.integration.test.ts",
-    tests: 5,
+    tests: 6,
   }),
 ]);
 

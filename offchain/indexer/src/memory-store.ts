@@ -1,10 +1,13 @@
 import { getAddress, type Address, type Hex } from "viem";
 import { deriveMutations, type DerivedMutation } from "./derived.js";
 import { evidenceUriFromHash } from "../../sdk/src/evidence.js";
+import { legacyDenseBatch, validateCanonicalBatch } from "./canonical-batch.js";
 import type {
   ActivityKind,
   ActivityView,
+  CanonicalBatch,
   CanonicalBlock,
+  CanonicalScanRange,
   ChainCheckpoint,
   ClaimView,
   EventStore,
@@ -28,6 +31,7 @@ import {
 /** Deterministic store used by unit tests and local embedders; mirrors PostgreSQL semantics. */
 export class MemoryEventStore implements EventStore, IndexerQueryStore {
   private readonly checkpoints = new Map<number, ChainCheckpoint>();
+  private readonly ranges = new Map<string, CanonicalScanRange>();
   private readonly blocks = new Map<string, CanonicalBlock>();
   private readonly events = new Map<string, IndexedEvent>();
   private readonly registered = new Map<string, Address>();
@@ -50,6 +54,12 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
     return this.blocks.get(blockKey(chainId, blockNumber));
   }
 
+  async scanRanges(chainId: number): Promise<readonly CanonicalScanRange[]> {
+    return [...this.ranges.values()]
+      .filter((range) => range.chainId === chainId)
+      .sort((a, b) => (a.toBlock < b.toBlock ? 1 : a.toBlock > b.toBlock ? -1 : 0));
+  }
+
   async registeredMarkets(chainId: number): Promise<readonly Address[]> {
     return [...this.registered.entries()]
       .filter(([key]) => key.startsWith(`${chainId}:`))
@@ -57,12 +67,80 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
       .sort();
   }
 
+  async applyBatch(batch: CanonicalBatch): Promise<void>;
+  /** @deprecated Test-only compatibility for callers predating CanonicalBatch. */
   async applyBatch(
     events: readonly IndexedEvent[],
     blocks: readonly CanonicalBlock[],
     checkpoint: ChainCheckpoint,
+  ): Promise<void>;
+  async applyBatch(
+    input: CanonicalBatch | readonly IndexedEvent[],
+    legacyBlocks?: readonly CanonicalBlock[],
+    legacyCheckpoint?: ChainCheckpoint,
   ): Promise<void> {
-    for (const block of blocks) {
+    if (Array.isArray(input)) {
+      const checkpoint = required(legacyCheckpoint, "legacy checkpoint");
+      const current = this.checkpoints.get(checkpoint.chainId);
+      if (current !== undefined && current.blockNumber >= checkpoint.blockNumber) {
+        for (const block of legacyBlocks ?? []) {
+          const existing = this.blocks.get(blockKey(block.chainId, block.blockNumber));
+          if (existing !== undefined && existing.blockHash !== block.blockHash)
+            throw new Error(`canonical hash conflict at block ${block.blockNumber.toString()}`);
+          this.blocks.set(blockKey(block.chainId, block.blockNumber), block);
+        }
+        for (const event of input) {
+          const canonical = this.blocks.get(blockKey(event.chainId, event.blockNumber));
+          if (canonical?.blockHash !== event.blockHash)
+            throw new Error(`event hash does not match canonical block ${event.blockNumber.toString()}`);
+          const key = eventKey(event);
+          if (!this.events.has(key)) {
+            this.events.set(key, event);
+            this.project(event);
+          }
+        }
+        return;
+      }
+    }
+    const batch = Array.isArray(input)
+      ? legacyDenseBatch(
+          input,
+          legacyBlocks ?? [],
+          required(legacyCheckpoint, "legacy checkpoint"),
+          this.checkpoints.get(required(legacyCheckpoint, "legacy checkpoint").chainId),
+        )
+      : (input as CanonicalBatch);
+    validateCanonicalBatch(batch);
+    const { range, checkpoint } = batch;
+    const currentCheckpoint = this.checkpoints.get(range.chainId);
+    const existingRange = this.ranges.get(rangeKey(range.chainId, range.toBlock));
+    if (
+      existingRange !== undefined &&
+      currentCheckpoint?.blockNumber === checkpoint.blockNumber &&
+      currentCheckpoint.blockHash === checkpoint.blockHash &&
+      sameRange(existingRange, range)
+    )
+      return;
+    if (currentCheckpoint === undefined) {
+      if (range.predecessor !== undefined)
+        throw new Error("first canonical range must not declare a predecessor");
+    } else if (
+      range.predecessor?.blockNumber !== currentCheckpoint.blockNumber ||
+      range.predecessor.blockHash !== currentCheckpoint.blockHash ||
+      range.fromBlock !== currentCheckpoint.blockNumber + 1n
+    ) {
+      throw new Error("canonical batch does not continue the locked checkpoint");
+    }
+    if (
+      [...this.ranges.values()].some(
+        (item) =>
+          item.chainId === range.chainId &&
+          item.fromBlock <= range.toBlock &&
+          item.toBlock >= range.fromBlock,
+      )
+    )
+      throw new Error("canonical scan range overlaps committed history");
+    for (const block of batch.anchors) {
       const key = blockKey(block.chainId, block.blockNumber);
       const current = this.blocks.get(key);
       if (current !== undefined && current.blockHash !== block.blockHash) {
@@ -72,7 +150,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
       }
       this.blocks.set(key, block);
     }
-    for (const event of events) {
+    for (const event of batch.events) {
       const canonical = this.blocks.get(
         blockKey(event.chainId, event.blockNumber),
       );
@@ -94,6 +172,7 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
         "checkpoint does not match the persisted canonical block",
       );
     }
+    this.ranges.set(rangeKey(range.chainId, range.toBlock), range);
     this.checkpoints.set(checkpoint.chainId, checkpoint);
   }
 
@@ -102,6 +181,13 @@ export class MemoryEventStore implements EventStore, IndexerQueryStore {
     blockNumber: bigint | undefined,
   ): Promise<void> {
     this.checkpoints.delete(chainId);
+    for (const [key, range] of this.ranges) {
+      if (
+        range.chainId === chainId &&
+        (blockNumber === undefined || range.toBlock > blockNumber)
+      )
+        this.ranges.delete(key);
+    }
     for (const [key, block] of this.blocks) {
       if (
         block.chainId === chainId &&
@@ -877,6 +963,28 @@ function claimActivityKind(value: string): ActivityKind {
 
 function blockKey(chainId: number, blockNumber: bigint): string {
   return `${chainId}:${blockNumber.toString()}`;
+}
+
+function rangeKey(chainId: number, toBlock: bigint): string {
+  return `${chainId}:${toBlock.toString()}`;
+}
+
+function sameRange(a: CanonicalScanRange, b: CanonicalScanRange): boolean {
+  return (
+    a.chainId === b.chainId &&
+    a.fromBlock === b.fromBlock &&
+    a.toBlock === b.toBlock &&
+    a.predecessor?.blockNumber === b.predecessor?.blockNumber &&
+    a.predecessor?.blockHash === b.predecessor?.blockHash &&
+    a.endBlockHash === b.endBlockHash &&
+    a.confirmationStatus === b.confirmationStatus &&
+    a.mode === b.mode
+  );
+}
+
+function required<T>(value: T | undefined, name: string): T {
+  if (value === undefined) throw new Error(`${name} is required`);
+  return value;
 }
 
 function addressKey(chainId: number, address: Address): string {

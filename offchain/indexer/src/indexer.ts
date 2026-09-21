@@ -11,7 +11,9 @@ import type { ProtocolVersion } from "../../sdk/src/legacy-protocol.js";
 import { confirmationFor, discoverMarketAddresses } from "./derived.js";
 import {
   normalizeLog,
+  type CanonicalBatch,
   type CanonicalBlock,
+  type CanonicalMode,
   type ChainCheckpoint,
   type EventStore,
   type IndexedEvent,
@@ -24,6 +26,8 @@ export interface IndexerOptions {
   batchSize: bigint;
   /** Maximum concurrent canonical-block reads. Defaults to 4 for existing providers. */
   blockConcurrency?: number;
+  canonicalMode?: CanonicalMode;
+  telemetry?: IndexerIngestionTelemetry;
   /** Core contracts that must always be scanned, such as Factory and Marketplace. */
   addresses: readonly Address[];
   /** Enables atomic, same-block discovery of Factory-created market vaults. */
@@ -46,17 +50,33 @@ export interface BatchResult {
   fromBlock: bigint;
   toBlock: bigint;
   blockCount: number;
+  anchorCount: number;
   eventCount: number;
   discoveredMarkets: number;
   confirmationStatus: "provisional" | "confirmed";
 }
 
+export type BlockHeaderReadPurpose =
+  | "head"
+  | "fence"
+  | "event"
+  | "recovery"
+  | "backfill"
+  | "time_lookup";
+
+export interface IndexerIngestionTelemetry {
+  blockHeaderRead(purpose: BlockHeaderReadPurpose): void;
+  fenceFailure(): void;
+  rollback(batchCount: number, blockCount: bigint): void;
+}
+
 /**
  * Canonical event ingestion with arbitrary-depth reorg recovery.
  *
- * Every scanned block hash is persisted. Before each batch, the indexer walks stored canonical
- * blocks backwards until it finds a hash that still matches the RPC chain, then asks the store to
- * atomically delete and rebuild all raw and derived state above that ancestor.
+ * Dense mode persists every scanned block. Sparse mode persists range endpoints and event blocks;
+ * endpoint hashes commit to the intervening parent chain. Before each batch, the indexer finds the
+ * newest matching range endpoint (and retained dense history for deeper reorgs), then asks the
+ * store to atomically delete and rebuild all raw and derived state above that ancestor.
  */
 export class ChainIndexer {
   constructor(
@@ -84,6 +104,12 @@ export class ChainIndexer {
     ) {
       throw new RangeError("at least one core or Factory address is required");
     }
+    if (
+      options.canonicalMode !== undefined &&
+      options.canonicalMode !== "dense" &&
+      options.canonicalMode !== "sparse"
+    )
+      throw new RangeError("canonicalMode must be dense or sparse");
   }
 
   async runBatch(): Promise<BatchResult | undefined> {
@@ -105,6 +131,10 @@ export class ChainIndexer {
     if (fromBlock > safeHead) return undefined;
     const toBlock = min(fromBlock + this.options.batchSize - 1n, safeHead);
     const confirmationStatus = confirmationFor(this.options.confirmations);
+
+    await syncStage("canonical-blocks", () =>
+      this.verifyCheckpointFence(checkpoint, "fence"),
+    );
 
     const discoveryLogs = await syncStage("discovery-logs", () =>
       this.discoveryLogs(fromBlock, toBlock),
@@ -184,12 +214,19 @@ export class ChainIndexer {
     const events = deduplicateLogs([...creationLogs, ...scoped])
       .map((log) => normalizeLog(this.options.chainId, log, confirmationStatus))
       .sort(compareEvents);
-    const blocks = await syncStage("canonical-blocks", () =>
-      this.loadCanonicalBlocks(fromBlock, toBlock, confirmationStatus),
+    const anchors = await syncStage("canonical-blocks", () =>
+      this.loadCanonicalAnchors(
+        fromBlock,
+        toBlock,
+        confirmationStatus,
+        new Set(events.map((event) => event.blockNumber)),
+      ),
     );
-    validateLineage(blocks, checkpoint);
+    if ((this.options.canonicalMode ?? "dense") === "dense")
+      validateLineage(anchors, checkpoint);
+    else validateAdjacentAnchors(anchors, checkpoint);
     const canonicalHashes = new Map(
-      blocks.map((block) => [block.blockNumber, block.blockHash]),
+      anchors.map((block) => [block.blockNumber, block.blockHash]),
     );
     if (
       events.some(
@@ -197,16 +234,33 @@ export class ChainIndexer {
       )
     )
       throw new Error("event logs do not match canonical batch");
-    const endBlock = blocks.at(-1);
+    const endBlock = anchors.find((block) => block.blockNumber === toBlock);
     if (endBlock === undefined)
-      throw new Error("canonical block batch is empty");
+      throw new Error("canonical batch endpoint is missing");
     const next: ChainCheckpoint = {
       chainId: this.options.chainId,
       blockNumber: endBlock.blockNumber,
       blockHash: endBlock.blockHash,
     };
+    await syncStage("canonical-blocks", () =>
+      this.verifyStableFences(checkpoint, next),
+    );
+    const batch: CanonicalBatch = {
+      range: {
+        chainId: this.options.chainId,
+        fromBlock,
+        toBlock,
+        predecessor: checkpoint,
+        endBlockHash: endBlock.blockHash,
+        confirmationStatus,
+        mode: this.options.canonicalMode ?? "dense",
+      },
+      anchors,
+      events,
+      checkpoint: next,
+    };
     await syncStage("batch-write", () =>
-      this.store.applyBatch(events, blocks, next),
+      this.store.applyBatch(batch),
     );
     if (this.options.financial)
       await syncStage("batch-write", () =>
@@ -220,7 +274,8 @@ export class ChainIndexer {
     return {
       fromBlock,
       toBlock,
-      blockCount: blocks.length,
+      blockCount: Number(toBlock - fromBlock + 1n),
+      anchorCount: anchors.length,
       eventCount: events.length,
       discoveredMarkets: uniqueAddresses([...discovered, ...lateMarkets])
         .length,
@@ -243,47 +298,99 @@ export class ChainIndexer {
   private async reconcileCheckpoint(): Promise<void> {
     const checkpoint = await this.store.checkpoint(this.options.chainId);
     if (checkpoint === undefined) return;
-
-    let cursor = checkpoint.blockNumber;
     let commonAncestor: bigint | undefined;
-    while (cursor >= this.options.deploymentBlock) {
+    const ranges = await this.store.scanRanges(this.options.chainId);
+    for (const range of ranges) {
+      if (range.toBlock > checkpoint.blockNumber) continue;
       const stored = await this.store.canonicalBlock(
         this.options.chainId,
-        cursor,
+        range.toBlock,
       );
-      if (stored === undefined) {
-        throw new Error(
-          `missing persisted canonical block ${cursor.toString()}`,
-        );
-      }
-      const canonical = await this.client.getBlock({ blockNumber: cursor });
+      if (stored?.blockHash !== range.endBlockHash)
+        throw new Error(`missing persisted range endpoint ${range.toBlock.toString()}`);
+      const canonical = await this.readBlock(range.toBlock, range.toBlock === checkpoint.blockNumber ? "fence" : "recovery");
       if (canonical.hash === stored.blockHash) {
-        commonAncestor = cursor;
+        commonAncestor = range.toBlock;
         break;
       }
-      if (cursor === this.options.deploymentBlock) break;
-      cursor -= 1n;
+      if (range.mode === "dense") {
+        let cursor = range.toBlock - 1n;
+        while (cursor >= range.fromBlock) {
+          const dense = await this.store.canonicalBlock(this.options.chainId, cursor);
+          if (dense === undefined)
+            throw new Error(`missing persisted canonical block ${cursor.toString()}`);
+          if ((await this.readBlock(cursor, "recovery")).hash === dense.blockHash) {
+            commonAncestor = cursor;
+            break;
+          }
+          if (cursor === range.fromBlock) break;
+          cursor -= 1n;
+        }
+        if (commonAncestor !== undefined) break;
+      }
+    }
+
+    if (commonAncestor === undefined) {
+      const oldest = ranges.at(-1);
+      let cursor = oldest?.predecessor?.blockNumber ??
+        (ranges.length === 0 ? checkpoint.blockNumber : undefined);
+      while (cursor !== undefined && cursor >= this.options.deploymentBlock) {
+        const stored = await this.store.canonicalBlock(this.options.chainId, cursor);
+        if (stored === undefined)
+          throw new Error(`missing persisted canonical block ${cursor.toString()}`);
+        const canonical = await this.readBlock(cursor, cursor === checkpoint.blockNumber ? "fence" : "recovery");
+        if (canonical.hash === stored.blockHash) {
+          commonAncestor = cursor;
+          break;
+        }
+        if (cursor === this.options.deploymentBlock) break;
+        cursor -= 1n;
+      }
     }
 
     if (commonAncestor === checkpoint.blockNumber) return;
+    const rolledBackRanges = ranges.filter(
+      (range) => commonAncestor === undefined || range.toBlock > commonAncestor,
+    ).length;
+    this.options.telemetry?.rollback(
+      rolledBackRanges,
+      commonAncestor === undefined
+        ? checkpoint.blockNumber - this.options.deploymentBlock + 1n
+        : checkpoint.blockNumber - commonAncestor,
+    );
     await this.store.rollbackAfter(this.options.chainId, commonAncestor);
   }
 
-  private async loadCanonicalBlocks(
+  private async loadCanonicalAnchors(
     fromBlock: bigint,
     toBlock: bigint,
     confirmationStatus: "provisional" | "confirmed",
+    eventBlocks: ReadonlySet<bigint>,
   ): Promise<readonly CanonicalBlock[]> {
     const numbers: bigint[] = [];
-    for (let number = fromBlock; number <= toBlock; number += 1n)
-      numbers.push(number);
+    if ((this.options.canonicalMode ?? "dense") === "dense") {
+      for (let number = fromBlock; number <= toBlock; number += 1n)
+        numbers.push(number);
+    } else {
+      numbers.push(...eventBlocks, toBlock);
+      numbers.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    }
+    const uniqueNumbers = [...new Set(numbers)];
     const blocks = await mapConcurrent(
-      numbers,
+      uniqueNumbers,
       this.options.blockConcurrency ?? 4,
-      (blockNumber) => this.client.getBlock({ blockNumber }),
+      (blockNumber) =>
+        this.readBlock(
+          blockNumber,
+          eventBlocks.has(blockNumber)
+            ? "event"
+            : blockNumber === toBlock
+              ? "fence"
+              : "head",
+        ),
     );
     return blocks.map((block, index) => {
-      const blockNumber = numbers[index];
+      const blockNumber = uniqueNumbers[index];
       if (
         block === undefined ||
         blockNumber === undefined ||
@@ -300,6 +407,45 @@ export class ChainIndexer {
         confirmationStatus,
       };
     });
+  }
+
+  private async verifyCheckpointFence(
+    checkpoint: ChainCheckpoint | undefined,
+    purpose: BlockHeaderReadPurpose,
+  ): Promise<void> {
+    if (checkpoint === undefined) return;
+    const block = await this.readBlock(checkpoint.blockNumber, purpose);
+    if (block.hash !== checkpoint.blockHash) {
+      this.options.telemetry?.fenceFailure();
+      throw new Error("canonical predecessor fence changed");
+    }
+  }
+
+  private async verifyStableFences(
+    predecessor: ChainCheckpoint | undefined,
+    endpoint: ChainCheckpoint,
+  ): Promise<void> {
+    const [before, end] = await Promise.all([
+      predecessor === undefined
+        ? Promise.resolve(undefined)
+        : this.readBlock(predecessor.blockNumber, "fence"),
+      this.readBlock(endpoint.blockNumber, "fence"),
+    ]);
+    if (
+      (predecessor !== undefined && before?.hash !== predecessor.blockHash) ||
+      end.hash !== endpoint.blockHash
+    ) {
+      this.options.telemetry?.fenceFailure();
+      throw new Error("canonical stability fence changed");
+    }
+  }
+
+  private async readBlock(
+    blockNumber: bigint,
+    purpose: BlockHeaderReadPurpose,
+  ) {
+    this.options.telemetry?.blockHeaderRead(purpose);
+    return this.client.getBlock({ blockNumber });
   }
 }
 
@@ -395,5 +541,25 @@ function validateLineage(
         `canonical lineage changed at block ${block.blockNumber.toString()}`,
       );
     }
+  }
+}
+
+function validateAdjacentAnchors(
+  blocks: readonly CanonicalBlock[],
+  checkpoint: ChainCheckpoint | undefined,
+): void {
+  const ordered = [...blocks].sort((a, b) =>
+    a.blockNumber < b.blockNumber ? -1 : a.blockNumber > b.blockNumber ? 1 : 0,
+  );
+  for (let index = 0; index < ordered.length; index += 1) {
+    const block = ordered[index];
+    if (block === undefined) throw new Error("canonical anchor batch contains a gap");
+    const previous = index === 0 ? checkpoint : ordered[index - 1];
+    if (
+      previous !== undefined &&
+      previous.blockNumber + 1n === block.blockNumber &&
+      block.parentHash !== previous.blockHash
+    )
+      throw new Error(`canonical lineage changed at block ${block.blockNumber.toString()}`);
   }
 }

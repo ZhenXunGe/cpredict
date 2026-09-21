@@ -53,6 +53,7 @@ describe.skipIf(!url)("scoped creation repair PostgreSQL invariants", () => {
       "005_activity_catalog.sql",
       "006_financial_facts.sql",
       "007_legacy_deployment.sql",
+      "009_sparse_canonical_ranges.sql",
     ])
       await sql.unsafe(
         await readFile(

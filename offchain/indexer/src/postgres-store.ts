@@ -11,10 +11,13 @@ import { PostgresFinancialLedger } from "./financial-store.js";
 import { scopedAccountLogs } from "./scoped-logs.js";
 import { type PublicClient } from "viem";
 import { normalizeLog } from "./store.js";
+import { legacyDenseBatch, validateCanonicalBatch } from "./canonical-batch.js";
 import type {
   ActivityKind,
   ActivityView,
+  CanonicalBatch,
   CanonicalBlock,
+  CanonicalScanRange,
   ChainCheckpoint,
   ClaimView,
   ConfirmationStatus,
@@ -103,6 +106,17 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     return rows[0] === undefined ? undefined : mapBlock(chainId, rows[0]);
   }
 
+  async scanRanges(chainId: number): Promise<readonly CanonicalScanRange[]> {
+    const rows = await this.sql<CanonicalScanRangeRow[]>`
+      SELECT from_block,to_block,predecessor_block_number,predecessor_block_hash,
+             end_block_hash,confirmation_status,canonical_mode
+      FROM canonical_scan_ranges
+      WHERE chain_id=${chainId}
+      ORDER BY to_block DESC
+    `;
+    return rows.map((row) => mapScanRange(chainId, row));
+  }
+
   async registeredMarkets(chainId: number): Promise<readonly Address[]> {
     const rows = await this.sql<Array<{ market: Address }>>`
       SELECT market FROM registered_markets WHERE chain_id = ${chainId} ORDER BY market
@@ -110,24 +124,86 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     return rows.map((row) => getAddress(row.market));
   }
 
+  async applyBatch(batch: CanonicalBatch): Promise<void>;
+  /** @deprecated Test-only compatibility for callers predating CanonicalBatch. */
   async applyBatch(
     events: readonly IndexedEvent[],
     blocks: readonly CanonicalBlock[],
     checkpoint: ChainCheckpoint,
+  ): Promise<void>;
+  async applyBatch(
+    input: CanonicalBatch | readonly IndexedEvent[],
+    legacyBlocks?: readonly CanonicalBlock[],
+    legacyCheckpoint?: ChainCheckpoint,
   ): Promise<void> {
+    if (Array.isArray(input)) {
+      const checkpoint = required(legacyCheckpoint, "legacy checkpoint");
+      const current = await this.checkpoint(checkpoint.chainId);
+      if (current !== undefined && current.blockNumber >= checkpoint.blockNumber) {
+        await this.applyLegacyHistoricalBatch(input, legacyBlocks ?? [], checkpoint);
+        return;
+      }
+      return this.applyBatch(
+        legacyDenseBatch(input, legacyBlocks ?? [], checkpoint, current),
+      );
+    }
+    const batch = input as CanonicalBatch;
+    validateCanonicalBatch(batch);
+    const { range, checkpoint } = batch;
     await this.sql.begin(async (transaction) => {
-      for (const block of blocks)
+      await transaction`SELECT pg_advisory_xact_lock(${range.chainId})`;
+      const currentRows = await transaction<
+        Array<{ block_number: string; block_hash: Hex }>
+      >`SELECT block_number,block_hash FROM chain_checkpoints WHERE chain_id=${range.chainId} FOR UPDATE`;
+      const current = currentRows[0];
+      const existingRows = await transaction<CanonicalScanRangeRow[]>`
+        SELECT from_block,to_block,predecessor_block_number,predecessor_block_hash,
+               end_block_hash,confirmation_status,canonical_mode
+        FROM canonical_scan_ranges
+        WHERE chain_id=${range.chainId} AND to_block=${range.toBlock.toString()}
+      `;
+      const existing = existingRows[0];
+      if (
+        existing !== undefined &&
+        current !== undefined &&
+        BigInt(current.block_number) === checkpoint.blockNumber &&
+        current.block_hash === checkpoint.blockHash &&
+        sameRange(mapScanRange(range.chainId, existing), range)
+      )
+        return;
+      if (current === undefined) {
+        if (range.predecessor !== undefined)
+          throw new Error("first canonical range must not declare a predecessor");
+      } else if (
+        range.predecessor === undefined ||
+        range.predecessor.blockNumber !== BigInt(current.block_number) ||
+        range.predecessor.blockHash !== current.block_hash ||
+        range.fromBlock !== BigInt(current.block_number) + 1n
+      ) {
+        throw new Error("canonical batch does not continue the locked checkpoint");
+      }
+      const overlaps = await transaction<{ present: boolean }[]>`
+        SELECT EXISTS(
+          SELECT 1 FROM canonical_scan_ranges
+          WHERE chain_id=${range.chainId}
+            AND from_block<=${range.toBlock.toString()}
+            AND to_block>=${range.fromBlock.toString()}
+        ) AS present
+      `;
+      if (overlaps[0]?.present)
+        throw new Error("canonical scan range overlaps committed history");
+      for (const block of batch.anchors)
         await insertCanonicalBlock(transaction, block);
-      for (const event of events) {
+      for (const event of batch.events) {
         const inserted = await insertRawEvent(transaction, event);
         if (inserted) await applyProjection(transaction, event, this.protocol);
       }
       if (this.financial) {
         await this.projectFinancialTransactions(
           transaction,
-          events.map((e) => e.transactionHash),
+          batch.events.map((e) => e.transactionHash),
         );
-        await this.financial.project(transaction, [], blocks, checkpoint);
+        await this.financial.project(transaction, [], batch.anchors, checkpoint);
       }
       const checkpointBlocks = await transaction<Array<{ block_hash: Hex }>>`
         SELECT block_hash FROM canonical_blocks
@@ -139,6 +215,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
           "checkpoint does not match the persisted canonical block",
         );
       }
+      await insertCanonicalScanRange(transaction, range);
       await transaction`
         INSERT INTO chain_checkpoints (chain_id, block_number, block_hash)
         VALUES (${checkpoint.chainId}, ${checkpoint.blockNumber.toString()}, ${checkpoint.blockHash})
@@ -150,12 +227,37 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     });
   }
 
+  private async applyLegacyHistoricalBatch(
+    events: readonly IndexedEvent[],
+    blocks: readonly CanonicalBlock[],
+    checkpoint: ChainCheckpoint,
+  ): Promise<void> {
+    await this.sql.begin(async (transaction) => {
+      await transaction`SELECT pg_advisory_xact_lock(${checkpoint.chainId})`;
+      for (const block of blocks) await insertCanonicalBlock(transaction, block);
+      for (const event of events) {
+        if (await insertRawEvent(transaction, event))
+          await applyProjection(transaction, event, this.protocol);
+      }
+      if (this.financial)
+        await this.projectFinancialTransactions(
+          transaction,
+          events.map((event) => event.transactionHash),
+        );
+    });
+  }
+
   async rollbackAfter(
     chainId: number,
     blockNumber: bigint | undefined,
   ): Promise<void> {
     await this.sql.begin(async (transaction) => {
+      await transaction`SELECT pg_advisory_xact_lock(${chainId})`;
       await transaction`DELETE FROM chain_checkpoints WHERE chain_id = ${chainId}`;
+      if (blockNumber === undefined)
+        await transaction`DELETE FROM canonical_scan_ranges WHERE chain_id=${chainId}`;
+      else
+        await transaction`DELETE FROM canonical_scan_ranges WHERE chain_id=${chainId} AND to_block>${blockNumber.toString()}`;
       if (blockNumber === undefined) {
         await transaction`DELETE FROM canonical_blocks WHERE chain_id = ${chainId}`;
       } else {
@@ -164,6 +266,13 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
           WHERE chain_id = ${chainId} AND block_number > ${blockNumber.toString()}
         `;
       }
+      if (blockNumber === undefined)
+        await transaction`DELETE FROM chain_events WHERE chain_id = ${chainId}`;
+      else
+        await transaction`
+          DELETE FROM chain_events
+          WHERE chain_id = ${chainId} AND block_number > ${blockNumber.toString()}
+        `;
       await clearProjections(transaction, chainId);
       const retained = await transaction<Array<RawEventRow>>`
         SELECT block_number, block_hash, transaction_hash, transaction_index, log_index,
@@ -428,6 +537,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     const rows = await this.sql<
       Array<{
         canonical_blocks: string | null;
+        canonical_scan_ranges: string | null;
         chain_events: string | null;
         chain_checkpoints: string | null;
         markets: string | null;
@@ -445,6 +555,7 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     >`
       SELECT
         to_regclass('canonical_blocks')::text AS canonical_blocks,
+        to_regclass('canonical_scan_ranges')::text AS canonical_scan_ranges,
         to_regclass('chain_events')::text AS chain_events,
         to_regclass('chain_checkpoints')::text AS chain_checkpoints,
         to_regclass('markets')::text AS markets,
@@ -497,6 +608,8 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     >`SELECT count(*)::int AS count FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='fills' AND column_name IN ('seller_proceeds','platform_fee','creator_fee')`;
     if (fees[0]?.count !== 3)
       throw new Error("financial fill migration 006 is not applied");
+    if (row.canonical_scan_ranges === null)
+      throw new Error("indexer database migration is not applied");
     if (this.financial) await this.financial.ready();
   }
 
@@ -600,13 +713,11 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
   ): Promise<void> {
     if (!this.financial) throw new Error("financial ledger is not configured");
     await this.sql.begin(async (db) => {
+      const chainId = expectedBlocks[0]?.chainId;
+      if (chainId !== undefined) await db`SELECT pg_advisory_xact_lock(${chainId})`;
       if (guard) await guard(db);
       for (const block of expectedBlocks) {
-        const stored = await db<
-          { block_hash: Hex }[]
-        >`SELECT block_hash FROM canonical_blocks WHERE chain_id=${block.chainId} AND block_number=${block.blockNumber.toString()}`;
-        if (stored[0]?.block_hash !== block.blockHash)
-          throw new Error("backfill canonical block mismatch");
+        await ensureHistoricalAnchor(db, block, "backfill canonical block mismatch");
       }
       for (const event of events) {
         if (
@@ -639,7 +750,9 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       mutations.filter((m) => m.kind === "position-delta").length !== 1 || events.some((e) => e.chainId !== block.chainId || e.blockNumber !== block.blockNumber || e.blockHash !== block.blockHash || e.transactionHash !== events[0]!.transactionHash))
       throw new Error("purchase repair scope is invalid");
     await this.sql.begin(async (db) => {
+      await db`SELECT pg_advisory_xact_lock(${block.chainId})`;
       await db`LOCK TABLE chain_events,markets,positions IN SHARE ROW EXCLUSIVE MODE`;
+      await ensureHistoricalAnchor(db, block, "purchase repair canonical history mismatch");
       const current = (await db<MarketRow[]>`SELECT * FROM markets WHERE chain_id=${block.chainId} AND market=${buy.market}`)[0];
       if (!current) throw new Error("purchase market is not registered");
       const position = (await db<{updated_block:string}[]>`SELECT updated_block FROM positions WHERE chain_id=${block.chainId} AND vault=${buy.market} AND owner=${buy.buyer} AND outcome_id=${buy.outcomeId.toString()}`)[0];
@@ -666,15 +779,13 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       e.blockNumber !== block.blockNumber || e.blockHash !== block.blockHash ||
       e.transactionHash !== events[0]!.transactionHash)) throw new Error("operation_repair_scope");
     return await this.sql.begin(async db => {
+      await db`SELECT pg_advisory_xact_lock(${block.chainId})`;
       await db`SET LOCAL lock_timeout='5s'`;
       await db`SET LOCAL statement_timeout='30s'`;
       await db`SET LOCAL transaction_timeout='30s'`;
       // Same ordering as ingestion (canonical first). Readers see the old or new complete transaction.
       await db`LOCK TABLE canonical_blocks,chain_events,chain_checkpoints,registered_markets,markets,listings,positions,fills,claims,activities,activity_participants,ledger_facts,ledger_environment IN SHARE ROW EXCLUSIVE MODE`;
-      const canonical=(await db<{block_hash:string}[]>`SELECT block_hash FROM canonical_blocks WHERE chain_id=${block.chainId} AND block_number=${block.blockNumber.toString()}`)[0];
-      const head=(await db<{block_number:string}[]>`SELECT block_number FROM chain_checkpoints WHERE chain_id=${block.chainId}`)[0];
-      if (canonical?.block_hash !== block.blockHash || !head || BigInt(head.block_number)<block.blockNumber)
-        throw new Error("operation_repair_canonical_mismatch");
+      await ensureHistoricalAnchor(db, block, "operation_repair_canonical_mismatch");
       let inserted=0;
       for(const event of events){
         const existing=(await db<{contract_address:string;data:string;topics:string[];block_hash:string;transaction_index:number}[]>`SELECT contract_address,data,topics,block_hash,transaction_index FROM chain_events WHERE chain_id=${event.chainId} AND transaction_hash=${event.transactionHash} AND log_index=${event.logIndex}`)[0];
@@ -723,7 +834,10 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     });
   }
 
-  async backfillFinancialAccounts(client: PublicClient): Promise<void> {
+  async backfillFinancialAccounts(
+    client: PublicClient,
+    onBlockHeaderRead: () => void = () => undefined,
+  ): Promise<void> {
     if (!this.financial) return;
     const chainId = this.financial.environment.deployment.chainId,
       checkpoint = await this.checkpoint(chainId);
@@ -732,18 +846,10 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       checkpoint.blockNumber,
     );
     if (!range) return;
-    const rows = await this.sql<
-      CanonicalBlockRow[]
-    >`SELECT block_number,block_hash,parent_hash,block_timestamp,confirmation_status FROM canonical_blocks WHERE chain_id=${chainId} AND block_number BETWEEN ${range.from.toString()} AND ${range.to.toString()} ORDER BY block_number`;
-    if (BigInt(rows.length) !== range.to - range.from + 1n)
-      throw new Error(
-        "account backfill requires missing canonical history to be restored first",
-      );
-    const blocks = rows.map((r) => mapBlock(chainId, r)),
-      end = blocks.at(-1)!;
-    const canonical = await client.getBlock({ blockNumber: range.to });
-    if (canonical.hash !== end.blockHash)
-      throw new Error("account backfill canonical range changed");
+    onBlockHeaderRead();
+    const openingEnd = await client.getBlock({ blockNumber: range.to });
+    if (openingEnd.hash === null)
+      throw new Error("account backfill endpoint is incomplete");
     const logs = await scopedAccountLogs(
       client,
       this.financial.environment.deployment.paymentToken,
@@ -751,6 +857,38 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
       range.from,
       range.to,
     );
+    const eventBlockNumbers = logs.map((log) => {
+      if (log.blockNumber === null || log.blockHash === null)
+        throw new Error("account backfill returned an incomplete log");
+      return log.blockNumber;
+    });
+    const blockNumbers = [...new Set([...eventBlockNumbers, range.to])].sort(
+      (a, b) => (a < b ? -1 : a > b ? 1 : 0),
+    );
+    const blocks = await Promise.all(
+      blockNumbers.map(async (blockNumber) => {
+        onBlockHeaderRead();
+        const value = await client.getBlock({ blockNumber });
+        if (value.hash === null || value.number === null)
+          throw new Error("account backfill block is incomplete");
+        return {
+          chainId,
+          blockNumber: value.number,
+          blockHash: value.hash,
+          parentHash: value.parentHash,
+          timestamp: value.timestamp,
+          confirmationStatus: "confirmed" as const,
+        };
+      }),
+    );
+    const hashes = new Map(blocks.map((block) => [block.blockNumber, block.blockHash]));
+    if (logs.some((log) => log.blockNumber === null || hashes.get(log.blockNumber) !== log.blockHash))
+      throw new Error("account backfill log block changed");
+    onBlockHeaderRead();
+    const closingEnd = await client.getBlock({ blockNumber: range.to });
+    if (closingEnd.hash !== openingEnd.hash)
+      throw new Error("account backfill canonical range changed");
+    const end = blocks.find((block) => block.blockNumber === range.to)!;
     await this.applyFinancialBackfill(
       logs.map((log) => normalizeLog(chainId, log, "confirmed")),
       blocks,
@@ -766,6 +904,39 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
   async close(): Promise<void> {
     await this.sql.end({ timeout: 5 });
   }
+}
+
+async function ensureHistoricalAnchor(
+  db: TransactionSql,
+  block: CanonicalBlock,
+  message: string,
+): Promise<void> {
+  const existing = await db<{ block_hash: Hex }[]>`
+    SELECT block_hash FROM canonical_blocks
+    WHERE chain_id=${block.chainId} AND block_number=${block.blockNumber.toString()}
+  `;
+  if (existing[0] !== undefined) {
+    if (existing[0].block_hash !== block.blockHash) throw new Error(message);
+    return;
+  }
+  const coverage = await db<{ covered: boolean; checkpoint: string | null }[]>`
+    SELECT
+      EXISTS(
+        SELECT 1 FROM canonical_scan_ranges
+        WHERE chain_id=${block.chainId}
+          AND from_block<=${block.blockNumber.toString()}
+          AND to_block>=${block.blockNumber.toString()}
+      ) AS covered,
+      (SELECT block_number::text FROM chain_checkpoints WHERE chain_id=${block.chainId}) AS checkpoint
+  `;
+  const state = coverage[0];
+  if (
+    !state?.covered ||
+    state.checkpoint === null ||
+    BigInt(state.checkpoint) < block.blockNumber
+  )
+    throw new Error(message);
+  await insertCanonicalBlock(db, block);
 }
 
 async function insertCanonicalBlock(
@@ -789,6 +960,22 @@ async function insertCanonicalBlock(
       `canonical hash conflict at block ${block.blockNumber.toString()}`,
     );
   }
+}
+
+async function insertCanonicalScanRange(
+  db: Db,
+  range: CanonicalScanRange,
+): Promise<void> {
+  await db`
+    INSERT INTO canonical_scan_ranges (
+      chain_id,from_block,to_block,predecessor_block_number,predecessor_block_hash,
+      end_block_hash,confirmation_status,canonical_mode
+    ) VALUES (
+      ${range.chainId},${range.fromBlock.toString()},${range.toBlock.toString()},
+      ${range.predecessor?.blockNumber.toString() ?? null},${range.predecessor?.blockHash ?? null},
+      ${range.endBlockHash},${range.confirmationStatus},${range.mode}
+    )
+  `;
 }
 
 async function insertRawEvent(db: Db, event: IndexedEvent): Promise<boolean> {
@@ -1147,6 +1334,16 @@ interface CanonicalBlockRow {
   confirmation_status: ConfirmationStatus;
 }
 
+interface CanonicalScanRangeRow {
+  from_block: string;
+  to_block: string;
+  predecessor_block_number: string | null;
+  predecessor_block_hash: Hex | null;
+  end_block_hash: Hex;
+  confirmation_status: ConfirmationStatus;
+  canonical_mode: "dense" | "sparse";
+}
+
 interface RawEventRow {
   block_number: string;
   block_hash: Hex;
@@ -1274,6 +1471,47 @@ function mapBlock(chainId: number, row: CanonicalBlockRow): CanonicalBlock {
     timestamp: BigInt(row.block_timestamp),
     confirmationStatus: row.confirmation_status,
   };
+}
+
+function mapScanRange(
+  chainId: number,
+  row: CanonicalScanRangeRow,
+): CanonicalScanRange {
+  return {
+    chainId,
+    fromBlock: BigInt(row.from_block),
+    toBlock: BigInt(row.to_block),
+    ...(row.predecessor_block_number === null || row.predecessor_block_hash === null
+      ? { predecessor: undefined }
+      : {
+          predecessor: {
+            chainId,
+            blockNumber: BigInt(row.predecessor_block_number),
+            blockHash: row.predecessor_block_hash,
+          },
+        }),
+    endBlockHash: row.end_block_hash,
+    confirmationStatus: row.confirmation_status,
+    mode: row.canonical_mode,
+  };
+}
+
+function sameRange(a: CanonicalScanRange, b: CanonicalScanRange): boolean {
+  return (
+    a.chainId === b.chainId &&
+    a.fromBlock === b.fromBlock &&
+    a.toBlock === b.toBlock &&
+    a.predecessor?.blockNumber === b.predecessor?.blockNumber &&
+    a.predecessor?.blockHash === b.predecessor?.blockHash &&
+    a.endBlockHash === b.endBlockHash &&
+    a.confirmationStatus === b.confirmationStatus &&
+    a.mode === b.mode
+  );
+}
+
+function required<T>(value: T | undefined, name: string): T {
+  if (value === undefined) throw new Error(`${name} is required`);
+  return value;
 }
 
 export function persistedTopics(

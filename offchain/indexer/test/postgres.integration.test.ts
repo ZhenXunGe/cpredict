@@ -9,9 +9,11 @@ import {
   toHex,
   type Address,
   type Hex,
+  type PublicClient,
 } from "viem";
 import { PostgresEventStore } from "../src/postgres-store.js";
-import type { CanonicalBlock, IndexedEvent } from "../src/store.js";
+import { densifyCanonicalRanges } from "../src/densify-canonical.js";
+import type { CanonicalBatch, CanonicalBlock, IndexedEvent } from "../src/store.js";
 import { evidenceUriFromHash } from "../../sdk/src/evidence.js";
 import { marketVaultAbi } from "../../sdk/src/abis.js";
 
@@ -42,6 +44,7 @@ suite("PostgresEventStore integration", () => {
       "005_activity_catalog.sql",
       "006_financial_facts.sql",
       "007_legacy_deployment.sql",
+      "009_sparse_canonical_ranges.sql",
     ]) {
       const migration = await readFile(
         new URL(`../migrations/${name}`, import.meta.url),
@@ -98,6 +101,88 @@ suite("PostgresEventStore integration", () => {
     expect(await tableCount(verificationSql, "chain_events")).toBe(0);
     expect(await tableCount(verificationSql, "registered_markets")).toBe(0);
     expect(await tableCount(verificationSql, "markets")).toBe(0);
+  });
+
+  it("rejects sparse range gaps and hash conflicts without partial PostgreSQL writes", async () => {
+    const sparseChainId = chainId + 100;
+    const eventBlock = canonicalBlock(sparseChainId, 50n, 50n, 49n);
+    const endpoint = canonicalBlock(sparseChainId, 100n, 100n, 99n);
+    const first = sparseBatch(
+      sparseChainId,
+      1n,
+      100n,
+      [marketCreated(sparseChainId, eventBlock)],
+      [eventBlock, endpoint],
+    );
+    await store.applyBatch(first);
+    const checkpoint = first.checkpoint;
+    expect(await store.checkpoint(sparseChainId)).toEqual(checkpoint);
+    expect(await store.canonicalBlock(sparseChainId, 49n)).toBeUndefined();
+
+    const nextEndpoint = canonicalBlock(sparseChainId, 200n, 200n, 199n);
+    await expect(
+      store.applyBatch(
+        sparseBatch(sparseChainId, 102n, 200n, [], [nextEndpoint], checkpoint),
+      ),
+    ).rejects.toThrow("predecessor is not contiguous");
+    const conflict = sparseBatch(
+      sparseChainId,
+      101n,
+      200n,
+      [],
+      [nextEndpoint],
+      checkpoint,
+    );
+    conflict.range.endBlockHash = hash(999n);
+    conflict.checkpoint.blockHash = hash(999n);
+    await expect(store.applyBatch(conflict)).rejects.toThrow("endpoint anchor");
+
+    expect(await store.checkpoint(sparseChainId)).toEqual(checkpoint);
+    expect(
+      await verificationSql<{ count: number }[]>`
+        SELECT count(*)::int AS count FROM canonical_scan_ranges
+        WHERE chain_id=${sparseChainId}
+      `,
+    ).toEqual([{ count: 1 }]);
+    expect(
+      await verificationSql<{ count: number }[]>`
+        SELECT count(*)::int AS count FROM chain_events
+        WHERE chain_id=${sparseChainId}
+      `,
+    ).toEqual([{ count: 1 }]);
+
+    const client = {
+      getBlock: async ({ blockNumber }: { blockNumber: bigint }) => ({
+        number: blockNumber,
+        hash: hash(blockNumber),
+        parentHash: hash(blockNumber - 1n),
+        timestamp: blockNumber * 10n,
+      }),
+    } as unknown as PublicClient;
+    await expect(
+      densifyCanonicalRanges(
+        verificationSql,
+        client,
+        sparseChainId,
+        false,
+      ),
+    ).resolves.toMatchObject({ sparseRanges: 1, missingBlocks: 98, apply: false });
+    await expect(
+      densifyCanonicalRanges(
+        verificationSql,
+        client,
+        sparseChainId,
+        true,
+      ),
+    ).resolves.toMatchObject({ densifiedRanges: 1, missingBlocks: 98, apply: true });
+    expect(
+      await verificationSql<{ count: number; mode: string }[]>`
+        SELECT count(*)::int AS count,min(canonical_mode) AS mode
+        FROM canonical_scan_ranges r
+        JOIN canonical_blocks b USING(chain_id)
+        WHERE r.chain_id=${sparseChainId}
+      `,
+    ).toEqual([{ count: 100, mode: "dense" }]);
   });
 
   it("persists terminal evidence, time terms and every void reason across replay and rollback", async () => {
@@ -317,6 +402,10 @@ suite("PostgresEventStore integration", () => {
       await expect(legacyStore.ready()).rejects.toThrow("financial fill migration 006 is not applied");
       await migrationSql.unsafe(await readFile(new URL("../migrations/006_financial_facts.sql", import.meta.url), "utf8"));
       await migrationSql.unsafe(await readFile(new URL("../migrations/007_legacy_deployment.sql", import.meta.url), "utf8"));
+      await expect(legacyStore.ready()).rejects.toThrow(
+        "indexer database migration is not applied",
+      );
+      await migrationSql.unsafe(await readFile(new URL("../migrations/009_sparse_canonical_ranges.sql", import.meta.url), "utf8"));
       await expect(legacyStore.ready()).resolves.toBeUndefined();
       await migrationSql`ALTER TABLE markets DROP COLUMN outcome_deadline_at`;
       await expect(legacyStore.ready()).rejects.toThrow(
@@ -388,6 +477,36 @@ async function tableCount(
     `SELECT count(*)::int AS count FROM ${table}`,
   );
   return row?.count ?? 0;
+}
+
+function sparseBatch(
+  chainId: number,
+  fromBlock: bigint,
+  toBlock: bigint,
+  events: readonly IndexedEvent[],
+  anchors: readonly CanonicalBlock[],
+  predecessor?: CanonicalBatch["checkpoint"],
+): CanonicalBatch {
+  const endpoint = anchors.find((block) => block.blockNumber === toBlock);
+  if (!endpoint) throw new Error("test endpoint missing");
+  return {
+    range: {
+      chainId,
+      fromBlock,
+      toBlock,
+      predecessor,
+      endBlockHash: endpoint.blockHash,
+      confirmationStatus: "confirmed",
+      mode: "sparse",
+    },
+    anchors,
+    events,
+    checkpoint: {
+      chainId,
+      blockNumber: toBlock,
+      blockHash: endpoint.blockHash,
+    },
+  };
 }
 
 const event = parseAbiItem(

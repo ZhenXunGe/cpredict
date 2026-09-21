@@ -11,20 +11,20 @@ import {
 test("accepts the complete PostgreSQL integration inventory with zero skips", () => {
   assert.deepEqual(validatePostgresIntegrationResult(validReport(), "/repo"), {
     files: 5,
-    tests: 13,
-    passed: 13,
+    tests: 14,
+    passed: 14,
     skipped: 0,
   });
 });
 
 test("rejects a skipped PostgreSQL integration suite even when Vitest success is true", () => {
   const report = validReport();
-  report.numPassedTests = 12;
+  report.numPassedTests = 13;
   report.numPendingTests = 1;
   report.testResults[1].assertionResults[0].status = "skipped";
   assert.throws(
     () => validatePostgresIntegrationResult(report, "/repo"),
-    /pass exactly 13 tests/,
+    /pass exactly 14 tests/,
   );
 });
 
@@ -37,11 +37,11 @@ test("rejects missing, failed or unexpected PostgreSQL integration files", () =>
   );
 
   const failed = validReport();
-  failed.numPassedTests = 12;
+  failed.numPassedTests = 13;
   failed.numFailedTests = 1;
   assert.throws(
     () => validatePostgresIntegrationResult(failed, "/repo"),
-    /pass exactly 13 tests/,
+    /pass exactly 14 tests/,
   );
 
   const unexpected = validReport();
@@ -64,7 +64,7 @@ test("public-site CI inventory includes every application and financial test and
   const report = validReport(inventory);
   assert.deepEqual(
     validatePostgresIntegrationResult(report, "/repo", inventory),
-    { files: 9, tests: 41, passed: 41, skipped: 0 },
+    { files: 9, tests: 44, passed: 44, skipped: 0 },
   );
   report.testResults[7].assertionResults[0].status = "skipped";
   assert.throws(
