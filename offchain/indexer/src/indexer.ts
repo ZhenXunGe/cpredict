@@ -240,7 +240,7 @@ export class ChainIndexer {
       blockHash: endBlock.blockHash,
     };
     await syncStage("canonical-blocks", () =>
-      this.verifyStableFences(checkpoint, next),
+      this.verifyCommitFence(next),
     );
     const batch: CanonicalBatch = {
       range: {
@@ -408,20 +408,12 @@ export class ChainIndexer {
     });
   }
 
-  private async verifyStableFences(
-    predecessor: ChainCheckpoint | undefined,
-    endpoint: ChainCheckpoint,
-  ): Promise<void> {
-    const [before, end] = await Promise.all([
-      predecessor === undefined
-        ? Promise.resolve(undefined)
-        : this.readBlock(predecessor.blockNumber, "fence"),
-      this.readBlock(endpoint.blockNumber, "fence"),
-    ]);
-    if (
-      (predecessor !== undefined && before?.hash !== predecessor.blockHash) ||
-      end.hash !== endpoint.blockHash
-    ) {
+  private async verifyCommitFence(endpoint: ChainCheckpoint): Promise<void> {
+    // reconcileCheckpoint verifies the predecessor before the scan. The endpoint hash commits to
+    // every parent through that predecessor, so re-reading the endpoint before commit detects a
+    // change anywhere in the scanned range without repeating the predecessor header request.
+    const end = await this.readBlock(endpoint.blockNumber, "fence");
+    if (end.hash !== endpoint.blockHash) {
       this.options.telemetry?.fenceFailure();
       throw new Error("canonical stability fence changed");
     }
