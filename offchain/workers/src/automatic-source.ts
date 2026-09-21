@@ -31,6 +31,8 @@ export const automaticAbi = parseAbi([
 ]);
 /** Discovery includes on-chain beneficiaries who have never registered a web account. */
 export class LedgerAutomaticSource implements AutomationSource {
+  private fingerprint = "";
+  private readonly idleUntil = new Map<string, bigint>();
   constructor(
     readonly ledger: PostgresFinancialLedger,
     readonly client: PublicClient,
@@ -40,11 +42,11 @@ export class LedgerAutomaticSource implements AutomationSource {
     // A timeout affects the whole market. Re-discover the triggering holder on the
     // latest chain state, including when a prepared transaction survives a restart.
     if (action.kind !== "void-timeout") return true;
-    for await (const current of this.candidates())
+    for await (const current of this.candidates(true))
       if (current.key === action.key) return true;
     return false;
   }
-  async *candidates(): AsyncIterable<AutomaticAction> {
+  async *candidates(force = false): AsyncIterable<AutomaticAction> {
     const snapshot = await this.ledger.snapshot();
     if (!snapshot.complete)
       throw new Error("automatic_claims_index_incomplete");
@@ -56,6 +58,33 @@ export class LedgerAutomaticSource implements AutomationSource {
     });
     if (indexed.hash.toLowerCase() !== snapshot.blockHash.toLowerCase())
       throw new Error("automatic_claims_reorg");
+    // Business events wake every affected historical holder, including owner-less
+    // market resolution events. Reorg epoch invalidates even equal-sized ledgers.
+    const changes = await this.ledger
+      .sql`SELECT count(*)::text AS count, max(block_number)::text AS latest FROM ledger_facts WHERE block_number<=${snapshot.blockNumber}`;
+    const fingerprint = `${snapshot.epoch}:${changes[0]?.count}:${changes[0]?.latest}`;
+    if (fingerprint !== this.fingerprint) {
+      this.idleUntil.clear();
+      this.fingerprint = fingerprint;
+    }
+    // Only identical reads at this single pinned head share results; no stale RPC cache.
+    const contractReads = new Map<string, Promise<unknown>>();
+    const readClient = new Proxy(this.client, {
+      get: (target, property) =>
+        property === "readContract"
+          ? (args: unknown) => {
+              const key = JSON.stringify(args, (_, value) =>
+                typeof value === "bigint" ? value.toString() : value,
+              );
+              let result = contractReads.get(key);
+              if (!result) {
+                result = target.readContract(args as never);
+                contractReads.set(key, result);
+              }
+              return result;
+            }
+          : Reflect.get(target, property),
+    });
     const env = this.ledger.environment,
       d = env.deployment;
     const excluded = new Set(
@@ -71,18 +100,22 @@ export class LedgerAutomaticSource implements AutomationSource {
     const emitted = new Set<string>();
     for (const r of owners) {
       const owner = r.owner as Address;
-      if (
-        excluded.has(owner.toLowerCase()) ||
-        !(await this.preferences.enabled(owner))
-      )
+      if (excluded.has(owner.toLowerCase())) continue;
+      if (!(await this.preferences.enabled(owner))) {
+        this.idleUntil.delete(owner);
         continue;
+      }
+      if (!force && (this.idleUntil.get(owner) ?? 0n) > head.timestamp)
+        continue;
+      let nextWake = head.timestamp + 600n;
+      let hasAction = false;
       const facts = await this.ledger.accountFacts(owner, snapshot);
       const candidates = discoverEntitlements(
         owner,
         facts,
         computePnl(owner, facts, { coverageComplete: snapshot.complete }),
       );
-      const reader = new OnchainRightsReader(this.client, env, head.number);
+      const reader = new OnchainRightsReader(readClient, env, head.number);
       const reads = new Map<string, ReturnType<typeof reader.market>>();
       const readMarket = reader.market.bind(reader);
       reader.market = (market, account) => {
@@ -101,18 +134,21 @@ export class LedgerAutomaticSource implements AutomationSource {
         target: Address,
         kind: string,
         data: AutomaticAction["data"],
-      ): AutomaticAction => ({
-        key: `${kind}:${target.toLowerCase()}:${owner.toLowerCase()}`,
-        owner,
-        kind,
-        target,
-        data,
-        requiresClaimPreference: true,
-      });
+      ): AutomaticAction => {
+        hasAction = true;
+        return {
+          key: `${kind}:${target.toLowerCase()}:${owner.toLowerCase()}`,
+          owner,
+          kind,
+          target,
+          data,
+          requiresClaimPreference: true,
+        };
+      };
       // Market-level timeout/maintenance requires at least one enabled real rights holder.
       for (const market of markets) {
         const rights = await reader.market(market, owner);
-        const bond = await this.client.readContract({
+        const bond = await readClient.readContract({
           address: d.bondEscrow,
           abi: rightsAbi,
           functionName: "bondOf",
@@ -138,12 +174,14 @@ export class LedgerAutomaticSource implements AutomationSource {
           (bond[0].toLowerCase() === owner.toLowerCase() && bond[1] > 0n);
         if (!holds) continue;
         if (rights.state === 0) {
-          const deadline = await this.client.readContract({
+          const deadline = await readClient.readContract({
             address: market,
             abi: automaticAbi,
             functionName: "resolutionDeadline",
             blockNumber: head.number,
           });
+          if (deadline > head.timestamp && deadline < nextWake)
+            nextWake = deadline;
           if (head.timestamp >= deadline && !emitted.has(`void:${market}`)) {
             emitted.add(`void:${market}`);
             yield action(
@@ -226,6 +264,12 @@ export class LedgerAutomaticSource implements AutomationSource {
         );
       }
       await this.ledger.assertSnapshot(snapshot);
+      // Generator cancellation after a yielded action must never put that owner to sleep.
+      if (!force && !hasAction) {
+        this.idleUntil.set(owner, nextWake);
+        if (this.idleUntil.size > 10_000)
+          this.idleUntil.delete(this.idleUntil.keys().next().value!);
+      } else this.idleUntil.delete(owner);
     }
   }
 }

@@ -111,6 +111,7 @@ export async function startAutomaticService(
     chainId: environment.deployment.chainId,
     timeoutMs: 8000,
     service: `automation-${cfg.CPREDICT_AUTOMATION_LANE}`,
+    capabilities: ["read", "history", "receipt"],
     fallback: parseRpcFallbackConfig(env),
     registry,
   });
@@ -118,10 +119,13 @@ export async function startAutomaticService(
     chain: arbitrumSepolia,
     transport: pool.transport,
   });
-  const writer = http(cfg.CPREDICT_AUTOMATION_WRITE_RPC_URL ?? cfg.CPREDICT_AUTOMATION_RPC_URL, {
-    retryCount: 0,
-    timeout: 8000,
-  })({ chain: arbitrumSepolia });
+  const writer = http(
+    cfg.CPREDICT_AUTOMATION_WRITE_RPC_URL ?? cfg.CPREDICT_AUTOMATION_RPC_URL,
+    {
+      retryCount: 0,
+      timeout: 8000,
+    },
+  )({ chain: arbitrumSepolia });
   const wallet = createWalletClient({
     chain: arbitrumSepolia,
     account,
@@ -164,7 +168,11 @@ export async function startAutomaticService(
     source instanceof LedgerAutomaticSource
       ? (action) => source.stillEligible(action)
       : undefined,
-    () => submissionEndpointReady((input) => writer.request(input), environment.deployment.chainId),
+    () =>
+      submissionEndpointReady(
+        (input) => writer.request(input),
+        environment.deployment.chainId,
+      ),
   );
   const worker = new AutomaticClaimsWorker(
     store,
@@ -172,7 +180,11 @@ export async function startAutomaticService(
     source,
     BigInt(cfg.CPREDICT_AUTOMATION_DAILY_BUDGET_WEI),
   );
-  const pendingAge = new Gauge({ name: "cpredict_automation_oldest_pending_seconds", help: "Age of oldest pending transaction; over 120 seconds blocks readiness", registers: [registry] });
+  const pendingAge = new Gauge({
+    name: "cpredict_automation_oldest_pending_seconds",
+    help: "Age of oldest pending transaction; over 120 seconds blocks readiness",
+    registers: [registry],
+  });
   const app = Fastify({ logger: false });
   let stopped = false,
     lastOk = 0,
@@ -185,9 +197,16 @@ export async function startAutomaticService(
   );
   app.get("/readyz", async (_, reply) =>
     reply
-      .code(lastOk && Date.now() - lastOk < 120000 && oldestPending < 120 ? 200 : 503)
+      .code(
+        lastOk && Date.now() - lastOk < 120000 && oldestPending < 120
+          ? 200
+          : 503,
+      )
       .send({
-        status: lastOk && Date.now() - lastOk < 120000 && oldestPending < 120 ? "ready" : "not-ready",
+        status:
+          lastOk && Date.now() - lastOk < 120000 && oldestPending < 120
+            ? "ready"
+            : "not-ready",
       }),
   );
   const tick = async () => {

@@ -25,6 +25,7 @@ export async function startMetadataService(
         chainId: config.chainId,
         timeoutMs: 4_000,
         service: "metadata",
+        capabilities: ["read", "history"],
         fallback: parseRpcFallbackConfig(environment),
         registry,
       })
