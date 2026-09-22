@@ -196,14 +196,17 @@ export class PostgresAutomaticStore implements AutomationStore {
         fact_market: Address | null;
         market_question: string | null;
         market_rules: unknown | null;
+        related_markets: unknown;
       }[]
     >`SELECT t.id,t.kind,t.state,t.canonical_status,t.tx_hash,t.created_at,t.updated_at,
         matched.fact,matched.occurred_at,matched.market AS fact_market,
         CASE WHEN metadata.verified THEN metadata.question ELSE NULL END AS market_question,
-        CASE WHEN metadata.verified THEN metadata.rules ELSE NULL END AS market_rules
+        CASE WHEN metadata.verified THEN metadata.rules ELSE NULL END AS market_rules,
+        related.markets AS related_markets
       FROM automation_transactions t
       LEFT JOIN LATERAL (
-        SELECT f.fact,f.market,to_timestamp(f.occurred_at::double precision) AS occurred_at FROM ledger_facts f
+        SELECT f.fact,f.market,f.block_number,f.transaction_index,f.log_index,f.fact_index,
+          to_timestamp(f.occurred_at::double precision) AS occurred_at FROM ledger_facts f
         WHERE f.chain_id=t.chain_id AND f.transaction_hash=t.tx_hash
           AND (
             (t.kind='winner' AND f.kind='winner-claimed') OR
@@ -217,6 +220,51 @@ export class PostgresAutomaticStore implements AutomationStore {
         ORDER BY CASE WHEN f.kind='order-released' THEN 0 ELSE 1 END,f.log_index,f.fact_index
         LIMIT 1
       ) matched ON true
+      LEFT JOIN LATERAL (
+        SELECT f.block_number,f.transaction_index,f.log_index,f.fact_index
+        FROM ledger_facts f
+        WHERE t.kind IN ('fees','bond') AND f.chain_id=t.chain_id AND f.owner=t.owner
+          AND f.kind=CASE WHEN t.kind='fees' THEN 'fee-claimed' ELSE 'bond-claimed' END
+          AND (
+            matched.block_number IS NULL OR
+            (f.block_number,f.transaction_index,f.log_index,f.fact_index)<
+              (matched.block_number,matched.transaction_index,matched.log_index,matched.fact_index)
+          )
+        ORDER BY f.block_number DESC,f.transaction_index DESC,f.log_index DESC,f.fact_index DESC
+        LIMIT 1
+      ) previous_claim ON true
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(
+          jsonb_agg(
+            jsonb_build_object(
+              'market',source.market,
+              'marketQuestion',CASE WHEN source_metadata.verified THEN source_metadata.question ELSE NULL END
+            ) ORDER BY source.first_block,source.market
+          ),
+          '[]'::jsonb
+        ) AS markets
+        FROM (
+          SELECT credit.market,min(credit.block_number) AS first_block
+          FROM ledger_facts credit
+          WHERE t.kind IN ('fees','bond') AND credit.chain_id=t.chain_id
+            AND credit.owner=t.owner AND credit.market IS NOT NULL
+            AND credit.kind=CASE WHEN t.kind='fees' THEN 'fee-accrued' ELSE 'bond-credited' END
+            AND (
+              previous_claim.block_number IS NULL OR
+              (credit.block_number,credit.transaction_index,credit.log_index,credit.fact_index)>
+                (previous_claim.block_number,previous_claim.transaction_index,previous_claim.log_index,previous_claim.fact_index)
+            )
+            AND (
+              matched.block_number IS NULL OR
+              (credit.block_number,credit.transaction_index,credit.log_index,credit.fact_index)<
+                (matched.block_number,matched.transaction_index,matched.log_index,matched.fact_index)
+            )
+          GROUP BY credit.market
+        ) source
+        LEFT JOIN public_market_metadata source_metadata ON source_metadata.market=source.market
+      ) related ON t.kind IN ('fees','bond') AND (
+        matched.block_number IS NOT NULL OR t.state IN ('prepared','broadcasting','unknown')
+      )
       LEFT JOIN public_market_metadata metadata ON metadata.market=matched.market
       WHERE t.chain_id=${this.chainId} AND t.deployment_id=${this.deploymentId}
         AND t.owner=${owner.toLowerCase()} AND t.requires_claim_preference=true
@@ -289,9 +337,33 @@ export class PostgresAutomaticStore implements AutomationStore {
     fact_market: Address | null;
     market_question: string | null;
     market_rules: unknown | null;
+    related_markets: unknown;
   }) {
-    if (!row.fact || typeof row.fact !== "object") return undefined;
-    const fact = row.fact as Record<string, unknown>,
+    const relatedMarkets = Array.isArray(row.related_markets)
+      ? row.related_markets.flatMap((item) => {
+          if (!item || typeof item !== "object") return [];
+          const value = item as Record<string, unknown>;
+          if (typeof value.market !== "string") return [];
+          return [
+            {
+              market: value.market as Address,
+              marketQuestion:
+                typeof value.marketQuestion === "string"
+                  ? value.marketQuestion
+                  : null,
+            },
+          ];
+        })
+      : [];
+    if (
+      (!row.fact || typeof row.fact !== "object") &&
+      relatedMarkets.length === 0
+    )
+      return undefined;
+    const fact =
+        row.fact && typeof row.fact === "object"
+          ? (row.fact as Record<string, unknown>)
+          : {},
       text = (key: string) =>
         typeof fact[key] === "string" ? (fact[key] as string) : null,
       market = (text("market") as Address | null) ?? row.fact_market,
@@ -311,6 +383,7 @@ export class PostgresAutomaticStore implements AutomationStore {
     return {
       market,
       marketQuestion: row.market_question,
+      relatedMarkets,
       outcomeId,
       outcomeLabel,
       amount: text("amount"),

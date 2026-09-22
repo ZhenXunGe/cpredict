@@ -184,6 +184,31 @@ test("automatic claim audit distinguishes payouts, asset returns and maintenance
             },
           },
           {
+            id: "55555555-5555-4555-8555-555555555555",
+            kind: "fees",
+            effect: "payout",
+            state: "broadcasting",
+            tx_hash: "0x" + "5".repeat(64),
+            market: null,
+            amount: null,
+            created_at: new Date().toISOString(),
+            completed_at: null,
+            context: {
+              market: null,
+              marketQuestion: null,
+              relatedMarkets: [
+                {
+                  market: A(102),
+                  marketQuestion: "本周公开测试能否完成全部退出场景？",
+                },
+              ],
+              outcomeId: null,
+              outcomeLabel: null,
+              amount: null,
+              units: null,
+            },
+          },
+          {
             id: "66666666-6666-4666-8666-666666666666",
             kind: "bond",
             effect: "payout",
@@ -196,6 +221,12 @@ test("automatic claim audit distinguishes payouts, asset returns and maintenance
             context: {
               market: null,
               marketQuestion: null,
+              relatedMarkets: [
+                {
+                  market: A(101),
+                  marketQuestion: "主播今晚直播间是否会超过30万人？",
+                },
+              ],
               outcomeId: null,
               outcomeLabel: null,
               amount: "10000000",
@@ -233,11 +264,19 @@ test("automatic claim audit distinguishes payouts, asset returns and maintenance
   await expect(winner).toContainText("结果：是");
   await expect(winner).toContainText("9.632 ctUSD");
   await expect(winner).toContainText("已到账");
+  const fees = history.getByRole("row").filter({ hasText: "费用收入" });
+  await expect(fees).toContainText("本周公开测试能否完成全部退出场景？");
+  await expect(fees).toContainText("待链上确认");
+  await expect(fees).toContainText("处理中");
+  await expect(fees).toContainText("按账户合并领取以上市场的累计费用。");
   const bond = history.getByRole("row").filter({ hasText: "可退押金" });
   await expect(bond).toContainText("10 ctUSD");
-  await expect(bond).toContainText(
-    "按账户合并领取已结算市场的可退押金；该笔到账可能汇总多个市场。",
-  );
+  await expect(bond).toContainText("主播今晚直播间是否会超过30万人？");
+  await expect(bond).toContainText("按账户合并领取以上市场的可退押金。");
+  await page.screenshot({
+    path: `/tmp/cpredict-automatic-claim-markets-${test.info().project.name}.png`,
+    fullPage: true,
+  });
   expect(f.errors).toEqual([]);
 });
 
