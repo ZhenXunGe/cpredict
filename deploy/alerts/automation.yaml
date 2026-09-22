@@ -2,17 +2,23 @@ groups:
   - name: cpredict-automation
     rules:
       - alert: CpredictAutomaticClaimsQueued
-        expr: cpredict_automation_blocked{reason=~"daily_gas_budget_exhausted|gas_balance_insufficient"} > 0
+        expr: cpredict_automation_blocked{reason=~"daily_gas_budget_exhausted|gas_balance_insufficient|submission_rpc_unavailable"} > 0
         for: 1m
         labels: { severity: warning }
         annotations:
-          summary: "Automatic rights are queued because the keeper budget or balance is insufficient"
+          summary: "Automatic work is queued because the keeper budget, balance or submission endpoint is unavailable"
       - alert: CpredictAutomationOutcomeUnknown
         expr: cpredict_automation_blocked{reason="checking_original_transaction"} > 0
         for: 10m
         labels: { severity: warning }
         annotations:
           summary: "Query the saved transaction hash; never clear its journal or resend with a new nonce"
+      - alert: CpredictAutomationFinalizedReorg
+        expr: cpredict_automation_blocked{reason="rechecking_after_reorg"} > 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "A previously finalized automation transaction left the canonical chain and is being rediscovered"
       - alert: CpredictAutomationChainCheckFailed
         expr: increase(cpredict_automation_ticks_total{result="error"}[5m]) > 2
         labels: { severity: warning }

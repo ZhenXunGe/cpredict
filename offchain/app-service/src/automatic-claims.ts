@@ -25,6 +25,7 @@ export function automaticClaimsSettings(
     chainId,
     deploymentId,
     "0x0000000000000000000000000000000000000000",
+    "claims",
   );
   return { store, close: () => sql.end({ timeout: 5 }) };
 }

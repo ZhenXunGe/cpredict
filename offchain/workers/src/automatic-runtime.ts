@@ -154,6 +154,7 @@ export async function startAutomaticService(
     environment.deployment.chainId,
     environment.deployment.id,
     account.address,
+    cfg.CPREDICT_AUTOMATION_LANE,
   );
   const ledger = new PostgresFinancialLedger(sql, environment);
   const source =

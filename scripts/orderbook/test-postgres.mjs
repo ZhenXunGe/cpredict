@@ -124,11 +124,11 @@ try {
     !report.success ||
     report.numPendingTests !== 0 ||
     report.numTodoTests !== 0 ||
-    report.numTotalTests !== 40 ||
-    report.numPassedTests !== 40
+    report.numTotalTests !== 45 ||
+    report.numPassedTests !== 45
   )
     throw new Error(
-      "public-site PostgreSQL tests must all execute and pass (40 expected)",
+      "public-site PostgreSQL tests must all execute and pass (45 expected)",
     );
   process.stdout.write(
     `Public-site PostgreSQL: ${report.numPassedTests}/${report.numTotalTests} passed, no skipped tests.\n`,
@@ -137,14 +137,14 @@ try {
     ...PUBLIC_SITE_POSTGRES_INVENTORY.map((e) => ({
       ...e,
       tests: e.path.endsWith("financial-postgres.integration.test.ts")
-        ? 7
+        ? 8
         : e.path.endsWith("reports-postgres.integration.test.ts")
           ? 6
           : e.tests,
     })),
     {
       path: "offchain/indexer/test/orderbook-postgres.integration.test.ts",
-      tests: 5,
+      tests: 8,
     },
     {
       path: "offchain/workers/test/orderbook-anvil.integration.test.ts",

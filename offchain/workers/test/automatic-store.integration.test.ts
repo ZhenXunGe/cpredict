@@ -24,23 +24,37 @@ describe.skipIf(databaseUrl === undefined)(
       const scoped = new URL(databaseUrl);
       scoped.searchParams.set("options", `-csearch_path=${schema}`);
       sql = postgres(scoped.toString(), { max: 1, onnotice: () => undefined });
-      const migration = await readFile(
-        new URL(
-          "../../app-service/migrations/007_order_automation.sql",
-          import.meta.url,
-        ),
-        "utf8",
-      );
-      await sql.unsafe(migration);
+      for (const name of [
+        "007_order_automation.sql",
+        "008_automation_status_scope.sql",
+        "009_automation_canonical_audit.sql",
+      ]) {
+        const migration = await readFile(
+          new URL(`../../app-service/migrations/${name}`, import.meta.url),
+          "utf8",
+        );
+        await sql.unsafe(migration);
+      }
       await sql.unsafe(`
         CREATE TABLE ledger_facts (
           chain_id bigint NOT NULL,
           transaction_hash char(66) NOT NULL,
           occurred_at numeric(78,0) NOT NULL,
           kind text NOT NULL,
+          transaction_index integer NOT NULL DEFAULT 0,
+          log_index integer NOT NULL DEFAULT 0,
+          fact_index integer NOT NULL DEFAULT 0,
           market text,
           owner text,
           fact jsonb NOT NULL
+        )
+      `);
+      await sql.unsafe(`
+        CREATE TABLE public_market_metadata (
+          market text PRIMARY KEY,
+          verified boolean NOT NULL DEFAULT false,
+          question text,
+          rules jsonb
         )
       `);
       for (let index = 0; index < 7; index += 1) {
