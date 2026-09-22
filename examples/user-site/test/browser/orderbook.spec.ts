@@ -23,48 +23,72 @@ async function setup(page: Page) {
       },
     });
   });
-  await page.route("**/v2/orders?**", async (r) =>
-    r.fulfill({
+  await page.route("**/v2/orders?**", async (r) => {
+    const multipleOwnerBids = new URL(page.url()).searchParams.has(
+        "multiple-owner-bids",
+      ),
+      requestUrl = new URL(r.request().url()),
+      items = [
+        {
+          id: "1",
+          market: A(101),
+          owner: A(99),
+          outcomeId: "0",
+          side: "bid",
+          unitPrice: "500000",
+          expiresAt: "2000000000",
+          autoMatch: false,
+          remainingUnits: "2000000",
+          lockedPayment: "1000000",
+          active: true,
+        },
+        {
+          id: "2",
+          market: A(101),
+          owner: appAccount.address,
+          outcomeId: "1",
+          side: "bid",
+          unitPrice: "750000",
+          expiresAt: "2000000000",
+          autoMatch: true,
+          remainingUnits: "4000000",
+          lockedPayment: "3000000",
+          active: true,
+        },
+        ...(multipleOwnerBids
+          ? [
+              {
+                id: "3",
+                market: A(102),
+                owner: appAccount.address,
+                outcomeId: "0",
+                side: "bid",
+                unitPrice: "400000",
+                expiresAt: "2000003600",
+                autoMatch: false,
+                remainingUnits: "5000000",
+                lockedPayment: "2000000",
+                active: true,
+              },
+            ]
+          : []),
+      ].filter(
+        (order) =>
+          (!requestUrl.searchParams.get("owner") ||
+            order.owner === requestUrl.searchParams.get("owner")) &&
+          (!requestUrl.searchParams.get("market") ||
+            order.market === requestUrl.searchParams.get("market")),
+      );
+    await r.fulfill({
       json: {
-        items: [
-          {
-            id: "1",
-            market: A(101),
-            owner: A(99),
-            outcomeId: "0",
-            side: "bid",
-            unitPrice: "500000",
-            expiresAt: "2000000000",
-            autoMatch: false,
-            remainingUnits: "2000000",
-            lockedPayment: "1000000",
-            active: true,
-          },
-          {
-            id: "2",
-            market: A(101),
-            owner: appAccount.address,
-            outcomeId: "1",
-            side: "bid",
-            unitPrice: "750000",
-            expiresAt: "2000000000",
-            autoMatch: true,
-            remainingUnits: "4000000",
-            lockedPayment: "3000000",
-            active: true,
-          },
-        ].filter(
-          (o) =>
-            !r.request().url().includes("owner=") ||
-            o.owner === appAccount.address,
-        ),
-        totalLockedPayment: r.request().url().includes("owner=")
-          ? "3000000"
-          : "4000000",
+        items,
+        totalLockedPayment: items
+          .reduce((total, order) => total + BigInt(order.lockedPayment), 0n)
+          .toString(),
         nextCursor: null,
       },
-    }),
-  );
+    });
+  });
   return { changes, errors };
 }
 test("funded bid defaults matching on; confirmation includes outcome, exact reserve and expiry", async ({
@@ -91,6 +115,54 @@ test("funded bid defaults matching on; confirmation includes outcome, exact rese
     path: `/tmp/cpredict-orders-${test.info().project.name}.png`,
     fullPage: true,
   });
+  expect(f.errors).toEqual([]);
+});
+test("sell order shows insufficient balance before opening confirmation", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.goto(
+    `/test/browser/fixture.html?orderbook-test=1&no-shares=1#/ctusd-test/markets/${A(101)}`,
+  );
+  const panel = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+  });
+  await panel.getByLabel("订单类型").selectOption("ask");
+  await expect(
+    panel.getByText("可用份额：0 份", { exact: true }),
+  ).toBeVisible();
+  await panel.getByLabel("份数", { exact: true }).fill("1");
+  await expect(panel).toContainText(
+    "余额不足：当前结果可用 0 份，请调整挂卖数量。",
+  );
+  await expect(
+    panel.getByRole("button", { name: "核对挂卖", exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.screenshot({
+    path: `/tmp/cpredict-insufficient-shares-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  expect(f.errors).toEqual([]);
+});
+test("sell order with enough shares reaches confirmation", async ({ page }) => {
+  const f = await setup(page);
+  await page.goto(
+    `/test/browser/fixture.html?orderbook-test=1#/ctusd-test/markets/${A(101)}`,
+  );
+  const panel = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+  });
+  await panel.getByLabel("订单类型").selectOption("ask");
+  await expect(
+    panel.getByText("可用份额：1000 份", { exact: true }),
+  ).toBeVisible();
+  await panel.getByLabel("份数", { exact: true }).fill("1");
+  await panel.getByRole("button", { name: "核对挂卖", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("挂卖");
+  await expect(dialog.getByText("份数", { exact: true })).toBeVisible();
   expect(f.errors).toEqual([]);
 });
 test("claim preference is default on, persists opt-out, and explains market-level timeout", async ({
@@ -384,10 +456,54 @@ test("manual bid acceptance displays fee-adjusted minimum proceeds and frozen as
   await page.goto(
     "/test/browser/fixture.html?orderbook-test=1#/ctusd-test/assets",
   );
+  const frozen = page.getByRole("region", { name: "求购冻结资产" });
   await expect(
-    page.getByRole("heading", { name: "求购冻结资产" }),
+    frozen.getByRole("heading", { name: "求购冻结资产" }),
   ).toBeVisible();
-  await expect(page.getByText("3 ctUSD", { exact: true })).toBeVisible();
+  await expect(frozen.locator(".amount")).toHaveText("3 ctUSD");
+  expect(f.errors).toEqual([]);
+});
+
+test("assets list every funded bid and open cancellation without revisiting each market", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.goto(
+    "/test/browser/fixture.html?orderbook-test=1&multiple-owner-bids=1#/ctusd-test/assets",
+  );
+  const frozen = page.getByRole("region", { name: "求购冻结资产" });
+  await expect(frozen.getByText("5 ctUSD", { exact: true })).toBeVisible();
+  await expect(
+    frozen.getByRole("heading", { name: "求购单明细", exact: true }),
+  ).toBeVisible();
+  const first = frozen
+    .getByRole("row")
+    .filter({ hasText: "本周公开测试能否完成全部退出场景？" });
+  await expect(first).toContainText("尚未完成");
+  await expect(first).toContainText("3 ctUSD");
+  const second = frozen
+    .getByRole("row")
+    .filter({ hasText: "主播今晚直播间是否会超过30万人？" });
+  await expect(second).toContainText("能够完成");
+  await expect(second).toContainText("2 ctUSD");
+  await expect(frozen.getByRole("button", { name: "撤销求购单" })).toHaveCount(
+    2,
+  );
+  await page.screenshot({
+    path: `/tmp/cpredict-frozen-bids-list-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  await second.getByRole("button", { name: "撤销求购单" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("撤销订单");
+  await expect(dialog).toContainText("主播今晚直播间是否会超过30万人？");
+  await expect(dialog).toContainText("解冻金额");
+  await expect(dialog).toContainText("2 ctUSD");
+  await page.screenshot({
+    path: `/tmp/cpredict-frozen-bids-cancel-${test.info().project.name}.png`,
+    fullPage: true,
+  });
   expect(f.errors).toEqual([]);
 });
 

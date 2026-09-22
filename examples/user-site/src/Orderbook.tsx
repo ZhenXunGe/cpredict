@@ -1,19 +1,29 @@
 import { useState, type FormEvent } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { z } from "zod";
 import { formatUnits, type Address } from "viem";
+import { AppError } from "../../../offchain/app-core/src/contracts.js";
 import { useSession } from "./wallets.js";
 import { useOperation } from "./operations.js";
-import { useMarketLive } from "./data.js";
+import {
+  dateText,
+  marketReadAbi,
+  useMarket,
+  useMarketLive,
+  useRules,
+} from "./data.js";
 import { parseAssetAmount } from "./amounts.js";
 import { bidReserve } from "../../../offchain/sdk/src/orderbook.js";
 import {
   Amount,
   Button,
+  DataTable,
   Field,
   ErrorNotice,
   Notice,
   PaginationControls,
+  shortAddress,
 } from "./ui.js";
 import { usePaginatedList } from "./pagination.js";
 import {
@@ -41,12 +51,30 @@ function useOrders(market?: Address) {
 export function FrozenOrderAssets() {
   const { api } = useSession();
   const q = useOrders();
+  const locked = q.data?.pages[0]?.totalLockedPayment;
+  const pages =
+    q.data?.pages.map((orderPage) =>
+      orderPage.items.filter(
+        (order) =>
+          order.active &&
+          order.side === "bid" &&
+          BigInt(order.lockedPayment) > 0n,
+      ),
+    ) ?? [];
+  const bids = pages.flat();
+  const pagination = usePaginatedList({
+    pages,
+    pageSize: 5,
+    scope: `${api.key}:frozen-bids`,
+    hasMore: !!q.hasNextPage,
+    isLoadingMore: q.isFetchingNextPage,
+    loadMore: q.fetchNextPage,
+  });
   if (api.environment.deployment.marketplaceVersion !== "orderbook-v2")
     return null;
-  const locked = q.data?.pages[0]?.totalLockedPayment;
   return (
-    <section className="surface">
-      <h3>求购冻结资产</h3>
+    <section className="surface stack" aria-labelledby="frozen-bids-title">
+      <h3 id="frozen-bids-title">求购冻结资产</h3>
       {locked === undefined ? (
         <p>正在核对冻结金额…</p>
       ) : (
@@ -56,7 +84,94 @@ export function FrozenOrderAssets() {
         包含全部求购订单。冻结资产不计入可用余额；撤销、到期释放或终局后退回。
       </p>
       <ErrorNotice error={q.error} />
+      {!q.isPending && bids.length === 0 && (
+        <p className="small">当前没有未完成的求购单。</p>
+      )}
+      {bids.length > 0 && (
+        <>
+          <h4>求购单明细</h4>
+          <DataTable
+            headers={[
+              "市场",
+              "求购结果",
+              "剩余份额",
+              "每份价格",
+              "冻结金额",
+              "到期时间",
+              "操作",
+            ]}
+          >
+            {pagination.items.map((order) => (
+              <FrozenBidRow key={order.id} order={order} />
+            ))}
+          </DataTable>
+          <PaginationControls
+            ariaLabel="求购单明细分页"
+            page={pagination.page}
+            hasPrevious={pagination.hasPrevious}
+            hasNext={pagination.hasNext}
+            busy={pagination.isLoading}
+            onPrevious={pagination.previous}
+            onNext={() => void pagination.next()}
+          />
+        </>
+      )}
     </section>
+  );
+}
+
+function FrozenBidRow({ order }: { order: z.infer<typeof orderSchema> }) {
+  const { api } = useSession(),
+    begin = useOperation(),
+    market = useMarket(order.market),
+    rules = useRules(market.data);
+  const question =
+      market.data?.question?.trim() ||
+      rules.data?.question?.trim() ||
+      `市场 ${shortAddress(order.market)}`,
+    outcome =
+      rules.data?.outcomes[Number(order.outcomeId)] ??
+      `结果 #${order.outcomeId}`,
+    remaining = formatUnits(BigInt(order.remainingUnits), 6),
+    unitPrice = formatUnits(BigInt(order.unitPrice), 6),
+    locked = formatUnits(BigInt(order.lockedPayment), 6),
+    asset = api.environment.asset;
+  return (
+    <tr>
+      <td>
+        <Link to={`/${api.environment.id}/markets/${order.market}`}>
+          {question}
+        </Link>
+      </td>
+      <td>{outcome}</td>
+      <td>{remaining}</td>
+      <td>
+        {unitPrice} {asset}
+      </td>
+      <td>
+        {locked} {asset}
+      </td>
+      <td>{dateText(order.expiresAt)}</td>
+      <td>
+        <Button
+          onClick={() =>
+            begin({
+              intent: { kind: "cancel-order", orderId: order.id },
+              summary: [
+                { label: "市场", value: question },
+                { label: "结果选项", value: outcome },
+                { label: "剩余份数", value: remaining },
+                { label: "每份价格", value: `${unitPrice} ${asset}` },
+                { label: "解冻金额", value: `${locked} ${asset}` },
+              ],
+              feeNote: "撤销后，本求购单剩余的冻结资金将退回当前应用账户。",
+            })
+          }
+        >
+          撤销求购单
+        </Button>
+      </td>
+    </tr>
   );
 }
 export function OrderbookPanel({
@@ -84,7 +199,31 @@ export function OrderbookPanel({
     [expiry, setExpiry] = useState("24"),
     [error, setError] = useState<unknown>(null),
     [take, setTake] = useState<Record<string, string>>({});
+  const shareBalance = useQuery({
+    queryKey: [api.key, "share-balance", account?.address, market, outcome],
+    enabled: side === "ask" && !!account,
+    queryFn: () =>
+      api.publicClient().readContract({
+        address: market,
+        abi: marketReadAbi,
+        functionName: "balanceOf",
+        args: [account!.address, BigInt(outcome)],
+      }),
+    refetchInterval: 15000,
+    staleTime: 5000,
+  });
   const asset = api.environment.asset;
+  let requestedUnits: bigint | null = null;
+  try {
+    requestedUnits = amount ? parseAssetAmount(amount) : null;
+  } catch {
+    // The existing amount validation owns malformed values on submit.
+  }
+  const insufficientShares =
+    side === "ask" &&
+    requestedUnits !== null &&
+    shareBalance.data !== undefined &&
+    requestedUnits > shareBalance.data;
   const summary = (choice: number, units: bigint, unitPrice: bigint) => [
     { label: "市场", value: question },
     { label: "结果选项", value: labels[choice] ?? `结果 #${choice}` },
@@ -95,7 +234,7 @@ export function OrderbookPanel({
       value: `${formatUnits((units * unitPrice) / 1_000_000n, 6)} ${asset}`,
     },
   ];
-  function create(e: FormEvent) {
+  async function create(e: FormEvent) {
     e.preventDefault();
     setError(null);
     if (!account) {
@@ -108,6 +247,13 @@ export function OrderbookPanel({
       if (!live.data || !verified || terminal)
         throw new Error("当前市场暂不能挂单");
       if (units < live.data.minimumC2C) throw new Error("低于市场最小挂单份额");
+      if (side === "ask") {
+        const currentBalance = await shareBalance.refetch();
+        if (currentBalance.error || currentBalance.data === undefined)
+          throw new AppError("chain_query_unavailable", 503);
+        if (units > currentBalance.data)
+          throw new AppError("insufficient_shares", 400);
+      }
       begin({
         intent: {
           kind: "create-order",
@@ -205,7 +351,10 @@ export function OrderbookPanel({
           <Field label="订单类型">
             <select
               value={side}
-              onChange={(e) => setSide(e.target.value as "bid" | "ask")}
+              onChange={(e) => {
+                setSide(e.target.value as "bid" | "ask");
+                setError(null);
+              }}
             >
               <option value="bid">求购：冻结资金等待买入</option>
               <option value="ask">挂卖：托管份额等待卖出</option>
@@ -214,7 +363,10 @@ export function OrderbookPanel({
           <Field label="结果选项">
             <select
               value={outcome}
-              onChange={(e) => setOutcome(Number(e.target.value))}
+              onChange={(e) => {
+                setOutcome(Number(e.target.value));
+                setError(null);
+              }}
             >
               {labels.map((v, i) => (
                 <option key={i} value={i}>
@@ -226,11 +378,31 @@ export function OrderbookPanel({
           <Field label="份数">
             <input
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                setAmount(e.target.value);
+                setError(null);
+              }}
               inputMode="decimal"
               required
             />
           </Field>
+          {side === "ask" && (
+            <p className="small">
+              可用份额：
+              {!account
+                ? "登录后核对"
+                : shareBalance.isPending
+                  ? "正在核对…"
+                  : shareBalance.data === undefined
+                    ? "暂时无法读取"
+                    : `${formatUnits(shareBalance.data, 6)} 份`}
+            </p>
+          )}
+          {insufficientShares && (
+            <Notice tone="warning">
+              {`余额不足：当前结果可用 ${formatUnits(shareBalance.data!, 6)} 份，请调整挂卖数量。`}
+            </Notice>
+          )}
           <Field label={`每份价格（${asset}）`}>
             <input
               value={price}
@@ -254,12 +426,25 @@ export function OrderbookPanel({
             />
             自动撮合（默认开启）
           </label>
-          <Button type="submit" disabled={!verified || !live.data}>
+          <Button
+            type="submit"
+            disabled={
+              !verified ||
+              !live.data ||
+              (side === "ask" &&
+                !!account &&
+                (shareBalance.isPending ||
+                  !!shareBalance.error ||
+                  insufficientShares))
+            }
+          >
             核对{side === "bid" ? "求购" : "挂卖"}
           </Button>
         </form>
       )}
-      <ErrorNotice error={error ?? q.error} />
+      <ErrorNotice
+        error={error ?? (side === "ask" ? shareBalance.error : null) ?? q.error}
+      />
       {allItems.length === 0 && <p>暂无未完成订单</p>}
       {pagination.items.map((o) => (
         <article className="card stack" key={o.id}>
