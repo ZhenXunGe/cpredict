@@ -10,11 +10,13 @@ import {
   dateText,
   marketReadAbi,
   useMarket,
+  useMarketClock,
   useMarketLive,
   useRules,
 } from "./data.js";
 import { parseAssetAmount } from "./amounts.js";
 import { bidReserve } from "../../../offchain/sdk/src/orderbook.js";
+import { SHARE_SCALE } from "../../../offchain/sdk/src/units.js";
 import {
   Amount,
   Button,
@@ -45,7 +47,7 @@ function useOrders(market?: Address) {
         { service: "indexer", signal },
       ),
     getNextPageParam: (p) => p.nextCursor ?? undefined,
-    refetchInterval: 5000,
+    refetchInterval: 2000,
   });
 }
 export function FrozenOrderAssets() {
@@ -190,6 +192,7 @@ export function OrderbookPanel({
   const { api, account, login } = useSession(),
     begin = useOperation(),
     live = useMarketLive(market),
+    now = useMarketClock(),
     q = useOrders(market);
   const [side, setSide] = useState<"bid" | "ask">("bid"),
     [outcome, setOutcome] = useState(0),
@@ -198,7 +201,12 @@ export function OrderbookPanel({
     [autoMatch, setAuto] = useState(true),
     [expiry, setExpiry] = useState("24"),
     [error, setError] = useState<unknown>(null),
-    [take, setTake] = useState<Record<string, string>>({});
+    [take, setTake] = useState<Record<string, string>>({}),
+    [acceptWarning, setAcceptWarning] = useState<{
+      orderId: string;
+      message: string;
+    } | null>(null),
+    [checkingOrderId, setCheckingOrderId] = useState<string | null>(null);
   const shareBalance = useQuery({
     queryKey: [api.key, "share-balance", account?.address, market, outcome],
     enabled: side === "ask" && !!account,
@@ -224,6 +232,23 @@ export function OrderbookPanel({
     requestedUnits !== null &&
     shareBalance.data !== undefined &&
     requestedUnits > shareBalance.data;
+  let requestedPrice: bigint | null = null;
+  try {
+    requestedPrice = price ? parseAssetAmount(price) : null;
+  } catch {
+    // The existing price validation owns malformed values on submit.
+  }
+  const primaryOpen =
+      !terminal &&
+      !!live.data &&
+      live.data.state === 0 &&
+      live.data.now < live.data.closeAt &&
+      now < live.data.closeAt,
+    premiumAsk =
+      side === "ask" &&
+      primaryOpen &&
+      requestedPrice !== null &&
+      requestedPrice > SHARE_SCALE;
   const summary = (choice: number, units: bigint, unitPrice: bigint) => [
     { label: "市场", value: question },
     { label: "结果选项", value: labels[choice] ?? `结果 #${choice}` },
@@ -283,6 +308,14 @@ export function OrderbookPanel({
                 },
               ]
             : []),
+          ...(side === "ask" && primaryOpen && unitPrice > SHARE_SCALE
+            ? [
+                {
+                  label: "价格提示",
+                  value: `高于一级购买每份 1 ${asset}`,
+                },
+              ]
+            : []),
         ],
         feeNote:
           "按先挂订单的价格撮合。成交手续费由卖家承担；未成交部分可以撤销。",
@@ -291,8 +324,9 @@ export function OrderbookPanel({
       setError(e);
     }
   }
-  function accept(o: z.infer<typeof orderSchema>) {
+  async function accept(o: z.infer<typeof orderSchema>) {
     setError(null);
+    setAcceptWarning(null);
     if (!account) {
       login();
       return;
@@ -304,6 +338,22 @@ export function OrderbookPanel({
         ),
         gross = (units * BigInt(o.unitPrice)) / 1_000_000n;
       if (units > BigInt(o.remainingUnits)) throw new Error("超过订单剩余份额");
+      if (o.side === "bid") {
+        setCheckingOrderId(o.id);
+        const available = await api.publicClient().readContract({
+          address: market,
+          abi: marketReadAbi,
+          functionName: "balanceOf",
+          args: [account.address, BigInt(o.outcomeId)],
+        });
+        if (units > available) {
+          setAcceptWarning({
+            orderId: o.id,
+            message: `余额不足：当前结果可用 ${formatUnits(available, 6)} 份，请调整接单数量。`,
+          });
+          return;
+        }
+      }
       const fees =
         (gross * BigInt(live.data.economics.platformC2CFeeBps)) / 10000n +
         (gross * BigInt(live.data.economics.creatorC2CFeeBps)) / 10000n;
@@ -319,6 +369,16 @@ export function OrderbookPanel({
         },
         summary: [
           ...summary(Number(o.outcomeId), units, BigInt(o.unitPrice)),
+          ...(o.side === "ask" &&
+          primaryOpen &&
+          BigInt(o.unitPrice) > SHARE_SCALE
+            ? [
+                {
+                  label: "价格提示",
+                  value: `高于一级购买每份 1 ${asset}`,
+                },
+              ]
+            : []),
           {
             label: "卖家净收款",
             value: `${formatUnits(gross - fees, 6)} ${asset}`,
@@ -329,6 +389,8 @@ export function OrderbookPanel({
       });
     } catch (e) {
       setError(e);
+    } finally {
+      setCheckingOrderId(null);
     }
   }
   const allItems =
@@ -411,6 +473,12 @@ export function OrderbookPanel({
               required
             />
           </Field>
+          {premiumAsk && (
+            <Notice tone="warning">
+              当前挂卖价格高于一级购买每份 1 {asset}
+              。封盘前买家可以通过一级购买获得更低价格，请确认定价。
+            </Notice>
+          )}
           <Field label="有效期">
             <select value={expiry} onChange={(e) => setExpiry(e.target.value)}>
               <option value="1">1小时</option>
@@ -457,6 +525,13 @@ export function OrderbookPanel({
             {formatUnits(BigInt(o.unitPrice), 6)} {asset} ·{" "}
             {o.autoMatch ? "自动撮合" : "等待接单"}
           </p>
+          {o.side === "ask" &&
+            primaryOpen &&
+            BigInt(o.unitPrice) > SHARE_SCALE && (
+              <Notice tone="warning">
+                此挂卖单高于一级购买每份 1 {asset}。封盘前可先比较一级购买价格。
+              </Notice>
+            )}
           {o.owner.toLowerCase() === account?.address.toLowerCase() ? (
             <Button
               onClick={() =>
@@ -488,17 +563,26 @@ export function OrderbookPanel({
                     value={
                       take[o.id] ?? formatUnits(BigInt(o.remainingUnits), 6)
                     }
-                    onChange={(e) =>
-                      setTake({ ...take, [o.id]: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setTake({ ...take, [o.id]: e.target.value });
+                      if (acceptWarning?.orderId === o.id)
+                        setAcceptWarning(null);
+                    }}
                     inputMode="decimal"
                   />
                 </Field>
+                {acceptWarning?.orderId === o.id && (
+                  <Notice tone="warning">{acceptWarning.message}</Notice>
+                )}
                 <Button
-                  disabled={!verified || !live.data}
-                  onClick={() => accept(o)}
+                  disabled={!verified || !live.data || checkingOrderId === o.id}
+                  onClick={() => void accept(o)}
                 >
-                  {o.side === "bid" ? "卖给此求购单" : "购买此挂卖单"}
+                  {checkingOrderId === o.id
+                    ? "正在核对份额…"
+                    : o.side === "bid"
+                      ? "卖给此求购单"
+                      : "购买此挂卖单"}
                 </Button>
               </>
             )

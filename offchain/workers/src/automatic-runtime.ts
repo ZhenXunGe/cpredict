@@ -57,11 +57,20 @@ export const automationConfigSchema = z.object({
   CPREDICT_AUTOMATION_CONFIRMATIONS: z.coerce.number().int().min(1).max(1000),
   CPREDICT_AUTOMATION_LANE: z.enum(["claims", "matching"]),
   CPREDICT_AUTOMATION_PORT: z.coerce.number().int().min(1024).max(65535),
+  CPREDICT_AUTOMATION_IDLE_POLL_MS: z.coerce
+    .number()
+    .int()
+    .min(1000)
+    .max(300000)
+    .optional(),
 });
 export async function startAutomaticService(
   env: NodeJS.ProcessEnv = process.env,
 ) {
   const cfg = automationConfigSchema.parse(env);
+  const idlePollMs =
+    cfg.CPREDICT_AUTOMATION_IDLE_POLL_MS ??
+    (cfg.CPREDICT_AUTOMATION_LANE === "matching" ? 2000 : 30000);
   const keyInfo = await stat(cfg.CPREDICT_AUTOMATION_KEY_FILE);
   if (!keyInfo.isFile() || (keyInfo.mode & 0o077) !== 0)
     throw new Error("automation_key_permissions");
@@ -242,7 +251,7 @@ export async function startAutomaticService(
         () => {
           active = tick();
         },
-        pendingCount ? 2000 : 30000,
+        pendingCount ? 2000 : idlePollMs,
       );
   };
   const stop = async () => {
