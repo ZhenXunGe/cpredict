@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { formatUnits } from "viem";
 import { automaticClaimsStatusSchema as statusSchema } from "../../../offchain/app-core/src/orderbook-contracts.js";
 import {
   marketSchema,
@@ -87,7 +88,9 @@ export function AutomaticClaimsPanel() {
   const marketIds = [
     ...new Set(
       (status.data?.transactions ?? []).flatMap((transaction) =>
-        transaction.market ? [transaction.market.toLowerCase()] : [],
+        (transaction.context?.market ?? transaction.market)
+          ? [(transaction.context?.market ?? transaction.market)!.toLowerCase()]
+          : [],
       ),
     ),
   ];
@@ -158,60 +161,98 @@ export function AutomaticClaimsPanel() {
               "链上记录",
             ]}
           >
-            {status.data.transactions.map((transaction) => (
-              <tr key={transaction.id}>
-                <td>{kindLabel(transaction.kind)}</td>
-                <td>
-                  {transaction.market ? (
-                    <Link
-                      to={`/${api.environment.id}/markets/${transaction.market}`}
-                      title={transaction.market}
-                    >
-                      {marketLabel(transaction.market)}
-                    </Link>
-                  ) : transaction.kind === "fees" ||
-                    transaction.kind === "bond" ? (
-                    "跨市场汇总"
-                  ) : (
-                    "—"
-                  )}
-                </td>
-                <td>
-                  <AutomaticClaimAmount
-                    kind={transaction.kind}
-                    state={transaction.state}
-                    amount={transaction.amount}
-                    asset={api.environment.asset}
-                  />
-                </td>
-                <td>
-                  {formatTime(
-                    transaction.completed_at ?? transaction.created_at,
-                  )}
-                </td>
-                <td>
-                  {transactionStateLabel(transaction.kind, transaction.state)}
-                  {transaction.kind.startsWith("settle-bond:") && (
-                    <div className="small muted">
-                      仅完成市场级押金结算，不代表押金进入你的账户
-                    </div>
-                  )}
-                </td>
-                <td>
-                  {transaction.tx_hash ? (
-                    <a
-                      href={`${api.environment.explorerUrl}/tx/${transaction.tx_hash}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      查看
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-              </tr>
-            ))}
+            {status.data.transactions.map((transaction) => {
+              const market = transaction.context?.market ?? transaction.market;
+              const amount = transaction.context?.amount ?? transaction.amount;
+              return (
+                <tr key={transaction.id}>
+                  <td>{kindLabel(transaction.kind)}</td>
+                  <td>
+                    {market ? (
+                      <Link
+                        to={`/${api.environment.id}/markets/${market}`}
+                        title={market}
+                      >
+                        {transaction.context?.marketQuestion?.trim() ||
+                          marketLabel(market)}
+                      </Link>
+                    ) : transaction.kind === "fees" ||
+                      transaction.kind === "bond" ? (
+                      "跨市场汇总"
+                    ) : (
+                      "—"
+                    )}
+                    {transaction.context?.outcomeId !== null &&
+                      transaction.context?.outcomeId !== undefined && (
+                        <div className="small muted">
+                          结果：
+                          {transaction.context.outcomeLabel ??
+                            `#${transaction.context.outcomeId}`}
+                        </div>
+                      )}
+                    {transaction.kind === "bond" &&
+                      transaction.context &&
+                      !transaction.context.market && (
+                        <div className="small muted">
+                          按账户合并领取已结算市场的可退押金；该笔到账可能汇总多个市场。
+                        </div>
+                      )}
+                    {transaction.kind === "fees" &&
+                      transaction.context &&
+                      !transaction.context.market && (
+                        <div className="small muted">
+                          按账户合并领取累计费用；该笔到账可能汇总多个市场或费用来源。
+                        </div>
+                      )}
+                  </td>
+                  <td>
+                    <AutomaticClaimAmount
+                      kind={transaction.kind}
+                      effect={transaction.effect}
+                      state={transaction.state}
+                      amount={amount}
+                      units={transaction.context?.units ?? null}
+                      asset={api.environment.asset}
+                    />
+                  </td>
+                  <td>
+                    {formatTime(
+                      transaction.completed_at ?? transaction.created_at,
+                    )}
+                  </td>
+                  <td>
+                    {transactionStateLabel(
+                      transaction.kind,
+                      transaction.effect,
+                      transaction.state,
+                    )}
+                    {transaction.kind.startsWith("settle-bond:") && (
+                      <div className="small muted">
+                        仅完成市场级押金结算，不代表押金进入你的账户
+                      </div>
+                    )}
+                    {transaction.state === "confirmed" &&
+                      !transaction.context &&
+                      PERSONAL_CLAIM_KINDS.has(transaction.kind) && (
+                        <div className="small muted">链上明细索引中</div>
+                      )}
+                  </td>
+                  <td>
+                    {transaction.tx_hash ? (
+                      <a
+                        href={`${api.environment.explorerUrl}/tx/${transaction.tx_hash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        查看
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </DataTable>
         </div>
       ) : null}
@@ -257,15 +298,24 @@ export function AutomaticClaimsPanel() {
 
 function AutomaticClaimAmount({
   kind,
+  effect,
   state,
   amount,
+  units,
   asset,
 }: {
   kind: string;
+  effect: "payout" | "asset-return" | undefined;
   state: string;
   amount: string | null;
+  units: string | null;
   asset: string;
 }) {
+  if (effect === "asset-return" || kind.startsWith("return-listing:")) {
+    if (state !== "confirmed") return <span className="muted">待链上确认</span>;
+    if (units === null) return <span className="muted">等待索引返还份额</span>;
+    return <>{formatUnits(BigInt(units), 6)} 份</>;
+  }
   if (!PERSONAL_CLAIM_KINDS.has(kind))
     return <span className="muted">不涉及个人到账</span>;
   if (state !== "confirmed") return <span className="muted">待链上确认</span>;
@@ -275,12 +325,22 @@ function AutomaticClaimAmount({
 
 function kindLabel(kind: string) {
   if (kind.startsWith("settle-bond:")) return "市场押金处理";
+  if (kind.startsWith("return-listing:")) return "挂单资产返还";
   return KIND_LABELS[kind] ?? "权益处理";
 }
 
-function transactionStateLabel(kind: string, state: string) {
-  if (state === "confirmed")
-    return kind.startsWith("settle-bond:") ? "已完成" : "已到账";
+function transactionStateLabel(
+  kind: string,
+  effect: "payout" | "asset-return" | undefined,
+  state: string,
+) {
+  if (state === "confirmed") {
+    if (effect === "payout" || (!effect && PERSONAL_CLAIM_KINDS.has(kind)))
+      return "已到账";
+    if (effect === "asset-return" || kind.startsWith("return-listing:"))
+      return "已返还";
+    return "已完成";
+  }
   if (state === "reverted") return "未成功";
   if (state === "cancelled") return "已取消";
   return "处理中";
@@ -330,4 +390,6 @@ const reasons: Record<string, string> = {
   gas_balance_insufficient: "代付 Gas 余额不足，等待恢复；也可手动领取",
   retry_after_chain_check: "链上状态核验中",
   transaction_reverted: "上次领取未成功，正在重新核验",
+  rechecking_after_reorg: "链上发生重组，原到账记录已撤回，后台正在重新核验",
+  assets_returned: "挂单资产已返还",
 };

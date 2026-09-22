@@ -114,7 +114,7 @@ test("claim preference is default on, persists opt-out, and explains market-leve
   await expect(checkbox).not.toBeChecked();
   expect(f.errors).toEqual([]);
 });
-test("market bond maintenance is not presented as the participant receiving funds", async ({
+test("automatic claim audit distinguishes payouts, asset returns and maintenance", async ({
   page,
 }) => {
   const f = await setup(page);
@@ -135,6 +135,73 @@ test("market bond maintenance is not presented as the participant receiving fund
             created_at: new Date().toISOString(),
             completed_at: new Date().toISOString(),
           },
+          {
+            id: "22222222-2222-4222-8222-222222222222",
+            kind: "return-listing:1",
+            effect: "asset-return",
+            state: "confirmed",
+            tx_hash: "0x" + "2".repeat(64),
+            market: A(101),
+            amount: null,
+            created_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+            context: {
+              market: A(101),
+              marketQuestion: "主播今晚直播间是否会超过30万人？",
+              outcomeId: "1",
+              outcomeLabel: "是",
+              amount: null,
+              units: "5000000",
+            },
+          },
+          {
+            id: "33333333-3333-4333-8333-333333333333",
+            kind: "future-operation",
+            state: "confirmed",
+            tx_hash: "0x" + "3".repeat(64),
+            market: null,
+            amount: null,
+            created_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+          },
+          {
+            id: "44444444-4444-4444-8444-444444444444",
+            kind: "winner",
+            effect: "payout",
+            state: "confirmed",
+            tx_hash: "0x" + "4".repeat(64),
+            market: A(101),
+            amount: "9632000",
+            created_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+            context: {
+              market: A(101),
+              marketQuestion: "主播今晚直播间是否会超过30万人？",
+              outcomeId: "1",
+              outcomeLabel: "是",
+              amount: "9632000",
+              units: "5000000",
+            },
+          },
+          {
+            id: "66666666-6666-4666-8666-666666666666",
+            kind: "bond",
+            effect: "payout",
+            state: "confirmed",
+            tx_hash: "0x" + "6".repeat(64),
+            market: null,
+            amount: "10000000",
+            created_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
+            context: {
+              market: null,
+              marketQuestion: null,
+              outcomeId: null,
+              outcomeLabel: null,
+              amount: "10000000",
+              units: null,
+            },
+          },
         ],
         nextCursor: null,
       },
@@ -151,6 +218,26 @@ test("market bond maintenance is not presented as the participant receiving fund
     "仅完成市场级押金结算，不代表押金进入你的账户",
   );
   await expect(row).not.toContainText("已到账");
+  const assetReturn = history
+    .getByRole("row")
+    .filter({ hasText: "挂单资产返还" });
+  await expect(assetReturn).toContainText("已返还");
+  await expect(assetReturn).toContainText("5 份");
+  const unknownOperation = history
+    .getByRole("row")
+    .filter({ hasText: "权益处理" });
+  await expect(unknownOperation).toContainText("已完成");
+  await expect(unknownOperation).not.toContainText("已到账");
+  const winner = history.getByRole("row").filter({ hasText: "赢家收益" });
+  await expect(winner).toContainText("主播今晚直播间是否会超过30万人？");
+  await expect(winner).toContainText("结果：是");
+  await expect(winner).toContainText("9.632 ctUSD");
+  await expect(winner).toContainText("已到账");
+  const bond = history.getByRole("row").filter({ hasText: "可退押金" });
+  await expect(bond).toContainText("10 ctUSD");
+  await expect(bond).toContainText(
+    "按账户合并领取已结算市场的可退押金；该笔到账可能汇总多个市场。",
+  );
   expect(f.errors).toEqual([]);
 });
 
@@ -204,6 +291,44 @@ test("automatic claim history shows market, confirmed amount and paginates newes
   await page.getByRole("button", { name: "上一页" }).click();
   await expect(page.getByText("第 1 页", { exact: true })).toBeVisible();
   await expect(history).toContainText("1 ctUSD");
+  expect(f.errors).toEqual([]);
+});
+
+test("a deep reorg withdraws the received message while canonical recovery runs", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.route("**/v1/automatic-claims**", (route) =>
+    route.fulfill({
+      json: {
+        enabled: true,
+        reason: "rechecking_after_reorg",
+        updatedAt: new Date().toISOString(),
+        transactions: [
+          {
+            id: "55555555-5555-4555-8555-555555555555",
+            kind: "winner",
+            effect: "payout",
+            state: "unknown",
+            tx_hash: "0x" + "5".repeat(64),
+            market: null,
+            amount: null,
+            created_at: new Date().toISOString(),
+            completed_at: null,
+          },
+        ],
+        nextCursor: null,
+      },
+    }),
+  );
+  await page.goto(
+    "/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements",
+  );
+  await expect(page.getByRole("status")).toContainText("原到账记录已撤回");
+  const history = page.getByRole("region", { name: "自动领取记录" });
+  const row = history.getByRole("row").filter({ hasText: "赢家收益" });
+  await expect(row).toContainText("处理中");
+  await expect(row).not.toContainText("已到账");
   expect(f.errors).toEqual([]);
 });
 test("manual bid acceptance displays fee-adjusted minimum proceeds and frozen assets separately", async ({
