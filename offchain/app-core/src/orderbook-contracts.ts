@@ -31,6 +31,14 @@ export const automaticClaimsStatusSchema = z.object({
         .object({
           market: address.nullable(),
           marketQuestion: z.string().nullable(),
+          relatedMarkets: z
+            .array(
+              z.object({
+                market: address,
+                marketQuestion: z.string().nullable(),
+              }),
+            )
+            .optional(),
           outcomeId: uint.nullable(),
           outcomeLabel: z.string().nullable(),
           amount: uint.nullable(),

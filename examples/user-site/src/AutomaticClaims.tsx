@@ -88,9 +88,12 @@ export function AutomaticClaimsPanel() {
   const marketIds = [
     ...new Set(
       (status.data?.transactions ?? []).flatMap((transaction) =>
-        (transaction.context?.market ?? transaction.market)
-          ? [(transaction.context?.market ?? transaction.market)!.toLowerCase()]
-          : [],
+        [
+          transaction.context?.market ?? transaction.market,
+          ...(transaction.context?.relatedMarkets ?? []).map(
+            (related) => related.market,
+          ),
+        ].flatMap((market) => (market ? [market.toLowerCase()] : [])),
       ),
     ),
   ];
@@ -164,6 +167,7 @@ export function AutomaticClaimsPanel() {
             {status.data.transactions.map((transaction) => {
               const market = transaction.context?.market ?? transaction.market;
               const amount = transaction.context?.amount ?? transaction.amount;
+              const relatedMarkets = transaction.context?.relatedMarkets ?? [];
               return (
                 <tr key={transaction.id}>
                   <td>{kindLabel(transaction.kind)}</td>
@@ -176,6 +180,20 @@ export function AutomaticClaimsPanel() {
                         {transaction.context?.marketQuestion?.trim() ||
                           marketLabel(market)}
                       </Link>
+                    ) : relatedMarkets.length ? (
+                      <div>
+                        {relatedMarkets.map((related) => (
+                          <div key={related.market}>
+                            <Link
+                              to={`/${api.environment.id}/markets/${related.market}`}
+                              title={related.market}
+                            >
+                              {related.marketQuestion?.trim() ||
+                                marketLabel(related.market)}
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
                     ) : transaction.kind === "fees" ||
                       transaction.kind === "bond" ? (
                       "跨市场汇总"
@@ -194,14 +212,18 @@ export function AutomaticClaimsPanel() {
                       transaction.context &&
                       !transaction.context.market && (
                         <div className="small muted">
-                          按账户合并领取已结算市场的可退押金；该笔到账可能汇总多个市场。
+                          {relatedMarkets.length
+                            ? "按账户合并领取以上市场的可退押金。"
+                            : "按账户合并领取已结算市场的可退押金；该笔到账可能汇总多个市场。"}
                         </div>
                       )}
                     {transaction.kind === "fees" &&
                       transaction.context &&
                       !transaction.context.market && (
                         <div className="small muted">
-                          按账户合并领取累计费用；该笔到账可能汇总多个市场或费用来源。
+                          {relatedMarkets.length
+                            ? "按账户合并领取以上市场的累计费用。"
+                            : "按账户合并领取累计费用；该笔到账可能汇总多个市场或费用来源。"}
                         </div>
                       )}
                   </td>
