@@ -447,7 +447,15 @@ class FixtureApi extends SiteApi {
               }
             : positionsTest
               ? { ...market, state: 1, question: "已结算的测试市场" }
-              : market;
+              : new URLSearchParams(location.search).has(
+                    "multiple-owner-bids",
+                  ) && requestedMarket === A(102).toLowerCase()
+                ? {
+                    ...market,
+                    market: A(102),
+                    question: "主播今晚直播间是否会超过30万人？",
+                  }
+                : { ...market, question: rules.question };
     } else if (p.startsWith("/v1/markets/")) {
       if (this.rulesFail) throw new AppError("rules_unverified", 409);
       result = rules;
@@ -873,6 +881,11 @@ class FixtureApi extends SiteApi {
       if (
         functionName === "balanceOf" &&
         address?.toLowerCase() === ENTRY_POINT.address.toLowerCase()
+      )
+        return 0n;
+      if (
+        functionName === "balanceOf" &&
+        new URLSearchParams(location.search).has("no-shares")
       )
         return 0n;
       if (functionName === "balanceOf")

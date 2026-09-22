@@ -258,6 +258,7 @@ const messages: Record<string, string> = {
   usdc_transfers_unavailable: "USDC 暂时不允许这笔转账，资金尚未转入。",
   chain_query_unavailable:
     "链上读取暂不可用，请稍后重新查询。已提交的操作请勿重复发送。",
+  insufficient_shares: "余额不足，请调整挂卖数量或选择其他结果。",
   invalid_asset_amount: "请输入大于零、最多 6 位小数的金额。",
   external_wallet_required: "请在已恢复控制钱包的浏览器中打开此工具。",
   browser_lock_required:
