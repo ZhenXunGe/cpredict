@@ -9,17 +9,33 @@ import type { Environment } from "../../app-core/src/contracts.js";
 import { orderbookAbi } from "../../sdk/src/orderbook.js";
 import type { AutomaticAction, AutomationSource } from "./automatic-claims.js";
 export class MatchingSource implements AutomationSource {
+  private lastRevision: string | undefined;
+  private lastFullScanAt = Number.NEGATIVE_INFINITY;
   constructor(
     readonly sql: Sql,
     readonly client: PublicClient,
     readonly env: Environment,
+    readonly nowMs: () => number = Date.now,
+    readonly maintenanceIntervalMs = 30000,
   ) {}
   async *candidates(): AsyncIterable<AutomaticAction> {
     if (this.env.deployment.marketplaceVersion !== "orderbook-v2") return;
-    const target = this.env.deployment.marketplace,
-      head = await this.client.getBlock();
+    const target = this.env.deployment.marketplace;
+    const [latest] = await this
+      .sql`SELECT block_number,transaction_hash,transaction_index,log_index FROM orderbook_events WHERE chain_id=${this.env.deployment.chainId} AND marketplace=${target.toLowerCase()} ORDER BY block_number DESC,transaction_index DESC,log_index DESC LIMIT 1`;
+    const revision = latest
+        ? `${latest.block_number}:${latest.transaction_hash}:${latest.transaction_index}:${latest.log_index}`
+        : "empty",
+      scanAt = this.nowMs();
+    if (
+      revision === this.lastRevision &&
+      scanAt - this.lastFullScanAt < this.maintenanceIntervalMs
+    )
+      return;
+    const head = await this.client.getBlock();
     const rows = await this
       .sql`SELECT c.order_id,c.args FROM orderbook_events c WHERE c.event_name='OrderCreated' AND c.chain_id=${this.env.deployment.chainId} AND c.marketplace=${target.toLowerCase()} AND NOT EXISTS(SELECT 1 FROM orderbook_events e WHERE e.chain_id=c.chain_id AND e.marketplace=c.marketplace AND e.order_id=c.order_id AND (e.event_name='OrderReleased' OR (e.event_name='OrderFilled' AND e.args->>'remainingUnits'='0'))) ORDER BY c.order_id`;
+    const actions: AutomaticAction[] = [];
     const pairs = new Map<string, { market: Address; outcome: number }>();
     for (const r of rows) {
       const id = BigInt(r.order_id);
@@ -49,13 +65,15 @@ export class MatchingSource implements AutomationSource {
         blockNumber: head.number,
       });
       if (terminal || o[4] <= head.timestamp)
-        yield action(
-          "release-order",
-          encodeFunctionData({
-            abi: orderbookAbi,
-            functionName: "releaseOrder",
-            args: [id],
-          }),
+        actions.push(
+          action(
+            "release-order",
+            encodeFunctionData({
+              abi: orderbookAbi,
+              functionName: "releaseOrder",
+              args: [id],
+            }),
+          ),
         );
       else if (o[7])
         pairs.set(`${o[0]}:${o[5]}`, { market: o[0], outcome: o[5] });
@@ -95,7 +113,7 @@ export class MatchingSource implements AutomationSource {
         (units * price) / 1000000n === 0n
       )
         continue;
-      yield {
+      actions.push({
         key: `match:${market}:${outcome}`,
         owner: bid[1],
         kind: "match-orders",
@@ -106,7 +124,10 @@ export class MatchingSource implements AutomationSource {
           args: [market, outcome, 1n],
         }),
         requiresClaimPreference: false,
-      };
+      });
     }
+    this.lastRevision = revision;
+    this.lastFullScanAt = scanAt;
+    for (const action of actions) yield action;
   }
 }

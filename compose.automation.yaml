@@ -89,7 +89,8 @@
         "CPREDICT_AUTOMATION_ENVIRONMENT_FILE": "/run/cpredict/environment.json",
         "CPREDICT_AUTOMATION_KEY_FILE": "/run/cpredict/keeper.key",
         "CPREDICT_AUTOMATION_LANE": "matching",
-        "CPREDICT_AUTOMATION_PORT": "8815"
+        "CPREDICT_AUTOMATION_PORT": "8815",
+        "CPREDICT_AUTOMATION_IDLE_POLL_MS": "2000"
       },
       "volumes": [
         "${CPREDICT_AUTOMATION_ENVIRONMENT_FILE:?private deployment environment}:/run/cpredict/environment.json:ro",

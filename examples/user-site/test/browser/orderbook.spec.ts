@@ -27,6 +27,7 @@ async function setup(page: Page) {
     const multipleOwnerBids = new URL(page.url()).searchParams.has(
         "multiple-owner-bids",
       ),
+      premiumAsk = new URL(page.url()).searchParams.has("premium-ask"),
       requestUrl = new URL(r.request().url()),
       items = [
         {
@@ -68,6 +69,23 @@ async function setup(page: Page) {
                 autoMatch: false,
                 remainingUnits: "5000000",
                 lockedPayment: "2000000",
+                active: true,
+              },
+            ]
+          : []),
+        ...(premiumAsk
+          ? [
+              {
+                id: "4",
+                market: A(101),
+                owner: A(98),
+                outcomeId: "0",
+                side: "ask",
+                unitPrice: "1200000",
+                expiresAt: "2000000000",
+                autoMatch: true,
+                remainingUnits: "1000000",
+                lockedPayment: "0",
                 active: true,
               },
             ]
@@ -145,6 +163,23 @@ test("sell order shows insufficient balance before opening confirmation", async 
   });
   expect(f.errors).toEqual([]);
 });
+test("selling into a bid checks outcome shares before opening confirmation", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.goto(
+    `/test/browser/fixture.html?orderbook-test=1&no-shares=1#/ctusd-test/markets/${A(101)}`,
+  );
+  const panel = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+  });
+  await panel.getByRole("button", { name: "卖给此求购单" }).click();
+  await expect(panel).toContainText(
+    "余额不足：当前结果可用 0 份，请调整接单数量。",
+  );
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(f.errors).toEqual([]);
+});
 test("sell order with enough shares reaches confirmation", async ({ page }) => {
   const f = await setup(page);
   await page.goto(
@@ -163,6 +198,30 @@ test("sell order with enough shares reaches confirmation", async ({ page }) => {
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText("挂卖");
   await expect(dialog.getByText("份数", { exact: true })).toBeVisible();
+  expect(f.errors).toEqual([]);
+});
+test("pre-close premium asks warn sellers, order viewers and buyers", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.goto(
+    `/test/browser/fixture.html?orderbook-test=1&premium-ask=1#/ctusd-test/markets/${A(101)}`,
+  );
+  const panel = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+  });
+  await panel.getByLabel("订单类型").selectOption("ask");
+  await panel.getByLabel("每份价格（ctUSD）", { exact: true }).fill("1.2");
+  await expect(
+    panel.getByText(/当前挂卖价格高于一级购买每份 1 ctUSD/),
+  ).toBeVisible();
+  await expect(
+    panel.getByText(/此挂卖单高于一级购买每份 1 ctUSD/),
+  ).toBeVisible();
+  await panel.getByRole("button", { name: "购买此挂卖单" }).click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "高于一级购买每份 1 ctUSD",
+  );
   expect(f.errors).toEqual([]);
 });
 test("claim preference is default on, persists opt-out, and explains market-level timeout", async ({

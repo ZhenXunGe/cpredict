@@ -24,6 +24,8 @@ test("automation lanes have separate private environments and signer mounts with
     );
   }
   assert.notDeepEqual(claims.env_file, matching.env_file);
+  assert.equal(matching.environment.CPREDICT_AUTOMATION_IDLE_POLL_MS, "2000");
+  assert.equal(claims.environment.CPREDICT_AUTOMATION_IDLE_POLL_MS, undefined);
   const image = await readFile("deploy/compose/Dockerfile.offchain", "utf8");
   assert.match(image, /COPY[^\n]*dist\/offchain\/workers/);
   assert.match(image, /FROM indexer AS automation/);
