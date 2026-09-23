@@ -42,7 +42,8 @@ function setup(state = 0, enabled = true, now = 2000n) {
       trackedAccounts: new Set([trader.toLowerCase()]),
     },
   );
-  const revision = { count: "2", latest: "2", epoch: "1", now };
+  const revision = { factRevision: "2", epoch: "1", now };
+  const queries: string[] = [];
   const ledger = {
     environment: env,
     snapshot: async () => ({
@@ -53,12 +54,15 @@ function setup(state = 0, enabled = true, now = 2000n) {
     }),
     assertSnapshot: vi.fn(async () => {}),
     accountFacts: async () => facts,
-    sql: async (s: TemplateStringsArray) =>
-      s.join("").includes("SELECT DISTINCT market")
+    sql: async (s: TemplateStringsArray) => {
+      const query = s.join("");
+      queries.push(query);
+      return query.includes("SELECT DISTINCT market")
         ? [{ market: vault }]
-        : s.join("").includes("count(*)")
-          ? [revision]
-          : [{ owner: trader }],
+        : query.includes("SELECT fact_revision")
+          ? [{ revision: revision.factRevision }]
+          : [{ owner: trader }];
+    },
   } as unknown as PostgresFinancialLedger;
   const values: Record<string, unknown> = {
     marketState: state,
@@ -106,6 +110,7 @@ function setup(state = 0, enabled = true, now = 2000n) {
   return {
     source,
     revision,
+    queries,
     client,
     ledger,
     prefs,
@@ -198,9 +203,12 @@ describe("historical automatic entitlement discovery", () => {
     }
     expect(vi.mocked(f.client.readContract).mock.calls.length).toBe(first);
     expect(vi.mocked(f.client.getBlock).mock.calls.length).toBe(40);
-    f.revision.count = "3"; // Also covers owner-less resolution/fee events.
+    expect(f.queries.filter((query) => query.includes("SELECT DISTINCT market"))).toHaveLength(1);
+    expect(f.queries.filter((query) => query.includes("SELECT owner FROM"))).toHaveLength(1);
+    f.revision.factRevision = "3"; // Also covers owner-less resolution/fee events.
     f.values.creditOf = 2n;
     expect((await f.actions()).some((a) => a.kind === "fees")).toBe(true);
+    expect(f.queries.filter((query) => query.includes("SELECT DISTINCT market"))).toHaveLength(2);
   });
   it("deadline wakes idle holders without any new event", async () => {
     const f = setup(0, true, 1999n);

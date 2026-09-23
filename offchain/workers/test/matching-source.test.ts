@@ -152,6 +152,46 @@ describe("matching source scan cadence", () => {
     expect(await collect(source)).toEqual([]);
   });
 
+  it("reads a market's terminal state once per pinned scan without changing cleanup order", async () => {
+    const sql = (async (strings: TemplateStringsArray) =>
+      strings.join("").includes("ORDER BY block_number DESC")
+        ? [
+            {
+              block_number: "10",
+              transaction_hash: "0x10",
+              transaction_index: 0,
+              log_index: 1,
+            },
+          ]
+        : [{ order_id: "1" }, { order_id: "2" }]) as unknown as Sql;
+    const client = {
+      getBlock: vi.fn(async () => ({ number: 10n, timestamp: 1000n })),
+      readContract: vi.fn(async ({ functionName }: { functionName: string }) =>
+        functionName === "orders"
+          ? [A(100), A(10), 10000n, 1000000n, 999n, 0, 1, true, true, 0n]
+          : false,
+      ),
+    } as unknown as PublicClient;
+    const source = new MatchingSource(sql, client, {
+      ...env,
+      deployment: {
+        ...env.deployment,
+        marketplaceVersion: "orderbook-v2" as const,
+        marketplace: A(80),
+      },
+    });
+
+    expect((await collect(source)).map((action) => action.key)).toEqual([
+      "release-order:1",
+      "release-order:2",
+    ]);
+    expect(
+      vi
+        .mocked(client.readContract)
+        .mock.calls.filter(([args]) => args.functionName === "isTerminal"),
+    ).toHaveLength(1);
+  });
+
   it("puts entitlement-blocking terminal asks ahead of expired cleanup and filters quota-denied work", async () => {
     const sql = (async (strings: TemplateStringsArray) =>
       strings.join("").includes("ORDER BY block_number DESC")

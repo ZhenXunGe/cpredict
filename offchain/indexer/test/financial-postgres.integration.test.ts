@@ -39,6 +39,7 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
       "006_financial_facts.sql",
       "007_legacy_deployment.sql",
       "009_sparse_canonical_ranges.sql",
+      "011_ledger_fact_revision.sql",
     ])
       await sql.unsafe(
         await readFile(
@@ -61,7 +62,13 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
   it("writes eventless watermark, raw events and financial facts in the same transaction", async () => {
     await store.applyBatch(createMarket(), [block(1)], block(1));
     await store.applyBatch(purchase(), [block(2)], block(2));
+    const [beforeEmpty] =
+      await sql`SELECT fact_revision::text AS revision FROM ledger_environment WHERE singleton`;
+    expect(BigInt(beforeEmpty!.revision)).toBeGreaterThan(0n);
     await store.applyBatch([], [block(3)], block(3));
+    const [afterEmpty] =
+      await sql`SELECT fact_revision::text AS revision FROM ledger_environment WHERE singleton`;
+    expect(afterEmpty!.revision).toBe(beforeEmpty!.revision);
     await store.financial!.accountScanned([trader], 1n, 3n, block(3).blockHash);
     const result = await store.financial!.pnl(trader);
     expect(result.snapshot).toMatchObject({
@@ -96,6 +103,7 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
         "006_financial_facts.sql",
         "007_legacy_deployment.sql",
         "009_sparse_canonical_ranges.sql",
+        "011_ledger_fact_revision.sql",
       ])
         await sparseSql.unsafe(
           await readFile(
@@ -132,12 +140,19 @@ describe.skipIf(!url)("financial projection PostgreSQL invariants", () => {
     }
   });
   it("keeps replay idempotent and does not let it manufacture complete coverage", async () => {
+    const [beforeReplay] =
+      await sql`SELECT fact_revision::text AS revision FROM ledger_environment WHERE singleton`;
     const before =
       await sql`SELECT fact FROM ledger_facts ORDER BY block_number,transaction_index,log_index,fact_index`;
     await store.replayFinancial(1n, 3n);
     await store.replayFinancial(1n, 3n);
     const after =
       await sql`SELECT fact FROM ledger_facts ORDER BY block_number,transaction_index,log_index,fact_index`;
+    const [afterReplay] =
+      await sql`SELECT fact_revision::text AS revision FROM ledger_environment WHERE singleton`;
+    expect(BigInt(afterReplay!.revision)).toBeGreaterThan(
+      BigInt(beforeReplay!.revision),
+    );
     expect(after).toEqual(before);
     expect((await store.financial!.snapshot()).epoch).toBe("3");
   });

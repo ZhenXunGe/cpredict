@@ -49,6 +49,11 @@ export class CleanupQuotaExceeded extends Error {
     super(reason);
   }
 }
+export class AutomationGasCapExceeded extends Error {
+  constructor() {
+    super("per_transaction_gas_cap_exceeded");
+  }
+}
 export interface PreparedAutomation {
   raw: Hex;
   hash: Hex;
@@ -104,8 +109,15 @@ export class AutomaticClaimsWorker {
     readonly source: AutomationSource,
     readonly dailyBudget: bigint,
     readonly maxPerTick = 20,
+    readonly maxTransactionCost = dailyBudget,
   ) {
-    if (dailyBudget <= 0n || maxPerTick < 1 || maxPerTick > 100)
+    if (
+      dailyBudget <= 0n ||
+      maxPerTick < 1 ||
+      maxPerTick > 100 ||
+      maxTransactionCost <= 0n ||
+      maxTransactionCost > dailyBudget
+    )
       throw new Error("invalid_automation_budget");
   }
   async tick(): Promise<void> {
@@ -132,6 +144,10 @@ export class AutomaticClaimsWorker {
           if (!(await this.chain.eligible(tx))) {
             await this.store.cancelPrepared(tx.id);
             continue;
+          }
+          if (tx.maximumCost > this.maxTransactionCost) {
+            await this.setStatus(tx, "per_transaction_gas_cap_exceeded");
+            return;
           }
           if (
             (await this.store.spentToday(tx.id)) + tx.maximumCost >
@@ -179,6 +195,8 @@ export class AutomaticClaimsWorker {
           const prepared = await this.chain.prepare(action);
           if (keccak256(prepared.raw) !== prepared.hash)
             throw new Error("signed_hash_mismatch");
+          if (prepared.maximumCost > this.maxTransactionCost)
+            throw new AutomationGasCapExceeded();
           if (
             (await this.store.spentToday()) + prepared.maximumCost >
             this.dailyBudget
@@ -200,7 +218,9 @@ export class AutomaticClaimsWorker {
             action,
             error instanceof CleanupQuotaExceeded
               ? error.reason
-              : "retry_after_chain_check",
+              : error instanceof AutomationGasCapExceeded
+                ? error.message
+                : "retry_after_chain_check",
           );
           if ((await this.store.pending()).length) return;
           continue;

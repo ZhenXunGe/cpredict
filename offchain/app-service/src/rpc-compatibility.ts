@@ -5,6 +5,7 @@ import {
   RpcReadPool,
   RpcResponseError,
 } from "../../app-core/src/rpc-pool.js";
+import { RpcAdmission } from "./rpc-admission.js";
 const envelope = z.object({
   jsonrpc: z.literal("2.0"),
   id: z.union([z.string().max(256), z.number().finite(), z.null()]).optional(),
@@ -15,6 +16,7 @@ const envelope = z.object({
 export function registerRpcCompatibility(
   app: FastifyInstance,
   pool: RpcReadPool,
+  admission = new RpcAdmission(),
 ) {
   app.post(
     "/v1/rpc-compat",
@@ -31,8 +33,8 @@ export function registerRpcCompatibility(
         if (!reply.raw.writableEnded) abort();
       };
       reply.raw.once("close", closed);
-      const run = async (input: unknown) => {
-        const parsed = envelope.safeParse(input);
+      let release: () => void = () => undefined;
+      const run = async (parsed: ReturnType<typeof envelope.safeParse>) => {
         if (!parsed.success)
           return {
             jsonrpc: "2.0",
@@ -86,6 +88,12 @@ export function registerRpcCompatibility(
             id: null,
             error: { code: -32600, message: "Invalid Request" },
           };
+        const parsed = input.map((item) => envelope.safeParse(item));
+        const calls = parsed.flatMap((item) =>
+          item.success ? [item.data] : [],
+        );
+        const permit = admission.enter(request.ip, calls);
+        release = permit.release;
         const output: unknown[] = new Array(input.length);
         let cursor = 0;
         await Promise.all(
@@ -93,7 +101,21 @@ export function registerRpcCompatibility(
             for (;;) {
               const i = cursor++;
               if (i >= input.length) break;
-              output[i] = await run(input[i]);
+              const item = parsed[i]!;
+              output[i] = permit.allowed
+                ? await run(item)
+                : item.success
+                  ? item.data.id === undefined
+                    ? undefined
+                    : {
+                        jsonrpc: "2.0",
+                        id: item.data.id,
+                        error: {
+                          code: -32005,
+                          message: "RPC rate limit exceeded",
+                        },
+                      }
+                  : await run(item);
             }
           }),
         );
@@ -104,6 +126,7 @@ export function registerRpcCompatibility(
             : responses[0]
           : reply.code(204).send();
       } finally {
+        release();
         request.raw.off("aborted", abort);
         reply.raw.off("close", closed);
       }

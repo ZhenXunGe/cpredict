@@ -16,7 +16,10 @@ import {
   type LedgerSnapshot,
 } from "../../app-core/src/ledger-contracts.js";
 import { computePnl, type PnlOptions } from "../../app-core/src/pnl.js";
-import { normalizeFinancialFacts } from "./financial-facts.js";
+import {
+  normalizeFinancialFacts,
+  referencedOrderIds,
+} from "./financial-facts.js";
 import type { CanonicalBlock, ChainCheckpoint, IndexedEvent } from "./store.js";
 
 type Db = Sql | TransactionSql;
@@ -138,16 +141,16 @@ export class PostgresFinancialLedger {
       >`SELECT listing_id,vault,seller,outcome_id FROM listings WHERE chain_id=${chainId}`,
       db<{ address: Address }[]>`SELECT address FROM ledger_tracked_accounts`,
     ]);
-    const orders =
-      this.environment.deployment.marketplaceVersion === "orderbook-v2"
-        ? await db`SELECT order_id,args FROM orderbook_events WHERE chain_id=${chainId} AND event_name='OrderCreated'`
-        : [];
     if (this.environment.deployment.marketplaceVersion === "orderbook-v2")
       await projectOrderbook(
         db,
         events,
         this.environment.deployment.marketplace,
       );
+    const orderIds = referencedOrderIds(events, this.environment);
+    const orders = orderIds.length
+      ? await db`SELECT order_id,args FROM orderbook_events WHERE chain_id=${chainId} AND marketplace=${this.environment.deployment.marketplace.toLowerCase()} AND event_name='OrderCreated' AND order_id IN ${db(orderIds.map((id) => id.toString()))}`
+      : [];
     const facts = normalizeFinancialFacts(events, blocks, {
       orders: new Map(orders.map((r) => [String(r.order_id), r.args])),
       environment: this.environment,
@@ -164,6 +167,8 @@ export class PostgresFinancialLedger {
       await db`INSERT INTO ledger_facts(chain_id,block_number,transaction_hash,transaction_index,log_index,fact_index,occurred_at,kind,market,owner,counterparty,fact)
       VALUES(${chainId},${f.blockNumber},${f.transactionHash},${f.transactionIndex},${f.logIndex},${f.factIndex},${f.timestamp},${f.kind},${f.market?.toLowerCase() ?? null},${f.owner?.toLowerCase() ?? null},${f.counterparty?.toLowerCase() ?? null},${db.json(f)})
       ON CONFLICT(chain_id,transaction_hash,log_index,fact_index,projection_version) DO UPDATE SET fact=EXCLUDED.fact, owner=EXCLUDED.owner,counterparty=EXCLUDED.counterparty,market=EXCLUDED.market`;
+    if (facts.length)
+      await db`UPDATE ledger_environment SET fact_revision=fact_revision+1 WHERE singleton`;
     if (checkpoint) {
       const first = coverageFromBlock ?? blocks[0]?.blockNumber;
       // Completeness starts only with a full configured scanner at deployment, never by inferring it from event counts.

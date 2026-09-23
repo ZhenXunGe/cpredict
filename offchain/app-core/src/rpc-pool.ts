@@ -157,26 +157,32 @@ export interface RpcPoolOptions {
 function category(method: string, params: readonly unknown[]): Capability {
   if (method === "eth_getLogs") return "logs";
   if (method === "eth_getTransactionReceipt") return "receipt";
-  if (
-    [
-      "eth_getBlockByNumber",
-      "eth_getBlockByHash",
-      "eth_getTransactionByHash",
-    ].includes(method)
-  )
+  if (["eth_getBlockByHash", "eth_getTransactionByHash"].includes(method))
     return "history";
+  let block: unknown;
+  switch (method) {
+    case "eth_getStorageAt":
+    case "eth_getProof":
+      block = params[2];
+      break;
+    case "eth_getBlockByNumber":
+    case "eth_getBlockTransactionCountByNumber":
+      block = params[0];
+      break;
+    case "eth_call":
+    case "eth_getCode":
+    case "eth_getBalance":
+    case "eth_getTransactionCount":
+      block = params[1];
+      break;
+    default:
+      return "read";
+  }
   if (
-    [
-      "eth_call",
-      "eth_getCode",
-      "eth_getBalance",
-      "eth_getStorageAt",
-      "eth_getTransactionCount",
-      "eth_getProof",
-    ].includes(method) &&
-    params
-      .slice(1)
-      .some((v) => typeof v === "string" && /^0x[0-9a-f]+$/i.test(v))
+    (typeof block === "string" && /^0x[0-9a-f]+$/i.test(block)) ||
+    (typeof block === "object" &&
+      block !== null &&
+      ("blockHash" in block || "blockNumber" in block))
   )
     return "history";
   return "read";

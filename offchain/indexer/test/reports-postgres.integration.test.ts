@@ -58,6 +58,7 @@ describe.skipIf(!url)("report and publication PostgreSQL boundaries", () => {
       "006_financial_facts.sql",
       "007_legacy_deployment.sql",
       "009_sparse_canonical_ranges.sql",
+      "011_ledger_fact_revision.sql",
     ])
       await sql.unsafe(
         await readFile(

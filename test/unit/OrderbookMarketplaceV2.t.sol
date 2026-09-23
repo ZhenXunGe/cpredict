@@ -5,6 +5,7 @@ import { OrderbookMarketplaceV2 as Book } from "../../src/marketplace/OrderbookM
 import { MarketVaultCoreV1 } from "../../src/market/MarketVaultCoreV1.sol";
 import { ProtocolTypes } from "../../src/libraries/ProtocolTypes.sol";
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
 contract RejectingBuyer is ERC1155Holder {
     bool public reject;
@@ -27,6 +28,55 @@ contract RejectingBuyer is ERC1155Holder {
         returns (bytes4)
     {
         require(!reject, "reject");
+        return this.onERC1155Received.selector;
+    }
+}
+
+contract RejectingSeller is ERC1155Holder {
+    bool public reject;
+
+    function place(Book b, address vault) external {
+        IERC1155(vault).setApprovalForAll(address(b), true);
+        b.createOrder(vault, 0, Book.Side.Ask, 1e6, 1e6, uint64(block.timestamp + 1 days), true);
+        reject = true;
+    }
+
+    function onERC1155Received(address, address, uint256, uint256, bytes memory)
+        public
+        view
+        override
+        returns (bytes4)
+    {
+        require(!reject, "reject");
+        return this.onERC1155Received.selector;
+    }
+}
+
+contract ReenteringBuyer is ERC1155Holder {
+    Book public book;
+    address public vault;
+    bool public attempted;
+    bool public reentered;
+
+    function place(Book b, address token, address market) external {
+        book = b;
+        vault = market;
+        (bool ok,) = token.call(
+            abi.encodeWithSignature("approve(address,uint256)", address(b), type(uint256).max)
+        );
+        require(ok);
+        b.createOrder(market, 0, Book.Side.Bid, 1e6, 1e6, uint64(block.timestamp + 1 days), true);
+    }
+
+    function onERC1155Received(address, address, uint256, uint256, bytes memory)
+        public
+        override
+        returns (bytes4)
+    {
+        attempted = true;
+        (reentered,) = address(book).call(
+            abi.encodeWithSelector(Book.matchOrders.selector, vault, uint8(0), uint256(1))
+        );
         return this.onERC1155Received.selector;
     }
 }
@@ -224,6 +274,83 @@ contract OrderbookMarketplaceV2Test is OrderbookTestBase {
         assertEq(usdc.balanceOf(ALICE), before);
         assertEq(marketplace.totalLockedPayment(), 1e6);
         assertEq(market.balanceOf(address(marketplace), 0), 1e6);
+    }
+
+    function testReceiverCallbackCannotReenterMatching() public {
+        ReenteringBuyer buyer = new ReenteringBuyer();
+        usdc.mint(address(buyer), 1e6);
+        place(ALICE, Book.Side.Ask, 1e6, 1e6, true);
+        buyer.place(marketplace, address(usdc), address(market));
+        assertEq(marketplace.matchOrders(address(market), 0, 1), 1);
+        assertTrue(buyer.attempted());
+        assertFalse(buyer.reentered());
+        assertEq(market.balanceOf(address(buyer), 0), 1e6);
+        assertEq(marketplace.totalLockedPayment(), 0);
+    }
+
+    function testUnsolicitedShareTransferCannotPolluteEscrow() public {
+        vm.prank(ALICE);
+        vm.expectRevert(Book.UnexpectedTransfer.selector);
+        market.safeTransferFrom(ALICE, address(marketplace), 0, 1e6, "");
+        assertEq(market.balanceOf(address(marketplace), 0), 0);
+    }
+
+    function testRejectingBestBidBlocksMatchingUntilPermissionlessExpiryRelease() public {
+        RejectingBuyer buyer = new RejectingBuyer();
+        usdc.mint(address(buyer), 1e6);
+        uint256 ask = place(ALICE, Book.Side.Ask, 1e6, 1e6, true);
+        buyer.place(marketplace, address(usdc), address(market));
+        uint256 badBid = marketplace.bestOrder(address(market), 0, Book.Side.Bid);
+        uint256 honestBid = place(BOB, Book.Side.Bid, 1e6, 1e6, true);
+        uint256 alicePayment = usdc.balanceOf(ALICE);
+
+        for (uint256 i; i < 2; ++i) {
+            vm.expectRevert();
+            marketplace.matchOrders(address(market), 0, 1);
+        }
+        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Bid), badBid);
+        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Ask), ask);
+        assertEq(usdc.balanceOf(ALICE), alicePayment);
+        assertEq(market.balanceOf(BOB, 0), 0);
+        assertEq(usdc.balanceOf(address(marketplace)), marketplace.totalLockedPayment());
+        vm.prank(CAROL);
+        vm.expectRevert(Book.InvalidOrder.selector);
+        marketplace.releaseOrder(badBid);
+
+        vm.warp(block.timestamp + 1 days);
+        vm.prank(CAROL);
+        marketplace.releaseOrder(badBid);
+        vm.prank(CAROL);
+        marketplace.releaseOrder(honestBid);
+        vm.prank(CAROL);
+        marketplace.releaseOrder(ask);
+        assertEq(marketplace.totalLockedPayment(), 0);
+        assertEq(market.balanceOf(address(marketplace), 0), 0);
+
+        place(ALICE, Book.Side.Ask, 1e6, 1e6, true);
+        place(BOB, Book.Side.Bid, 1e6, 1e6, true);
+        assertEq(marketplace.matchOrders(address(market), 0, 1), 1);
+        assertEq(market.balanceOf(BOB, 0), 1e6);
+    }
+
+    function testRejectingExpiredAskCannotBeReleasedAndBlocksBookCleanup() public {
+        RejectingSeller seller = new RejectingSeller();
+        vm.prank(ALICE);
+        market.safeTransferFrom(ALICE, address(seller), 0, 1e6, "");
+        seller.place(marketplace, address(market));
+        uint256 badAsk = marketplace.bestOrder(address(market), 0, Book.Side.Ask);
+        uint256 honestAsk = place(CAROL, Book.Side.Ask, 1e6, 1e6, true);
+
+        vm.warp(block.timestamp + 1 days);
+        vm.expectRevert();
+        marketplace.releaseOrder(badAsk);
+        vm.expectRevert();
+        marketplace.matchOrders(address(market), 0, 1);
+        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Ask), badAsk);
+        assertEq(marketplace.bookSize(address(market), 0, Book.Side.Ask), 2);
+        (,,,,,,,, bool active,) = marketplace.orders(honestAsk);
+        assertTrue(active);
+        assertEq(market.balanceOf(address(marketplace), 0), 2e6);
     }
 
     function testFuzzPartialFillConservesFunds(

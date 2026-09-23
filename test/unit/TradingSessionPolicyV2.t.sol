@@ -240,4 +240,33 @@ contract TradingSessionPolicyV2Test is Test {
         vm.expectRevert(Policy.ForbiddenCall.selector);
         hook(one(market, abi.encodeWithSignature("claimWinningsFor(address)", other)));
     }
+
+    function testCumulativeBudgetCannotBeResetByRepeatedValidation() public {
+        Policy.Call[] memory c = buy(market, 100);
+        uint256 window = validate(c);
+        assertEq(window, (uint256(end) << 160) | (uint256(start) << 208));
+        assertEq(spent(account), 100);
+        validate(c);
+        assertEq(spent(account), 200);
+        vm.expectRevert(Policy.BudgetExceeded.selector);
+        validate(c);
+        assertEq(spent(account), 200);
+    }
+
+    function testRevocationIsAccountScopedAndCannotBeReinstalled() public {
+        Policy.Call[] memory c = buy(market, 100);
+        vm.prank(other);
+        policy.revoke(id);
+        vm.expectRevert(Policy.InvalidSession.selector);
+        install(other, id, 100, 200);
+        validate(c);
+        assertEq(spent(account), 100);
+
+        vm.prank(account);
+        policy.revoke(id);
+        vm.expectRevert(Policy.InvalidSession.selector);
+        validate(c);
+        vm.expectRevert(Policy.InvalidSession.selector);
+        install(account, id, 100, 200);
+    }
 }

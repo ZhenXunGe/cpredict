@@ -33,6 +33,8 @@ export const automaticAbi = parseAbi([
 export class LedgerAutomaticSource implements AutomationSource {
   private fingerprint = "";
   private readonly idleUntil = new Map<string, bigint>();
+  private marketAddresses: string[] = [];
+  private owners: Address[] = [];
   constructor(
     readonly ledger: PostgresFinancialLedger,
     readonly client: PublicClient,
@@ -60,10 +62,17 @@ export class LedgerAutomaticSource implements AutomationSource {
       throw new Error("automatic_claims_reorg");
     // Business events wake every affected historical holder, including owner-less
     // market resolution events. Reorg epoch invalidates even equal-sized ledgers.
-    const changes = await this.ledger
-      .sql`SELECT count(*)::text AS count, max(block_number)::text AS latest FROM ledger_facts WHERE block_number<=${snapshot.blockNumber}`;
-    const fingerprint = `${snapshot.epoch}:${changes[0]?.count}:${changes[0]?.latest}`;
+    const [progress] = await this.ledger
+      .sql`SELECT fact_revision::text AS revision FROM ledger_environment WHERE singleton`;
+    if (!progress) throw new Error("automatic_claims_ledger_unavailable");
+    const fingerprint = `${snapshot.epoch}:${progress.revision}`;
     if (fingerprint !== this.fingerprint) {
+      const [marketRows, ownerRows] = await Promise.all([
+        this.ledger.sql`SELECT DISTINCT market FROM ledger_facts WHERE market IS NOT NULL`,
+        this.ledger.sql`SELECT owner FROM (SELECT owner FROM ledger_facts UNION SELECT counterparty AS owner FROM ledger_facts) a WHERE owner IS NOT NULL ORDER BY owner`,
+      ]);
+      this.marketAddresses = marketRows.map((row) => String(row.market));
+      this.owners = ownerRows.map((row) => row.owner as Address);
       this.idleUntil.clear();
       this.fingerprint = fingerprint;
     }
@@ -92,14 +101,10 @@ export class LedgerAutomaticSource implements AutomationSource {
         (a) => a.toLowerCase(),
       ),
     );
-    const marketRows = await this.ledger
-      .sql`SELECT DISTINCT market FROM ledger_facts WHERE market IS NOT NULL`;
-    for (const r of marketRows) excluded.add(r.market.toLowerCase());
-    const owners = await this.ledger
-      .sql`SELECT owner FROM (SELECT owner FROM ledger_facts UNION SELECT counterparty AS owner FROM ledger_facts) a WHERE owner IS NOT NULL ORDER BY owner`;
+    for (const market of this.marketAddresses)
+      excluded.add(market.toLowerCase());
     const emitted = new Set<string>();
-    for (const r of owners) {
-      const owner = r.owner as Address;
+    for (const owner of this.owners) {
       if (excluded.has(owner.toLowerCase())) continue;
       if (!(await this.preferences.enabled(owner))) {
         this.idleUntil.delete(owner);

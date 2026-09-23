@@ -634,7 +634,10 @@ export class PostgresEventStore implements EventStore, IndexerQueryStore {
     const blockRows = await db<
       CanonicalBlockRow[]
     >`SELECT block_number,block_hash,parent_hash,block_timestamp,confirmation_status FROM canonical_blocks WHERE chain_id=${chainId} AND block_number IN ${db(numbers)} ORDER BY block_number`;
-    await db`DELETE FROM ledger_facts WHERE chain_id=${chainId} AND transaction_hash IN ${db(unique)}`;
+    const removed =
+      await db`DELETE FROM ledger_facts WHERE chain_id=${chainId} AND transaction_hash IN ${db(unique)} RETURNING 1`;
+    if (removed.length)
+      await db`UPDATE ledger_environment SET fact_revision=fact_revision+1 WHERE singleton`;
     await this.financial.project(
       db,
       rows.map((r) => mapRawEvent(chainId, r, this.protocol)),

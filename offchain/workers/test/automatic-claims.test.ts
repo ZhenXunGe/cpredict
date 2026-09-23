@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { keccak256, zeroAddress, type Address, type Hex } from "viem";
 import {
   AutomaticClaimsWorker,
+  AutomationGasCapExceeded,
   CleanupQuotaExceeded,
   automationEffect,
   type AutomationStore,
@@ -250,6 +251,67 @@ describe("durable automatic claims", () => {
     );
     expect(f.chain.send).not.toHaveBeenCalled();
   });
+  it("rejects an oversized new transaction without saving or broadcasting it", async () => {
+    const f = fixture();
+    f.worker = new AutomaticClaimsWorker(
+      f.store,
+      f.chain,
+      f.source,
+      100n,
+      20,
+      5n,
+    );
+    await f.worker.tick();
+    expect(f.store.save).not.toHaveBeenCalled();
+    expect(f.chain.send).not.toHaveBeenCalled();
+    expect(f.store.status).toHaveBeenCalledWith(
+      owner,
+      "per_transaction_gas_cap_exceeded",
+    );
+  });
+  it("does not broadcast a prepared transaction when its cap is lowered", async () => {
+    const f = fixture();
+    f.rows.push({
+      ...action,
+      raw,
+      hash,
+      nonce: 0n,
+      maximumCost: 10n,
+      id: "a",
+      state: "prepared",
+    });
+    f.worker = new AutomaticClaimsWorker(
+      f.store,
+      f.chain,
+      f.source,
+      100n,
+      20,
+      5n,
+    );
+    await f.worker.tick();
+    expect(f.chain.send).not.toHaveBeenCalled();
+    expect(f.store.cancelPrepared).not.toHaveBeenCalled();
+    expect(f.store.status).toHaveBeenCalledWith(
+      owner,
+      "per_transaction_gas_cap_exceeded",
+    );
+  });
+  it("labels an estimated gas cap rejection separately from a chain check", async () => {
+    const f = fixture();
+    vi.mocked(f.chain.prepare).mockRejectedValueOnce(
+      new AutomationGasCapExceeded(),
+    );
+    await f.worker.tick();
+    expect(f.store.status).toHaveBeenCalledWith(
+      owner,
+      "per_transaction_gas_cap_exceeded",
+    );
+    expect(f.store.status).not.toHaveBeenCalledWith(
+      owner,
+      "retry_after_chain_check",
+    );
+    expect(f.chain.send).not.toHaveBeenCalled();
+  });
   it("keeps a quota-denied cleanup manual and does not mislabel it as an RPC failure", async () => {
     const f = fixture();
     f.source.candidates = async function* () {
@@ -269,13 +331,32 @@ describe("durable automatic claims", () => {
       owner,
       "cleanup_account_quota_exceeded",
     );
-    expect(f.store.status).not.toHaveBeenCalledWith(owner, "retry_after_chain_check");
+    expect(f.store.status).not.toHaveBeenCalledWith(
+      owner,
+      "retry_after_chain_check",
+    );
   });
   it("manual claims winning the race or zero entitlement skip sending", async () => {
     const f = fixture();
     vi.mocked(f.chain.eligible).mockResolvedValue(false);
     await f.worker.tick();
     expect(f.store.save).not.toHaveBeenCalled();
+  });
+  it("a reverting match preflight cannot sign or spend keeper gas", async () => {
+    const f = fixture();
+    f.source.candidates = async function* () {
+      yield { ...action, kind: "match-orders", requiresClaimPreference: false };
+    };
+    vi.mocked(f.chain.eligible).mockRejectedValue(
+      new Error("receiver rejected"),
+    );
+    await f.worker.tick();
+    expect(f.chain.prepare).not.toHaveBeenCalled();
+    expect(f.chain.send).not.toHaveBeenCalled();
+    expect(f.store.status).toHaveBeenCalledWith(
+      zeroAddress,
+      "retry_after_chain_check",
+    );
   });
   it("does not broadcast if durable persistence fails", async () => {
     const f = fixture();

@@ -19,6 +19,7 @@ import { OperationService } from "./operations.js";
 import { PostgresApplicationStore } from "./postgres-store.js";
 import { OperationRecovery } from "./recovery.js";
 import { createApplicationServer } from "./server.js";
+import { parseRpcAdmissionConfig } from "./rpc-admission.js";
 import { PostgresReports } from "./reports.js";
 import { ApplicationMetrics } from "./metrics.js";
 import { ZeroDevManagementReader } from "./provider-management.js";
@@ -28,8 +29,13 @@ export async function startApplicationService(
 ): Promise<() => Promise<void>> {
   const config = await loadServiceConfig(env),
     runtime = config.runtime;
-  const claims=runtime.environment.features.automaticClaims
-    ? automaticClaimsSettings(config.automationDatabaseUrl!,runtime.environment.deployment.chainId,runtime.environment.deployment.id):undefined;
+  const claims = runtime.environment.features.automaticClaims
+    ? automaticClaimsSettings(
+        config.automationDatabaseUrl!,
+        runtime.environment.deployment.chainId,
+        runtime.environment.deployment.id,
+      )
+    : undefined;
   const metrics = new ApplicationMetrics();
   const management = config.management
     ? new ZeroDevManagementReader(config.management, (ok) =>
@@ -98,7 +104,7 @@ export async function startApplicationService(
       runtime.confirmations,
     );
     const app = await createApplicationServer({
-      ...(claims ? {automaticClaims:claims.store}:{}),
+      ...(claims ? { automaticClaims: claims.store } : {}),
       operations,
       recovery,
       auth: new PrivyIdentityVerifier(
@@ -107,10 +113,15 @@ export async function startApplicationService(
       ),
       gateway: new AuthenticatedAAGateway(operations, bundler, paymaster),
       rpcPool,
+      rpcAdmission: parseRpcAdmissionConfig(env),
       chainRpc: {
         async request(method, params, signal) {
           try {
-            return await rpcPool.request(method, params, signal ? { signal } : {});
+            return await rpcPool.request(
+              method,
+              params,
+              signal ? { signal } : {},
+            );
           } catch (e) {
             if (
               e instanceof RpcResponseError &&

@@ -39,6 +39,7 @@ export async function startIndexerRuntime(
     if(d.chainId!==config.chainId || !sameAddress(d.factory,config.factoryAddress) || BigInt(d.deploymentBlock)!==config.deploymentBlock || JSON.stringify(expected)!==JSON.stringify(actual)) throw new Error("public indexer configuration does not match deployment manifest");
   }
   const telemetry = dependencies.telemetry ?? new PrometheusIndexerTelemetry();
+  telemetry.setCanonicalMode(config.canonicalMode);
   const client = dependencies.client ?? await createIndexerClient(config, telemetry.registry);
   const rawStore =
     dependencies.store ??
