@@ -20,6 +20,7 @@ export const reconciledOperationKinds = [
   "fill-order",
   "cancel-order",
   "release-order",
+  "withdraw-order-shares",
   "create-market",
   "create-listing",
   "fill-listing",
@@ -230,6 +231,19 @@ export function verifiedOperationEvents(
             (intent.kind === "cancel-order"
               ? e.args.reason === 0
               : e.args.reason === 1 || e.args.reason === 2),
+        );
+      break;
+    case "withdraw-order-shares":
+      valid =
+        d.marketplaceVersion === "orderbook-v2" &&
+        selected.some(
+          (e) =>
+            sameAddress(e.log.address, d.marketplace) &&
+            e.name === "OrderSharesWithdrawn" &&
+            e.args.orderId === BigInt(intent.orderId) &&
+            sameAddress(e.args.owner as Address, op.account) &&
+            sameAddress(e.args.recipient as Address, intent.recipient) &&
+            (e.args.units as bigint) > 0n,
         );
       break;
     case "create-listing":

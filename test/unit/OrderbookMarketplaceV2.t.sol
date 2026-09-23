@@ -36,8 +36,12 @@ contract RejectingSeller is ERC1155Holder {
     bool public reject;
 
     function place(Book b, address vault) external {
+        placeUnits(b, vault, 1e6);
+    }
+
+    function placeUnits(Book b, address vault, uint128 units) public {
         IERC1155(vault).setApprovalForAll(address(b), true);
-        b.createOrder(vault, 0, Book.Side.Ask, 1e6, 1e6, uint64(block.timestamp + 1 days), true);
+        b.createOrder(vault, 0, Book.Side.Ask, units, 1e6, uint64(block.timestamp + 1 days), true);
         reject = true;
     }
 
@@ -49,6 +53,14 @@ contract RejectingSeller is ERC1155Holder {
     {
         require(!reject, "reject");
         return this.onERC1155Received.selector;
+    }
+
+    function withdraw(Book b, uint256 id, address recipient) external {
+        b.withdrawOrderShares(id, recipient);
+    }
+
+    function cancel(Book b, uint256 id) external {
+        b.cancelOrder(id);
     }
 }
 
@@ -263,16 +275,17 @@ contract OrderbookMarketplaceV2Test is OrderbookTestBase {
         assertEq(marketplace.totalLockedPayment(), 0);
     }
 
-    function testReceiverRejectionIsAtomic() public {
+    function testReceiverRejectionDoesNotPaySellerOrConsumeAsk() public {
         RejectingBuyer buyer = new RejectingBuyer();
         usdc.mint(address(buyer), 1e6);
-        place(ALICE, Book.Side.Ask, 1e6, 1e6, true);
+        uint256 ask = place(ALICE, Book.Side.Ask, 1e6, 1e6, true);
         buyer.place(marketplace, address(usdc), address(market));
         uint256 before = usdc.balanceOf(ALICE);
-        vm.expectRevert();
-        marketplace.matchOrders(address(market), 0, 1);
+        assertEq(marketplace.matchOrders(address(market), 0, 1), 0);
         assertEq(usdc.balanceOf(ALICE), before);
-        assertEq(marketplace.totalLockedPayment(), 1e6);
+        assertEq(marketplace.totalLockedPayment(), 0);
+        assertEq(usdc.balanceOf(address(buyer)), 1e6);
+        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Ask), ask);
         assertEq(market.balanceOf(address(marketplace), 0), 1e6);
     }
 
@@ -295,7 +308,7 @@ contract OrderbookMarketplaceV2Test is OrderbookTestBase {
         assertEq(market.balanceOf(address(marketplace), 0), 0);
     }
 
-    function testRejectingBestBidBlocksMatchingUntilPermissionlessExpiryRelease() public {
+    function testRejectingBestBidIsRefundedAndHonestBidCanMatch() public {
         RejectingBuyer buyer = new RejectingBuyer();
         usdc.mint(address(buyer), 1e6);
         uint256 ask = place(ALICE, Book.Side.Ask, 1e6, 1e6, true);
@@ -303,37 +316,23 @@ contract OrderbookMarketplaceV2Test is OrderbookTestBase {
         uint256 badBid = marketplace.bestOrder(address(market), 0, Book.Side.Bid);
         uint256 honestBid = place(BOB, Book.Side.Bid, 1e6, 1e6, true);
         uint256 alicePayment = usdc.balanceOf(ALICE);
-
-        for (uint256 i; i < 2; ++i) {
-            vm.expectRevert();
-            marketplace.matchOrders(address(market), 0, 1);
-        }
-        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Bid), badBid);
-        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Ask), ask);
-        assertEq(usdc.balanceOf(ALICE), alicePayment);
-        assertEq(market.balanceOf(BOB, 0), 0);
-        assertEq(usdc.balanceOf(address(marketplace)), marketplace.totalLockedPayment());
-        vm.prank(CAROL);
-        vm.expectRevert(Book.InvalidOrder.selector);
-        marketplace.releaseOrder(badBid);
-
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(CAROL);
-        marketplace.releaseOrder(badBid);
-        vm.prank(CAROL);
-        marketplace.releaseOrder(honestBid);
-        vm.prank(CAROL);
-        marketplace.releaseOrder(ask);
+        assertEq(marketplace.matchOrders(address(market), 0, 2), 1);
+        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Bid), 0);
+        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Ask), 0);
+        (,,,,,,,, bool badActive,) = marketplace.orders(badBid);
+        (,,,,,,,, bool honestActive,) = marketplace.orders(honestBid);
+        (,,,,,,,, bool askActive,) = marketplace.orders(ask);
+        assertFalse(badActive);
+        assertFalse(honestActive);
+        assertFalse(askActive);
+        assertEq(usdc.balanceOf(address(buyer)), 1e6);
+        assertEq(usdc.balanceOf(ALICE) - alicePayment, 1e6);
+        assertEq(market.balanceOf(BOB, 0), 1e6);
         assertEq(marketplace.totalLockedPayment(), 0);
         assertEq(market.balanceOf(address(marketplace), 0), 0);
-
-        place(ALICE, Book.Side.Ask, 1e6, 1e6, true);
-        place(BOB, Book.Side.Bid, 1e6, 1e6, true);
-        assertEq(marketplace.matchOrders(address(market), 0, 1), 1);
-        assertEq(market.balanceOf(BOB, 0), 1e6);
     }
 
-    function testRejectingExpiredAskCannotBeReleasedAndBlocksBookCleanup() public {
+    function testRejectingExpiredAskDefersSharesWithoutBlockingBookCleanup() public {
         RejectingSeller seller = new RejectingSeller();
         vm.prank(ALICE);
         market.safeTransferFrom(ALICE, address(seller), 0, 1e6, "");
@@ -342,15 +341,55 @@ contract OrderbookMarketplaceV2Test is OrderbookTestBase {
         uint256 honestAsk = place(CAROL, Book.Side.Ask, 1e6, 1e6, true);
 
         vm.warp(block.timestamp + 1 days);
-        vm.expectRevert();
         marketplace.releaseOrder(badAsk);
-        vm.expectRevert();
         marketplace.matchOrders(address(market), 0, 1);
-        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Ask), badAsk);
-        assertEq(marketplace.bookSize(address(market), 0, Book.Side.Ask), 2);
+        assertEq(marketplace.bestOrder(address(market), 0, Book.Side.Ask), 0);
+        assertEq(marketplace.bookSize(address(market), 0, Book.Side.Ask), 0);
         (,,,,,,,, bool active,) = marketplace.orders(honestAsk);
-        assertTrue(active);
-        assertEq(market.balanceOf(address(marketplace), 0), 2e6);
+        assertFalse(active);
+        assertEq(marketplace.pendingShares(badAsk), 1e6);
+        assertEq(market.balanceOf(address(marketplace), 0), 1e6);
+        vm.prank(ALICE);
+        vm.expectRevert(Book.NotOwner.selector);
+        marketplace.withdrawOrderShares(badAsk, ALICE);
+        vm.expectRevert();
+        seller.withdraw(marketplace, badAsk, address(seller));
+        assertEq(marketplace.pendingShares(badAsk), 1e6);
+        seller.withdraw(marketplace, badAsk, ALICE);
+        assertEq(marketplace.pendingShares(badAsk), 0);
+        assertEq(market.balanceOf(address(marketplace), 0), 0);
+        assertEq(market.balanceOf(ALICE, 0), 40e6);
+    }
+
+    function testRejectingSellerCanCancelAndRecoverLater() public {
+        RejectingSeller seller = new RejectingSeller();
+        vm.prank(ALICE);
+        market.safeTransferFrom(ALICE, address(seller), 0, 1e6, "");
+        seller.place(marketplace, address(market));
+        uint256 ask = marketplace.bestOrder(address(market), 0, Book.Side.Ask);
+        seller.cancel(marketplace, ask);
+        assertEq(marketplace.bookSize(address(market), 0, Book.Side.Ask), 0);
+        assertEq(marketplace.pendingShares(ask), 1e6);
+        seller.withdraw(marketplace, ask, CAROL);
+        assertEq(marketplace.pendingShares(ask), 0);
+        assertEq(market.balanceOf(CAROL, 0), 21e6);
+    }
+
+    function testRejectingSellerDustReturnDoesNotUndoMatch() public {
+        RejectingSeller seller = new RejectingSeller();
+        vm.prank(ALICE);
+        market.safeTransferFrom(ALICE, address(seller), 0, 2e6, "");
+        seller.placeUnits(marketplace, address(market), 2e6);
+        uint256 ask = marketplace.bestOrder(address(market), 0, Book.Side.Ask);
+        uint256 bid = place(BOB, Book.Side.Bid, 1_995_000, 1e6, true);
+        assertEq(marketplace.matchOrders(address(market), 0, 1), 1);
+        assertEq(market.balanceOf(BOB, 0), 1_995_000);
+        assertEq(marketplace.pendingShares(ask), 5_000);
+        assertEq(market.balanceOf(address(marketplace), 0), 5_000);
+        (,,,,,,,, bool askActive,) = marketplace.orders(ask);
+        (,,,,,,,, bool bidActive,) = marketplace.orders(bid);
+        assertFalse(askActive);
+        assertFalse(bidActive);
     }
 
     function testFuzzPartialFillConservesFunds(

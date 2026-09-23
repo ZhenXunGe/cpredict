@@ -60,7 +60,8 @@ export function entitlementIntent(
     e.kind === "escrow" &&
     e.listingId &&
     e.status === "claimable"
-  )
+  ) {
+    if (e.reason === "withdraw_deferred_escrow") return null;
     return {
       kind:
         e.reason === "return_terminal_listing"
@@ -68,6 +69,7 @@ export function entitlementIntent(
           : "cancel-order",
       orderId: BigInt(e.listingId).toString(),
     };
+  }
   if (needsTimeoutFunding(e))
     return e.status === "conditional" || e.status === "claimable"
       ? entitlementAction(e)
@@ -151,6 +153,8 @@ export function entitlementRefreshInterval(
 
 function actionKey(intent: BusinessIntent): string {
   if ("listingId" in intent) return `listing:${intent.listingId.toLowerCase()}`;
+  if ("orderId" in intent)
+    return `listing:0x${BigInt(intent.orderId).toString(16).padStart(64, "0")}`;
   return `${intent.kind}:${"market" in intent ? intent.market.toLowerCase() : "aggregate"}`;
 }
 
@@ -160,8 +164,11 @@ export function entitlementProgress(
   snapshot: LedgerSnapshot,
 ): { operation: Operation; phase: "executing" | "syncing" } | null {
   const action = entitlementAction(e);
-  if (!action) return null;
-  const key = actionKey(action);
+  if (!action && !(e.kind === "escrow" && e.listingId)) return null;
+  const key =
+    e.kind === "escrow" && e.listingId
+      ? `listing:${e.listingId.toLowerCase()}`
+      : actionKey(action!);
   for (const operation of operations) {
     if (actionKey(operation.intent) !== key) continue;
     const phase = progressPhase(operation, snapshot);

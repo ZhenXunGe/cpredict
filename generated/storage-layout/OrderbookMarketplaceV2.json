@@ -1,7 +1,7 @@
 {
   "storage": [
     {
-      "astId": 71692,
+      "astId": 65270,
       "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
       "label": "nextOrderId",
       "offset": 0,
@@ -9,7 +9,7 @@
       "type": "t_uint256"
     },
     {
-      "astId": 71694,
+      "astId": 65272,
       "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
       "label": "totalLockedPayment",
       "offset": 0,
@@ -17,35 +17,43 @@
       "type": "t_uint256"
     },
     {
-      "astId": 71699,
+      "astId": 65277,
       "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
       "label": "orders",
       "offset": 0,
       "slot": "2",
-      "type": "t_mapping(t_uint256,t_struct(Order)71664_storage)"
+      "type": "t_mapping(t_uint256,t_struct(Order)65239_storage)"
     },
     {
-      "astId": 71704,
+      "astId": 65281,
       "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
-      "label": "books",
+      "label": "pendingShares",
       "offset": 0,
       "slot": "3",
-      "type": "t_mapping(t_bytes32,t_array(t_uint256)dyn_storage)"
-    },
-    {
-      "astId": 71708,
-      "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
-      "label": "positions",
-      "offset": 0,
-      "slot": "4",
       "type": "t_mapping(t_uint256,t_uint256)"
     },
     {
-      "astId": 71710,
+      "astId": 65286,
+      "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
+      "label": "books",
+      "offset": 0,
+      "slot": "4",
+      "type": "t_mapping(t_bytes32,t_array(t_uint256)dyn_storage)"
+    },
+    {
+      "astId": 65290,
+      "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
+      "label": "positions",
+      "offset": 0,
+      "slot": "5",
+      "type": "t_mapping(t_uint256,t_uint256)"
+    },
+    {
+      "astId": 65292,
       "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
       "label": "expectedReceipt",
       "offset": 0,
-      "slot": "5",
+      "slot": "6",
       "type": "t_bytes32"
     }
   ],
@@ -71,7 +79,7 @@
       "label": "bytes32",
       "numberOfBytes": "32"
     },
-    "t_enum(Side)71636": {
+    "t_enum(Side)65210": {
       "encoding": "inplace",
       "label": "enum OrderbookMarketplaceV2.Side",
       "numberOfBytes": "1"
@@ -83,12 +91,12 @@
       "numberOfBytes": "32",
       "value": "t_array(t_uint256)dyn_storage"
     },
-    "t_mapping(t_uint256,t_struct(Order)71664_storage)": {
+    "t_mapping(t_uint256,t_struct(Order)65239_storage)": {
       "encoding": "mapping",
       "key": "t_uint256",
       "label": "mapping(uint256 => struct OrderbookMarketplaceV2.Order)",
       "numberOfBytes": "32",
-      "value": "t_struct(Order)71664_storage"
+      "value": "t_struct(Order)65239_storage"
     },
     "t_mapping(t_uint256,t_uint256)": {
       "encoding": "mapping",
@@ -97,13 +105,13 @@
       "numberOfBytes": "32",
       "value": "t_uint256"
     },
-    "t_struct(Order)71664_storage": {
+    "t_struct(Order)65239_storage": {
       "encoding": "inplace",
       "label": "struct OrderbookMarketplaceV2.Order",
       "numberOfBytes": "160",
       "members": [
         {
-          "astId": 71644,
+          "astId": 65219,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "vault",
           "offset": 0,
@@ -111,7 +119,7 @@
           "type": "t_address"
         },
         {
-          "astId": 71646,
+          "astId": 65221,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "owner",
           "offset": 0,
@@ -119,7 +127,7 @@
           "type": "t_address"
         },
         {
-          "astId": 71648,
+          "astId": 65223,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "remainingUnits",
           "offset": 0,
@@ -127,7 +135,7 @@
           "type": "t_uint128"
         },
         {
-          "astId": 71650,
+          "astId": 65225,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "unitPrice",
           "offset": 16,
@@ -135,7 +143,7 @@
           "type": "t_uint128"
         },
         {
-          "astId": 71652,
+          "astId": 65227,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "expiresAt",
           "offset": 0,
@@ -143,7 +151,7 @@
           "type": "t_uint64"
         },
         {
-          "astId": 71654,
+          "astId": 65229,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "outcomeId",
           "offset": 8,
@@ -151,15 +159,15 @@
           "type": "t_uint8"
         },
         {
-          "astId": 71657,
+          "astId": 65232,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "side",
           "offset": 9,
           "slot": "3",
-          "type": "t_enum(Side)71636"
+          "type": "t_enum(Side)65210"
         },
         {
-          "astId": 71659,
+          "astId": 65234,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "autoMatch",
           "offset": 10,
@@ -167,7 +175,7 @@
           "type": "t_bool"
         },
         {
-          "astId": 71661,
+          "astId": 65236,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "active",
           "offset": 11,
@@ -175,7 +183,7 @@
           "type": "t_bool"
         },
         {
-          "astId": 71663,
+          "astId": 65238,
           "contract": "src/marketplace/OrderbookMarketplaceV2.sol:OrderbookMarketplaceV2",
           "label": "lockedPayment",
           "offset": 0,

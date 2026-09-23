@@ -267,6 +267,35 @@ describe("entitlement synchronization", () => {
     ).toBeNull();
   });
 
+  it("does not retry a released V2 order and tracks only its own deferred withdrawal", () => {
+    const escrow: Entitlement = {
+      ...right,
+      kind: "escrow",
+      listingId: H(9),
+      reason: "withdraw_deferred_escrow",
+    };
+    expect(entitlementIntent(escrow, "orderbook-v2")).toBeNull();
+    const withdrawal: Operation = {
+      ...claim,
+      kind: "withdraw-order-shares",
+      intent: {
+        kind: "withdraw-order-shares",
+        orderId: "9",
+        recipient: A(12),
+      },
+    };
+    expect(entitlementProgress(escrow, [withdrawal], snapshot())?.phase).toBe(
+      "syncing",
+    );
+    expect(
+      entitlementProgress(
+        { ...escrow, listingId: H(10) },
+        [withdrawal],
+        snapshot(),
+      ),
+    ).toBeNull();
+  });
+
   it("does not manufacture claimable actions from waiting or processed rows", () => {
     expect(entitlementIntent(right)).toEqual(claim.intent);
     expect(entitlementIntent({ ...right, status: "claimed" })).toBeNull();

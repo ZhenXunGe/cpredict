@@ -58,6 +58,7 @@ const labels: Record<LedgerFact["kind"], string> = {
   "primary-buy": "一级购买",
   "order-created": "创建买卖单",
   "order-released": "释放订单资产",
+  "order-shares-deferred": "挂单份额暂存待取回",
   "order-funds-returned": "求购余款退回",
   "listing-created": "创建挂单",
   "listing-filled": "挂单成交",
@@ -783,7 +784,8 @@ function IntentSummary({ operation: o }: { operation: Operation }) {
     intent.kind === "create-order" ||
     intent.kind === "fill-order" ||
     intent.kind === "cancel-order" ||
-    intent.kind === "release-order"
+    intent.kind === "release-order" ||
+    intent.kind === "withdraw-order-shares"
   ) {
     const market =
         intent.kind === "create-order" ? intent.market : listing.data?.market,

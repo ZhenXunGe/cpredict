@@ -146,7 +146,21 @@ export class OnchainRightsReader implements RightsReader {
         functionName: "marketState",
         blockNumber: this.blockNumber,
       });
-      return { units: o[2], terminal: state !== 0, active: o[8] };
+      const pending = this.environment.deployment.orderbookReceiverRecovery
+        ? await this.client.readContract({
+            address: this.environment.deployment.marketplace,
+            abi: orderbookAbi,
+            functionName: "pendingShares",
+            args: [BigInt(listingId)],
+            blockNumber: this.blockNumber,
+          })
+        : 0n;
+      return {
+        units: o[2] + pending,
+        terminal: state !== 0,
+        active: o[8],
+        pending: pending > 0n,
+      };
     }
     const listing = await this.client.readContract({
       address: this.environment.deployment.marketplace,

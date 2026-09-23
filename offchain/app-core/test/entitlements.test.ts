@@ -138,6 +138,30 @@ describe("all beneficial entitlements", () => {
       amount: "70",
     });
   });
+  it("does not mark deferred ERC-1155 shares as returned or ready for a market claim", async () => {
+    const facts = [
+      fact(1, "primary-buy", { units: "20", amount: "20" }),
+      fact(2, "listing-created", { units: "20", listingId: H(10) }),
+      fact(3, "order-shares-deferred", { units: "20", listingId: H(10) }),
+      fact(4, "order-released", { units: "0", listingId: H(10) }),
+    ];
+    const pendingReader: RightsReader = {
+      ...reader(),
+      async listing() {
+        return { units: 20n, active: false, terminal: true, pending: true };
+      },
+    };
+    const result = await hydrateEntitlements(
+      owner,
+      candidates(facts),
+      pendingReader,
+    );
+    expect(result.find((r) => r.kind === "escrow")).toMatchObject({
+      units: "20",
+      status: "claimable",
+      reason: "withdraw_deferred_escrow",
+    });
+  });
   it("does not batch a slashed timeout bond with a creator withdrawal", async () => {
     const facts = [fact(1, "bond-locked", { amount: "100" })];
     const result = await hydrateEntitlements(

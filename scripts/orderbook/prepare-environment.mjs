@@ -17,6 +17,9 @@ const factoryAbi = parseAbi([
   "function active() view returns(bool)",
   "function activationFingerprint() view returns(bytes32)",
 ]);
+const recoveryAbi = parseAbi([
+  "function receiverRecoveryVersion() pure returns(uint256)",
+]);
 const policyAbi = parseAbi([
   "function factory() view returns(address)",
   "function marketplace() view returns(address)",
@@ -77,6 +80,7 @@ export function buildCandidate({
       id,
       protocolVersion: "time-v2",
       marketplaceVersion: "orderbook-v2",
+      orderbookReceiverRecovery: true,
       sourceCommit,
       deploymentBlock,
       manifestHash: `0x${sha(pending)}`,
@@ -166,6 +170,15 @@ async function main(args) {
     pending.tradingSessionPaymasterCodehash.toLowerCase()
   )
     throw Error("session_paymaster_codehash_mismatch");
+  if (
+    (await client.readContract({
+      address: pending.marketplace,
+      abi: recoveryAbi,
+      functionName: "receiverRecoveryVersion",
+      blockNumber: head.number,
+    })) !== 1n
+  )
+    throw Error("receiver_recovery_contract_required");
   if (
     !(await client.readContract({
       address: pending.factory,

@@ -1841,6 +1841,64 @@
   },
   {
     "contract": "OrderbookMarketplaceV2",
+    "name": "OrderSharesDeferred",
+    "signature": "OrderSharesDeferred(uint256,address,uint256)",
+    "selector": "0xc2d9ce27b203b388e1864706a94ee8d9804a7feec17bedd7a3b6d4599b6345cc",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "units",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "OrderSharesWithdrawn",
+    "signature": "OrderSharesWithdrawn(uint256,address,address,uint256)",
+    "selector": "0xfbc9bad3a0c297d791ca39bf8da26f62721da27749d0819bd4943225e79eb083",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "units",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
     "name": "OrdersMatched",
     "signature": "OrdersMatched(uint256,uint256,uint256,uint256,uint256)",
     "selector": "0x0cfe0e4c06a803f35d86553735ec1a6ec4f5ad716be9afde081693111e602044",

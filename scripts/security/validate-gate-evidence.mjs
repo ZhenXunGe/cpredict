@@ -83,6 +83,15 @@ const EXPECTED_ADERYN_LOW_COUNTS = {
 const EXPECTED_SLITHER_HIGH_MEDIUM = [
   "High|reentrancy-balance|src/market/MarketVaultCoreV1.sol|function|_pullWithPermit2",
   "High|reentrancy-balance|src/marketplace/FixedPriceMarketplaceV1.sol|function|_pullWithPermit2",
+  "High|uninitialized-state|src/marketplace/OrderbookMarketplaceV2.sol|variable|books",
+  "Medium|locked-ether|src/core/TradingSessionPolicyV1.sol|contract|TradingSessionPolicyV1",
+  "Medium|locked-ether|src/core/TradingSessionPolicyV2.sol|contract|TradingSessionPolicyV2",
+  "Medium|reentrancy-no-eth|src/marketplace/OrderbookMarketplaceV2.sol|function|fillOrder",
+  "Medium|reentrancy-no-eth|src/marketplace/OrderbookMarketplaceV2.sol|function|matchOrders",
+  "Medium|unused-return|src/core/TradingSessionPolicyV1.sol|function|_bond",
+  "Medium|unused-return|src/core/TradingSessionPolicyV1.sol|function|_listing",
+  "Medium|unused-return|src/core/TradingSessionPolicyV2.sol|function|_bond",
+  "Medium|unused-return|src/core/TradingSessionPolicyV2.sol|function|_order",
 ];
 
 const LOAD_STAGE_STATUS_KEYS = [
