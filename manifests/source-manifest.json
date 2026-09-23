@@ -1882,7 +1882,7 @@
     },
     {
       "path": "offchain/workers/src/automatic-store.ts",
-      "sha256": "4d35cf6a8a195cda95d48c47fabb3d4958be836a023e3bf7f73e987ee7d56797"
+      "sha256": "8b619a24431007aab98e41c8efe439212e67c1e667c8cfde704281859071debc"
     },
     {
       "path": "offchain/workers/src/automatic-submission.ts",
@@ -1934,7 +1934,7 @@
     },
     {
       "path": "offchain/workers/test/automatic-store.integration.test.ts",
-      "sha256": "65a74eb040068463f75101790f6ba4d03c1a8d50c181dc6138cb857b7306fb53"
+      "sha256": "561901eb125bba39c42c05d7cf02e027f793a4da14137fc29ac58d4afa32d7c3"
     },
     {
       "path": "offchain/workers/test/automatic-submission.test.ts",

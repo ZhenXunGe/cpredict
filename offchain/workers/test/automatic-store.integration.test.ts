@@ -132,7 +132,7 @@ describe.skipIf(databaseUrl === undefined)(
           reserved_wei,receipt_block,receipt_hash,canonical_status,created_at,updated_at
         ) VALUES(
           ${id},421614,'deployment','timeout-bonus:missing',${owner},'timeout-bonus',
-          ${market},'0x',${signer},true,'98',${missingHash},NULL,'confirmed',0,
+          ${market},'0x','0x4444444444444444444444444444444444444444',true,'98',${missingHash},NULL,'confirmed',0,
           100,${hash},'canonical',now()-interval '5 minutes',now()-interval '5 minutes'
         )`;
       expect(await store.missingFinancialFacts()).toEqual([{ kind: "timeout-bonus", count: 1 }]);

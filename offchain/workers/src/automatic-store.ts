@@ -176,7 +176,7 @@ export class PostgresAutomaticStore implements AutomationStore {
       FROM automation_transactions t
       JOIN chain_checkpoints cp ON cp.chain_id=t.chain_id
       WHERE t.chain_id=${this.chainId} AND t.deployment_id=${this.deploymentId}
-        AND t.signer=${this.signer.toLowerCase()} AND t.state='confirmed'
+        AND t.state='confirmed'
         AND t.canonical_status='canonical' AND t.receipt_block IS NOT NULL
         AND cp.block_number>=t.receipt_block
         AND t.updated_at<now()-interval '2 minutes'
