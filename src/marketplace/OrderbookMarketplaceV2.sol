@@ -164,6 +164,9 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
             outcomeId >= market.outcomeCount() || units < market.minimumC2CUnits() || units == 0
                 || unitPrice == 0 || unitPrice > MAX_UNIT_PRICE || expiresAt <= block.timestamp
                 || Math.mulDiv(units, unitPrice, ProtocolTypes.SHARE_SCALE) == 0
+                || (autoMatch
+                    && Math.mulDiv(market.minimumC2CUnits(), unitPrice, ProtocolTypes.SHARE_SCALE)
+                        == 0)
         ) revert InvalidOrder();
         id = nextOrderId++;
         uint256 locked = side == Side.Bid ? _reserve(units, unitPrice) : 0;
@@ -390,7 +393,10 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
 
     function _finish(uint256 id) private {
         Order storage o = orders[id];
-        if (o.remainingUnits < IMarketVaultV1(o.vault).minimumC2CUnits() || o.remainingUnits == 0) {
+        if (
+            o.remainingUnits < IMarketVaultV1(o.vault).minimumC2CUnits()
+                || Math.mulDiv(o.remainingUnits, o.unitPrice, ProtocolTypes.SHARE_SCALE) == 0
+        ) {
             _release(id, ReleaseReason.Dust);
         } else if (o.side == Side.Bid) {
             uint256 needed = _reserve(o.remainingUnits, o.unitPrice);

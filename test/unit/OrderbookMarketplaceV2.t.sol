@@ -111,6 +111,43 @@ contract OrderbookMarketplaceV2Test is OrderbookTestBase {
         assertEq(market.balanceOf(address(marketplace), 0), 0);
     }
 
+    function testZeroValueMinimumLotCannotEnterAutomaticBook() public {
+        vm.prank(ALICE);
+        vm.expectRevert(Book.InvalidOrder.selector);
+        marketplace.createOrder(
+            address(market), 0, Book.Side.Ask, 30_000, 60, uint64(block.timestamp + 1 days), true
+        );
+        vm.prank(BOB);
+        vm.expectRevert(Book.InvalidOrder.selector);
+        marketplace.createOrder(
+            address(market), 0, Book.Side.Bid, 30_000, 60, uint64(block.timestamp + 1 days), true
+        );
+        assertEq(marketplace.bookSize(address(market), 0, Book.Side.Ask), 0);
+        assertEq(marketplace.bookSize(address(market), 0, Book.Side.Bid), 0);
+    }
+
+    function testZeroValueManualTailIsReleasedAfterPartialFill() public {
+        uint256 aliceShares = market.balanceOf(ALICE, 0);
+        uint256 ask = place(ALICE, Book.Side.Ask, 30_000, 60, false);
+        vm.prank(BOB);
+        marketplace.fillOrder(ask, 20_000, 20_000, 1, uint64(block.timestamp));
+        (,, uint128 askRemaining,,,,,, bool askActive,) = marketplace.orders(ask);
+        assertFalse(askActive);
+        assertEq(askRemaining, 0);
+        assertEq(market.balanceOf(ALICE, 0), aliceShares - 20_000);
+
+        uint256 bobPayment = usdc.balanceOf(BOB);
+        uint256 bid = place(BOB, Book.Side.Bid, 30_000, 60, false);
+        vm.prank(CAROL);
+        marketplace.fillOrder(bid, 20_000, 20_000, 1, uint64(block.timestamp));
+        (,, uint128 bidRemaining,,,,,, bool bidActive, uint256 locked) = marketplace.orders(bid);
+        assertFalse(bidActive);
+        assertEq(bidRemaining, 0);
+        assertEq(locked, 0);
+        assertEq(marketplace.totalLockedPayment(), 0);
+        assertEq(usdc.balanceOf(BOB), bobPayment - 1);
+    }
+
     function testPauseStillAllowsCancelAndExpiryRelease() public {
         uint256 bid = place(BOB, Book.Side.Bid, 1e6, 1e6, true);
         uint256 ask = place(ALICE, Book.Side.Ask, 1e6, 1e6, true);

@@ -248,7 +248,12 @@ export function OrderbookPanel({
       side === "bid" &&
       requestedReserve !== null &&
       paymentBalance.data !== undefined &&
-      requestedReserve > paymentBalance.data;
+      requestedReserve > paymentBalance.data,
+    unmatchablePrice =
+      autoMatch &&
+      requestedPrice !== null &&
+      live.data !== undefined &&
+      (live.data.minimumC2C * requestedPrice) / SHARE_SCALE === 0n;
   const primaryOpen =
       !terminal &&
       !!live.data &&
@@ -283,6 +288,8 @@ export function OrderbookPanel({
       if (!live.data || !verified || terminal)
         throw new Error("当前市场暂不能挂单");
       if (units < live.data.minimumC2C) throw new Error("低于市场最小挂单份额");
+      if (autoMatch && (live.data.minimumC2C * unitPrice) / SHARE_SCALE === 0n)
+        throw new Error("每份价格过低，最小份额的成交金额为零，无法自动撮合");
       if (side === "bid") {
         const currentBalance = await paymentBalance.refetch(),
           reserve = bidReserve(units, unitPrice);
@@ -356,8 +363,9 @@ export function OrderbookPanel({
         ),
         gross = (units * BigInt(o.unitPrice)) / 1_000_000n;
       if (units > BigInt(o.remainingUnits)) throw new Error("超过订单剩余份额");
+      if (gross === 0n) throw new Error("本次成交金额为零，请增加接单份数");
+      setCheckingOrderId(o.id);
       if (o.side === "bid") {
-        setCheckingOrderId(o.id);
         const available = await api.publicClient().readContract({
           address: market,
           abi: marketReadAbi,
@@ -368,6 +376,17 @@ export function OrderbookPanel({
           setAcceptWarning({
             orderId: o.id,
             message: `余额不足：当前结果可用 ${formatUnits(available, 6)} 份，请调整接单数量。`,
+          });
+          return;
+        }
+      } else {
+        const currentBalance = await paymentBalance.refetch();
+        if (currentBalance.error || currentBalance.data === undefined)
+          throw new AppError("chain_query_unavailable", 503);
+        if (gross > currentBalance.data) {
+          setAcceptWarning({
+            orderId: o.id,
+            message: `余额不足：当前可用 ${formatUnits(currentBalance.data, 6)} ${asset}，本次需支付 ${formatUnits(gross, 6)} ${asset}，请调整接单数量。`,
           });
           return;
         }
@@ -511,6 +530,11 @@ export function OrderbookPanel({
               {`余额不足：当前可用 ${formatUnits(paymentBalance.data!, 6)} ${asset}，本求购单需冻结 ${formatUnits(requestedReserve!, 6)} ${asset}，请调整份数或价格。`}
             </Notice>
           )}
+          {unmatchablePrice && (
+            <Notice tone="warning">
+              每份价格过低，最小份额的成交金额为零，无法自动撮合。请提高价格或关闭自动撮合。
+            </Notice>
+          )}
           {premiumAsk && (
             <Notice tone="warning">
               当前挂卖价格高于一级购买每份 1 {asset}
@@ -542,6 +566,7 @@ export function OrderbookPanel({
                 (paymentBalance.isPending ||
                   !!paymentBalance.error ||
                   insufficientPayment)) ||
+              unmatchablePrice ||
               (side === "ask" &&
                 !!account &&
                 (shareBalance.isPending ||
@@ -626,7 +651,9 @@ export function OrderbookPanel({
                   onClick={() => void accept(o)}
                 >
                   {checkingOrderId === o.id
-                    ? "正在核对份额…"
+                    ? o.side === "bid"
+                      ? "正在核对份额…"
+                      : "正在核对余额…"
                     : o.side === "bid"
                       ? "卖给此求购单"
                       : "购买此挂卖单"}

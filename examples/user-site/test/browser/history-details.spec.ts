@@ -284,7 +284,7 @@ test("unsynchronized claims and incomplete listing data never become zero or est
   state.missingName = true;
   await page.goto("about:blank");
   await page.goto(`${fixture}?operation=${ops[2]!.id}`);
-  await expect(details).toContainText("名称暂不可用");
+  await expect(details).toContainText("名称待核验");
   await expect(details).toContainText("未知");
   await expect(details).not.toContainText("3.75");
 });
@@ -294,11 +294,9 @@ test("history searches market names and retains exact address filtering", async 
 }) => {
   await setup(page);
   await page.goto(fixture);
-  const ledger = page
-    .locator("section")
-    .filter({
-      has: page.getByRole("heading", { name: "已确认链上历史", exact: true }),
-    });
+  const ledger = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "已确认链上历史", exact: true }),
+  });
   await page.getByLabel("市场名称或地址").fill(titles[1]!);
   await page.getByRole("button", { name: "筛选", exact: true }).click();
   await expect(

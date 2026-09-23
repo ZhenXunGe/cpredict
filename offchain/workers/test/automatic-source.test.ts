@@ -206,6 +206,17 @@ describe("historical automatic entitlement discovery", () => {
       calls,
     );
   });
+  it("rejects a changed snapshot before yielding even the first eligible claim", async () => {
+    const f = setup(1);
+    vi.mocked(f.ledger.assertSnapshot).mockRejectedValueOnce(
+      new Error("reorg"),
+    );
+    const candidate = f.source.candidates()[Symbol.asyncIterator]();
+    await expect(candidate.next()).rejects.toThrow("reorg");
+    expect((await f.actions()).some((action) => action.kind === "winner")).toBe(
+      true,
+    );
+  });
   it("stale index or canonical hash mismatch stops discovery before any send", async () => {
     const f = setup();
     vi.mocked(f.client.getBlock).mockResolvedValue({

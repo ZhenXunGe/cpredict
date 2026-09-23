@@ -65,9 +65,7 @@ test("rules publication shows the real HTTP error and preserves the creation for
   await page.getByLabel("市场问题", { exact: true }).fill(question);
   const shanghai = (delta: number) =>
     new Date(Date.now() + delta + 8 * 3600000).toISOString().slice(0, 16);
-  await page
-    .getByLabel("封盘时间（上海）", { exact: true })
-    .fill(shanghai(86400000));
+  await page.getByLabel(/^封盘时间（上海）/).fill(shanghai(86400000));
   await page
     .getByLabel("结果判断截止时间（上海）", { exact: true })
     .fill(shanghai(90000000));

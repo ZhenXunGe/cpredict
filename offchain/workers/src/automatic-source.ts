@@ -130,11 +130,12 @@ export class LedgerAutomaticSource implements AutomationSource {
       const markets = [
         ...new Set(candidates.flatMap((e) => (e.market ? [e.market] : []))),
       ];
-      const action = (
+      const action = async (
         target: Address,
         kind: string,
         data: AutomaticAction["data"],
-      ): AutomaticAction => {
+      ): Promise<AutomaticAction> => {
+        await this.ledger.assertSnapshot(snapshot);
         hasAction = true;
         return {
           key: `${kind}:${target.toLowerCase()}:${owner.toLowerCase()}`,
@@ -184,7 +185,7 @@ export class LedgerAutomaticSource implements AutomationSource {
             nextWake = deadline;
           if (head.timestamp >= deadline && !emitted.has(`void:${market}`)) {
             emitted.add(`void:${market}`);
-            yield action(
+            yield await action(
               market,
               "void-timeout",
               encodeFunctionData({
@@ -195,7 +196,7 @@ export class LedgerAutomaticSource implements AutomationSource {
           }
         } else if (!bond[2] && !emitted.has(`bond:${market}`)) {
           emitted.add(`bond:${market}`);
-          yield action(
+          yield await action(
             d.bondEscrow,
             `settle-bond:${market.toLowerCase()}`,
             encodeFunctionData({
@@ -219,7 +220,7 @@ export class LedgerAutomaticSource implements AutomationSource {
           e.reason === "return_terminal_listing" &&
           BigInt(e.units ?? "0") > 0n
         ) {
-          yield action(
+          yield await action(
             d.marketplace,
             `return-listing:${e.listingId}`,
             d.marketplaceVersion === "orderbook-v2"
@@ -253,7 +254,7 @@ export class LedgerAutomaticSource implements AutomationSource {
         if (!fn) continue;
         const target =
           e.market ?? (e.kind === "fees" ? d.feeVault : d.bondEscrow);
-        yield action(
+        yield await action(
           target,
           e.kind,
           encodeFunctionData({

@@ -91,4 +91,63 @@ describe("matching source scan cadence", () => {
     await expect(collect(source)).resolves.toEqual([]);
     expect(client.getBlock).toHaveBeenCalledTimes(2);
   });
+
+  it("keeps unconsumed candidates available when the one-transaction worker stops early", async () => {
+    let fullScans = 0;
+    const sql = (async (strings: TemplateStringsArray) => {
+      if (strings.join("").includes("ORDER BY block_number DESC"))
+        return [
+          {
+            block_number: "10",
+            transaction_hash: "0x10",
+            transaction_index: 0,
+            log_index: 1,
+          },
+        ];
+      fullScans++;
+      return [{ order_id: "1" }, { order_id: "2" }];
+    }) as unknown as Sql;
+    const client = {
+      getBlock: vi.fn(async () => ({ number: 10n, timestamp: 1000n })),
+      readContract: vi.fn(
+        async ({
+          functionName,
+          args,
+        }: {
+          functionName: string;
+          args: readonly bigint[];
+        }) =>
+          functionName === "orders"
+            ? [
+                A(Number(args[0]) + 100),
+                A(10),
+                10000n,
+                1000000n,
+                999n,
+                0,
+                1,
+                true,
+                true,
+                0n,
+              ]
+            : false,
+      ),
+    } as unknown as PublicClient;
+    const source = new MatchingSource(sql, client, {
+      ...env,
+      deployment: {
+        ...env.deployment,
+        marketplaceVersion: "orderbook-v2" as const,
+        marketplace: A(80),
+      },
+    });
+    const firstPass = source.candidates()[Symbol.asyncIterator]();
+    expect((await firstPass.next()).value?.key).toBe("release-order:1");
+    await firstPass.return?.();
+    expect((await collect(source)).map((action) => action.key)).toEqual([
+      "release-order:2",
+    ]);
+    expect(fullScans).toBe(1);
+    expect(await collect(source)).toEqual([]);
+  });
 });

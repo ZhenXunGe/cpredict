@@ -375,10 +375,11 @@ test.skipIf(
         matcher.address,
         "matching",
       );
+      let matchingClockMs = 0;
       const matching = new AutomaticClaimsWorker(
         matcherStore,
         new ViemAutomationChain(client, wallet(matcher), matcher, 1n),
-        new MatchingSource(sql, client, environment),
+        new MatchingSource(sql, client, environment, () => matchingClockMs),
         10n ** 18n,
       );
       await matching.tick();
@@ -443,6 +444,9 @@ test.skipIf(
       worker = new AutomaticClaimsWorker(store, chain, source, 10n ** 18n); // process restart with the same durable journal
       for (const a of [governor, alice])
         await store.setEnabled(a.address, true);
+      // Terminal market state does not emit an orderbook event. Advance the
+      // maintenance clock so the matcher rescans outstanding escrowed orders.
+      matchingClockMs += 30000;
       for (let i = 0; i < 24; i++) {
         await rpc("evm_mine");
         await index();

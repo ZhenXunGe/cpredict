@@ -145,6 +145,21 @@ test("account changes dismiss a confirmation prepared for the old account", asyn
   await expect(page.getByRole("dialog")).toBeHidden({ timeout: 6000 });
 });
 
+test("primary purchase shows insufficient payment before confirmation", async ({
+  page,
+}) => {
+  await page.goto(
+    `${fixture}?low-asset-balance=1#/ctusd-test/markets/${market}`,
+  );
+  await page.getByLabel("投入数量（ctUSD）").fill("1");
+  await expect(page.getByText("可用余额：0.5 ctUSD")).toBeVisible();
+  await expect(page.getByText(/余额不足：当前可用 0.5 ctUSD/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "核对购买", exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
 test("unverifiable rules disable new exposure while keeping existing early-bird exit visible", async ({
   page,
 }) => {
