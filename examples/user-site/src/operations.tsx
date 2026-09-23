@@ -45,6 +45,7 @@ export const operationLabels: Record<OperationKind, string> = {
   "fill-order": "接单成交",
   "cancel-order": "撤销订单",
   "release-order": "取回到期 / 终局订单资产",
+  "withdraw-order-shares": "取回暂存的挂单份额",
   "create-listing": "挂单卖出",
   "fill-listing": "购买挂单",
   "cancel-listing": "撤销挂单",

@@ -655,3 +655,20 @@ test("an enabled account sees a blocked shared claims queue and retains manual a
     page.getByText("无需重复开关，可先手动领取。", { exact: false }),
   ).toBeVisible();
 });
+
+test("deferred ask shares show a recoverable action and require a valid receiver", async ({ page }) => {
+  const fixture = await setup(page);
+  await page.goto(
+    "/test/browser/fixture.html?orderbook-test=1&receiver-recovery-test=1#/ctusd-test/entitlements",
+  );
+  const row = page.getByRole("row").filter({ hasText: "本周公开测试能否完成全部退出场景？" });
+  await expect(row).toContainText("本周公开测试能否完成全部退出场景？");
+  await expect(row).toContainText("1 份");
+  const receiver = row.getByRole("textbox", { name: "暂存份额接收地址" });
+  await receiver.fill("not-an-address");
+  await expect(row.getByRole("button", { name: "请输入有效接收地址" })).toBeDisabled();
+  await receiver.fill(A(87));
+  await row.getByRole("button", { name: "取回暂存份额" }).click();
+  await expect(page.getByText(A(87), { exact: true })).toBeVisible();
+  expect(fixture.errors).toEqual([]);
+});

@@ -1,6 +1,6 @@
 import { AutomaticClaimsPanel } from "../AutomaticClaims.js";
-import { useEffect } from "react";
-import { formatUnits } from "viem";
+import { useEffect, useState } from "react";
+import { formatUnits, getAddress, isAddress, zeroAddress } from "viem";
 import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { z } from "zod";
@@ -81,6 +81,8 @@ const reasons: Record<string, string> = {
   chain_read_unavailable: "链上查询暂不可用，请重新查询。",
   cancel_listing_to_recover_shares: "撤单取回未成交份额，不产生已实现收益。",
   return_terminal_listing: "市场已终局，先取回托管份额再领取权益。",
+  withdraw_deferred_escrow:
+    "原接收账户拒收了份额。份额仍安全暂存在订单合约中，可由挂单账户指定一个能接收 ERC-1155 的地址取回。",
 };
 export function EntitlementsPage() {
   const { api, account } = useSession(),
@@ -720,22 +722,49 @@ function ListingAction({
   operationsReady: boolean;
   operationsError: boolean;
 }) {
-  const { api } = useSession();
+  const { api, account } = useSession();
   const request = useOperation();
   const rules = useRules(market);
-  const intent = entitlementIntent(
-    item,
-    api.environment.deployment.marketplaceVersion,
-  );
+  const [receiver, setReceiver] = useState(account?.address ?? "");
+  useEffect(() => setReceiver(account?.address ?? ""), [account?.address]);
+  const deferred = item.reason === "withdraw_deferred_escrow";
+  const recipient =
+    isAddress(receiver) && getAddress(receiver) !== zeroAddress
+      ? getAddress(receiver)
+      : null;
+  const intent = deferred
+    ? recipient && item.listingId
+      ? ({
+          kind: "withdraw-order-shares",
+          orderId: BigInt(item.listingId).toString(),
+          recipient,
+        } as const)
+      : null
+    : entitlementIntent(item, api.environment.deployment.marketplaceVersion);
   const progress = entitlementProgress(item, operations, snapshot);
   const label =
-    item.reason === "return_terminal_listing" ? "取回终局挂单份额" : "撤销挂单";
+    deferred
+      ? "取回暂存份额"
+      : item.reason === "return_terminal_listing"
+        ? "取回终局挂单份额"
+        : "撤销挂单";
   return (
     <div className="stack" key={item.id}>
       <span className="small muted" title={item.listingId ?? undefined}>
         挂单 {item.listingId ? shortAddress(item.listingId) : "待核对"} ·{" "}
         <Amount value={item.units} /> 份
       </span>
+      {deferred && (
+        <label className="small">
+          接收地址（请确认该地址能接收 ERC-1155 份额）
+          <input
+            aria-label="暂存份额接收地址"
+            value={receiver}
+            onChange={(event) => setReceiver(event.target.value)}
+            spellCheck={false}
+          />
+        </label>
+      )}
       {progress ? (
         <>
           <Button variant="secondary" disabled>
@@ -747,11 +776,12 @@ function ListingAction({
             查询原操作
           </Link>
         </>
-      ) : intent ? (
+      ) : intent || deferred ? (
         <Button
           variant="secondary"
-          disabled={!operationsReady}
-          onClick={() =>
+          disabled={!operationsReady || !intent}
+          onClick={() => {
+            if (!intent) return;
             request({
               intent,
               summary: [
@@ -761,6 +791,9 @@ function ListingAction({
                   value: marketLabel,
                 },
                 { label: "挂单编号", value: item.listingId! },
+                ...(intent.kind === "withdraw-order-shares"
+                  ? [{ label: "接收地址", value: intent.recipient }]
+                  : []),
                 {
                   label: "持有结果",
                   value:
@@ -777,13 +810,17 @@ function ListingAction({
                 },
               ],
               feeNote:
-                intent.kind === "cancel-listing"
+                intent.kind === "withdraw-order-shares"
+                  ? "原地址拒收，份额仍在订单合约托管。确认后仅将这笔订单的暂存份额转给上方地址；若接收地址也拒收，交易回滚，份额仍保留。"
+                  : intent.kind === "cancel-listing"
                   ? "撤销这笔挂单并取回尚未成交的份额，已成交部分不受影响。实际取回数量以链上执行时剩余份额为准，不产生已实现收益。"
                   : "市场已终局，先取回这笔挂单尚未成交的托管份额，再按市场结果领取权益。实际数量以链上交易为准。",
-            })
-          }
+            });
+          }}
         >
-          {operationsReady
+          {deferred && !recipient
+            ? "请输入有效接收地址"
+            : operationsReady
             ? label
             : operationsError
               ? "暂不可操作"

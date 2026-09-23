@@ -985,6 +985,9 @@
                       "orderbook-v2"
                     ]
                   },
+                  "orderbookReceiverRecovery": {
+                    "type": "boolean"
+                  },
                   "manifestHash": {
                     "type": "string",
                     "pattern": "^0x[\\da-fA-F]{64}$"
@@ -1281,6 +1284,9 @@
                       "fixed-v1",
                       "orderbook-v2"
                     ]
+                  },
+                  "orderbookReceiverRecovery": {
+                    "type": "boolean"
                   },
                   "manifestHash": {
                     "type": "string",
@@ -1585,6 +1591,9 @@
                 "orderbook-v2"
               ]
             },
+            "orderbookReceiverRecovery": {
+              "type": "boolean"
+            },
             "manifestHash": {
               "type": "string",
               "pattern": "^0x[\\da-fA-F]{64}$"
@@ -1881,6 +1890,9 @@
                     "fixed-v1",
                     "orderbook-v2"
                   ]
+                },
+                "orderbookReceiverRecovery": {
+                  "type": "boolean"
                 },
                 "manifestHash": {
                   "type": "string",
@@ -2887,6 +2899,28 @@
               "properties": {
                 "kind": {
                   "type": "string",
+                  "const": "withdraw-order-shares"
+                },
+                "orderId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "recipient": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "orderId",
+                "recipient"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
                   "const": "create-listing"
                 },
                 "market": {
@@ -3495,6 +3529,7 @@
             "fill-listing",
             "cancel-order",
             "release-order",
+            "withdraw-order-shares",
             "cancel-listing",
             "return-listing",
             "resolve",
@@ -3912,6 +3947,28 @@
               "required": [
                 "kind",
                 "orderId"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "const": "withdraw-order-shares"
+                },
+                "orderId": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9]\\d{0,77})$"
+                },
+                "recipient": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "orderId",
+                "recipient"
               ],
               "additionalProperties": false
             },
@@ -5161,6 +5218,7 @@
                   "primary-buy",
                   "order-created",
                   "order-released",
+                  "order-shares-deferred",
                   "order-funds-returned",
                   "listing-created",
                   "listing-filled",
@@ -5545,6 +5603,7 @@
                       "primary-buy",
                       "order-created",
                       "order-released",
+                      "order-shares-deferred",
                       "order-funds-returned",
                       "listing-created",
                       "listing-filled",
@@ -5788,6 +5847,7 @@
                   "primary-buy",
                   "order-created",
                   "order-released",
+                  "order-shares-deferred",
                   "order-funds-returned",
                   "listing-created",
                   "listing-filled",

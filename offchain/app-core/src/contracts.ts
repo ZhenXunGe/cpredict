@@ -79,6 +79,7 @@ export const deploymentSchema = z.strictObject({
   id,
   protocolVersion: z.enum(["legacy-v1", "time-v2"]).optional(),
   marketplaceVersion: z.enum(["fixed-v1", "orderbook-v2"]).optional(),
+  orderbookReceiverRecovery: z.boolean().optional(),
   manifestHash: hash,
   sourceCommit: z.string().regex(/^[\da-f]{40}$/),
   chainId: z.literal(421614),
@@ -359,6 +360,11 @@ export const intentSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("cancel-order"), orderId: positive }),
   z.strictObject({ kind: z.literal("release-order"), orderId: positive }),
   z.strictObject({
+    kind: z.literal("withdraw-order-shares"),
+    orderId: positive,
+    recipient: address,
+  }),
+  z.strictObject({
     kind: z.literal("create-listing"),
     ...market,
     outcomeId: uint,
@@ -488,6 +494,7 @@ export const operationSchema = z.strictObject({
     "fill-listing",
     "cancel-order",
     "release-order",
+    "withdraw-order-shares",
     "cancel-listing",
     "return-listing",
     "resolve",

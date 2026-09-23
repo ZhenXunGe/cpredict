@@ -108,4 +108,44 @@ describe("V2 order intents", () => {
       ),
     ).toHaveLength(1);
   });
+  it("withdraws deferred shares only for the order owner on a recovery deployment", async () => {
+    const recovery = {
+      ...v2,
+      deployment: { ...v2.deployment, orderbookReceiverRecovery: true },
+    };
+    const pendingReader: AdmissionReader = {
+      ...reader,
+      order: async () => ({
+        market: A(20),
+        owner: A(10),
+        side: 1,
+        outcomeId: 0,
+        active: false,
+        pendingShares: 1_000_000n,
+      }),
+    };
+    const intent = {
+      kind: "withdraw-order-shares" as const,
+      orderId: "7",
+      recipient: A(22),
+    };
+    await expect(
+      buildBusinessCalls(v2, A(10), intent, pendingReader, 1000n),
+    ).rejects.toThrow();
+    await expect(
+      buildBusinessCalls(recovery, A(11), intent, pendingReader, 1000n),
+    ).rejects.toThrow();
+    const calls = await buildBusinessCalls(
+      recovery,
+      A(10),
+      intent,
+      pendingReader,
+      1000n,
+    );
+    expect(calls).toHaveLength(1);
+    expect(decodeFunctionData({ abi: orderbookAbi, data: calls[0]!.data })).toMatchObject({
+      functionName: "withdrawOrderShares",
+      args: [7n, A(22)],
+    });
+  });
 });

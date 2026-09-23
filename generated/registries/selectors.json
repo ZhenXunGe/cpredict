@@ -1305,6 +1305,11 @@
     "selector": "0xc3f9168e"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "pendingShares(uint256)",
+    "selector": "0xda21bce0"
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "signature": "permit2()",
     "selector": "0x12261ee7"
@@ -1433,6 +1438,16 @@
     "contract": "LaunchExposureGuardV1",
     "signature": "raiseCap(uint256)",
     "selector": "0x5410ac50"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "RECEIVER_TRANSFER_GAS_LIMIT()",
+    "selector": "0xf3eb81c8"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "receiverRecoveryVersion()",
+    "selector": "0x4757c0ab"
   },
   {
     "contract": "CloneMarketVaultV1",
@@ -1970,6 +1985,11 @@
     "selector": "0xbd85b039"
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "transferEscrowedShares(address,address,uint8,uint256)",
+    "selector": "0xfdc34fb7"
+  },
+  {
     "contract": "SponsorshipPaymasterV1",
     "signature": "unlockStake()",
     "selector": "0xbb9fe6bf"
@@ -2033,6 +2053,11 @@
     "contract": "SponsorshipPaymasterV1",
     "signature": "withdrawDepositTo(address,uint256)",
     "selector": "0x4d44560d"
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "signature": "withdrawOrderShares(uint256,address)",
+    "selector": "0x4eea02d2"
   },
   {
     "contract": "SponsorshipPaymasterV1",

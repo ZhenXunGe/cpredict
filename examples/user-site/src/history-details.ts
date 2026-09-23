@@ -21,6 +21,7 @@ export const businessFactKinds: Partial<
   "fill-order": "listing-filled",
   "cancel-order": "order-released",
   "release-order": "order-released",
+  "withdraw-order-shares": "listing-returned",
   "create-listing": "listing-created",
   "fill-listing": "listing-filled",
   "cancel-listing": "listing-cancelled",

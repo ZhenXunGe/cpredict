@@ -176,7 +176,7 @@ export interface RightsReader {
   listing(
     listingId: `0x${string}`,
     owner: Address,
-  ): Promise<{ units: bigint; terminal: boolean; active: boolean }>;
+  ): Promise<{ units: bigint; terminal: boolean; active: boolean; pending?: boolean }>;
   bond(
     market: Address,
     owner: Address,
@@ -226,7 +226,9 @@ export async function hydrateEntitlements(
         const listing = await reader.listing(e.listingId, owner);
         e.units = listing.units.toString();
         e.status = listing.units === 0n ? "claimed" : "claimable";
-        e.reason = listing.terminal
+        e.reason = listing.pending
+          ? "withdraw_deferred_escrow"
+          : listing.terminal
           ? "return_terminal_listing"
           : "cancel_listing_to_recover_shares";
       } else if (e.kind === "bond" && e.market) {

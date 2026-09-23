@@ -28,7 +28,7 @@ test("retained parseable security evidence matches its exact inventories", async
     await readFile("reports/security/medusa-million.log", "utf8"),
     await readFile("reports/security/medusa-corpus/coverage/lcov.info", "utf8"),
   );
-  validateSlither(await json("reports/slither-latest.json"));
+  validateSlither(await json("reports/security/slither-latest.json"));
 });
 
 test("retained Echidna failure and synthetic SMT violations remain failures", async () => {
@@ -269,7 +269,7 @@ test("load stage manifest schema 2 fails closed across completed and aborted run
 });
 
 test("unexpected Slither High or Medium findings fail the reviewed baseline", async () => {
-  const report = await json("reports/slither-latest.json");
+  const report = await json("reports/security/slither-latest.json");
   report.results.detectors.push({
     impact: "High",
     check: "new-high",

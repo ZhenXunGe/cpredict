@@ -1,12 +1,12 @@
 
 Detector: reentrancy-balance
-Reentrancy in MarketVaultCoreV1._pullWithPermit2(address,uint256,ISignatureTransfer.PermitTransferFrom,bytes32,bytes) (src/market/MarketVaultCoreV1.sol#461-478):
+Reentrancy in MarketVaultCoreV1._pullWithPermit2(address,uint256,ISignatureTransfer.PermitTransferFrom,bytes32,bytes) (src/market/MarketVaultCoreV1.sol#463-480):
 	External call allowing reentrancy:
-	- permit2.permitWitnessTransferFrom(permit,details,owner,witness,BUY_WITNESS_TYPE_STRING,signature) (src/market/MarketVaultCoreV1.sol#473-475)
+	- permit2.permitWitnessTransferFrom(permit,details,owner,witness,BUY_WITNESS_TYPE_STRING,signature) (src/market/MarketVaultCoreV1.sol#475-477)
 	Balance read before the call:
-	- beforeBalance = _paymentToken.balanceOf(address(this)) (src/market/MarketVaultCoreV1.sol#468)
+	- beforeBalance = _paymentToken.balanceOf(address(this)) (src/market/MarketVaultCoreV1.sol#470)
 	Possible stale balance used after the call in a condition:
-	- received != amount (src/market/MarketVaultCoreV1.sol#477)
+	- received != amount (src/market/MarketVaultCoreV1.sol#479)
 		- stale variable `received`
 Reentrancy in FixedPriceMarketplaceV1._pullWithPermit2(address,uint256,ISignatureTransfer.PermitTransferFrom,bytes32,bytes) (src/marketplace/FixedPriceMarketplaceV1.sol#254-271):
 	External call allowing reentrancy:
@@ -18,34 +18,291 @@ Reentrancy in FixedPriceMarketplaceV1._pullWithPermit2(address,uint256,ISignatur
 		- stale variable `received`
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities
 
+Detector: uninitialized-state
+OrderbookMarketplaceV2.books (src/marketplace/OrderbookMarketplaceV2.sol#65) is never initialized. It is used in:
+	- OrderbookMarketplaceV2.bestOrder(address,uint8,OrderbookMarketplaceV2.Side) (src/marketplace/OrderbookMarketplaceV2.sol#391-394)
+	- OrderbookMarketplaceV2.bookSize(address,uint8,OrderbookMarketplaceV2.Side) (src/marketplace/OrderbookMarketplaceV2.sol#396-398)
+	- OrderbookMarketplaceV2._insert(uint256) (src/marketplace/OrderbookMarketplaceV2.sol#528-538)
+	- OrderbookMarketplaceV2._remove(uint256) (src/marketplace/OrderbookMarketplaceV2.sol#540-565)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#uninitialized-state-variables
+
+Detector: locked-ether
+Contract locking ether found:
+	Contract TradingSessionPolicyV1 (src/core/TradingSessionPolicyV1.sol#24-338) has payable functions:
+	 - TradingSessionPolicyV1.onInstall(bytes) (src/core/TradingSessionPolicyV1.sol#103-123)
+	 - TradingSessionPolicyV1.onUninstall(bytes) (src/core/TradingSessionPolicyV1.sol#125-129)
+	 - TradingSessionPolicyV1.checkUserOpPolicy(bytes32,PackedUserOperation) (src/core/TradingSessionPolicyV1.sol#149-173)
+	But does not have a function to withdraw the ether
+Contract locking ether found:
+	Contract TradingSessionPolicyV2 (src/core/TradingSessionPolicyV2.sol#24-367) has payable functions:
+	 - TradingSessionPolicyV2.onInstall(bytes) (src/core/TradingSessionPolicyV2.sol#103-123)
+	 - TradingSessionPolicyV2.onUninstall(bytes) (src/core/TradingSessionPolicyV2.sol#125-129)
+	 - TradingSessionPolicyV2.checkUserOpPolicy(bytes32,PackedUserOperation) (src/core/TradingSessionPolicyV2.sol#149-173)
+	But does not have a function to withdraw the ether
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#contracts-that-lock-ether
+
+Detector: reentrancy-no-eth
+Reentrancy in OrderbookMarketplaceV2.fillOrder(uint256,uint128,uint128,uint256,uint64) (src/marketplace/OrderbookMarketplaceV2.sol#202-262):
+	External calls:
+	- _pay(o.vault,seller,gross,fees,bytes32(id)) (src/marketplace/OrderbookMarketplaceV2.sol#230)
+		- feeVault.accrue(market.protocolTreasury(),f.platform,keccak256(bytes)(PLATFORM_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#509)
+		- feeVault.accrue(market.creatorTreasury(),f.creator,keccak256(bytes)(CREATOR_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#510)
+	- _finish(id) (src/marketplace/OrderbookMarketplaceV2.sol#235)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- IERC1155(o.vault).safeTransferFrom(address(this),buyer,o.outcomeId,units,) (src/marketplace/OrderbookMarketplaceV2.sol#231-234)
+	- IERC1155(o.vault).safeTransferFrom(seller,buyer,o.outcomeId,units,) (src/marketplace/OrderbookMarketplaceV2.sol#231-234)
+	State variables written after the call(s):
+	- _finish(id) (src/marketplace/OrderbookMarketplaceV2.sol#235)
+		- o.lockedPayment = needed (src/marketplace/OrderbookMarketplaceV2.sol#451)
+		- o.active = false (src/marketplace/OrderbookMarketplaceV2.sol#465)
+		- o.remainingUnits = 0 (src/marketplace/OrderbookMarketplaceV2.sol#466)
+		- o.lockedPayment = 0 (src/marketplace/OrderbookMarketplaceV2.sol#467)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- _finish(id) (src/marketplace/OrderbookMarketplaceV2.sol#235)
+		- totalLockedPayment -= excess (src/marketplace/OrderbookMarketplaceV2.sol#452)
+		- totalLockedPayment -= payment (src/marketplace/OrderbookMarketplaceV2.sol#470)
+	OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60)
+Reentrancy in OrderbookMarketplaceV2.matchOrders(address,uint8,uint256) (src/marketplace/OrderbookMarketplaceV2.sol#265-356):
+	External calls:
+	- _releaseStale(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#276)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _releaseStale(askId) (src/marketplace/OrderbookMarketplaceV2.sol#280)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(vault,bid.owner,outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#302-308)
+	- _release(bidId,ReleaseReason.UnfillableReceiver) (src/marketplace/OrderbookMarketplaceV2.sol#306)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _pay(vault,ask.owner,gross,fees,bytes32(makerId)) (src/marketplace/OrderbookMarketplaceV2.sol#312)
+		- feeVault.accrue(market.protocolTreasury(),f.platform,keccak256(bytes)(PLATFORM_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#509)
+		- feeVault.accrue(market.creatorTreasury(),f.creator,keccak256(bytes)(CREATOR_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#510)
+	- _finish(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#313)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _finish(askId) (src/marketplace/OrderbookMarketplaceV2.sol#314)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _release(bidId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _release(askId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	State variables written after the call(s):
+	- _releaseStale(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#276)
+		- o.active = false (src/marketplace/OrderbookMarketplaceV2.sol#465)
+		- o.remainingUnits = 0 (src/marketplace/OrderbookMarketplaceV2.sol#466)
+		- o.lockedPayment = 0 (src/marketplace/OrderbookMarketplaceV2.sol#467)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- _releaseStale(askId) (src/marketplace/OrderbookMarketplaceV2.sol#280)
+		- o.active = false (src/marketplace/OrderbookMarketplaceV2.sol#465)
+		- o.remainingUnits = 0 (src/marketplace/OrderbookMarketplaceV2.sol#466)
+		- o.lockedPayment = 0 (src/marketplace/OrderbookMarketplaceV2.sol#467)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- _release(bidId,ReleaseReason.UnfillableReceiver) (src/marketplace/OrderbookMarketplaceV2.sol#306)
+		- o.active = false (src/marketplace/OrderbookMarketplaceV2.sol#465)
+		- o.remainingUnits = 0 (src/marketplace/OrderbookMarketplaceV2.sol#466)
+		- o.lockedPayment = 0 (src/marketplace/OrderbookMarketplaceV2.sol#467)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- bid.remainingUnits -= uint128(units) (src/marketplace/OrderbookMarketplaceV2.sol#309)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- ask.remainingUnits -= uint128(units) (src/marketplace/OrderbookMarketplaceV2.sol#310)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- _spendBid(bid,gross) (src/marketplace/OrderbookMarketplaceV2.sol#311)
+		- bid.lockedPayment -= gross (src/marketplace/OrderbookMarketplaceV2.sol#437)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- _finish(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#313)
+		- o.lockedPayment = needed (src/marketplace/OrderbookMarketplaceV2.sol#451)
+		- o.active = false (src/marketplace/OrderbookMarketplaceV2.sol#465)
+		- o.remainingUnits = 0 (src/marketplace/OrderbookMarketplaceV2.sol#466)
+		- o.lockedPayment = 0 (src/marketplace/OrderbookMarketplaceV2.sol#467)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- _finish(askId) (src/marketplace/OrderbookMarketplaceV2.sol#314)
+		- o.lockedPayment = needed (src/marketplace/OrderbookMarketplaceV2.sol#451)
+		- o.active = false (src/marketplace/OrderbookMarketplaceV2.sol#465)
+		- o.remainingUnits = 0 (src/marketplace/OrderbookMarketplaceV2.sol#466)
+		- o.lockedPayment = 0 (src/marketplace/OrderbookMarketplaceV2.sol#467)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- _release(bidId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- o.active = false (src/marketplace/OrderbookMarketplaceV2.sol#465)
+		- o.remainingUnits = 0 (src/marketplace/OrderbookMarketplaceV2.sol#466)
+		- o.lockedPayment = 0 (src/marketplace/OrderbookMarketplaceV2.sol#467)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- _release(askId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- o.active = false (src/marketplace/OrderbookMarketplaceV2.sol#465)
+		- o.remainingUnits = 0 (src/marketplace/OrderbookMarketplaceV2.sol#466)
+		- o.lockedPayment = 0 (src/marketplace/OrderbookMarketplaceV2.sol#467)
+	OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.orders (src/marketplace/OrderbookMarketplaceV2.sol#61)
+	- _releaseStale(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#276)
+		- totalLockedPayment -= payment (src/marketplace/OrderbookMarketplaceV2.sol#470)
+	OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60)
+	- _releaseStale(askId) (src/marketplace/OrderbookMarketplaceV2.sol#280)
+		- totalLockedPayment -= payment (src/marketplace/OrderbookMarketplaceV2.sol#470)
+	OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60)
+	- _release(bidId,ReleaseReason.UnfillableReceiver) (src/marketplace/OrderbookMarketplaceV2.sol#306)
+		- totalLockedPayment -= payment (src/marketplace/OrderbookMarketplaceV2.sol#470)
+	OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60)
+	- _spendBid(bid,gross) (src/marketplace/OrderbookMarketplaceV2.sol#311)
+		- totalLockedPayment -= gross (src/marketplace/OrderbookMarketplaceV2.sol#438)
+	OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60)
+	- _finish(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#313)
+		- totalLockedPayment -= excess (src/marketplace/OrderbookMarketplaceV2.sol#452)
+		- totalLockedPayment -= payment (src/marketplace/OrderbookMarketplaceV2.sol#470)
+	OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60)
+	- _finish(askId) (src/marketplace/OrderbookMarketplaceV2.sol#314)
+		- totalLockedPayment -= excess (src/marketplace/OrderbookMarketplaceV2.sol#452)
+		- totalLockedPayment -= payment (src/marketplace/OrderbookMarketplaceV2.sol#470)
+	OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60)
+	- _release(bidId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- totalLockedPayment -= payment (src/marketplace/OrderbookMarketplaceV2.sol#470)
+	OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60)
+	- _release(askId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- totalLockedPayment -= payment (src/marketplace/OrderbookMarketplaceV2.sol#470)
+	OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60) can be used in cross function reentrancies:
+	- OrderbookMarketplaceV2.totalLockedPayment (src/marketplace/OrderbookMarketplaceV2.sol#60)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-2
+
+Detector: unused-return
+TradingSessionPolicyV1._listing(bytes32,address,bool) (src/core/TradingSessionPolicyV1.sol#297-302) ignores return value by (market,seller,None,None,None,None,active) = ISessionMarketplace(marketplace).listings(id) (src/core/TradingSessionPolicyV1.sol#298-299)
+TradingSessionPolicyV1._bond(TradingSessionPolicyV1.Call,address,bool) (src/core/TradingSessionPolicyV1.sol#304-314) ignores return value by (creator,None,None) = ISessionBond(bondEscrow).bondOf(market) (src/core/TradingSessionPolicyV1.sol#311)
+TradingSessionPolicyV2._order(uint256,address,bool) (src/core/TradingSessionPolicyV2.sol#322-331) ignores return value by (market,owner,None,None,None,None,side,None,active,None) = ISessionMarketplace(marketplace).orders(id) (src/core/TradingSessionPolicyV2.sol#328)
+TradingSessionPolicyV2._bond(TradingSessionPolicyV2.Call,address,bool) (src/core/TradingSessionPolicyV2.sol#333-343) ignores return value by (creator,None,None) = ISessionBond(bondEscrow).bondOf(market) (src/core/TradingSessionPolicyV2.sol#340)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#unused-return
+
 Detector: missing-zero-check
-MarketFactoryV1.constructor(address,address,address,address,address,address,address,address,address).permit2_ (src/core/MarketFactoryV1.sol#97) lacks a zero-check on :
-		- permit2 = permit2_ (src/core/MarketFactoryV1.sol#114)
+MarketFactoryV1.constructor(address,address,address,address,address,address,address,address,uint64,address).permit2_ (src/core/MarketFactoryV1.sol#101) lacks a zero-check on :
+		- permit2 = permit2_ (src/core/MarketFactoryV1.sol#125)
+OrderbookMarketplaceV2.constructor(address,address,address,address,address).permit2_ (src/marketplace/OrderbookMarketplaceV2.sol#143) lacks a zero-check on :
+		- permit2 = permit2_ (src/marketplace/OrderbookMarketplaceV2.sol#153)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#missing-zero-address-validation
 
+Detector: calls-loop
+OrderbookMarketplaceV2._stale(uint256) (src/marketplace/OrderbookMarketplaceV2.sol#422-425) has external calls inside a loop: o.active && (block.timestamp >= o.expiresAt || IMarketVaultV1(o.vault).isTerminal()) (src/marketplace/OrderbookMarketplaceV2.sol#424)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+OrderbookMarketplaceV2._releaseStale(uint256) (src/marketplace/OrderbookMarketplaceV2.sol#427-434) has external calls inside a loop: IMarketVaultV1(orders[id].vault).isTerminal() (src/marketplace/OrderbookMarketplaceV2.sol#428-433)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+OrderbookMarketplaceV2._release(uint256,OrderbookMarketplaceV2.ReleaseReason) (src/marketplace/OrderbookMarketplaceV2.sol#460-486) has external calls inside a loop: IERC1155(o.vault).balanceOf(address(this),o.outcomeId) < units (src/marketplace/OrderbookMarketplaceV2.sol#473)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+		OrderbookMarketplaceV2._releaseStale(uint256)
+OrderbookMarketplaceV2._release(uint256,OrderbookMarketplaceV2.ReleaseReason) (src/marketplace/OrderbookMarketplaceV2.sol#460-486) has external calls inside a loop: this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+		OrderbookMarketplaceV2._releaseStale(uint256)
+OrderbookMarketplaceV2._fees(address,uint256) (src/marketplace/OrderbookMarketplaceV2.sol#496-500) has external calls inside a loop: f.platform = Math.mulDiv(gross,market.platformC2CFeeBps(),ProtocolTypes.BPS) (src/marketplace/OrderbookMarketplaceV2.sol#498)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+OrderbookMarketplaceV2._fees(address,uint256) (src/marketplace/OrderbookMarketplaceV2.sol#496-500) has external calls inside a loop: f.creator = Math.mulDiv(gross,market.creatorC2CFeeBps(),ProtocolTypes.BPS) (src/marketplace/OrderbookMarketplaceV2.sol#499)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+OrderbookMarketplaceV2.matchOrders(address,uint8,uint256) (src/marketplace/OrderbookMarketplaceV2.sol#265-356) has external calls inside a loop: IERC1155(vault).balanceOf(address(this),outcomeId) < units (src/marketplace/OrderbookMarketplaceV2.sol#299)
+OrderbookMarketplaceV2.matchOrders(address,uint8,uint256) (src/marketplace/OrderbookMarketplaceV2.sol#265-356) has external calls inside a loop: this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(vault,bid.owner,outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#302-308)
+OrderbookMarketplaceV2._pay(address,address,uint256,OrderbookMarketplaceV2.Fees,bytes32) (src/marketplace/OrderbookMarketplaceV2.sol#502-512) has external calls inside a loop: feeVault.accrue(market.protocolTreasury(),f.platform,keccak256(bytes)(PLATFORM_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#509)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+OrderbookMarketplaceV2._pay(address,address,uint256,OrderbookMarketplaceV2.Fees,bytes32) (src/marketplace/OrderbookMarketplaceV2.sol#502-512) has external calls inside a loop: feeVault.accrue(market.creatorTreasury(),f.creator,keccak256(bytes)(CREATOR_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#510)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+OrderbookMarketplaceV2._finish(uint256) (src/marketplace/OrderbookMarketplaceV2.sol#441-458) has external calls inside a loop: o.remainingUnits < IMarketVaultV1(o.vault).minimumC2CUnits() || Math.mulDiv(o.remainingUnits,o.unitPrice,ProtocolTypes.SHARE_SCALE) == 0 (src/marketplace/OrderbookMarketplaceV2.sol#444-445)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation/#calls-inside-a-loop
+
 Detector: reentrancy-benign
-Reentrancy in MarketVaultCoreV1._completeBuy(address,uint256,uint256,uint256) (src/market/MarketVaultCoreV1.sol#508-542):
+Reentrancy in MarketVaultCoreV1._completeBuy(address,uint256,uint256,uint256) (src/market/MarketVaultCoreV1.sol#510-544):
 	External calls:
-	- exposureGuard.reserve(filledUnits) (src/market/MarketVaultCoreV1.sol#514)
+	- exposureGuard.reserve(filledUnits) (src/market/MarketVaultCoreV1.sol#516)
 	State variables written after the call(s):
-	- _packedBuyerAccounting[buyer] = _packUint128Pair(nextCumulative,nextBuyerScore) (src/market/MarketVaultCoreV1.sol#528)
-	- _setMarketAccounting(nextPrincipal,nextTotalScore) (src/market/MarketVaultCoreV1.sol#527)
-		- _packedMarketAccounting = _packUint128Pair(principal,earlyScore) (src/market/MarketVaultCoreV1.sol#840)
-	- principalByOutcome[outcomeId] += filledUnits (src/market/MarketVaultCoreV1.sol#529)
+	- _packedBuyerAccounting[buyer] = _packUint128Pair(nextCumulative,nextBuyerScore) (src/market/MarketVaultCoreV1.sol#530)
+	- _setMarketAccounting(nextPrincipal,nextTotalScore) (src/market/MarketVaultCoreV1.sol#529)
+		- _packedMarketAccounting = _packUint128Pair(principal,earlyScore) (src/market/MarketVaultCoreV1.sol#852)
+	- principalByOutcome[outcomeId] += filledUnits (src/market/MarketVaultCoreV1.sol#531)
+Reentrancy in MarketFactoryV1._createMarket(ProtocolTypes.CreateMarketParams,bytes32,bool,uint16,uint16) (src/core/MarketFactoryV1.sol#156-226):
+	External calls:
+	- market = fullMarketDeployer.deploy(salt) (src/core/MarketFactoryV1.sol#198)
+	- IMarketVaultV1(market).initialize(init) (src/core/MarketFactoryV1.sol#199)
+	- IMarketVaultV1(market).initialize(init) (src/core/MarketFactoryV1.sol#202)
+	State variables written after the call(s):
+	- deploymentModeOf[market] = params.deploymentMode (src/core/MarketFactoryV1.sol#207)
+	- deploymentSaltOf[market] = salt (src/core/MarketFactoryV1.sol#208)
+	- isMarket[market] = true (src/core/MarketFactoryV1.sol#206)
+Reentrancy in OrderbookMarketplaceV2._release(uint256,OrderbookMarketplaceV2.ReleaseReason) (src/marketplace/OrderbookMarketplaceV2.sol#460-486):
+	External calls:
+	- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	State variables written after the call(s):
+	- pendingShares[id] = units (src/marketplace/OrderbookMarketplaceV2.sol#480)
 Reentrancy in FixedPriceMarketplaceV1.createListing(address,uint256,uint256,uint256,uint64) (src/marketplace/FixedPriceMarketplaceV1.sol#133-177):
 	External calls:
 	- IERC1155(vault).safeTransferFrom(msg.sender,address(this),outcomeId,amount,abi.encode(listingId)) (src/marketplace/FixedPriceMarketplaceV1.sol#171-172)
 	State variables written after the call(s):
 	- _expectedReceipt = bytes32(0) (src/marketplace/FixedPriceMarketplaceV1.sol#173)
-Reentrancy in MarketFactoryV1.createMarket(ProtocolTypes.CreateMarketParams,bytes32) (src/core/MarketFactoryV1.sol#122-180):
+Reentrancy in OrderbookMarketplaceV2.createOrder(address,uint8,OrderbookMarketplaceV2.Side,uint128,uint128,uint64,bool) (src/marketplace/OrderbookMarketplaceV2.sol#156-198):
 	External calls:
-	- market = fullMarketDeployer.deploy(salt) (src/core/MarketFactoryV1.sol#152)
-	- IMarketVaultV1(market).initialize(init) (src/core/MarketFactoryV1.sol#153)
-	- IMarketVaultV1(market).initialize(init) (src/core/MarketFactoryV1.sol#156)
+	- IERC1155(vault).safeTransferFrom(msg.sender,address(this),outcomeId,units,abi.encode(id)) (src/marketplace/OrderbookMarketplaceV2.sol#191-192)
 	State variables written after the call(s):
-	- deploymentModeOf[market] = params.deploymentMode (src/core/MarketFactoryV1.sol#161)
-	- deploymentSaltOf[market] = salt (src/core/MarketFactoryV1.sol#162)
-	- isMarket[market] = true (src/core/MarketFactoryV1.sol#160)
+	- expectedReceipt = bytes32(0) (src/marketplace/OrderbookMarketplaceV2.sol#193)
+Reentrancy in OrderbookMarketplaceV2.fillOrder(uint256,uint128,uint128,uint256,uint64) (src/marketplace/OrderbookMarketplaceV2.sol#202-262):
+	External calls:
+	- _pay(o.vault,seller,gross,fees,bytes32(id)) (src/marketplace/OrderbookMarketplaceV2.sol#230)
+		- feeVault.accrue(market.protocolTreasury(),f.platform,keccak256(bytes)(PLATFORM_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#509)
+		- feeVault.accrue(market.creatorTreasury(),f.creator,keccak256(bytes)(CREATOR_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#510)
+	- _finish(id) (src/marketplace/OrderbookMarketplaceV2.sol#235)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- IERC1155(o.vault).safeTransferFrom(address(this),buyer,o.outcomeId,units,) (src/marketplace/OrderbookMarketplaceV2.sol#231-234)
+	- IERC1155(o.vault).safeTransferFrom(seller,buyer,o.outcomeId,units,) (src/marketplace/OrderbookMarketplaceV2.sol#231-234)
+	State variables written after the call(s):
+	- _finish(id) (src/marketplace/OrderbookMarketplaceV2.sol#235)
+		- pendingShares[id] = units (src/marketplace/OrderbookMarketplaceV2.sol#480)
+Reentrancy in OrderbookMarketplaceV2.matchOrders(address,uint8,uint256) (src/marketplace/OrderbookMarketplaceV2.sol#265-356):
+	External calls:
+	- _releaseStale(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#276)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _releaseStale(askId) (src/marketplace/OrderbookMarketplaceV2.sol#280)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(vault,bid.owner,outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#302-308)
+	- _release(bidId,ReleaseReason.UnfillableReceiver) (src/marketplace/OrderbookMarketplaceV2.sol#306)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _pay(vault,ask.owner,gross,fees,bytes32(makerId)) (src/marketplace/OrderbookMarketplaceV2.sol#312)
+		- feeVault.accrue(market.protocolTreasury(),f.platform,keccak256(bytes)(PLATFORM_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#509)
+		- feeVault.accrue(market.creatorTreasury(),f.creator,keccak256(bytes)(CREATOR_C2C),ref) (src/marketplace/OrderbookMarketplaceV2.sol#510)
+	- _finish(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#313)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _finish(askId) (src/marketplace/OrderbookMarketplaceV2.sol#314)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _release(bidId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	- _release(askId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(o.vault,o.owner,o.outcomeId,units) (src/marketplace/OrderbookMarketplaceV2.sol#476-483)
+	State variables written after the call(s):
+	- _releaseStale(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#276)
+		- pendingShares[id] = units (src/marketplace/OrderbookMarketplaceV2.sol#480)
+	- _releaseStale(askId) (src/marketplace/OrderbookMarketplaceV2.sol#280)
+		- pendingShares[id] = units (src/marketplace/OrderbookMarketplaceV2.sol#480)
+	- _release(bidId,ReleaseReason.UnfillableReceiver) (src/marketplace/OrderbookMarketplaceV2.sol#306)
+		- pendingShares[id] = units (src/marketplace/OrderbookMarketplaceV2.sol#480)
+	- _finish(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#313)
+		- pendingShares[id] = units (src/marketplace/OrderbookMarketplaceV2.sol#480)
+	- _finish(askId) (src/marketplace/OrderbookMarketplaceV2.sol#314)
+		- pendingShares[id] = units (src/marketplace/OrderbookMarketplaceV2.sol#480)
+	- _release(bidId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- pendingShares[id] = units (src/marketplace/OrderbookMarketplaceV2.sol#480)
+	- _release(askId,ReleaseReason.SelfCross) (src/marketplace/OrderbookMarketplaceV2.sol#288)
+		- pendingShares[id] = units (src/marketplace/OrderbookMarketplaceV2.sol#480)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#reentrancy-vulnerabilities-3
 
 Detector: reentrancy-events
@@ -59,11 +316,11 @@ Reentrancy in SponsorshipPaymasterV1.deposit() (src/paymaster/SponsorshipPaymast
 	- entryPoint.depositTo{value: msg.value}(address(this)) (src/paymaster/SponsorshipPaymasterV1.sol#274)
 	Event emitted after the call(s):
 	- EntryPointDepositAdded(msg.sender,msg.value) (src/paymaster/SponsorshipPaymasterV1.sol#275)
-Reentrancy in MarketFactoryV1.setMarketplace(address) (src/core/MarketFactoryV1.sol#206-212):
+Reentrancy in MarketFactoryV1.setMarketplace(address) (src/core/MarketFactoryV1.sol#252-258):
 	External calls:
-	- feeVault.registerAccruer(marketplace_) (src/core/MarketFactoryV1.sol#210)
+	- feeVault.registerAccruer(marketplace_) (src/core/MarketFactoryV1.sol#256)
 	Event emitted after the call(s):
-	- MarketplaceConfigured(marketplace_) (src/core/MarketFactoryV1.sol#211)
+	- MarketplaceConfigured(marketplace_) (src/core/MarketFactoryV1.sol#257)
 Reentrancy in SponsorshipPaymasterV1.unlockStake() (src/paymaster/SponsorshipPaymasterV1.sol#289-292):
 	External calls:
 	- entryPoint.unlockStake() (src/paymaster/SponsorshipPaymasterV1.sol#290)
@@ -88,32 +345,31 @@ EmergencyControllerV1.isPaused(uint256) (src/core/EmergencyControllerV1.sol#42-4
 EmergencyControllerV1.resetEpoch() (src/core/EmergencyControllerV1.sol#62-69) uses timestamp for comparisons
 	Dangerous comparisons:
 	- block.timestamp < pauseExpiresAt (src/core/EmergencyControllerV1.sol#63)
-MarketFactoryV1._validate(ProtocolTypes.CreateMarketParams) (src/core/MarketFactoryV1.sol#327-381) uses timestamp for comparisons
+MarketFactoryV1._validate(ProtocolTypes.CreateMarketParams) (src/core/MarketFactoryV1.sol#375-433) uses timestamp for comparisons
 	Dangerous comparisons:
-	- params.closeAt < block.timestamp + 300 || params.closeAt > block.timestamp + 7776000 || params.earlyBirdStart < block.timestamp || params.earlyBirdStart >= params.closeAt (src/core/MarketFactoryV1.sol#344-347)
-MarketVaultCoreV1.updateBeforeFirstBuy(bytes32,string,bytes32,string,uint64,uint64,address,uint256) (src/market/MarketVaultCoreV1.sol#358-402) uses timestamp for comparisons
+	- params.closeAt < block.timestamp + 300 || params.closeAt > block.timestamp + 7776000 (src/core/MarketFactoryV1.sol#392-393)
+MarketVaultCoreV1.updateBeforeFirstBuy(ProtocolTypes.MarketTerms) (src/market/MarketVaultCoreV1.sol#360-366) uses timestamp for comparisons
 	Dangerous comparisons:
-	- newCloseAt <= block.timestamp (src/market/MarketVaultCoreV1.sol#382)
-MarketVaultCoreV1._prepareBuy(address,uint256,uint256,uint256,uint256,uint64) (src/market/MarketVaultCoreV1.sol#480-506) uses timestamp for comparisons
+	- terms.closeAt <= block.timestamp (src/market/MarketVaultCoreV1.sol#364)
+MarketVaultCoreV1._prepareBuy(address,uint256,uint256,uint256,uint256,uint64) (src/market/MarketVaultCoreV1.sol#482-508) uses timestamp for comparisons
 	Dangerous comparisons:
-	- marketState != ProtocolTypes.MarketState.OPEN || block.timestamp >= closeAt (src/market/MarketVaultCoreV1.sol#489)
-	- block.timestamp > deadline (src/market/MarketVaultCoreV1.sol#495)
-MarketVaultCoreV1._earlyBirdWeight(uint256) (src/market/MarketVaultCoreV1.sol#551-560) uses timestamp for comparisons
+	- marketState != ProtocolTypes.MarketState.OPEN || block.timestamp >= closeAt (src/market/MarketVaultCoreV1.sol#491)
+	- block.timestamp > deadline (src/market/MarketVaultCoreV1.sol#497)
+MarketVaultCoreV1._earlyBirdWeight(uint256) (src/market/MarketVaultCoreV1.sol#553-562) uses timestamp for comparisons
 	Dangerous comparisons:
-	- timestamp < earlyBirdStart (src/market/MarketVaultCoreV1.sol#553)
-	- timestamp >= closeAt (src/market/MarketVaultCoreV1.sol#554)
-	- offset * 3 < duration (src/market/MarketVaultCoreV1.sol#557)
-	- offset * 3 < duration * 2 (src/market/MarketVaultCoreV1.sol#558)
-MarketVaultCoreV1.resolve(uint256,bytes32) (src/market/MarketVaultCoreV1.sol#566-610) uses timestamp for comparisons
+	- timestamp < createdAt || timestamp >= closeAt (src/market/MarketVaultCoreV1.sol#555)
+	- offset * 3 < duration (src/market/MarketVaultCoreV1.sol#559)
+	- offset * 3 < duration * 2 (src/market/MarketVaultCoreV1.sol#560)
+MarketVaultCoreV1.resolve(uint256,bytes32) (src/market/MarketVaultCoreV1.sol#568-615) uses timestamp for comparisons
 	Dangerous comparisons:
-	- block.timestamp < closeAt (src/market/MarketVaultCoreV1.sol#568)
-	- block.timestamp >= resolutionDeadline() (src/market/MarketVaultCoreV1.sol#569)
-MarketVaultCoreV1.creatorVoid(bytes32) (src/market/MarketVaultCoreV1.sol#616-620) uses timestamp for comparisons
+	- block.timestamp < closeAt (src/market/MarketVaultCoreV1.sol#570)
+	- block.timestamp >= resolutionDeadline() (src/market/MarketVaultCoreV1.sol#571)
+MarketVaultCoreV1.creatorVoid(bytes32) (src/market/MarketVaultCoreV1.sol#621-625) uses timestamp for comparisons
 	Dangerous comparisons:
-	- block.timestamp >= resolutionDeadline() (src/market/MarketVaultCoreV1.sol#618)
-MarketVaultCoreV1.voidAfterDeadline() (src/market/MarketVaultCoreV1.sol#624-628) uses timestamp for comparisons
+	- block.timestamp >= resolutionDeadline() (src/market/MarketVaultCoreV1.sol#623)
+MarketVaultCoreV1.voidAfterDeadline() (src/market/MarketVaultCoreV1.sol#629-633) uses timestamp for comparisons
 	Dangerous comparisons:
-	- block.timestamp < resolutionDeadline() (src/market/MarketVaultCoreV1.sol#626)
+	- block.timestamp < resolutionDeadline() (src/market/MarketVaultCoreV1.sol#631)
 FixedPriceMarketplaceV1.createListing(address,uint256,uint256,uint256,uint64) (src/marketplace/FixedPriceMarketplaceV1.sol#133-177) uses timestamp for comparisons
 	Dangerous comparisons:
 	- expiresAt <= block.timestamp (src/marketplace/FixedPriceMarketplaceV1.sol#155)
@@ -121,13 +377,70 @@ FixedPriceMarketplaceV1._prepareFill(bytes32,uint256,uint256,uint256,uint64) (sr
 	Dangerous comparisons:
 	- block.timestamp > deadline (src/marketplace/FixedPriceMarketplaceV1.sol#307)
 	- block.timestamp >= stored.expiresAt (src/marketplace/FixedPriceMarketplaceV1.sol#310)
+OrderbookMarketplaceV2.createOrder(address,uint8,OrderbookMarketplaceV2.Side,uint128,uint128,uint64,bool) (src/marketplace/OrderbookMarketplaceV2.sol#156-198) uses timestamp for comparisons
+	Dangerous comparisons:
+	- outcomeId >= market.outcomeCount() || units < market.minimumC2CUnits() || units == 0 || unitPrice == 0 || unitPrice > MAX_UNIT_PRICE || expiresAt <= block.timestamp || Math.mulDiv(units,unitPrice,ProtocolTypes.SHARE_SCALE) == 0 || (autoMatch && Math.mulDiv(market.minimumC2CUnits(),unitPrice,ProtocolTypes.SHARE_SCALE) == 0) (src/marketplace/OrderbookMarketplaceV2.sol#173-178)
+OrderbookMarketplaceV2.fillOrder(uint256,uint128,uint128,uint256,uint64) (src/marketplace/OrderbookMarketplaceV2.sol#202-262) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp > deadline (src/marketplace/OrderbookMarketplaceV2.sol#210)
+OrderbookMarketplaceV2.matchOrders(address,uint8,uint256) (src/marketplace/OrderbookMarketplaceV2.sol#265-356) uses timestamp for comparisons
+	Dangerous comparisons:
+	- bidId != 0 && _stale(bidId) (src/marketplace/OrderbookMarketplaceV2.sol#275)
+	- askId != 0 && _stale(askId) (src/marketplace/OrderbookMarketplaceV2.sol#279)
+OrderbookMarketplaceV2._live(OrderbookMarketplaceV2.Order) (src/marketplace/OrderbookMarketplaceV2.sol#412-416) uses timestamp for comparisons
+	Dangerous comparisons:
+	- block.timestamp >= o.expiresAt (src/marketplace/OrderbookMarketplaceV2.sol#414)
+OrderbookMarketplaceV2._stale(uint256) (src/marketplace/OrderbookMarketplaceV2.sol#422-425) uses timestamp for comparisons
+	Dangerous comparisons:
+	- o.active && (block.timestamp >= o.expiresAt || IMarketVaultV1(o.vault).isTerminal()) (src/marketplace/OrderbookMarketplaceV2.sol#424)
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#block-timestamp
 
+Detector: assembly
+TradingSessionPolicyV1._decode(bytes) (src/core/TradingSessionPolicyV1.sol#186-218) uses assembly
+	- INLINE ASM (src/core/TradingSessionPolicyV1.sol#196-199)
+TradingSessionPolicyV1._selector(bytes) (src/core/TradingSessionPolicyV1.sol#323-326) uses assembly
+	- INLINE ASM (src/core/TradingSessionPolicyV1.sol#325)
+TradingSessionPolicyV1._word(bytes,uint256) (src/core/TradingSessionPolicyV1.sol#328-331) uses assembly
+	- INLINE ASM (src/core/TradingSessionPolicyV1.sol#330)
+TradingSessionPolicyV2._decode(bytes) (src/core/TradingSessionPolicyV2.sol#186-218) uses assembly
+	- INLINE ASM (src/core/TradingSessionPolicyV2.sol#196-199)
+TradingSessionPolicyV2._selector(bytes) (src/core/TradingSessionPolicyV2.sol#352-355) uses assembly
+	- INLINE ASM (src/core/TradingSessionPolicyV2.sol#354)
+TradingSessionPolicyV2._word(bytes,uint256) (src/core/TradingSessionPolicyV2.sol#357-360) uses assembly
+	- INLINE ASM (src/core/TradingSessionPolicyV2.sol#359)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#assembly-usage
+
+Detector: costly-loop
+OrderbookMarketplaceV2._remove(uint256) (src/marketplace/OrderbookMarketplaceV2.sol#540-565) has costly operations inside a loop:
+	- delete positions[id] (src/marketplace/OrderbookMarketplaceV2.sol#548)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+		OrderbookMarketplaceV2._releaseStale(uint256)
+		OrderbookMarketplaceV2._release(uint256,OrderbookMarketplaceV2.ReleaseReason)
+OrderbookMarketplaceV2._release(uint256,OrderbookMarketplaceV2.ReleaseReason) (src/marketplace/OrderbookMarketplaceV2.sol#460-486) has costly operations inside a loop:
+	- totalLockedPayment -= payment (src/marketplace/OrderbookMarketplaceV2.sol#470)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+		OrderbookMarketplaceV2._releaseStale(uint256)
+OrderbookMarketplaceV2._spendBid(OrderbookMarketplaceV2.Order,uint256) (src/marketplace/OrderbookMarketplaceV2.sol#436-439) has costly operations inside a loop:
+	- totalLockedPayment -= gross (src/marketplace/OrderbookMarketplaceV2.sol#438)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+OrderbookMarketplaceV2._finish(uint256) (src/marketplace/OrderbookMarketplaceV2.sol#441-458) has costly operations inside a loop:
+	- totalLockedPayment -= excess (src/marketplace/OrderbookMarketplaceV2.sol#452)
+	Calls stack containing the loop:
+		OrderbookMarketplaceV2.matchOrders(address,uint8,uint256)
+Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#costly-operations-inside-a-loop
+
 Detector: cyclomatic-complexity
-MarketFactoryV1._validate(ProtocolTypes.CreateMarketParams) (src/core/MarketFactoryV1.sol#327-381) has a high cyclomatic complexity (13).
+MarketFactoryV1._validate(ProtocolTypes.CreateMarketParams) (src/core/MarketFactoryV1.sol#375-433) has a high cyclomatic complexity (14).
+TradingSessionPolicyV1._check(TradingSessionPolicyV1.Call[],address,bool) (src/core/TradingSessionPolicyV1.sol#220-291) has a high cyclomatic complexity (24).
+TradingSessionPolicyV2._check(TradingSessionPolicyV2.Call[],address,bool) (src/core/TradingSessionPolicyV2.sol#220-316) has a high cyclomatic complexity (35).
 FixedPriceMarketplaceV1._prepareFill(bytes32,uint256,uint256,uint256,uint64) (src/marketplace/FixedPriceMarketplaceV1.sol#297-347) has a high cyclomatic complexity (13).
+OrderbookMarketplaceV2.fillOrder(uint256,uint128,uint128,uint256,uint64) (src/marketplace/OrderbookMarketplaceV2.sol#202-262) has a high cyclomatic complexity (12).
+OrderbookMarketplaceV2.matchOrders(address,uint8,uint256) (src/marketplace/OrderbookMarketplaceV2.sol#265-356) has a high cyclomatic complexity (14).
 Reference: https://github.com/crytic/slither/wiki/Detector-Documentation#cyclomatic-complexity
-. analyzed (68 contracts with 102 detectors), 25 result(s) found
-'forge clean' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.MXOgtr/repo)
+. analyzed (78 contracts with 102 detectors), 69 result(s) found
+'forge clean' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.Udn7g0/repo)
 'forge config --json' running
-'forge build --build-info --deny never --skip ./test/** ./script/** --force' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.MXOgtr/repo)
+'forge build --build-info --deny never --skip ./test/** ./script/** --force' running (wd: /private/var/folders/gc/k2l60lnx7d59j65323br2fr40000gn/T/cpredict-slither.Udn7g0/repo)
