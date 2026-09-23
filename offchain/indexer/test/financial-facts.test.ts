@@ -73,6 +73,104 @@ describe("financial event normalization", () => {
     expect(referencedOrderIds(events, v2)).toEqual([7n, 42n]);
     expect(referencedOrderIds(events, env)).toEqual([]);
   });
+  it("keeps rejected ask shares in escrow until the owner withdraws them", () => {
+    const v2 = {
+      ...env,
+      deployment: {
+        ...env.deployment,
+        marketplaceVersion: "orderbook-v2" as const,
+        orderbookReceiverRecovery: true,
+      },
+    };
+    const orderId = 7n;
+    const events = [
+      raw(
+        "TransferSingle",
+        vault,
+        {
+          operator: v2.deployment.marketplace,
+          from: trader,
+          to: v2.deployment.marketplace,
+          id: 0n,
+          value: 20n,
+        },
+        3,
+        0,
+      ),
+      raw(
+        "OrderCreated",
+        v2.deployment.marketplace,
+        {
+          orderId,
+          vault,
+          owner: trader,
+          outcomeId: 0,
+          side: 1,
+          units: 20n,
+          unitPrice: 1_000_000n,
+          expiresAt: 900n,
+          autoMatch: true,
+          lockedPayment: 0n,
+        },
+        3,
+        1,
+      ),
+      raw(
+        "OrderSharesDeferred",
+        v2.deployment.marketplace,
+        { orderId, owner: trader, units: 20n },
+        4,
+        0,
+      ),
+      raw(
+        "OrderReleased",
+        v2.deployment.marketplace,
+        {
+          orderId,
+          owner: trader,
+          reason: 1,
+          returnedUnits: 0n,
+          returnedPayment: 0n,
+        },
+        4,
+        1,
+      ),
+      raw(
+        "TransferSingle",
+        vault,
+        {
+          operator: v2.deployment.marketplace,
+          from: v2.deployment.marketplace,
+          to: seller,
+          id: 0n,
+          value: 20n,
+        },
+        5,
+        0,
+      ),
+      raw(
+        "OrderSharesWithdrawn",
+        v2.deployment.marketplace,
+        { orderId, owner: trader, recipient: seller, units: 20n },
+        5,
+        1,
+      ),
+    ];
+    const facts = normalizeFinancialFacts(events, [block(3), block(4), block(5)], {
+      ...context,
+      environment: v2,
+    });
+    expect(facts.filter((f) => f.kind === "coverage-gap")).toEqual([]);
+    expect(facts.filter((f) => f.kind === "listing-returned")).toHaveLength(1);
+    expect(facts.filter((f) => f.kind === "listing-returned")[0]).toMatchObject({
+      owner: trader,
+      units: "20",
+      blockNumber: "5",
+    });
+    expect(facts.filter((f) => f.kind === "share-transfer")).toMatchObject([
+      { owner: trader, counterparty: seller, units: "20" },
+    ]);
+  });
   it("combines mint and primary purchase once, retaining the original early-bird score", () => {
     const facts = normalizeFinancialFacts(
       [...createMarket(), ...purchase()],

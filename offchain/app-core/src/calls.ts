@@ -38,6 +38,7 @@ export interface AdmissionReader {
     side: number;
     outcomeId: number;
     active: boolean;
+    pendingShares?: bigint;
   }>;
   verifiedRules(market: Address): Promise<boolean>;
   listing(
@@ -105,7 +106,7 @@ export async function buildBusinessCalls(
   let order:
     | Awaited<ReturnType<NonNullable<AdmissionReader["order"]>>>
     | undefined;
-  if (intent.kind.endsWith("-order")) {
+  if (intent.kind.endsWith("-order") || intent.kind === "withdraw-order-shares") {
     if (d.marketplaceVersion !== "orderbook-v2")
       throw new AppError("orderbook_not_supported", 400);
     if ("orderId" in intent) {
@@ -113,7 +114,15 @@ export async function buildBusinessCalls(
         throw new AppError("orderbook_reader_unavailable", 503);
       order = await reader.order(BigInt(intent.orderId));
       market = order.market;
-      if (!order.active) throw new AppError("order_unavailable", 409);
+      if (intent.kind === "withdraw-order-shares") {
+        if (
+          !d.orderbookReceiverRecovery ||
+          order.side !== 1 ||
+          !sameAddress(order.owner, account) ||
+          !order.pendingShares
+        )
+          throw new AppError("order_shares_unavailable", 409);
+      } else if (!order.active) throw new AppError("order_unavailable", 409);
       if (
         (intent.kind === "cancel-order" || intent.kind === "release-order") &&
         !sameAddress(order.owner, account)
@@ -239,6 +248,17 @@ export async function buildBusinessCalls(
             functionName:
               intent.kind === "cancel-order" ? "cancelOrder" : "releaseOrder",
             args: [BigInt(intent.orderId)],
+          }),
+        ),
+      ];
+    case "withdraw-order-shares":
+      return [
+        call(
+          d.marketplace,
+          encodeFunctionData({
+            abi: orderbookAbi,
+            functionName: "withdrawOrderShares",
+            args: [BigInt(intent.orderId), intent.recipient],
           }),
         ),
       ];

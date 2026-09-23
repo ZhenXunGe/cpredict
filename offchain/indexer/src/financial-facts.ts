@@ -417,6 +417,53 @@ export function normalizeFinancialFacts(
           );
           coverage(e, market, owner, units, used);
         }
+      } else if (name === "OrderSharesDeferred") {
+        const order = orders.get(amount(a.orderId));
+        if (!order) throw new Error("order_deferred_without_creation");
+        add(
+          e,
+          "order-shares-deferred",
+          {
+            market: addr(order.vault),
+            owner: addr(a.owner),
+            outcomeId: amount(order.outcomeId),
+            units: amount(a.units),
+            listingId: orderListingId(BigInt(amount(a.orderId))),
+          },
+          a,
+        );
+      } else if (name === "OrderSharesWithdrawn") {
+        const order = orders.get(amount(a.orderId));
+        if (!order || Number(order.side) !== 1)
+          throw new Error("order_withdrawal_without_ask");
+        const market = addr(order.vault),
+          owner = addr(a.owner),
+          recipient = addr(a.recipient),
+          units = amount(a.units),
+          outcomeId = amount(order.outcomeId),
+          listingId = orderListingId(BigInt(amount(a.orderId)));
+        const used = consume(e, market, d.marketplace, recipient, units, outcomeId);
+        add(
+          e,
+          "listing-returned",
+          { market, owner, outcomeId, units, listingId },
+          { ...a, orderbook: true, deferred: true },
+        );
+        if (!sameAddress(owner, recipient))
+          add(
+            e,
+            "share-transfer",
+            {
+              market,
+              owner,
+              counterparty: recipient,
+              outcomeId,
+              units,
+              factIndex: 1,
+            },
+            { source: "deferred-order-withdrawal", orderId: amount(a.orderId) },
+          );
+        coverage(e, market, recipient, units, used);
       } else if (name === "TradeExecuted") {
         const market = addr(a.vault),
           buyer = addr(a.buyer),

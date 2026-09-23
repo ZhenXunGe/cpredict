@@ -86,6 +86,7 @@ test("isolated candidate preserves wallet and asset, changes contracts, and cann
   assert.equal(result.features.newExposure, false);
   assert.equal(result.features.automaticClaims, true);
   assert.equal(result.deployment.marketplaceVersion, "orderbook-v2");
+  assert.equal(result.deployment.orderbookReceiverRecovery, true);
   assert.throws(
     () =>
       buildCandidate({

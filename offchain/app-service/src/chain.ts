@@ -14,6 +14,9 @@ const factoryAbi = parseAbi([
 const tokenOwnerAbi = parseAbi([
   "function paymentToken() view returns(address)",
 ]);
+const receiverRecoveryAbi = parseAbi([
+  "function receiverRecoveryVersion() pure returns(uint256)",
+]);
 
 export async function verifyDeployment(
   client: PublicClient,
@@ -23,6 +26,15 @@ export async function verifyDeployment(
   const d = environment.deployment;
   if ((await client.getChainId()) !== d.chainId)
     throw new AppError("rpc_chain_mismatch", 503);
+  if (
+    d.orderbookReceiverRecovery &&
+    (await client.readContract({
+      address: d.marketplace,
+      abi: receiverRecoveryAbi,
+      functionName: "receiverRecoveryVersion",
+    })) !== 1n
+  )
+    throw new AppError("orderbook_receiver_recovery_mismatch", 503);
   const contracts = [
     d.factory,
     d.marketplace,

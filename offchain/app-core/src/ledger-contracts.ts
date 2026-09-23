@@ -9,6 +9,7 @@ export const factKind = z.enum([
   "primary-buy",
   "order-created",
   "order-released",
+  "order-shares-deferred",
   "order-funds-returned",
   "listing-created",
   "listing-filled",

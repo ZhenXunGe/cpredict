@@ -26,7 +26,8 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         Expired,
         Terminal,
         Dust,
-        SelfCross
+        SelfCross,
+        UnfillableReceiver
     }
 
     struct Order {
@@ -48,6 +49,7 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
     }
     uint256 public constant MAX_UNIT_PRICE = 1000e6;
     uint256 public constant MAX_MATCH_STEPS = 20;
+    uint256 public constant RECEIVER_TRANSFER_GAS_LIMIT = 300_000;
     IMarketFactoryV1 public immutable factory;
     IEmergencyControllerV1 public immutable emergencyController;
     IFeeVaultV1 public immutable feeVault;
@@ -57,6 +59,9 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
     uint256 public nextOrderId = 1;
     uint256 public totalLockedPayment;
     mapping(uint256 => Order) public orders;
+    // Shares whose owner rejected a safe return stay in escrow until that owner
+    // chooses a receiver. They are never treated as returned or claimable shares.
+    mapping(uint256 => uint256) public pendingShares;
     mapping(bytes32 => uint256[]) private books;
     mapping(uint256 => uint256) private positions; // one-based heap offsets
     bytes32 private expectedReceipt;
@@ -125,6 +130,10 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         uint256 unitPrice
     );
     event BidExcessReturned(uint256 indexed orderId, address indexed owner, uint256 amount);
+    event OrderSharesDeferred(uint256 indexed orderId, address indexed owner, uint256 units);
+    event OrderSharesWithdrawn(
+        uint256 indexed orderId, address indexed owner, address indexed recipient, uint256 units
+    );
 
     constructor(
         address factory_,
@@ -285,11 +294,22 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
             uint256 gross = Math.mulDiv(units, price, ProtocolTypes.SHARE_SCALE);
             if (gross == 0) break;
             Fees memory fees = _fees(vault, gross);
+            // A rejecting best bidder must not hold the price queue hostage. The
+            // isolated call rolls the share transfer back before the bid is released.
+            if (IERC1155(vault).balanceOf(address(this), outcomeId) < units) {
+                revert InexactTransfer();
+            }
+            try this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(
+                vault, bid.owner, outcomeId, units
+            ) {}
+            catch {
+                _release(bidId, ReleaseReason.UnfillableReceiver);
+                continue;
+            }
             bid.remainingUnits -= uint128(units);
             ask.remainingUnits -= uint128(units);
             _spendBid(bid, gross);
             _pay(vault, ask.owner, gross, fees, bytes32(makerId));
-            IERC1155(vault).safeTransferFrom(address(this), bid.owner, outcomeId, units, "");
             _finish(bidId);
             _finish(askId);
             emit OrderFilled(
@@ -345,6 +365,29 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         _releaseStale(id);
     }
 
+    /// @notice Recover an ask's shares after its owner's receiver rejected the
+    /// automatic return. Only the original order owner chooses the recipient.
+    function withdrawOrderShares(uint256 id, address recipient) external nonReentrant {
+        Order storage o = orders[id];
+        if (o.owner != msg.sender) revert NotOwner();
+        uint256 units = pendingShares[id];
+        if (units == 0 || recipient == address(0) || recipient == address(this)) {
+            revert InvalidOrder();
+        }
+        pendingShares[id] = 0;
+        IERC1155(o.vault).safeTransferFrom(address(this), recipient, o.outcomeId, units, "");
+        emit OrderSharesWithdrawn(id, o.owner, recipient, units);
+    }
+
+    /// @dev try/catch can isolate a receiver callback only across an external call.
+    /// This entry point cannot be used by anyone outside this contract.
+    function transferEscrowedShares(address vault, address recipient, uint8 outcomeId, uint256 units)
+        external
+    {
+        if (msg.sender != address(this)) revert InvalidOrder();
+        IERC1155(vault).safeTransferFrom(address(this), recipient, outcomeId, units, "");
+    }
+
     function bestOrder(address vault, uint8 outcomeId, Side side) public view returns (uint256) {
         uint256[] storage heap = books[keccak256(abi.encode(vault, outcomeId, side))];
         return heap.length == 0 ? 0 : heap[0];
@@ -352,6 +395,10 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
 
     function bookSize(address vault, uint8 outcomeId, Side side) external view returns (uint256) {
         return books[keccak256(abi.encode(vault, outcomeId, side))].length;
+    }
+
+    function receiverRecoveryVersion() external pure returns (uint256) {
+        return 1;
     }
 
     function _key(Order storage o) private view returns (bytes32) {
@@ -423,7 +470,17 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
             totalLockedPayment -= payment;
             if (payment != 0) paymentToken.safeTransfer(o.owner, payment);
         } else if (units != 0) {
-            IERC1155(o.vault).safeTransferFrom(address(this), o.owner, o.outcomeId, units, "");
+            if (IERC1155(o.vault).balanceOf(address(this), o.outcomeId) < units) {
+                revert InexactTransfer();
+            }
+            try this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(
+                o.vault, o.owner, o.outcomeId, units
+            ) {}
+            catch {
+                pendingShares[id] = units;
+                emit OrderSharesDeferred(id, o.owner, units);
+                units = 0;
+            }
         }
         emit OrderReleased(id, o.owner, reason, o.side == Side.Ask ? units : 0, payment);
     }

@@ -78,6 +78,7 @@ const env = orderbookTest
       deployment: {
         ...ctEnv.deployment,
         marketplaceVersion: "orderbook-v2" as const,
+        orderbookReceiverRecovery: true,
       },
       features: { ...ctEnv.features, automaticClaims: true },
     }
@@ -533,7 +534,21 @@ class FixtureApi extends SiteApi {
       };
     else if (p.startsWith("/v2/entitlements/"))
       result = {
-        items: timeoutFundingRole
+        items: new URLSearchParams(location.search).has("receiver-recovery-test")
+          ? [
+              {
+                id: "deferred-ask",
+                market: A(101),
+                kind: "escrow",
+                outcomeId: "0",
+                listingId: `0x${"0".repeat(63)}4`,
+                units: "1000000",
+                amount: "0",
+                status: "conditional",
+                reason: "withdraw_deferred_escrow",
+              },
+            ]
+          : timeoutFundingRole
           ? [
               ...(timeoutFundingRole === "before-refund"
                 ? [

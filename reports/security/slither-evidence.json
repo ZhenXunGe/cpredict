@@ -14,7 +14,7 @@
   },
   "validatorExitCode": 0,
   "platform": "darwin-arm64",
-  "sourceSnapshotSha256": "9afa9eb56480e5e58313a136ddb61b89b83b7b5f553bf7f7a502f1f6a35e769a",
+  "sourceSnapshotSha256": "d4522286277855878b31a21e46e3341334d6fb210b9dba6438ab36f71ed11de0",
   "inputs": [
     {
       "path": "foundry.toml",
@@ -38,8 +38,8 @@
     },
     {
       "path": "scripts/security/validate-gate-evidence.mjs",
-      "bytes": 33279,
-      "sha256": "d6e26672346814e16299cbbb50a63ea99d5de4e384fbd272a1f843ee62cb3a8c"
+      "bytes": 34051,
+      "sha256": "5cf499551696ec461f08e0677922e869bcab236c89b593738e3fe58e083a4e38"
     },
     {
       "path": "scripts/security/verify-gate-evidence.mjs",
@@ -58,13 +58,13 @@
     },
     {
       "path": "scripts/security/write-gate-evidence.mjs",
-      "bytes": 6585,
-      "sha256": "351512a44d982ac6b07e86d15d854a09dc5035c96d7e6c2c8bb930e2a88200b3"
+      "bytes": 7375,
+      "sha256": "ab138214f83f7f13d129854bce15dfdcc9ea27f80e5f5f5a2f8ebe6ea8b81090"
     },
     {
       "path": "src/core/BondEscrowV1.sol",
-      "bytes": 5259,
-      "sha256": "0ad1524032048957963c7676e374fdc1b25db0bafa59cf30851de617bae98c10"
+      "bytes": 5290,
+      "sha256": "e578d6f3343b5aab2a78d9f3a0823f20c96216d3558aeea7792f73c4989070f4"
     },
     {
       "path": "src/core/EmergencyControllerV1.sol",
@@ -88,13 +88,23 @@
     },
     {
       "path": "src/core/MarketFactoryV1.sol",
-      "bytes": 20075,
-      "sha256": "981ba91b77e341c58fa9d6f5f5f17988ddd03c815a0be3e97091a036e3f2c434"
+      "bytes": 22301,
+      "sha256": "bab29f6ba97facb75a9e936fe468b8971ddd037428517ab1036a00be9f567b20"
     },
     {
       "path": "src/core/ProtocolConfigV1.sol",
-      "bytes": 7212,
-      "sha256": "ef354663cdafab05ba1ad3957dd418197774fb71098d2e6cd867cf3abf2179b5"
+      "bytes": 8097,
+      "sha256": "be46989ca0e84705cb32a38e5bcee7da9c5af60932229593df6ad4b0d974cbce"
+    },
+    {
+      "path": "src/core/TradingSessionPolicyV1.sol",
+      "bytes": 13589,
+      "sha256": "594375f4212300c1817395318e6e6a8089f2a3bdc343eabae05a11a1a6cc749c"
+    },
+    {
+      "path": "src/core/TradingSessionPolicyV2.sol",
+      "bytes": 14945,
+      "sha256": "337472512857e2fbd0fcd92bbd21de22fb24f41cc462f967bb33357f99999bd1"
     },
     {
       "path": "src/interfaces/IBondEscrowV1.sol",
@@ -128,28 +138,28 @@
     },
     {
       "path": "src/interfaces/IMarketFactoryV1.sol",
-      "bytes": 381,
-      "sha256": "cb83ec6153d04ef3070c665850a8b5a054b720d62ad817b22cc243c5fb8d0347"
+      "bytes": 445,
+      "sha256": "28af31fbc2e46ddd2616e032680d50d86a7b2e0d193e6dc445e0d33e1fab885e"
     },
     {
       "path": "src/interfaces/IMarketVaultV1.sol",
-      "bytes": 1917,
-      "sha256": "b86ad4057afb462bee3596a1d2f23fecf6e8b831760db4922d49968de4e5b026"
+      "bytes": 2057,
+      "sha256": "114b2bb885db7e3fa129e91429015a3d71f8c5dce4f6d43371630b3eb3255a0d"
     },
     {
       "path": "src/interfaces/IProtocolConfigV1.sol",
-      "bytes": 1082,
-      "sha256": "2a89d2c237a88cd609f54ffd6cfcaafa55f22ae298793665a7b38495ccdf837e"
+      "bytes": 1144,
+      "sha256": "cf900763df6bf11752d2a38e471d91c146f09373678161d5c98b207e01a4834b"
     },
     {
       "path": "src/libraries/ProtocolErrors.sol",
-      "bytes": 2695,
-      "sha256": "d39bf99a3c77e910bd04c9abbc8287043b3740e25d745476a0aa1677ee97f359"
+      "bytes": 2643,
+      "sha256": "f6f1be3428a4311528e3ffec121cd1bbec8e9ca9a364af28264537370c8b3a40"
     },
     {
       "path": "src/libraries/ProtocolTypes.sol",
-      "bytes": 2821,
-      "sha256": "3f6b8a88337d5ca66ba84f3066a461c0f82e37a3061441200e3ebe8c2fe94a64"
+      "bytes": 3412,
+      "sha256": "b14e191ba8dae9af31d3390d86948ea3e73ff464a88c4f81948f908d462d0ffc"
     },
     {
       "path": "src/market/CloneMarketVaultV1.sol",
@@ -163,13 +173,18 @@
     },
     {
       "path": "src/market/MarketVaultCoreV1.sol",
-      "bytes": 34453,
-      "sha256": "fff58b5e35752899701013eb57a030f955c27c71635b70c088314d282626d23e"
+      "bytes": 34804,
+      "sha256": "9ae98c7b41a5a16c3de10db5b01303ccaad789fc0b3c28753562ceb958fff09a"
     },
     {
       "path": "src/marketplace/FixedPriceMarketplaceV1.sol",
       "bytes": 17342,
       "sha256": "4cad16fc35b6ca673768f15541b39dd6ad06fcfad65e2759e0fee3c7feed2724"
+    },
+    {
+      "path": "src/marketplace/OrderbookMarketplaceV2.sol",
+      "bytes": 21940,
+      "sha256": "646b7ee27b664abbf9d4146515c4fdf7fc604b705c7e52fc901b149fba3f496b"
     },
     {
       "path": "src/paymaster/SponsorshipPaymasterV1.sol",
@@ -185,13 +200,13 @@
   "evidence": [
     {
       "path": "reports/security/slither-latest.json",
-      "bytes": 1409379,
-      "sha256": "d0554f208f6405f4849de5ad38dff80aca468298f490c2b27fe3bdc3bc30b5b1"
+      "bytes": 6048615,
+      "sha256": "416c683cf807e89b6db535c980b929cf3e841387a15d451e7b2b8bf402007ffc"
     },
     {
       "path": "reports/security/slither-latest.log",
-      "bytes": 9947,
-      "sha256": "a7fa75f2452642a6c34b6df3ad04ba748ae449b09bc082c4a4bc69a626c4e268"
+      "bytes": 40148,
+      "sha256": "6e27fba437685307102c382974c6ce28655d22afcfad8859d7c842e7e2e33ff9"
     },
     {
       "path": "reports/security/slither-validator.log",

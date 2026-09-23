@@ -55,12 +55,21 @@ export class ProtocolAdmissionReader implements AdmissionReader {
       functionName: "orders",
       args: [id],
     });
+    const pendingShares = this.environment.deployment.orderbookReceiverRecovery
+      ? await this.client.readContract({
+          address: this.environment.deployment.marketplace,
+          abi: orderbookAbi,
+          functionName: "pendingShares",
+          args: [id],
+        })
+      : 0n;
     return {
       market: o[0],
       owner: o[1],
       side: o[6],
       outcomeId: o[5],
       active: o[8],
+      pendingShares,
     };
   }
   registeredMarket(market: Address): Promise<boolean> {
