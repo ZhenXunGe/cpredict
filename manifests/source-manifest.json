@@ -54,7 +54,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "9c0cd6bd91c97b03f80174e805b57af5c0c0ce2bab697d0e382f67e0e18a2137"
+      "sha256": "028d0ac295c23300f7bbd801d599263a6e313097f29e78edca8cb7017e5b59a4"
     },
     {
       "path": "compose.automation.yaml",
@@ -226,7 +226,7 @@
     },
     {
       "path": "docs/orderbook-autoclaim-release.md",
-      "sha256": "aa27e7393d5b8d89b60b71e9570afb3631223af01c60c9d23c3fceacd54d6100"
+      "sha256": "f3a3f822e9dd4e00250f4ec346ef7ebe00a06e389d3b85ae7174dadac496e27b"
     },
     {
       "path": "docs/public-test-site-acceptance.md",
@@ -246,7 +246,7 @@
     },
     {
       "path": "docs/public-test-site-runbook.md",
-      "sha256": "2efed56867c56321d34159470468626d1b23e483b6288af8b5475a91afdc8de4"
+      "sha256": "a008887b85a0eb3e659dce41e040d2780c4ab1083009026a513fd93088e9e694"
     },
     {
       "path": "docs/usdc-gasless-deposit.md",
@@ -254,7 +254,7 @@
     },
     {
       "path": "docs/zh/00-delivery-status.md",
-      "sha256": "03a6a45b8b249a6ed518415cf8fe1055ee748f0b39e440adc18a7002b88e6f6e"
+      "sha256": "9456aed864057f4d7374873ea67186e2627b5eeb23affd9cbaf6be858d287394"
     },
     {
       "path": "docs/zh/13-compose-runtime-operations.md",
