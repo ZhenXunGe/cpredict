@@ -58,6 +58,8 @@ describe.skipIf(databaseUrl === undefined)(
           rules jsonb
         )
       `);
+      await sql.unsafe(`CREATE TABLE chain_checkpoints (chain_id bigint PRIMARY KEY, block_number numeric(78,0) NOT NULL)`);
+      await sql`INSERT INTO chain_checkpoints(chain_id,block_number) VALUES(421614,100)`;
       for (let index = 0; index < 7; index += 1) {
         const id = `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`;
         await sql`
@@ -117,6 +119,32 @@ describe.skipIf(databaseUrl === undefined)(
         "00000000-0000-4000-8000-000000000007",
       ]);
       expect(second.nextCursor).toBeNull();
+    });
+
+    it("detects an indexed canonical payout without its matching owner fact", async () => {
+      const missingHash = `0x${"ab".repeat(32)}`;
+      const id = "00000000-0000-4000-8000-000000000098";
+      const store = new PostgresAutomaticStore(sql, 421614, "deployment", signer);
+      await sql`
+        INSERT INTO automation_transactions(
+          id,chain_id,deployment_id,job_key,owner,kind,target,calldata,signer,
+          requires_claim_preference,nonce,tx_hash,raw_transaction,state,
+          reserved_wei,receipt_block,receipt_hash,canonical_status,created_at,updated_at
+        ) VALUES(
+          ${id},421614,'deployment','timeout-bonus:missing',${owner},'timeout-bonus',
+          ${market},'0x',${signer},true,'98',${missingHash},NULL,'confirmed',0,
+          100,${hash},'canonical',now()-interval '5 minutes',now()-interval '5 minutes'
+        )`;
+      expect(await store.missingFinancialFacts()).toEqual([{ kind: "timeout-bonus", count: 1 }]);
+      await sql`
+        INSERT INTO ledger_facts(chain_id,transaction_hash,occurred_at,kind,market,owner,fact)
+        VALUES(421614,${missingHash},'1789981320','timeout-claimed',${market},${signer},${sql.json({ amount: "5000000" })})`;
+      expect(await store.missingFinancialFacts()).toEqual([{ kind: "timeout-bonus", count: 1 }]);
+      await sql`
+        INSERT INTO ledger_facts(chain_id,transaction_hash,occurred_at,kind,market,owner,fact)
+        VALUES(421614,${missingHash},'1789981320','timeout-claimed',${market},${owner},${sql.json({ amount: "5000000" })})`;
+      expect(await store.missingFinancialFacts()).toEqual([]);
+      await sql`DELETE FROM automation_transactions WHERE id=${id}`;
     });
 
     it("returns contributing market names for aggregated creator claims", async () => {

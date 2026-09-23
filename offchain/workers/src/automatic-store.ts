@@ -169,6 +169,32 @@ export class PostgresAutomaticStore implements AutomationStore {
     return this
       .sql`SELECT reason,count(*)::int AS count FROM automation_lane_status WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND lane=${this.lane} AND reason IN ('daily_gas_budget_exhausted','gas_balance_insufficient','retry_after_chain_check','checking_original_transaction','transaction_reverted','submission_rpc_unavailable','rechecking_after_reorg') GROUP BY reason`;
   }
+  /** Confirmed payouts whose indexed range has passed, but whose receipt has no financial fact. */
+  async missingFinancialFacts(): Promise<Array<{ kind: string; count: number }>> {
+    return this.sql<Array<{ kind: string; count: number }>>`
+      SELECT t.kind,count(*)::int AS count
+      FROM automation_transactions t
+      JOIN chain_checkpoints cp ON cp.chain_id=t.chain_id
+      WHERE t.chain_id=${this.chainId} AND t.deployment_id=${this.deploymentId}
+        AND t.signer=${this.signer.toLowerCase()} AND t.state='confirmed'
+        AND t.canonical_status='canonical' AND t.receipt_block IS NOT NULL
+        AND cp.block_number>=t.receipt_block
+        AND t.updated_at<now()-interval '2 minutes'
+        AND t.kind IN ('winner','early-bird','refund','timeout-bonus','fees','bond')
+        AND NOT EXISTS (
+          SELECT 1 FROM ledger_facts f
+          WHERE f.chain_id=t.chain_id AND f.transaction_hash=t.tx_hash
+            AND f.owner=t.owner AND f.kind=CASE t.kind
+              WHEN 'winner' THEN 'winner-claimed'
+              WHEN 'early-bird' THEN 'early-bird-claimed'
+              WHEN 'refund' THEN 'refunded'
+              WHEN 'timeout-bonus' THEN 'timeout-claimed'
+              WHEN 'fees' THEN 'fee-claimed'
+              WHEN 'bond' THEN 'bond-claimed'
+            END
+        )
+      GROUP BY t.kind ORDER BY t.kind`;
+  }
   async oldestPendingSeconds(): Promise<number> {
     const [r] = await this
       .sql`SELECT COALESCE(EXTRACT(EPOCH FROM now()-min(COALESCE(broadcast_at,created_at))),0)::float AS age

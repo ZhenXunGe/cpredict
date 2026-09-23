@@ -115,6 +115,12 @@ export async function startAutomaticService(
     help: "Transactions awaiting canonical confirmation",
     registers: [registry],
   });
+  const missingFacts = new Gauge({
+    name: "cpredict_automation_confirmed_missing_facts",
+    help: "Canonical confirmed payout transactions past the index checkpoint without a matching financial fact",
+    labelNames: ["kind"],
+    registers: [registry],
+  });
   const pool = new RpcReadPool({
     url: cfg.CPREDICT_AUTOMATION_RPC_URL,
     chainId: environment.deployment.chainId,
@@ -200,6 +206,7 @@ export async function startAutomaticService(
     lastOk = 0,
     oldestPending = 0;
   let lastBlocked = "";
+  let lastMissingFacts = "";
   let timer: ReturnType<typeof setTimeout> | undefined,
     active: Promise<void> | undefined;
   app.get("/metrics", async (_, reply) =>
@@ -241,6 +248,21 @@ export async function startAutomaticService(
           }),
         );
       lastBlocked = warning;
+      if (cfg.CPREDICT_AUTOMATION_LANE === "claims") {
+        const missing = await store.missingFinancialFacts();
+        missingFacts.reset();
+        for (const kind of ["winner", "early-bird", "refund", "timeout-bonus", "fees", "bond"])
+          missingFacts.set({ kind }, 0);
+        for (const row of missing)
+          missingFacts.set({ kind: row.kind }, row.count);
+        const missingWarning = JSON.stringify(missing);
+        if (missingWarning !== lastMissingFacts && missing.length)
+          console.warn(JSON.stringify({
+            event: "confirmed_automation_financial_fact_missing",
+            counts: missing,
+          }));
+        lastMissingFacts = missingWarning;
+      }
       lastOk = Date.now();
       ticks.inc({ lane: cfg.CPREDICT_AUTOMATION_LANE, result: "ok" });
     } catch {

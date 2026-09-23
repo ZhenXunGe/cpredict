@@ -78,7 +78,7 @@
     },
     {
       "path": "deploy/alerts/automation.yaml",
-      "sha256": "851475f6ac27805c2585274c925344dc9a6ebaed972661a1fad6baca494f2bc7"
+      "sha256": "64a0c29417489febf31e49727a345a11dfcbd85bc910b9da1b3634e65ab3aa9c"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
@@ -1874,7 +1874,7 @@
     },
     {
       "path": "offchain/workers/src/automatic-runtime.ts",
-      "sha256": "caf63c05b6001db5c68f694c8e9c545df26a85fa6ae6df66b9c2987a63972e1d"
+      "sha256": "e6b04cf59585757912e91f50bff7a26baa820a81eafdaadc755134dd2c7fc9a3"
     },
     {
       "path": "offchain/workers/src/automatic-source.ts",
@@ -1882,7 +1882,7 @@
     },
     {
       "path": "offchain/workers/src/automatic-store.ts",
-      "sha256": "f8455c2117ecf42801355809ac6fc2ad5d7192ebdcee25efdc23751e3790a343"
+      "sha256": "4d35cf6a8a195cda95d48c47fabb3d4958be836a023e3bf7f73e987ee7d56797"
     },
     {
       "path": "offchain/workers/src/automatic-submission.ts",
@@ -1934,7 +1934,7 @@
     },
     {
       "path": "offchain/workers/test/automatic-store.integration.test.ts",
-      "sha256": "8745927d1afc439db50a08e1c0acd37cc1ec579036cdbd115e145dfafa7a71ff"
+      "sha256": "65a74eb040068463f75101790f6ba4d03c1a8d50c181dc6138cb857b7306fb53"
     },
     {
       "path": "offchain/workers/test/automatic-submission.test.ts",

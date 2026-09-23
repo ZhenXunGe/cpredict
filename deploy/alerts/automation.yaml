@@ -24,3 +24,9 @@ groups:
         labels: { severity: warning }
         annotations:
           summary: "Automatic matching or rights processing cannot complete a chain check"
+      - alert: CpredictConfirmedPayoutMissingFact
+        expr: cpredict_automation_confirmed_missing_facts > 0
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "A canonical confirmed automatic payout has no matching indexed financial fact; verify the original receipt and repair the projection without resending the transaction"
