@@ -30,3 +30,8 @@ groups:
         labels: { severity: warning }
         annotations:
           summary: "A canonical confirmed automatic payout has no matching indexed financial fact; verify the original receipt and repair the projection without resending the transaction"
+      - alert: CpredictSponsoredCleanupQuotaReached
+        expr: increase(cpredict_automation_cleanup_quota_denials_total[5m]) > 0
+        labels: { severity: warning }
+        annotations:
+          summary: "Sponsored order cleanup reached an account or market quota; manual cancellation and claims remain available"

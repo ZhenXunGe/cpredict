@@ -78,7 +78,7 @@
     },
     {
       "path": "deploy/alerts/automation.yaml",
-      "sha256": "64a0c29417489febf31e49727a345a11dfcbd85bc910b9da1b3634e65ab3aa9c"
+      "sha256": "6b6761cad1f59740c338befc8a6a6a5074fec79cf61e8a4dcd17ca60dcbc9740"
     },
     {
       "path": "deploy/compose/Dockerfile.demo",
@@ -226,7 +226,7 @@
     },
     {
       "path": "docs/orderbook-autoclaim-release.md",
-      "sha256": "f3a3f822e9dd4e00250f4ec346ef7ebe00a06e389d3b85ae7174dadac496e27b"
+      "sha256": "3b1924d54df2a6646b2b87b7d3d70724248a46744642d0fe2e5db754386095b4"
     },
     {
       "path": "docs/public-test-site-acceptance.md",
@@ -354,7 +354,7 @@
     },
     {
       "path": "examples/user-site/src/AutomaticClaims.tsx",
-      "sha256": "624c4603730e5ef0ef732347e1ca7e866308f0664b284dd6ad89d9efac98f979"
+      "sha256": "dd4be5649563290d75a824e6c218abbbfff441aee0a07568d2f3ce83dcafbabc"
     },
     {
       "path": "examples/user-site/src/DepositHistory.tsx",
@@ -1109,6 +1109,10 @@
       "sha256": "afa1b2d75fd5f26c6eb9b34c73c2382a8ca7931667f039b8cba201a1a4070dd2"
     },
     {
+      "path": "offchain/app-service/migrations/010_automation_cleanup_quotas.sql",
+      "sha256": "6c232e3663a4fc73a32b8837d73dd6e73954f0cba248ae2c5abdb163bf1a5150"
+    },
+    {
       "path": "offchain/app-service/src/auth.ts",
       "sha256": "3578d94e8f65a21d5f8fcb660605d10bfaa788e4c19f7f0e19984ed18fcf4ee2"
     },
@@ -1166,7 +1170,7 @@
     },
     {
       "path": "offchain/app-service/src/migrations.ts",
-      "sha256": "8297d4e40ca3492f0ae9349e5b5fa50562d5a74b62502c61eddd646fbcbc9be2"
+      "sha256": "e5bb69eb1d34e095d85bc94f98d72af5cd519c2390c1dac693099af0018f94dc"
     },
     {
       "path": "offchain/app-service/src/operations.ts",
@@ -1522,7 +1526,7 @@
     },
     {
       "path": "offchain/indexer/test/orderbook-postgres.integration.test.ts",
-      "sha256": "4b723f80c268b92da740a2f094d42f05bdbcfc0e73721552d005d698304c24a0"
+      "sha256": "764f7417cacb4ed5caf22ae44b8892ef4b24c91f6e7cc4b6103f48bdb70137b4"
     },
     {
       "path": "offchain/indexer/test/postgres.integration.test.ts",
@@ -1870,19 +1874,19 @@
     },
     {
       "path": "offchain/workers/src/automatic-claims.ts",
-      "sha256": "6039219877d3ad14a4a19c1ba37690a4da459fbc6226d702a589b675e95719b1"
+      "sha256": "6799316749abaf8c3f3cce63cc8f8a51c80775b33ccace65ee064887f5afa62c"
     },
     {
       "path": "offchain/workers/src/automatic-runtime.ts",
-      "sha256": "e6b04cf59585757912e91f50bff7a26baa820a81eafdaadc755134dd2c7fc9a3"
+      "sha256": "981380622033d3ab0b820f642f6a315a2929af08019872a5ca937750413900ee"
     },
     {
       "path": "offchain/workers/src/automatic-source.ts",
-      "sha256": "7d243669e0defa14ad919a034008084698bd7188ceb0a3c0cde67b79bfaabe56"
+      "sha256": "87272284963bf2481ebf5ba995b579ed2dc273366b66d4666ad8b38fddb56504"
     },
     {
       "path": "offchain/workers/src/automatic-store.ts",
-      "sha256": "8b619a24431007aab98e41c8efe439212e67c1e667c8cfde704281859071debc"
+      "sha256": "30ef37c45a5b58ca5f82e4cae0f6c42cd9ecfb4b14bf5e00d7c5c5a09b6b4ae9"
     },
     {
       "path": "offchain/workers/src/automatic-submission.ts",
@@ -1902,7 +1906,7 @@
     },
     {
       "path": "offchain/workers/src/matching-source.ts",
-      "sha256": "63a8952a6e47795a281e368fe7a9b8813cd0e4a169a0ae97a656d08faa18df4b"
+      "sha256": "cf3e6d525195a246a42a347a50b224e388c8cd23fdaadbec71803d8fe60e7c5e"
     },
     {
       "path": "offchain/workers/src/postgres-state.ts",
@@ -1926,15 +1930,15 @@
     },
     {
       "path": "offchain/workers/test/automatic-claims.test.ts",
-      "sha256": "b8d08e5f98ebc8a7006e89131cd0c0807af34b348a377836fc545c1a5a230301"
+      "sha256": "2a64531e7a09fac96b370c38074eb4ee56abf1724c3a9bcd261a8993a6d9b79f"
     },
     {
       "path": "offchain/workers/test/automatic-source.test.ts",
-      "sha256": "b74cfbba469208aaa39642e57d5f5eea6bad4352f327b8cf2d586549e1f3dd3c"
+      "sha256": "f54f4b9a1e11c2b585a8693b9e344363ccc5ef859a88fa0eedc581c638853d08"
     },
     {
       "path": "offchain/workers/test/automatic-store.integration.test.ts",
-      "sha256": "561901eb125bba39c42c05d7cf02e027f793a4da14137fc29ac58d4afa32d7c3"
+      "sha256": "5d126f2cc29a1f03e8de4cc8a5d09766bcf231717df4a245f2ba866740599e21"
     },
     {
       "path": "offchain/workers/test/automatic-submission.test.ts",
@@ -1950,11 +1954,11 @@
     },
     {
       "path": "offchain/workers/test/matching-source.test.ts",
-      "sha256": "652bcfcd62243c2da57af24ec444a22ab283d6abc92554b9c112045a876c033c"
+      "sha256": "216b31f718d23cbbacd61f51850db6838d9d5a29ca27ef22a375ad3652e28fd9"
     },
     {
       "path": "offchain/workers/test/orderbook-anvil.integration.test.ts",
-      "sha256": "fe3d8bf3e9bf547faf8f669462c4d466f57ec7d18b19a0422b610cab5c6d1eea"
+      "sha256": "cb0929b8ee6bada754b6b80d20ce354fa7ac293d38352499a77793f6fe0add80"
     },
     {
       "path": "offchain/workers/test/postgres-state.integration.test.ts",
@@ -2262,7 +2266,7 @@
     },
     {
       "path": "scripts/orderbook/migrate-control.mjs",
-      "sha256": "f4ae37fae038a7617d22fe46a8ddfa8a8ff58aac443f70e2463bb579608ca4c7"
+      "sha256": "80641c94c22ba2180894decfb644abf4909719a66650a4ab9b61925f4d0152a3"
     },
     {
       "path": "scripts/orderbook/prepare-environment.mjs",

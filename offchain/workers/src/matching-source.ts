@@ -8,6 +8,7 @@ import type { Sql } from "postgres";
 import type { Environment } from "../../app-core/src/contracts.js";
 import { orderbookAbi } from "../../sdk/src/orderbook.js";
 import type { AutomaticAction, AutomationSource } from "./automatic-claims.js";
+import type { PostgresAutomaticStore } from "./automatic-store.js";
 export class MatchingSource implements AutomationSource {
   private lastRevision: string | undefined;
   private lastFullScanAt = Number.NEGATIVE_INFINITY;
@@ -18,6 +19,7 @@ export class MatchingSource implements AutomationSource {
     readonly env: Environment,
     readonly nowMs: () => number = Date.now,
     readonly maintenanceIntervalMs = 30000,
+    readonly quota?: PostgresAutomaticStore,
   ) {}
   async *candidates(): AsyncIterable<AutomaticAction> {
     if (this.env.deployment.marketplaceVersion !== "orderbook-v2") return;
@@ -38,7 +40,9 @@ export class MatchingSource implements AutomationSource {
     const head = await this.client.getBlock();
     const rows = await this
       .sql`SELECT c.order_id,c.args FROM orderbook_events c WHERE c.event_name='OrderCreated' AND c.chain_id=${this.env.deployment.chainId} AND c.marketplace=${target.toLowerCase()} AND NOT EXISTS(SELECT 1 FROM orderbook_events e WHERE e.chain_id=c.chain_id AND e.marketplace=c.marketplace AND e.order_id=c.order_id AND (e.event_name='OrderReleased' OR (e.event_name='OrderFilled' AND e.args->>'remainingUnits'='0'))) ORDER BY c.order_id`;
-    const actions: AutomaticAction[] = [];
+    const terminalBlocking: AutomaticAction[] = [];
+    const routineCleanup: AutomaticAction[] = [];
+    const matches: AutomaticAction[] = [];
     const pairs = new Map<string, { market: Address; outcome: number }>();
     for (const r of rows) {
       const id = BigInt(r.order_id);
@@ -67,9 +71,9 @@ export class MatchingSource implements AutomationSource {
         functionName: "isTerminal",
         blockNumber: head.number,
       });
-      if (terminal || o[4] <= head.timestamp)
-        actions.push(
-          action(
+      if (terminal || o[4] <= head.timestamp) {
+        const cleanup: AutomaticAction = {
+          ...action(
             "release-order",
             encodeFunctionData({
               abi: orderbookAbi,
@@ -77,8 +81,18 @@ export class MatchingSource implements AutomationSource {
               args: [id],
             }),
           ),
-        );
-      else if (o[7])
+          cleanupMarket: o[0],
+          cleanupPriority:
+            terminal && o[6] === 1 ? "terminal-blocking" : "routine",
+        };
+        const blocked = await this.quota?.cleanupQuota(cleanup);
+        if (blocked) await this.quota?.status(cleanup.owner, blocked);
+        else
+          (cleanup.cleanupPriority === "terminal-blocking"
+            ? terminalBlocking
+            : routineCleanup
+          ).push(cleanup);
+      } else if (o[7])
         pairs.set(`${o[0]}:${o[5]}`, { market: o[0], outcome: o[5] });
     }
     for (const { market, outcome } of pairs.values()) {
@@ -116,7 +130,7 @@ export class MatchingSource implements AutomationSource {
         (units * price) / 1000000n === 0n
       )
         continue;
-      actions.push({
+      matches.push({
         key: `match:${market}:${outcome}`,
         owner: bid[1],
         kind: "match-orders",
@@ -131,7 +145,7 @@ export class MatchingSource implements AutomationSource {
     }
     this.lastRevision = revision;
     this.lastFullScanAt = scanAt;
-    this.pendingActions = actions;
+    this.pendingActions = [...terminalBlocking, ...routineCleanup, ...matches];
     while (this.pendingActions.length > 0) yield this.pendingActions.shift()!;
   }
 }

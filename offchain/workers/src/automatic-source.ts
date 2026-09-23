@@ -134,9 +134,10 @@ export class LedgerAutomaticSource implements AutomationSource {
         target: Address,
         kind: string,
         data: AutomaticAction["data"],
+        mark = true,
       ): Promise<AutomaticAction> => {
         await this.ledger.assertSnapshot(snapshot);
-        hasAction = true;
+        if (mark) hasAction = true;
         return {
           key: `${kind}:${target.toLowerCase()}:${owner.toLowerCase()}`,
           owner,
@@ -217,24 +218,36 @@ export class LedgerAutomaticSource implements AutomationSource {
         if (
           e.kind === "escrow" &&
           e.listingId &&
+          e.market &&
           e.reason === "return_terminal_listing" &&
           BigInt(e.units ?? "0") > 0n
         ) {
-          yield await action(
-            d.marketplace,
-            `return-listing:${e.listingId}`,
-            d.marketplaceVersion === "orderbook-v2"
-              ? encodeFunctionData({
-                  abi: orderbookAbi,
-                  functionName: "releaseOrder",
-                  args: [BigInt(e.listingId)],
-                })
-              : encodeFunctionData({
-                  abi: marketplaceAbi,
-                  functionName: "returnTerminalListing",
-                  args: [e.listingId],
-                }),
-          );
+          const cleanup = {
+            ...(await action(
+              d.marketplace,
+              `return-listing:${e.listingId}`,
+              d.marketplaceVersion === "orderbook-v2"
+                ? encodeFunctionData({
+                    abi: orderbookAbi,
+                    functionName: "releaseOrder",
+                    args: [BigInt(e.listingId)],
+                  })
+                : encodeFunctionData({
+                    abi: marketplaceAbi,
+                    functionName: "returnTerminalListing",
+                    args: [e.listingId],
+                  }),
+              false,
+            )),
+            cleanupMarket: e.market,
+            cleanupPriority: "terminal-blocking" as const,
+          };
+          const blocked = await this.preferences.cleanupQuota(cleanup);
+          if (blocked) await this.preferences.status(owner, blocked);
+          else {
+            hasAction = true;
+            yield cleanup;
+          }
           continue;
         }
         if (e.status !== "claimable" || BigInt(e.amount ?? "0") <= 0n) continue;

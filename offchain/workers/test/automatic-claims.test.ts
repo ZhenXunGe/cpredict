@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { keccak256, zeroAddress, type Address, type Hex } from "viem";
 import {
   AutomaticClaimsWorker,
+  CleanupQuotaExceeded,
   automationEffect,
   type AutomationStore,
   type AutomationChain,
@@ -248,6 +249,27 @@ describe("durable automatic claims", () => {
       "gas_balance_insufficient",
     );
     expect(f.chain.send).not.toHaveBeenCalled();
+  });
+  it("keeps a quota-denied cleanup manual and does not mislabel it as an RPC failure", async () => {
+    const f = fixture();
+    f.source.candidates = async function* () {
+      yield {
+        ...action,
+        kind: "release-order",
+        cleanupMarket: owner,
+        cleanupPriority: "terminal-blocking" as const,
+      };
+    };
+    vi.mocked(f.store.save).mockRejectedValueOnce(
+      new CleanupQuotaExceeded("cleanup_account_quota_exceeded"),
+    );
+    await f.worker.tick();
+    expect(f.chain.send).not.toHaveBeenCalled();
+    expect(f.store.status).toHaveBeenCalledWith(
+      owner,
+      "cleanup_account_quota_exceeded",
+    );
+    expect(f.store.status).not.toHaveBeenCalledWith(owner, "retry_after_chain_check");
   });
   it("manual claims winning the race or zero entitlement skip sending", async () => {
     const f = fixture();

@@ -115,6 +115,13 @@ export async function startAutomaticService(
     help: "Transactions awaiting canonical confirmation",
     registers: [registry],
   });
+  const cleanupQuotaDenials = new Counter({
+    name: "cpredict_automation_cleanup_quota_denials_total",
+    help: "Sponsored cleanup candidates rejected by the account or market rolling quota",
+    labelNames: ["lane", "reason"],
+    registers: [registry],
+  });
+  const quotaLogAt = new Map<string, number>();
   const missingFacts = new Gauge({
     name: "cpredict_automation_confirmed_missing_facts",
     help: "Canonical confirmed payout transactions past the index checkpoint without a matching financial fact",
@@ -170,12 +177,20 @@ export async function startAutomaticService(
     environment.deployment.id,
     account.address,
     cfg.CPREDICT_AUTOMATION_LANE,
+    (reason) => {
+      cleanupQuotaDenials.inc({ lane: cfg.CPREDICT_AUTOMATION_LANE, reason });
+      const now = Date.now();
+      if (now - (quotaLogAt.get(reason) ?? 0) >= 60000) {
+        console.warn(JSON.stringify({ event: "sponsored_cleanup_quota_reached", lane: cfg.CPREDICT_AUTOMATION_LANE, reason }));
+        quotaLogAt.set(reason, now);
+      }
+    },
   );
   const ledger = new PostgresFinancialLedger(sql, environment);
   const source =
     cfg.CPREDICT_AUTOMATION_LANE === "claims"
       ? new LedgerAutomaticSource(ledger, client, store)
-      : new MatchingSource(sql, client, environment);
+      : new MatchingSource(sql, client, environment, Date.now, 30000, store);
   const chain = new ViemAutomationChain(
     client,
     wallet,
