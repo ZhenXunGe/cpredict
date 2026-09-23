@@ -2,6 +2,8 @@
 
 This review covers the current `codex/security-coverage-20260924` working tree. It is source and local-test evidence, not proof that a cloud image or immutable on-chain contract has changed. V1 v0.21 economic rules and the existing V2 fee/refund rules remain unchanged.
 
+Deployment follow-up: S-01 was addressed in a separately deployed testnet factory and Marketplace on 2026-09-24; the older immutable contract was not changed and its markets are no longer exposed in the new test site. See `docs/orderbook-autoclaim-release.md` and `docs/orderbook-receiver-security-review-20260924.md`. The findings below preserve the earlier audit snapshot.
+
 ## Confirmed high-severity issue
 
 **S-01 — A rejecting ERC-1155 receiver can block a V2 order book.** In `src/marketplace/OrderbookMarketplaceV2.sol:287-293`, matching sends shares to the bid owner; a receiver revert rolls back the entire match. A rejecting top bid blocks later honest bids until that bid expires. More seriously, `src/marketplace/OrderbookMarketplaceV2.sol:413-426` sends escrowed shares back to an expired ask owner before the order can be removed. If that owner rejects the return, permissionless release and the stale-order cleanup inside `matchOrders` both revert, leaving the ask at the head of that market/outcome book. The adversarial tests `testRejectingBestBidBlocksMatchingUntilPermissionlessExpiryRelease` and `testRejectingExpiredAskCannotBeReleasedAndBlocksBookCleanup` reproduce both cases. Other markets and outcomes have separate books; the test does not establish a global freeze or theft.

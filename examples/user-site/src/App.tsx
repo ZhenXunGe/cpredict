@@ -416,7 +416,7 @@ function SyncNotice() {
   )
     return (
       <Notice>
-        历史索引正在追赶。链头 {d.chainHead}，应用确认高度{" "}
+        最新区块正在索引。链头 {d.chainHead}，应用确认高度{" "}
         {d.applicationConfirmedBlock}，已索引 {d.indexedBlock ?? "未知"}
         。已确认交易不会因同步延迟变为失败。
       </Notice>
