@@ -69,6 +69,8 @@ Bundler 和 Paymaster 可以使用同一条官方 ZeroDev RPC；服务器启动�
 
 `CPREDICT_APP_RPC_URL` 是独立的完整链读取服务，必须验证指定区块的 `eth_getStorageAt`，不能仅检查链 ID 或自动复用 Bundler URL。本次提供的 ZeroDev 端点在该方法的历史区块参数上返回 HTTP 400；两个本地草稿已使用 `https://sepolia-rollup.arbitrum.io/rpc` 做低量联调。[Arbitrum 官方链信息](https://docs.arbitrum.io/for-devs/dev-tools-and-resources/chain-info)。索引、规则验证及维护服务也必须使用经验证的链读取配置；公共节点不是生产可用性、容量或全历史覆盖承诺，发布前仍需独立验收读取服务。
 
+公开 `/rpc` 兼容入口与应用钱包读取共用按 JSON-RPC 子请求计费的应用进程预算；`CPREDICT_RPC_ADMISSION_MODE` 默认 `observe`，先看 `cpredict_rpc_admission_total` 与 `cpredict_rpc_admission_estimated_units_total`，再根据正常流量和提供商 CU 配额切到 `enforce`。默认每客户端 1200 估算单位/分钟、全进程 12000 单位/分钟、同时最多 64 个上游调用；可用对应的 `CPREDICT_RPC_CLIENT_UNITS_PER_MINUTE`、`CPREDICT_RPC_GLOBAL_UNITS_PER_MINUTE`、`CPREDICT_RPC_MAX_CONCURRENT_CALLS` 在私有 Compose 环境中调整。估算单位不是 Alchemy 账单 CU。按客户端限额依赖主机边缘清洗转发头、应用只信任指定代理；若未验证该路径，只能把全局上限视为有效保护。超限的批量请求在转发任何子请求前整体拒绝，交易提交不自动重发。
+
 应用进程使用 `.env.example` 中的 `CPREDICT_APP_*`；索引器使用已有变量，并设置 `CPREDICT_INDEXER_PUBLIC_CONFIG_FILE` 指向同一环境的运行文件、`CPREDICT_INDEXER_METADATA_URL` 指向对应规则服务。应用与该环境索引器共享同一个隔离 schema；ctUSD 与 USDC 禁止共享。先迁移，再启动服务；不同环境使用不同端口或容器地址。
 
 ```sh

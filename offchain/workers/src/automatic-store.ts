@@ -28,7 +28,8 @@ export class PostgresAutomaticStore implements AutomationStore {
     readonly deploymentId: string,
     readonly signer: Address,
     readonly lane: AutomationLane = "claims",
-    readonly onCleanupQuotaDenied: (reason: CleanupQuotaReason) => void = () => undefined,
+    readonly onCleanupQuotaDenied: (reason: CleanupQuotaReason) => void = () =>
+      undefined,
   ) {}
   async exclusive<T>(work: () => Promise<T>): Promise<T | undefined> {
     const db = await this.sql.reserve();
@@ -72,7 +73,9 @@ export class PostgresAutomaticStore implements AutomationStore {
       nonce: BigInt(r.nonce),
       maximumCost: BigInt(r.reserved_wei),
       state: r.state,
-      ...(r.cleanup_market ? { cleanupMarket: r.cleanup_market as Address } : {}),
+      ...(r.cleanup_market
+        ? { cleanupMarket: r.cleanup_market as Address }
+        : {}),
       ...(r.cleanup_priority ? { cleanupPriority: r.cleanup_priority } : {}),
     }));
   }
@@ -107,7 +110,9 @@ export class PostgresAutomaticStore implements AutomationStore {
     if (!action.cleanupMarket || !action.cleanupPriority)
       throw new Error("cleanup_scope_missing");
   }
-  async cleanupQuota(action: AutomaticAction): Promise<CleanupQuotaReason | null> {
+  async cleanupQuota(
+    action: AutomaticAction,
+  ): Promise<CleanupQuotaReason | null> {
     if (!isCleanup(action)) return null;
     this.assertCleanupScope(action);
     const reason = await this.cleanupQuotaWith(this.sql, action);
@@ -118,12 +123,14 @@ export class PostgresAutomaticStore implements AutomationStore {
     db: Sql | TransactionSql,
     action: AutomaticAction,
   ): Promise<CleanupQuotaReason | null> {
-    const [counts] = await db<Array<{
-      account_total: number;
-      account_routine: number;
-      market_total: number;
-      market_routine: number;
-    }>>`SELECT
+    const [counts] = await db<
+      Array<{
+        account_total: number;
+        account_routine: number;
+        market_total: number;
+        market_routine: number;
+      }>
+    >`SELECT
       count(*) FILTER(WHERE owner=${action.owner.toLowerCase()})::int AS account_total,
       count(*) FILTER(WHERE owner=${action.owner.toLowerCase()} AND (cleanup_priority='routine' OR cleanup_priority IS NULL))::int AS account_routine,
       count(*) FILTER(WHERE cleanup_market=${action.cleanupMarket!.toLowerCase()})::int AS market_total,
@@ -138,12 +145,14 @@ export class PostgresAutomaticStore implements AutomationStore {
       counts.account_total >= cleanupQuotaLimits.accountTotal24h ||
       (action.cleanupPriority === "routine" &&
         counts.account_routine >= cleanupQuotaLimits.accountRoutine24h)
-    ) return "cleanup_account_quota_exceeded";
+    )
+      return "cleanup_account_quota_exceeded";
     if (
       counts.market_total >= cleanupQuotaLimits.marketTotal24h ||
       (action.cleanupPriority === "routine" &&
         counts.market_routine >= cleanupQuotaLimits.marketRoutine24h)
-    ) return "cleanup_market_quota_exceeded";
+    )
+      return "cleanup_market_quota_exceeded";
     return null;
   }
   async markBroadcasting(id: string): Promise<boolean> {
@@ -241,10 +250,12 @@ export class PostgresAutomaticStore implements AutomationStore {
   }
   async blockedCounts() {
     return this
-      .sql`SELECT reason,count(*)::int AS count FROM automation_lane_status WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND lane=${this.lane} AND reason IN ('daily_gas_budget_exhausted','gas_balance_insufficient','retry_after_chain_check','checking_original_transaction','transaction_reverted','submission_rpc_unavailable','rechecking_after_reorg','cleanup_account_quota_exceeded','cleanup_market_quota_exceeded') GROUP BY reason`;
+      .sql`SELECT reason,count(*)::int AS count FROM automation_lane_status WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND lane=${this.lane} AND reason IN ('daily_gas_budget_exhausted','per_transaction_gas_cap_exceeded','gas_balance_insufficient','retry_after_chain_check','checking_original_transaction','transaction_reverted','submission_rpc_unavailable','rechecking_after_reorg','cleanup_account_quota_exceeded','cleanup_market_quota_exceeded') GROUP BY reason`;
   }
   /** Confirmed payouts whose indexed range has passed, but whose receipt has no financial fact. */
-  async missingFinancialFacts(): Promise<Array<{ kind: string; count: number }>> {
+  async missingFinancialFacts(): Promise<
+    Array<{ kind: string; count: number }>
+  > {
     return this.sql<Array<{ kind: string; count: number }>>`
       SELECT t.kind,count(*)::int AS count
       FROM automation_transactions t

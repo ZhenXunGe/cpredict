@@ -1,6 +1,7 @@
 import type { AutomaticClaimsSettings } from "./automatic-claims.js";
 import type { RpcReadPool } from "../../app-core/src/rpc-pool.js";
 import { registerRpcCompatibility } from "./rpc-compatibility.js";
+import { RpcAdmission, type RpcAdmissionConfig } from "./rpc-admission.js";
 import Fastify, { type FastifyRequest } from "fastify";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
@@ -44,6 +45,7 @@ export async function createApplicationServer(options: {
   recovery: OperationRecovery;
   chainRpc: RpcTransport;
   rpcPool?: RpcReadPool;
+  rpcAdmission?: RpcAdmissionConfig;
   reports?: ReportingStore;
   metrics?: ApplicationMetrics;
   management?: ZeroDevManagementReader;
@@ -63,6 +65,7 @@ export async function createApplicationServer(options: {
       : false,
   });
   const metrics = options.metrics ?? new ApplicationMetrics();
+  const rpcAdmission = new RpcAdmission(options.rpcAdmission, metrics.registry);
   metrics.attach(app);
   await app.register(helmet, {
     contentSecurityPolicy: {
@@ -528,11 +531,19 @@ export async function createApplicationServer(options: {
       return result;
     },
   );
-  if (options.rpcPool) registerRpcCompatibility(app, options.rpcPool);
+  if (options.rpcPool)
+    registerRpcCompatibility(app, options.rpcPool, rpcAdmission);
   app.post("/v1/rpc", async (request, reply) => {
     const rpc = rpcRequestSchema
       .extend({ params: z.array(z.unknown()).max(3).default([]) })
       .parse(request.body);
+    const permit = rpcAdmission.enter(request.ip, [rpc]);
+    if (!permit.allowed)
+      return {
+        jsonrpc: "2.0",
+        id: rpc.id,
+        error: { code: -32005, message: "RPC rate limit exceeded" },
+      };
     const abort = new AbortController();
     const disconnected = () => {
       if (!reply.raw.writableEnded) abort.abort();
@@ -564,6 +575,7 @@ export async function createApplicationServer(options: {
         },
       };
     } finally {
+      permit.release();
       request.raw.off("aborted", disconnected);
       reply.raw.off("close", disconnected);
     }

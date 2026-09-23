@@ -143,16 +143,26 @@ describe("Permit2 relay service", () => {
 
   it("separates liveness from dependency readiness", async () => {
     const { app, intentStore } = await setup();
-    expect((await app.inject({ method: "GET", url: "/healthz" })).statusCode).toBe(200);
-    expect((await app.inject({ method: "GET", url: "/readyz" })).statusCode).toBe(200);
+    expect(
+      (await app.inject({ method: "GET", url: "/healthz" })).statusCode,
+    ).toBe(200);
+    expect(
+      (await app.inject({ method: "GET", url: "/readyz" })).statusCode,
+    ).toBe(200);
     intentStore.readyFailure = true;
-    expect((await app.inject({ method: "GET", url: "/readyz" })).statusCode).toBe(503);
+    expect(
+      (await app.inject({ method: "GET", url: "/readyz" })).statusCode,
+    ).toBe(503);
   });
 
   it("submits once and returns the same hash for an idempotent replay", async () => {
     const { app, chain, sender, intentStore } = await setup();
     const body = requestBody();
-    const first = await app.inject({ method: "POST", url: "/v1/permit2-buys", payload: body });
+    const first = await app.inject({
+      method: "POST",
+      url: "/v1/permit2-buys",
+      payload: body,
+    });
     expect(first.statusCode).toBe(202);
     expect(first.json()).toMatchObject({
       intentId: permit2RelayIntentId({
@@ -173,7 +183,11 @@ describe("Permit2 relay service", () => {
       transactionHash: TRANSACTION_HASH,
       idempotent: false,
     });
-    const second = await app.inject({ method: "POST", url: "/v1/permit2-buys", payload: body });
+    const second = await app.inject({
+      method: "POST",
+      url: "/v1/permit2-buys",
+      payload: body,
+    });
     expect(second.statusCode).toBe(202);
     expect(second.json()).toMatchObject({
       transactionHash: TRANSACTION_HASH,
@@ -184,14 +198,43 @@ describe("Permit2 relay service", () => {
     expect(intentStore.commits).toBe(1);
   });
 
+  it("does not send duplicate transactions for concurrent identical requests", async () => {
+    const { app, sender, intentStore } = await setup();
+    const body = requestBody();
+    const responses = await Promise.all(
+      Array.from({ length: 8 }, () =>
+        app.inject({ method: "POST", url: "/v1/permit2-buys", payload: body }),
+      ),
+    );
+    expect(
+      responses.every((response) => [202, 409].includes(response.statusCode)),
+    ).toBe(true);
+    expect(
+      responses.filter(
+        (response) =>
+          response.statusCode === 202 && response.json().idempotent === false,
+      ),
+    ).toHaveLength(1);
+    expect(sender.sends).toBe(1);
+    expect(intentStore.commits).toBe(1);
+  });
+
   it("retains a pending reservation when submission outcome is unknown", async () => {
     const { app, sender, intentStore } = await setup();
     sender.sendFailure = true;
-    const first = await app.inject({ method: "POST", url: "/v1/permit2-buys", payload: requestBody() });
+    const first = await app.inject({
+      method: "POST",
+      url: "/v1/permit2-buys",
+      payload: requestBody(),
+    });
     expect(first.statusCode).toBe(503);
     expect(first.body).toBe('{"error":"relay outcome unknown"}');
     expect(intentStore.state).toBe("pending");
-    const second = await app.inject({ method: "POST", url: "/v1/permit2-buys", payload: requestBody() });
+    const second = await app.inject({
+      method: "POST",
+      url: "/v1/permit2-buys",
+      payload: requestBody(),
+    });
     expect(second.statusCode).toBe(409);
     expect(sender.sends).toBe(1);
   });

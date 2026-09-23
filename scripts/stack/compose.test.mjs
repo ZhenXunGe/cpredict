@@ -177,6 +177,7 @@ test("runtime services are least privilege, bounded and health ordered", async (
   assert.match(nginx, /location = \/rpc[\s\S]*proxy_pass \$rpc_upstream/);
   assert.match(nginx, /location = \/rpc[\s\S]*proxy_ssl_server_name on/);
   assert.match(nginx, /location = \/rpc[\s\S]*proxy_ssl_name \$proxy_host/);
+  assert.match(nginx, /location = \/rpc[\s\S]*X-Forwarded-For \$remote_addr/);
   assert.match(
     nginx,
     /location = \/rpc[\s\S]*proxy_set_header Authorization ""/,
@@ -220,4 +221,7 @@ test("public RPC compatibility uses shared application read pool and keeps fallb
   for (const name of ["indexer", "metadata", "app-service"])
     assert.equal(pub.services[name].environment.CPREDICT_RPC_PRIMARY_NAME, "${CPREDICT_RPC_PRIMARY_NAME:-alchemy}");
   assert.equal(pub.services["web-demo"].environment.CPREDICT_RPC_FALLBACKS_JSON, undefined);
+  assert.equal(pub.services["app-service"].environment.CPREDICT_RPC_ADMISSION_MODE, "${CPREDICT_RPC_ADMISSION_MODE:-observe}");
+  const publicNginx = await readFile(new URL("../../deploy/compose/nginx/public-site.conf.template", import.meta.url), "utf8");
+  assert.match(publicNginx, /location = \/rpc[\s\S]*X-Forwarded-For \$cpredict_client_ip/);
 });

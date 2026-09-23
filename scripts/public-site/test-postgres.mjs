@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   runPostgresIntegration,
   PUBLIC_SITE_POSTGRES_INVENTORY,
+  validatePostgresIntegrationResult,
 } from "../release/run-postgres-integration.mjs";
 import { verifyInPlaceUpgrade } from "../stack/in-place-upgrade-proof.mjs";
 
@@ -113,18 +114,15 @@ try {
     },
   );
   const report = JSON.parse(await readFile(reportPath, "utf8"));
-  if (
-    !report.success ||
-    report.numPendingTests !== 0 ||
-    report.numTodoTests !== 0 ||
-    report.numTotalTests !== 32 ||
-    report.numPassedTests !== 32
-  )
-    throw new Error(
-      "public-site PostgreSQL tests must all execute and pass (32 expected)",
-    );
+  const focused = validatePostgresIntegrationResult(
+    report,
+    root,
+    PUBLIC_SITE_POSTGRES_INVENTORY.filter((entry) =>
+      inventory.includes(entry.path),
+    ),
+  );
   process.stdout.write(
-    `Public-site PostgreSQL: ${report.numPassedTests}/${report.numTotalTests} passed, no skipped tests.\n`,
+    `Public-site PostgreSQL: ${focused.passed}/${focused.tests} passed, no skipped tests.\n`,
   );
   const all = runPostgresIntegration(
     root,

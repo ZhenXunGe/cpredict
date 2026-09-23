@@ -54,6 +54,7 @@ export const automationConfigSchema = z.object({
   CPREDICT_AUTOMATION_DATABASE_URL: databaseUrl,
   CPREDICT_AUTOMATION_CONTROL_DATABASE_URL: databaseUrl,
   CPREDICT_AUTOMATION_DAILY_BUDGET_WEI: positive,
+  CPREDICT_AUTOMATION_MAX_TX_COST_WEI: positive.optional(),
   CPREDICT_AUTOMATION_CONFIRMATIONS: z.coerce.number().int().min(1).max(1000),
   CPREDICT_AUTOMATION_LANE: z.enum(["claims", "matching"]),
   CPREDICT_AUTOMATION_PORT: z.coerce.number().int().min(1024).max(65535),
@@ -68,6 +69,12 @@ export async function startAutomaticService(
   env: NodeJS.ProcessEnv = process.env,
 ) {
   const cfg = automationConfigSchema.parse(env);
+  const dailyBudget = BigInt(cfg.CPREDICT_AUTOMATION_DAILY_BUDGET_WEI);
+  const maxTransactionCost = cfg.CPREDICT_AUTOMATION_MAX_TX_COST_WEI
+    ? BigInt(cfg.CPREDICT_AUTOMATION_MAX_TX_COST_WEI)
+    : dailyBudget;
+  if (maxTransactionCost > dailyBudget)
+    throw new Error("automation_tx_cap_exceeds_daily_budget");
   const idlePollMs =
     cfg.CPREDICT_AUTOMATION_IDLE_POLL_MS ??
     (cfg.CPREDICT_AUTOMATION_LANE === "matching" ? 2000 : 30000);
@@ -181,7 +188,13 @@ export async function startAutomaticService(
       cleanupQuotaDenials.inc({ lane: cfg.CPREDICT_AUTOMATION_LANE, reason });
       const now = Date.now();
       if (now - (quotaLogAt.get(reason) ?? 0) >= 60000) {
-        console.warn(JSON.stringify({ event: "sponsored_cleanup_quota_reached", lane: cfg.CPREDICT_AUTOMATION_LANE, reason }));
+        console.warn(
+          JSON.stringify({
+            event: "sponsored_cleanup_quota_reached",
+            lane: cfg.CPREDICT_AUTOMATION_LANE,
+            reason,
+          }),
+        );
         quotaLogAt.set(reason, now);
       }
     },
@@ -204,12 +217,15 @@ export async function startAutomaticService(
         (input) => writer.request(input),
         environment.deployment.chainId,
       ),
+    maxTransactionCost,
   );
   const worker = new AutomaticClaimsWorker(
     store,
     chain,
     source,
-    BigInt(cfg.CPREDICT_AUTOMATION_DAILY_BUDGET_WEI),
+    dailyBudget,
+    20,
+    maxTransactionCost,
   );
   const pendingAge = new Gauge({
     name: "cpredict_automation_oldest_pending_seconds",
@@ -266,16 +282,25 @@ export async function startAutomaticService(
       if (cfg.CPREDICT_AUTOMATION_LANE === "claims") {
         const missing = await store.missingFinancialFacts();
         missingFacts.reset();
-        for (const kind of ["winner", "early-bird", "refund", "timeout-bonus", "fees", "bond"])
+        for (const kind of [
+          "winner",
+          "early-bird",
+          "refund",
+          "timeout-bonus",
+          "fees",
+          "bond",
+        ])
           missingFacts.set({ kind }, 0);
         for (const row of missing)
           missingFacts.set({ kind: row.kind }, row.count);
         const missingWarning = JSON.stringify(missing);
         if (missingWarning !== lastMissingFacts && missing.length)
-          console.warn(JSON.stringify({
-            event: "confirmed_automation_financial_fact_missing",
-            counts: missing,
-          }));
+          console.warn(
+            JSON.stringify({
+              event: "confirmed_automation_financial_fact_missing",
+              counts: missing,
+            }),
+          );
         lastMissingFacts = missingWarning;
       }
       lastOk = Date.now();

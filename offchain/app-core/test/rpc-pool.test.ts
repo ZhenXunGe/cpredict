@@ -238,7 +238,7 @@ describe("bounded RPC read pool", () => {
   it.each(["429", "quota", "500", "disconnect", "bad"] as Mode[])(
     "fails over on %s without leaking diagnostics",
     async (mode) => {
-      const f = await fixture();
+      const f = await fixture({ timeoutMs: 1500 });
       await f.start();
       f.modes.alchemy = mode;
       expect(await f.pool.request("eth_call", [{}, "latest"])).toBe("0x1234");
@@ -261,7 +261,7 @@ describe("bounded RPC read pool", () => {
     expect(f.calls).toEqual([{ name: "drpc", method: "eth_call" }]);
   });
   it("rate-limit cooldown respects Retry-After and quota waits 15min", async () => {
-    const f = await fixture();
+    const f = await fixture({ timeoutMs: 1500 });
     await f.start();
     f.modes.alchemy = "429";
     await f.pool.request("eth_call", []);
@@ -269,7 +269,7 @@ describe("bounded RPC read pool", () => {
     f.calls.length = 0;
     f.advance(60_000);
     await f.pool.probe();
-    expect(f.calls.filter((c) => c.name === "alchemy")).toHaveLength(0);
+    expect(f.calls.filter((c) => c.name === "alchemy")).toEqual([]);
     f.advance(60_000);
     await f.pool.probe();
     expect(f.calls.some((c) => c.name === "alchemy")).toBe(true);
@@ -281,7 +281,7 @@ describe("bounded RPC read pool", () => {
     expect(f.calls.filter((c) => c.name === "ankr")).toHaveLength(0);
   });
   it("requires three spaced successes and five minutes on backup before failback", async () => {
-    const f = await fixture();
+    const f = await fixture({ timeoutMs: 1500 });
     await f.start();
     f.modes.alchemy = "429";
     await f.pool.request("eth_call", []);
@@ -347,7 +347,7 @@ describe("bounded RPC read pool", () => {
     expect(f.calls.at(-1)?.name).toBe("ankr");
   });
   it("returns null receipt as unknown without retrying or inventing failure", async () => {
-    const f = await fixture();
+    const f = await fixture({ timeoutMs: 1500 });
     await f.start();
     f.modes.alchemy = "null";
     expect(
@@ -399,12 +399,12 @@ describe("bounded RPC read pool", () => {
     expect(f.calls.map((c) => c.name)).toEqual(["alchemy"]);
   });
   it("uses a bounded deadline with no hidden viem retries", async () => {
-    const f = await fixture();
+    const f = await fixture({ timeoutMs: 1000 });
     await f.start();
     f.modes.alchemy = "hang";
     const started = performance.now();
     expect(await f.pool.request("eth_call", [])).toBe("0x1234");
-    expect(performance.now() - started).toBeLessThan(400);
+    expect(performance.now() - started).toBeLessThan(1400);
     expect(f.calls.filter((c) => c.name === "alchemy")).toHaveLength(1);
   });
   it("rejects cross-provider fork disagreement before exposing a canonical block", async () => {
@@ -549,6 +549,31 @@ describe("bounded RPC read pool", () => {
     );
     await expect(f.pool.request("eth_getLogs", [{}])).rejects.toThrow(
       "rpc_unavailable",
+    );
+  });
+  it("classifies the actual block selector rather than a storage slot as history", async () => {
+    const f = await fixture();
+    await f.start();
+    await f.pool.request("eth_getStorageAt", [
+      probe.logAddress,
+      "0x0",
+      "latest",
+    ]);
+    await f.pool.request("eth_getStorageAt", [probe.logAddress, "0x0", "0x10"]);
+    await f.pool.request("eth_getBlockByNumber", ["latest", false]);
+    await f.pool.request("eth_getBlockByNumber", ["0x10", false]);
+    const metrics = await f.registry.metrics();
+    expect(metrics).toMatch(
+      /category="read",method="eth_getStorageAt",outcome="ok"/,
+    );
+    expect(metrics).toMatch(
+      /category="history",method="eth_getStorageAt",outcome="ok"/,
+    );
+    expect(metrics).toMatch(
+      /category="read",method="eth_getBlockByNumber",outcome="ok"/,
+    );
+    expect(metrics).toMatch(
+      /category="history",method="eth_getBlockByNumber",outcome="ok"/,
     );
   });
   it("supports three distinct Alchemy identities and an initially quarantined endpoint", async () => {

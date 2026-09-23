@@ -45,6 +45,7 @@ suite("PostgresEventStore integration", () => {
       "006_financial_facts.sql",
       "007_legacy_deployment.sql",
       "009_sparse_canonical_ranges.sql",
+      "011_ledger_fact_revision.sql",
     ]) {
       const migration = await readFile(
         new URL(`../migrations/${name}`, import.meta.url),
@@ -406,6 +407,7 @@ suite("PostgresEventStore integration", () => {
         "indexer database migration is not applied",
       );
       await migrationSql.unsafe(await readFile(new URL("../migrations/009_sparse_canonical_ranges.sql", import.meta.url), "utf8"));
+      await migrationSql.unsafe(await readFile(new URL("../migrations/011_ledger_fact_revision.sql", import.meta.url), "utf8"));
       await expect(legacyStore.ready()).resolves.toBeUndefined();
       await migrationSql`ALTER TABLE markets DROP COLUMN outcome_deadline_at`;
       await expect(legacyStore.ready()).rejects.toThrow(

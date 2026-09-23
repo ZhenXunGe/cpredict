@@ -8,6 +8,7 @@ import {
   type Hex,
 } from "viem";
 import { automaticAbi } from "./automatic-source.js";
+import { AutomationGasCapExceeded } from "./automatic-claims.js";
 import type {
   AutomaticAction,
   AutomationChain,
@@ -22,6 +23,7 @@ export class ViemAutomationChain implements AutomationChain {
     readonly confirmations: bigint,
     readonly eligibilityGuard?: (action: AutomaticAction) => Promise<boolean>,
     readonly submissionProbe?: () => Promise<boolean>,
+    readonly maxTransactionCost?: bigint,
   ) {}
   async eligible(action: AutomaticAction): Promise<boolean> {
     if (this.eligibilityGuard && !(await this.eligibilityGuard(action)))
@@ -71,6 +73,12 @@ export class ViemAutomationChain implements AutomationChain {
       throw new Error("incomplete_automation_transaction");
     const price = request.maxFeePerGas ?? request.gasPrice;
     if (price === undefined) throw new Error("missing_automation_fee");
+    const maximumCost = request.gas * price;
+    if (
+      this.maxTransactionCost !== undefined &&
+      maximumCost > this.maxTransactionCost
+    )
+      throw new AutomationGasCapExceeded();
     const raw = await this.wallet.signTransaction({
       ...request,
       account: this.account,
@@ -80,7 +88,7 @@ export class ViemAutomationChain implements AutomationChain {
       raw,
       hash: keccak256(raw),
       nonce: BigInt(request.nonce),
-      maximumCost: request.gas * price,
+      maximumCost,
     };
   }
   send(raw: Hex) {

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { A, H, env } from "../../app-core/test/fixtures.js";
-import { normalizeFinancialFacts } from "../src/financial-facts.js";
+import {
+  normalizeFinancialFacts,
+  referencedOrderIds,
+} from "../src/financial-facts.js";
 import {
   block,
   createMarket,
@@ -18,6 +21,58 @@ const context = {
   trackedAccounts: new Set([trader.toLowerCase()]),
 };
 describe("financial event normalization", () => {
+  it("loads only order identities referenced by V2 order and fee events", () => {
+    const v2 = {
+      ...env,
+      deployment: {
+        ...env.deployment,
+        marketplaceVersion: "orderbook-v2" as const,
+      },
+    };
+    const events = [
+      raw(
+        "OrderReleased",
+        v2.deployment.marketplace,
+        {
+          orderId: 7n,
+          owner: trader,
+          reason: 0,
+          returnedUnits: 1n,
+          returnedPayment: 0n,
+        },
+        3,
+        0,
+      ),
+      raw(
+        "FeeAccrued",
+        v2.deployment.feeVault,
+        {
+          beneficiary: seller,
+          source: v2.deployment.marketplace,
+          feeKind: H(1),
+          feeReference: H(42),
+          amount: 1n,
+        },
+        3,
+        1,
+      ),
+      raw(
+        "FeeAccrued",
+        v2.deployment.feeVault,
+        {
+          beneficiary: seller,
+          source: vault,
+          feeKind: H(1),
+          feeReference: H(99),
+          amount: 1n,
+        },
+        3,
+        2,
+      ),
+    ];
+    expect(referencedOrderIds(events, v2)).toEqual([7n, 42n]);
+    expect(referencedOrderIds(events, env)).toEqual([]);
+  });
   it("combines mint and primary purchase once, retaining the original early-bird score", () => {
     const facts = normalizeFinancialFacts(
       [...createMarket(), ...purchase()],

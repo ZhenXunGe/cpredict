@@ -39,7 +39,7 @@ export const PUBLIC_SITE_POSTGRES_INVENTORY = Object.freeze([
   }),
   Object.freeze({
     path: "offchain/indexer/test/financial-postgres.integration.test.ts",
-    tests: 7,
+    tests: 8,
   }),
   Object.freeze({
     path: "offchain/indexer/test/reports-postgres.integration.test.ts",

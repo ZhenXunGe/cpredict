@@ -32,6 +32,7 @@ export class PrometheusIndexerTelemetry implements IndexerSchedulerTelemetry {
   private readonly events: Counter;
   private readonly lastIndexedBlock: Gauge;
   private readonly blockHeaders: Counter<"purpose">;
+  private readonly canonicalMode: Gauge<"mode">;
   private readonly scannedBlocks: Counter;
   private readonly savedAnchors: Counter;
   private readonly fenceFailures: Counter;
@@ -72,6 +73,12 @@ export class PrometheusIndexerTelemetry implements IndexerSchedulerTelemetry {
       name: "cpredict_indexer_block_headers_total",
       help: "Canonical block header reads by bounded purpose",
       labelNames: ["purpose"],
+      registers: [registry],
+    });
+    this.canonicalMode = new Gauge({
+      name: "cpredict_indexer_canonical_mode",
+      help: "Effective canonical scan mode (one active mode per indexer process)",
+      labelNames: ["mode"],
       registers: [registry],
     });
     this.scannedBlocks = new Counter({
@@ -153,6 +160,11 @@ export class PrometheusIndexerTelemetry implements IndexerSchedulerTelemetry {
         // Notification fan-out is a read-model hint and must never roll back canonical ingestion.
       }
     }
+  }
+
+  setCanonicalMode(mode: "dense" | "sparse"): void {
+    this.canonicalMode.set({ mode: "dense" }, mode === "dense" ? 1 : 0);
+    this.canonicalMode.set({ mode: "sparse" }, mode === "sparse" ? 1 : 0);
   }
 
   idle(): void {

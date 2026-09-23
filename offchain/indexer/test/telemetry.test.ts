@@ -6,6 +6,7 @@ describe("sparse canonical telemetry", () => {
   it("exports bounded read purposes and range outcomes", async () => {
     const registry = new Registry();
     const telemetry = new PrometheusIndexerTelemetry(registry);
+    telemetry.setCanonicalMode("sparse");
     telemetry.ingestion.blockHeaderRead("fence");
     telemetry.ingestion.blockHeaderRead("event");
     telemetry.ingestion.fenceFailure();
@@ -24,6 +25,8 @@ describe("sparse canonical telemetry", () => {
     const metrics = await registry.metrics();
     expect(metrics).toContain('cpredict_indexer_block_headers_total{purpose="fence"} 1');
     expect(metrics).toContain('cpredict_indexer_block_headers_total{purpose="event"} 1');
+    expect(metrics).toContain('cpredict_indexer_canonical_mode{mode="dense"} 0');
+    expect(metrics).toContain('cpredict_indexer_canonical_mode{mode="sparse"} 1');
     expect(metrics).toContain("cpredict_indexer_scanned_blocks_total 100");
     expect(metrics).toContain("cpredict_indexer_saved_anchors_total 3");
     expect(metrics).toContain("cpredict_indexer_fence_failures_total 1");

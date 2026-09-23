@@ -16,6 +16,7 @@ export const migrationPaths = [
     "008_orderbook.sql",
     "009_sparse_canonical_ranges.sql",
     "010_orderbook_watermark.sql",
+    "011_ledger_fact_revision.sql",
   ].map((n) => `offchain/indexer/migrations/${n}`),
   "offchain/app-service/migrations/001_application.sql",
   "offchain/app-service/migrations/002_operational_queries.sql",

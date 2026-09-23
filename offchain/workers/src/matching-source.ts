@@ -44,6 +44,7 @@ export class MatchingSource implements AutomationSource {
     const routineCleanup: AutomaticAction[] = [];
     const matches: AutomaticAction[] = [];
     const pairs = new Map<string, { market: Address; outcome: number }>();
+    const terminalByMarket = new Map<string, boolean>();
     for (const r of rows) {
       const id = BigInt(r.order_id);
       const o = await this.client.readContract({
@@ -65,12 +66,17 @@ export class MatchingSource implements AutomationSource {
         data,
         requiresClaimPreference: false,
       });
-      const terminal = await this.client.readContract({
-        address: o[0],
-        abi: parseAbi(["function isTerminal() view returns(bool)"]),
-        functionName: "isTerminal",
-        blockNumber: head.number,
-      });
+      const marketKey = o[0].toLowerCase();
+      let terminal = terminalByMarket.get(marketKey);
+      if (terminal === undefined) {
+        terminal = await this.client.readContract({
+          address: o[0],
+          abi: parseAbi(["function isTerminal() view returns(bool)"]),
+          functionName: "isTerminal",
+          blockNumber: head.number,
+        });
+        terminalByMarket.set(marketKey, terminal);
+      }
       if (terminal || o[4] <= head.timestamp) {
         const cleanup: AutomaticAction = {
           ...action(

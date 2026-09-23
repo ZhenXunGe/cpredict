@@ -22,6 +22,19 @@ const inventory = [
   "offchain/indexer/test/postgres.integration.test.ts",
   "offchain/indexer/test/reports-postgres.integration.test.ts",
 ];
+const focusedInventory = [
+  ...PUBLIC_SITE_POSTGRES_INVENTORY.filter((entry) =>
+    inventory.includes(entry.path),
+  ),
+  {
+    path: "offchain/indexer/test/orderbook-postgres.integration.test.ts",
+    tests: 8,
+  },
+  {
+    path: "offchain/workers/test/automatic-store.integration.test.ts",
+    tests: 5,
+  },
+];
 const lock = new Map(
   (await readFile(resolve(root, "manifests/postgresql-tools.lock"), "utf8"))
     .split("\n")
@@ -120,28 +133,32 @@ try {
     },
   );
   const report = JSON.parse(await readFile(reportPath, "utf8"));
-  if (
-    !report.success ||
-    report.numPendingTests !== 0 ||
-    report.numTodoTests !== 0 ||
-    report.numTotalTests !== 46 ||
-    report.numPassedTests !== 46
-  )
-    throw new Error(
-      "public-site PostgreSQL tests must all execute and pass (46 expected)",
-    );
+  const focused = validatePostgresIntegrationResult(
+    report,
+    root,
+    focusedInventory,
+  );
   process.stdout.write(
-    `Public-site PostgreSQL: ${report.numPassedTests}/${report.numTotalTests} passed, no skipped tests.\n`,
+    `Public-site PostgreSQL: ${focused.passed}/${focused.tests} passed, no skipped tests.\n`,
   );
   const allInventory = [
-    ...PUBLIC_SITE_POSTGRES_INVENTORY.map((e) => ({
-      ...e,
-      tests: e.path.endsWith("financial-postgres.integration.test.ts")
-        ? 8
-        : e.path.endsWith("reports-postgres.integration.test.ts")
-          ? 6
-          : e.tests,
-    })),
+    ...PUBLIC_SITE_POSTGRES_INVENTORY,
+    {
+      path: "offchain/app-service/test/historical-deployment.integration.test.ts",
+      tests: 1,
+    },
+    {
+      path: "offchain/indexer/test/creation-repair.integration.test.ts",
+      tests: 4,
+    },
+    {
+      path: "offchain/indexer/test/operation-repair.integration.test.ts",
+      tests: 10,
+    },
+    {
+      path: "offchain/indexer/test/purchase-repair.integration.test.ts",
+      tests: 4,
+    },
     {
       path: "offchain/indexer/test/orderbook-postgres.integration.test.ts",
       tests: 8,
@@ -152,7 +169,7 @@ try {
     },
     {
       path: "offchain/workers/test/automatic-store.integration.test.ts",
-      tests: 2,
+      tests: 5,
     },
   ];
   const allPath = resolve(

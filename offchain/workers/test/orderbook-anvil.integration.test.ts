@@ -312,6 +312,7 @@ test.skipIf(
           "007_legacy_deployment",
           "008_orderbook",
           "009_sparse_canonical_ranges",
+          "011_ledger_fact_revision",
         ])
           await migration.unsafe(
             await readFile(`offchain/indexer/migrations/${n}.sql`, "utf8"),

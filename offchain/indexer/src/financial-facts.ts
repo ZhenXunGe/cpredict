@@ -69,6 +69,37 @@ const legacyByTopic = new Map<string, AbiEvent>([
 ]);
 type Args = Record<string, unknown>;
 type Decoded = { event: IndexedEvent; name: string; args: Args };
+/** Read only historical order identities referenced by this scan batch. */
+export function referencedOrderIds(
+  events: readonly IndexedEvent[],
+  environment: Environment,
+): bigint[] {
+  const d = environment.deployment;
+  if (d.marketplaceVersion !== "orderbook-v2") return [];
+  const ids = new Set<bigint>();
+  for (const event of events) {
+    const isOrder = sameAddress(event.address, d.marketplace);
+    const isFee = sameAddress(event.address, d.feeVault);
+    if (!isOrder && !isFee) continue;
+    const item = byTopic.get(event.topics[0]?.toLowerCase() ?? "");
+    if (!item) continue;
+    const decoded = decodeEventLog({
+      abi: [item],
+      data: event.data,
+      topics: event.topics as [Hex, ...Hex[]],
+      strict: true,
+    });
+    const args = decoded.args as Args;
+    if (isOrder && "orderId" in args) ids.add(BigInt(amount(args.orderId)));
+    if (
+      isFee &&
+      decoded.eventName === "FeeAccrued" &&
+      sameAddress(addr(args.source), d.marketplace)
+    )
+      ids.add(BigInt(hex(args.feeReference)));
+  }
+  return [...ids];
+}
 export interface LedgerListing {
   market: Address;
   seller: Address;
