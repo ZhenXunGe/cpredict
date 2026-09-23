@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import postgres from "postgres";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PostgresAutomaticStore } from "../src/automatic-store.js";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { CleanupQuotaExceeded, type AutomaticAction } from "../src/automatic-claims.js";
+import { cleanupQuotaLimits, PostgresAutomaticStore } from "../src/automatic-store.js";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const owner = "0x1111111111111111111111111111111111111111";
@@ -28,6 +30,7 @@ describe.skipIf(databaseUrl === undefined)(
         "007_order_automation.sql",
         "008_automation_status_scope.sql",
         "009_automation_canonical_audit.sql",
+        "010_automation_cleanup_quotas.sql",
       ]) {
         const migration = await readFile(
           new URL(`../../app-service/migrations/${name}`, import.meta.url),
@@ -145,6 +148,79 @@ describe.skipIf(databaseUrl === undefined)(
         VALUES(421614,${missingHash},'1789981320','timeout-claimed',${market},${owner},${sql.json({ amount: "5000000" })})`;
       expect(await store.missingFinancialFacts()).toEqual([]);
       await sql`DELETE FROM automation_transactions WHERE id=${id}`;
+    });
+
+    it("reserves terminal cleanup capacity while limiting routine cleanup by account and market", async () => {
+      const quotaOwner = "0x8888888888888888888888888888888888888888";
+      const quotaMarket = "0x9999999999999999999999999999999999999999";
+      const denied = vi.fn();
+      const store = new PostgresAutomaticStore(sql, 421614, "deployment", signer, "claims", denied);
+      const action = (index: number, priority: "routine" | "terminal-blocking"): AutomaticAction => ({
+        key: `quota-test:${index}`,
+        owner: quotaOwner,
+        kind: "release-order",
+        target: market,
+        data: "0x1234",
+        requiresClaimPreference: false,
+        cleanupMarket: quotaMarket,
+        cleanupPriority: priority,
+      });
+      const prepare = (index: number) => ({
+        raw: "0x1234" as const,
+        hash: `0x${index.toString(16).padStart(64, "0")}` as const,
+        nonce: BigInt(100 + index),
+        maximumCost: 1n,
+      });
+      try {
+        for (let i = 0; i < cleanupQuotaLimits.accountRoutine24h; i++)
+          await store.save(action(i, "routine"), prepare(i));
+        expect(await store.cleanupQuota(action(20, "routine"))).toBe("cleanup_account_quota_exceeded");
+        await expect(store.save(action(20, "routine"), prepare(20))).rejects.toBeInstanceOf(CleanupQuotaExceeded);
+        expect(denied).toHaveBeenCalledWith("cleanup_account_quota_exceeded");
+        for (let i = 4; i < cleanupQuotaLimits.accountTotal24h; i++)
+          await store.save(action(i, "terminal-blocking"), prepare(i));
+        expect(await store.cleanupQuota(action(21, "terminal-blocking"))).toBe("cleanup_account_quota_exceeded");
+        await sql`UPDATE automation_transactions SET created_at=now()-interval '25 hours' WHERE job_key='quota-test:0'`;
+        expect(await store.cleanupQuota(action(22, "terminal-blocking"))).toBeNull();
+        expect(await store.cleanupQuota(action(23, "routine"))).toBeNull();
+        await sql`INSERT INTO automation_transactions(id,chain_id,deployment_id,job_key,owner,kind,target,calldata,signer,requires_claim_preference,state,reserved_wei,cleanup_market,cleanup_priority)
+          SELECT gen_random_uuid(),421614,'deployment','quota-test:market:'||g,'0x'||lpad(to_hex(g+100),40,'0'),'release-order',${market},'0x',${signer},false,'confirmed',0,${quotaMarket},'routine'
+          FROM generate_series(1,${cleanupQuotaLimits.marketRoutine24h}) g`;
+        expect(await store.cleanupQuota({ ...action(24, "routine"), owner: "0x7777777777777777777777777777777777777777" })).toBe("cleanup_market_quota_exceeded");
+        expect(await store.cleanupQuota({ ...action(25, "terminal-blocking"), owner: "0x7777777777777777777777777777777777777777" })).toBeNull();
+      } finally {
+        await sql`DELETE FROM automation_transactions WHERE job_key LIKE 'quota-test:%'`;
+      }
+    });
+
+    it("serializes quota reservations from separate signer lanes", async () => {
+      const quotaOwner = "0x8888888888888888888888888888888888888888";
+      const quotaMarket = "0x9999999999999999999999999999999999999999";
+      const scoped = new URL(databaseUrl!);
+      scoped.searchParams.set("options", `-csearch_path=${schema}`);
+      const secondSql = postgres(scoped.toString(), { max: 1, onnotice: () => undefined });
+      try {
+        for (let i = 0; i < cleanupQuotaLimits.accountTotal24h - 1; i++)
+          await sql`INSERT INTO automation_transactions(id,chain_id,deployment_id,job_key,owner,kind,target,calldata,signer,requires_claim_preference,state,reserved_wei,cleanup_market,cleanup_priority)
+            VALUES(${randomUUID()},421614,'deployment',${`quota-test:seed:${i}`},${quotaOwner},'release-order',${market},'0x',${signer},false,'confirmed',0,${quotaMarket},'terminal-blocking')`;
+        const action = (index: number): AutomaticAction => ({
+          key: `quota-test:parallel:${index}`, owner: quotaOwner, kind: "release-order",
+          target: market, data: "0x1234", requiresClaimPreference: false,
+          cleanupMarket: quotaMarket, cleanupPriority: "terminal-blocking",
+        });
+        const a = new PostgresAutomaticStore(sql, 421614, "deployment", signer);
+        const b = new PostgresAutomaticStore(secondSql, 421614, "deployment", "0x4444444444444444444444444444444444444444");
+        const outcomes = await Promise.allSettled([
+          a.save(action(1), { raw: "0x1234", hash: hash as `0x${string}`, nonce: 200n, maximumCost: 1n }),
+          b.save(action(2), { raw: "0x1234", hash: hash as `0x${string}`, nonce: 200n, maximumCost: 1n }),
+        ]);
+        expect(outcomes.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+        expect(outcomes.filter((result) => result.status === "rejected")).toHaveLength(1);
+        expect((await sql`SELECT count(*)::int AS n FROM automation_transactions WHERE job_key LIKE 'quota-test:%'`)[0]?.n).toBe(cleanupQuotaLimits.accountTotal24h);
+      } finally {
+        await sql`DELETE FROM automation_transactions WHERE job_key LIKE 'quota-test:%'`;
+        await secondSql.end();
+      }
     });
 
     it("returns contributing market names for aggregated creator claims", async () => {

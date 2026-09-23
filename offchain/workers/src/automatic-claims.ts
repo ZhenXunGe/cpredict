@@ -37,6 +37,17 @@ export interface AutomaticAction {
   data: Hex;
   // Matching and cleanup use the same durable sender, but do not depend on claim preferences.
   requiresClaimPreference: boolean;
+  // Only sponsored escrow cleanup uses these fields. Manual exits never enter this worker.
+  cleanupMarket?: Address;
+  cleanupPriority?: "terminal-blocking" | "routine";
+}
+export type CleanupQuotaReason =
+  | "cleanup_account_quota_exceeded"
+  | "cleanup_market_quota_exceeded";
+export class CleanupQuotaExceeded extends Error {
+  constructor(readonly reason: CleanupQuotaReason) {
+    super(reason);
+  }
 }
 export interface PreparedAutomation {
   raw: Hex;
@@ -68,6 +79,7 @@ export interface AutomationStore {
   finish(id: string, receipt: AutomationReceipt): Promise<void>;
   spentToday(excludeId?: string): Promise<bigint>;
   status(owner: Address, reason: string): Promise<void>;
+  cleanupQuota?(action: AutomaticAction): Promise<CleanupQuotaReason | null>;
   /** Reconcile finalized rows against the indexer's current canonical chain. */
   auditCanonical?(): Promise<AutomaticAction[]>;
 }
@@ -182,9 +194,14 @@ export class AutomaticClaimsWorker {
           await this.broadcast(tx);
           // Do not allocate another nonce until this transaction is canonically final.
           break;
-        } catch {
+        } catch (error) {
           // No private RPC errors or signed transaction bytes enter public status/logs.
-          await this.setStatus(action, "retry_after_chain_check");
+          await this.setStatus(
+            action,
+            error instanceof CleanupQuotaExceeded
+              ? error.reason
+              : "retry_after_chain_check",
+          );
           if ((await this.store.pending()).length) return;
           continue;
         }

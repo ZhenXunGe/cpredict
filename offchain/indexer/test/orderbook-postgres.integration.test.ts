@@ -68,6 +68,12 @@ describe.skipIf(!url)(
           "utf8",
         ),
       );
+      await migration.unsafe(
+        await readFile(
+          "offchain/app-service/migrations/010_automation_cleanup_quotas.sql",
+          "utf8",
+        ),
+      );
       migration.release();
       store = new PostgresEventStore(u.toString(), 3, v2);
       await store.ready();

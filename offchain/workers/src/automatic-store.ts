@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Sql } from "postgres";
+import type { Sql, TransactionSql } from "postgres";
 import type { Address, Hex } from "viem";
 import type {
   AutomaticAction,
@@ -8,8 +8,19 @@ import type {
   AutomationRecord,
   AutomationReceipt,
   AutomationStore,
+  CleanupQuotaReason,
 } from "./automatic-claims.js";
-import { automationEffect } from "./automatic-claims.js";
+import { automationEffect, CleanupQuotaExceeded } from "./automatic-claims.js";
+export const cleanupQuotaLimits = {
+  accountTotal24h: 8,
+  accountRoutine24h: 4,
+  marketTotal24h: 80,
+  marketRoutine24h: 40,
+} as const;
+
+const isCleanup = (action: AutomaticAction) =>
+  action.kind === "release-order" || action.kind.startsWith("return-listing:");
+
 export class PostgresAutomaticStore implements AutomationStore {
   constructor(
     readonly sql: Sql,
@@ -17,6 +28,7 @@ export class PostgresAutomaticStore implements AutomationStore {
     readonly deploymentId: string,
     readonly signer: Address,
     readonly lane: AutomationLane = "claims",
+    readonly onCleanupQuotaDenied: (reason: CleanupQuotaReason) => void = () => undefined,
   ) {}
   async exclusive<T>(work: () => Promise<T>): Promise<T | undefined> {
     const db = await this.sql.reserve();
@@ -60,6 +72,8 @@ export class PostgresAutomaticStore implements AutomationStore {
       nonce: BigInt(r.nonce),
       maximumCost: BigInt(r.reserved_wei),
       state: r.state,
+      ...(r.cleanup_market ? { cleanupMarket: r.cleanup_market as Address } : {}),
+      ...(r.cleanup_priority ? { cleanupPriority: r.cleanup_priority } : {}),
     }));
   }
   async save(
@@ -67,10 +81,70 @@ export class PostgresAutomaticStore implements AutomationStore {
     tx: PreparedAutomation,
   ): Promise<AutomationRecord> {
     const id = randomUUID();
-    await this
-      .sql`INSERT INTO automation_transactions(id,chain_id,deployment_id,job_key,owner,kind,target,calldata,signer,requires_claim_preference,nonce,tx_hash,raw_transaction,state,reserved_wei)
-      VALUES(${id},${this.chainId},${this.deploymentId},${action.key},${action.owner.toLowerCase()},${action.kind},${action.target.toLowerCase()},${action.data},${this.signer.toLowerCase()},${action.requiresClaimPreference},${tx.nonce.toString()},${tx.hash},${tx.raw},'prepared',${tx.maximumCost.toString()})`;
+    if (isCleanup(action)) {
+      this.assertCleanupScope(action);
+      await this.sql.begin(async (db) => {
+        // Both signer lanes take account then market locks, so quota checks and
+        // reservations cannot race across workers.
+        await db`SELECT pg_advisory_xact_lock(hashtextextended(${`cleanup:owner:${this.chainId}:${this.deploymentId}:${action.owner.toLowerCase()}`},0))`;
+        await db`SELECT pg_advisory_xact_lock(hashtextextended(${`cleanup:market:${this.chainId}:${this.deploymentId}:${action.cleanupMarket!.toLowerCase()}`},0))`;
+        const reason = await this.cleanupQuotaWith(db, action);
+        if (reason) {
+          this.onCleanupQuotaDenied(reason);
+          throw new CleanupQuotaExceeded(reason);
+        }
+        await db`INSERT INTO automation_transactions(id,chain_id,deployment_id,job_key,owner,kind,target,calldata,signer,requires_claim_preference,nonce,tx_hash,raw_transaction,state,reserved_wei,cleanup_market,cleanup_priority)
+          VALUES(${id},${this.chainId},${this.deploymentId},${action.key},${action.owner.toLowerCase()},${action.kind},${action.target.toLowerCase()},${action.data},${this.signer.toLowerCase()},${action.requiresClaimPreference},${tx.nonce.toString()},${tx.hash},${tx.raw},'prepared',${tx.maximumCost.toString()},${action.cleanupMarket!.toLowerCase()},${action.cleanupPriority!})`;
+      });
+    } else {
+      await this
+        .sql`INSERT INTO automation_transactions(id,chain_id,deployment_id,job_key,owner,kind,target,calldata,signer,requires_claim_preference,nonce,tx_hash,raw_transaction,state,reserved_wei)
+        VALUES(${id},${this.chainId},${this.deploymentId},${action.key},${action.owner.toLowerCase()},${action.kind},${action.target.toLowerCase()},${action.data},${this.signer.toLowerCase()},${action.requiresClaimPreference},${tx.nonce.toString()},${tx.hash},${tx.raw},'prepared',${tx.maximumCost.toString()})`;
+    }
     return { ...action, ...tx, id, state: "prepared" };
+  }
+  private assertCleanupScope(action: AutomaticAction): void {
+    if (!action.cleanupMarket || !action.cleanupPriority)
+      throw new Error("cleanup_scope_missing");
+  }
+  async cleanupQuota(action: AutomaticAction): Promise<CleanupQuotaReason | null> {
+    if (!isCleanup(action)) return null;
+    this.assertCleanupScope(action);
+    const reason = await this.cleanupQuotaWith(this.sql, action);
+    if (reason) this.onCleanupQuotaDenied(reason);
+    return reason;
+  }
+  private async cleanupQuotaWith(
+    db: Sql | TransactionSql,
+    action: AutomaticAction,
+  ): Promise<CleanupQuotaReason | null> {
+    const [counts] = await db<Array<{
+      account_total: number;
+      account_routine: number;
+      market_total: number;
+      market_routine: number;
+    }>>`SELECT
+      count(*) FILTER(WHERE owner=${action.owner.toLowerCase()})::int AS account_total,
+      count(*) FILTER(WHERE owner=${action.owner.toLowerCase()} AND (cleanup_priority='routine' OR cleanup_priority IS NULL))::int AS account_routine,
+      count(*) FILTER(WHERE cleanup_market=${action.cleanupMarket!.toLowerCase()})::int AS market_total,
+      count(*) FILTER(WHERE cleanup_market=${action.cleanupMarket!.toLowerCase()} AND cleanup_priority='routine')::int AS market_routine
+      FROM automation_transactions
+      WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId}
+        AND (cleanup_market IS NOT NULL OR kind='release-order' OR kind LIKE 'return-listing:%')
+        AND state<>'cancelled'
+        AND created_at>=now()-interval '24 hours'`;
+    if (!counts) throw new Error("cleanup_quota_count_unavailable");
+    if (
+      counts.account_total >= cleanupQuotaLimits.accountTotal24h ||
+      (action.cleanupPriority === "routine" &&
+        counts.account_routine >= cleanupQuotaLimits.accountRoutine24h)
+    ) return "cleanup_account_quota_exceeded";
+    if (
+      counts.market_total >= cleanupQuotaLimits.marketTotal24h ||
+      (action.cleanupPriority === "routine" &&
+        counts.market_routine >= cleanupQuotaLimits.marketRoutine24h)
+    ) return "cleanup_market_quota_exceeded";
+    return null;
   }
   async markBroadcasting(id: string): Promise<boolean> {
     const r = await this
@@ -167,7 +241,7 @@ export class PostgresAutomaticStore implements AutomationStore {
   }
   async blockedCounts() {
     return this
-      .sql`SELECT reason,count(*)::int AS count FROM automation_lane_status WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND lane=${this.lane} AND reason IN ('daily_gas_budget_exhausted','gas_balance_insufficient','retry_after_chain_check','checking_original_transaction','transaction_reverted','submission_rpc_unavailable','rechecking_after_reorg') GROUP BY reason`;
+      .sql`SELECT reason,count(*)::int AS count FROM automation_lane_status WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND lane=${this.lane} AND reason IN ('daily_gas_budget_exhausted','gas_balance_insufficient','retry_after_chain_check','checking_original_transaction','transaction_reverted','submission_rpc_unavailable','rechecking_after_reorg','cleanup_account_quota_exceeded','cleanup_market_quota_exceeded') GROUP BY reason`;
   }
   /** Confirmed payouts whose indexed range has passed, but whose receipt has no financial fact. */
   async missingFinancialFacts(): Promise<Array<{ kind: string; count: number }>> {

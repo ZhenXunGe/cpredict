@@ -3,6 +3,7 @@ import type { PublicClient } from "viem";
 import type { Sql } from "postgres";
 import { A, env } from "../../app-core/test/fixtures.js";
 import { MatchingSource } from "../src/matching-source.js";
+import type { PostgresAutomaticStore } from "../src/automatic-store.js";
 
 async function collect(source: MatchingSource) {
   const actions = [];
@@ -149,5 +150,35 @@ describe("matching source scan cadence", () => {
     ]);
     expect(fullScans).toBe(1);
     expect(await collect(source)).toEqual([]);
+  });
+
+  it("puts entitlement-blocking terminal asks ahead of expired cleanup and filters quota-denied work", async () => {
+    const sql = (async (strings: TemplateStringsArray) =>
+      strings.join("").includes("ORDER BY block_number DESC")
+        ? [{ block_number: "10", transaction_hash: "0x10", transaction_index: 0, log_index: 1 }]
+        : [{ order_id: "1" }, { order_id: "2" }]) as unknown as Sql;
+    const client = {
+      getBlock: vi.fn(async () => ({ number: 10n, timestamp: 1000n })),
+      readContract: vi.fn(async ({ functionName, args, address }: {
+        functionName: string; args: readonly bigint[]; address: string;
+      }) => functionName === "orders"
+        ? [A(Number(args[0]) + 100), A(10), 10000n, 1000000n, args[0] === 1n ? 900n : 1100n, 0, 1, true, true, 0n]
+        : functionName === "isTerminal" ? address === A(102) : 0n),
+    } as unknown as PublicClient;
+    const quota = {
+      cleanupQuota: vi.fn(async (action: { key: string }) =>
+        action.key === "release-order:1" ? "cleanup_account_quota_exceeded" : null),
+      status: vi.fn(async () => undefined),
+    } as unknown as PostgresAutomaticStore;
+    const environment = { ...env, deployment: { ...env.deployment, marketplaceVersion: "orderbook-v2" as const, marketplace: A(80) } };
+    expect((await collect(new MatchingSource(sql, client, environment))).map((a) => a.key)).toEqual([
+      "release-order:2", "release-order:1",
+    ]);
+    const source = new MatchingSource(sql, client, environment, Date.now, 30000, quota);
+    expect((await collect(source)).map((a) => a.key)).toEqual(["release-order:2"]);
+    expect(quota.status).toHaveBeenCalledWith(A(10), "cleanup_account_quota_exceeded");
+    expect(quota.cleanupQuota).toHaveBeenCalledWith(expect.objectContaining({
+      key: "release-order:2", cleanupMarket: A(102), cleanupPriority: "terminal-blocking",
+    }));
   });
 });

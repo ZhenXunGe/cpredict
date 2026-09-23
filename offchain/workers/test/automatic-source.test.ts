@@ -15,6 +15,7 @@ import {
   vault,
 } from "../../indexer/test/financial-fixtures.js";
 import { A, H, env } from "../../app-core/test/fixtures.js";
+import { ledgerFactSchema } from "../../app-core/src/ledger-contracts.js";
 function setup(state = 0, enabled = true, now = 2000n) {
   const facts = normalizeFinancialFacts(
     [
@@ -107,6 +108,7 @@ function setup(state = 0, enabled = true, now = 2000n) {
     revision,
     client,
     ledger,
+    prefs,
     values,
     async actions() {
       const r = [];
@@ -153,6 +155,36 @@ describe("historical automatic entitlement discovery", () => {
     expect((await setup(2).actions()).map((a) => a.kind)).toEqual(
       expect.arrayContaining(["refund", "timeout-bonus", "fees"]),
     );
+  });
+  it("defers sponsored terminal escrow cleanup at quota without hiding manual rights", async () => {
+    const f = setup(1);
+    const facts = await f.ledger.accountFacts(trader, {} as never);
+    vi.spyOn(f.ledger, "accountFacts").mockResolvedValue([
+      ...facts,
+      ledgerFactSchema.parse({
+        ...facts[0],
+        id: "quota-listing",
+        kind: "listing-created",
+        market: vault,
+        owner: trader,
+        listingId: H(10),
+        units: "20",
+        amount: null,
+      }),
+    ]);
+    f.values.listings = [vault, trader, 20n, 0n, 0n, 0n, true];
+    const quota = vi.fn(async () => "cleanup_account_quota_exceeded" as const);
+    const status = vi.fn(async () => undefined);
+    f.prefs.cleanupQuota = quota;
+    f.prefs.status = status;
+    const actions = await f.actions();
+    expect(actions.some((action) => action.kind.startsWith("return-listing:"))).toBe(false);
+    expect(status).toHaveBeenCalledWith(trader, "cleanup_account_quota_exceeded");
+    expect(quota).toHaveBeenCalledWith(expect.objectContaining({
+      cleanupMarket: vault,
+      cleanupPriority: "terminal-blocking",
+    }));
+    expect(actions.some((action) => action.kind === "fees")).toBe(true);
   });
   it("idle holders sleep while block/hash checks continue, and business events wake them", async () => {
     const f = setup(0, true, 1000n);

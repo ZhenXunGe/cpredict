@@ -410,6 +410,8 @@ const reasons: Record<string, string> = {
     "自动领取暂缓：发送服务当前不可用，等待恢复；也可手动领取。",
   daily_gas_budget_exhausted: "今日代付额度已用完，等待恢复；也可手动领取",
   gas_balance_insufficient: "代付 Gas 余额不足，等待恢复；也可手动领取",
+  cleanup_account_quota_exceeded: "自动挂单清理已达账户配额；可手动撤单、取回资产或领取",
+  cleanup_market_quota_exceeded: "自动挂单清理已达市场配额；可手动撤单、取回资产或领取",
   retry_after_chain_check: "链上状态核验中",
   transaction_reverted: "上次领取未成功，正在重新核验",
   rechecking_after_reorg: "链上发生重组，原到账记录已撤回，后台正在重新核验",
