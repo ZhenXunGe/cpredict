@@ -16,6 +16,7 @@ import {
   marketReadAbi,
   marketStatusCopy,
   marketResolutionDeadline,
+  useBalance,
   useListings,
   useMarket,
   useMarketLive,
@@ -404,6 +405,7 @@ function TradePanel({
   const session = useSession(),
     env = session.api.environment,
     live = useMarketLive(market.market),
+    paymentBalance = useBalance(),
     begin = useOperation();
   const [mode, setMode] = useState<"buy" | "sell">("buy"),
     [outcome, setOutcome] = useState(0),
@@ -411,6 +413,7 @@ function TradePanel({
     [minimum, setMinimum] = useState(""),
     [price, setPrice] = useState("1"),
     [expiry, setExpiry] = useState("24"),
+    [checkingBalance, setCheckingBalance] = useState(false),
     [error, setError] = useState<unknown>(null);
   const amountInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -445,7 +448,7 @@ function TradePanel({
       }),
     refetchInterval: 15000,
   });
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
     try {
@@ -461,6 +464,14 @@ function TradePanel({
           env.asset,
         );
         if (checked.error) throw checked.error;
+        if (session.account) {
+          setCheckingBalance(true);
+          const currentBalance = await paymentBalance.refetch();
+          if (currentBalance.error || currentBalance.data === undefined)
+            throw new AppError("chain_query_unavailable", 503);
+          if (units > currentBalance.data)
+            throw new AppError("insufficient_balance", 400);
+        }
         begin({
           intent: {
             kind: "buy",
@@ -522,6 +533,8 @@ function TradePanel({
       }
     } catch (e) {
       setError(e);
+    } finally {
+      setCheckingBalance(false);
     }
   };
   const closed = !!live.data && live.data.now >= live.data.closeAt;
@@ -542,6 +555,17 @@ function TradePanel({
       return null;
     } // Keep incomplete decimal input editable; validate syntax on submit.
   })();
+  let requestedPayment: bigint | null = null;
+  try {
+    requestedPayment = amount ? parseAssetAmount(amount) : null;
+  } catch {
+    // Submit owns malformed input; keep incomplete values editable.
+  }
+  const insufficientPayment =
+    mode === "buy" &&
+    requestedPayment !== null &&
+    paymentBalance.data !== undefined &&
+    requestedPayment > paymentBalance.data;
   return (
     <section className="surface">
       <div className="row">
@@ -590,6 +614,14 @@ function TradePanel({
               {env.asset}；剩余 {formatUnits(available.market, 6)} {env.asset}。
             </p>
           </div>
+        )}
+        {mode === "buy" && session.account && (
+          <p className="small">
+            可用余额：
+            {paymentBalance.data === undefined
+              ? "正在核对…"
+              : `${formatUnits(paymentBalance.data, 6)} ${env.asset}`}
+          </p>
         )}
         <Field label={mode === "buy" ? `投入数量（${env.asset}）` : "挂单份额"}>
           <input
@@ -651,7 +683,18 @@ function TradePanel({
             仍可能交易，请留意创建者结算与流动性风险。
           </Notice>
         )}
-        <ErrorNotice error={buyCheck?.error ?? error} />
+        <ErrorNotice
+          error={
+            buyCheck?.error ??
+            error ??
+            (mode === "buy" ? paymentBalance.error : null)
+          }
+        />
+        {insufficientPayment && (
+          <Notice tone="warning">
+            {`余额不足：当前可用 ${formatUnits(paymentBalance.data!, 6)} ${env.asset}，本次最多需支付 ${formatUnits(requestedPayment!, 6)} ${env.asset}。`}
+          </Notice>
+        )}
         {mode === "buy" &&
           buyCheck &&
           !buyCheck.error &&
@@ -668,7 +711,14 @@ function TradePanel({
             !verified ||
             !env.features.newExposure ||
             !live.data ||
-            (mode === "buy" && (closed || !!buyCheck?.error))
+            checkingBalance ||
+            (mode === "buy" &&
+              (closed ||
+                !!buyCheck?.error ||
+                (!!session.account &&
+                  (paymentBalance.data === undefined ||
+                    !!paymentBalance.error ||
+                    insufficientPayment))))
           }
         >
           核对{mode === "buy" ? "购买" : "挂单"}
@@ -697,12 +747,14 @@ function Listings({
     query = useListings(market.market),
     begin = useOperation(),
     live = useMarketLive(market.market),
+    paymentBalance = useBalance(),
     now = useMarketClock(),
     env = session.api.environment;
   const [selected, setSelected] = useState<Listing | null>(null),
     [units, setUnits] = useState(""),
+    [checkingBalance, setCheckingBalance] = useState(false),
     [error, setError] = useState<unknown>(null);
-  const fill = (event: FormEvent) => {
+  const fill = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
     try {
@@ -712,6 +764,14 @@ function Listings({
       if (amount > BigInt(selected.remainingUnits))
         throw new AppError("listing_quantity_changed", 409);
       const gross = (amount * BigInt(selected.unitPrice)) / SHARE_SCALE;
+      if (session.account) {
+        setCheckingBalance(true);
+        const currentBalance = await paymentBalance.refetch();
+        if (currentBalance.error || currentBalance.data === undefined)
+          throw new AppError("chain_query_unavailable", 503);
+        if (gross > currentBalance.data)
+          throw new AppError("insufficient_balance", 400);
+      }
       begin({
         intent: {
           kind: "fill-listing",
@@ -744,6 +804,8 @@ function Listings({
       });
     } catch (e) {
       setError(e);
+    } finally {
+      setCheckingBalance(false);
     }
   };
   const primaryOpen =
@@ -914,9 +976,11 @@ function Listings({
               required
             />
           </Field>
-          <ErrorNotice error={error} />
+          <ErrorNotice error={error ?? paymentBalance.error} />
           <div className="row">
-            <Button type="submit">核对购买</Button>
+            <Button type="submit" disabled={checkingBalance}>
+              {checkingBalance ? "正在核对余额…" : "核对购买"}
+            </Button>
             <Button variant="quiet" onClick={() => setSelected(null)}>
               取消选择
             </Button>

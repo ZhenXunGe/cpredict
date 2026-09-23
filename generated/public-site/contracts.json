@@ -187,6 +187,114 @@
               "kind": {
                 "type": "string"
               },
+              "effect": {
+                "type": "string",
+                "enum": [
+                  "payout",
+                  "asset-return"
+                ]
+              },
+              "context": {
+                "type": "object",
+                "properties": {
+                  "market": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "marketQuestion": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "relatedMarkets": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "market": {
+                          "type": "string"
+                        },
+                        "marketQuestion": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "market",
+                        "marketQuestion"
+                      ]
+                    }
+                  },
+                  "outcomeId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,77})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "outcomeLabel": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "amount": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,77})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "units": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^(0|[1-9]\\d{0,77})$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "market",
+                  "marketQuestion",
+                  "outcomeId",
+                  "outcomeLabel",
+                  "amount",
+                  "units"
+                ]
+              },
               "state": {
                 "type": "string",
                 "enum": [
@@ -209,8 +317,39 @@
                   }
                 ]
               },
+              "market": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "amount": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^(0|[1-9]\\d{0,77})$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "created_at": {
                 "type": "string"
+              },
+              "completed_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
               }
             },
             "required": [
@@ -218,16 +357,32 @@
               "kind",
               "state",
               "tx_hash",
-              "created_at"
+              "market",
+              "amount",
+              "created_at",
+              "completed_at"
             ]
           }
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "enabled",
         "reason",
         "updatedAt",
-        "transactions"
+        "transactions",
+        "nextCursor"
       ]
     },
     "TradingSession": {

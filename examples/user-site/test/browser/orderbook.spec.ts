@@ -204,6 +204,43 @@ test("selling into a bid checks outcome shares before opening confirmation", asy
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(f.errors).toEqual([]);
 });
+test("buying an ask checks payment balance before opening confirmation", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.goto(
+    `/test/browser/fixture.html?orderbook-test=1&premium-ask=1&low-asset-balance=1#/ctusd-test/markets/${A(101)}`,
+  );
+  const panel = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+  });
+  await panel.getByRole("button", { name: "购买此挂卖单" }).click();
+  await expect(panel).toContainText(
+    "余额不足：当前可用 0.5 ctUSD，本次需支付 1.2 ctUSD，请调整接单数量。",
+  );
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(f.errors).toEqual([]);
+});
+test("automatic orders reject a price whose minimum lot has zero payment", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.goto(
+    `/test/browser/fixture.html?orderbook-test=1#/ctusd-test/markets/${A(101)}`,
+  );
+  const panel = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+  });
+  await panel.getByLabel("份数", { exact: true }).fill("0.03");
+  await panel.getByLabel("每份价格（ctUSD）", { exact: true }).fill("0.00006");
+  await expect(panel).toContainText("最小份额的成交金额为零，无法自动撮合");
+  await expect(
+    panel.getByRole("button", { name: "核对求购", exact: true }),
+  ).toBeDisabled();
+  await panel.getByRole("checkbox", { name: "自动撮合（默认开启）" }).uncheck();
+  await expect(panel).not.toContainText("最小份额的成交金额为零，无法自动撮合");
+  expect(f.errors).toEqual([]);
+});
 test("sell order with enough shares reaches confirmation", async ({ page }) => {
   const f = await setup(page);
   await page.goto(

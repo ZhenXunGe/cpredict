@@ -19,7 +19,9 @@ test("exhausted sponsorship offers self-funded ETH with funding details and a se
   await page.getByRole("button", { name: "核对购买", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("button", { name: "确认并继续", exact: true }).click();
-  await expect(dialog.getByRole("alert")).toContainText("本周代付额度已用尽");
+  await expect(dialog.getByRole("alert")).toContainText(
+    "当前操作类别的本周可用代付额度不足",
+  );
   await expect(dialog.getByRole("alert")).toContainText("自行支付 ETH");
   await expect(page.locator("html")).toHaveAttribute(
     "data-test-gas-signatures",

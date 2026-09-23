@@ -124,11 +124,11 @@ try {
     !report.success ||
     report.numPendingTests !== 0 ||
     report.numTodoTests !== 0 ||
-    report.numTotalTests !== 45 ||
-    report.numPassedTests !== 45
+    report.numTotalTests !== 46 ||
+    report.numPassedTests !== 46
   )
     throw new Error(
-      "public-site PostgreSQL tests must all execute and pass (45 expected)",
+      "public-site PostgreSQL tests must all execute and pass (46 expected)",
     );
   process.stdout.write(
     `Public-site PostgreSQL: ${report.numPassedTests}/${report.numTotalTests} passed, no skipped tests.\n`,
@@ -152,7 +152,7 @@ try {
     },
     {
       path: "offchain/workers/test/automatic-store.integration.test.ts",
-      tests: 1,
+      tests: 2,
     },
   ];
   const allPath = resolve(

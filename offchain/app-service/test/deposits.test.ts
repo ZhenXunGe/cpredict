@@ -554,6 +554,7 @@ describe("USDC signed deposit admission", () => {
         ...record,
         id: randomUUID(),
         accountId: randomUUID(),
+        account: A(1234),
         nonce: "1",
       },
     };

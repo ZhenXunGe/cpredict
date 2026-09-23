@@ -6,6 +6,24 @@ test.beforeEach(async ({ page }) => {
   );
   await page.clock.install({ time: new Date("2026-09-17T08:00:00Z") });
 });
+test("legacy listing purchase checks payment balance before confirmation", async ({
+  page,
+  isMobile,
+}) => {
+  await page.goto(
+    `/test/browser/fixture.html?c2c-price=2000000&low-asset-balance=1#/ctusd-test/markets/${market}`,
+  );
+  const buy = page.getByRole("button", { name: "购买", exact: true });
+  await buy.scrollIntoViewIfNeeded();
+  if (isMobile) await buy.press("Enter");
+  else await buy.click();
+  const listing = page.locator("form").filter({
+    has: page.getByRole("heading", { name: "核对挂单购买" }),
+  });
+  await listing.getByRole("button", { name: "核对购买" }).click();
+  await expect(listing).toContainText("余额不足");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
 for (const closed of [false, true]) {
   test(`premium C2C guidance ${closed ? "is hidden after close" : "disappears at close without a refresh"}`, async ({
     page,

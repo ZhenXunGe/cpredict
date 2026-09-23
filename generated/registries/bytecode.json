@@ -1,10 +1,10 @@
 [
   {
     "contract": "OrderbookMarketplaceV2",
-    "creationBytecodeSha256": "311230a61e309d9ff28e55681d9d31010838f62e7868fe5be98a5f900dc7b29b",
-    "runtimeBytecodeSha256": "9f769a2e83c2190826729caf928feb7b659d06dac5b8e55d36652802d5999fb3",
-    "creationBytes": 13368,
-    "runtimeBytes": 12882
+    "creationBytecodeSha256": "02bd428f0c20f0ad14ab299f165083256fe44e103c2752fa7f31d0e48e3ada9e",
+    "runtimeBytecodeSha256": "7e9ee217a12acdd9c34dd786533e0a13d667802f59ee60961350930072fac34f",
+    "creationBytes": 13490,
+    "runtimeBytes": 13004
   },
   {
     "contract": "TradingSessionPolicyV2",

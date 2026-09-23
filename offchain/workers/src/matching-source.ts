@@ -11,6 +11,7 @@ import type { AutomaticAction, AutomationSource } from "./automatic-claims.js";
 export class MatchingSource implements AutomationSource {
   private lastRevision: string | undefined;
   private lastFullScanAt = Number.NEGATIVE_INFINITY;
+  private pendingActions: AutomaticAction[] = [];
   constructor(
     readonly sql: Sql,
     readonly client: PublicClient,
@@ -30,8 +31,10 @@ export class MatchingSource implements AutomationSource {
     if (
       revision === this.lastRevision &&
       scanAt - this.lastFullScanAt < this.maintenanceIntervalMs
-    )
+    ) {
+      while (this.pendingActions.length > 0) yield this.pendingActions.shift()!;
       return;
+    }
     const head = await this.client.getBlock();
     const rows = await this
       .sql`SELECT c.order_id,c.args FROM orderbook_events c WHERE c.event_name='OrderCreated' AND c.chain_id=${this.env.deployment.chainId} AND c.marketplace=${target.toLowerCase()} AND NOT EXISTS(SELECT 1 FROM orderbook_events e WHERE e.chain_id=c.chain_id AND e.marketplace=c.marketplace AND e.order_id=c.order_id AND (e.event_name='OrderReleased' OR (e.event_name='OrderFilled' AND e.args->>'remainingUnits'='0'))) ORDER BY c.order_id`;
@@ -128,6 +131,7 @@ export class MatchingSource implements AutomationSource {
     }
     this.lastRevision = revision;
     this.lastFullScanAt = scanAt;
-    for (const action of actions) yield action;
+    this.pendingActions = actions;
+    while (this.pendingActions.length > 0) yield this.pendingActions.shift()!;
   }
 }
