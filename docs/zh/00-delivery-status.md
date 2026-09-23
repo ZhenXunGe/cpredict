@@ -1,12 +1,14 @@
-# Cpredict V1 当前候选状态（唯一总表）
+# Cpredict V1 正式发布候选状态（V1 范围总表）
 
-状态日期：2026-09-01。权威需求：`/Users/undef1ned/Downloads/product-framework.md` v0.21；
+状态日期：2026-09-01（下表保留当时的 V1 正式门禁快照，不代表 2026-09-23 的 V2 测试站部署状态）。权威需求：`/Users/undef1ned/Downloads/product-framework.md` v0.21；
 原始文件 31,449 bytes，SHA-256
 `5a76a9e0d98691ccc20a1faa37b1607a1d4afd2ca5b17563641cad707ff9aca4`，锁定于
 `manifests/requirements.lock`。
 
-> 本表是当前候选状态的唯一人工汇总。其他文档中的历史执行数字不得覆盖本表；历史报告只保留
-> 复盘价值。当前候选不是 Release Candidate、未达商用发布条件，禁止承载真实资金。
+> 本表只汇总 V1 正式发布门禁。其他文档中的历史执行数字不得覆盖对应版本的证据；历史报告只保留
+> 复盘价值。V1 候选不是 Release Candidate、未达商用发布条件，禁止承载真实资金。
+> Arbitrum Sepolia 的 ctUSD V2 测试站已经运行，其 2026-09-23 组件版本和验收记录见
+> [V2 发布说明](../orderbook-autoclaim-release.md)。测试站运行不关闭本表的外审、正式部署或主网门禁。
 
 ## 证明边界
 

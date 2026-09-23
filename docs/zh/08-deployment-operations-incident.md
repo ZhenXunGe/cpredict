@@ -73,14 +73,18 @@ Safe 签名者使用硬件密钥和独立恢复渠道；禁止 deployer、sponso
 移除、离职、丢失、疑似泄露和 KMS rotation 演练。Paymaster deposit/stake 只保留短期预算；提取只能
 Timelock。主网 Timelock 计划为 7 天，任何缩短属于新审计/治理决策。
 
-## 8. 当前部署状态
+## 8. V1 正式门禁的历史部署状态
 
-未部署。`deployments/arbitrum-sepolia/README.md` 是唯一当前状态；没有地址/交易/区块意味着所有实链
-项均为 unverified。
+本节下方保留的是 V1 正式交付门禁的历史说明，不是当前 V2 测试站的部署快照。当前 Arbitrum
+Sepolia ctUSD V2 测试站已部署；2026-09-23 的网页/自动化增量发布、仍运行的旧合约及回退证据见
+[V2 发布说明](../orderbook-autoclaim-release.md)。正式 `FINALIZED_VERIFIED` 清单、主网和真实资金
+发布仍未完成；具体链上部署记录须按对应协议版本查询 `deployments/arbitrum-sepolia/`，不能把源码
+提交或网页镜像更新当成合约升级。
 
 Compose、部署同步、Arbiscan、可恢复 canary、备份/恢复和本地故障演练入口已经补齐，操作手册见
-`docs/zh/13-compose-runtime-operations.md`。当前主机没有 Docker/Compose，所以镜像构建、新鲜 Compose
-健康链、真实 backup/restore 仍未运行；本地故障报告也只能标记 `LOCAL_SIMULATION`。这些工具不改变
+`docs/zh/13-compose-runtime-operations.md`。以下记录只对应早期 V1 候选开发主机：当时没有 Docker/Compose，
+因此当时的镜像构建、新鲜 Compose 健康链、真实 backup/restore 尚未运行；本地故障报告只能标记
+`LOCAL_SIMULATION`。后续 V2 云端测试证据应按独立发布说明核对，不能反向填充 V1 正式门禁。这些工具不改变
 `BLOCKED_NOT_DEPLOYED`、24h canary `NOT RUN` 或 formal ops `NOT RUN`。
 
 ## 9. 证据门禁与禁止伪证

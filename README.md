@@ -1,20 +1,26 @@
-# Cpredict Protocol V1
+# Cpredict protocol
 
-Cpredict is a non-upgradeable, USDC-denominated parimutuel prediction-market
-protocol with per-market ERC-1155 positions and a fixed-price, sell-only C2C
-marketplace.
+Cpredict has non-upgradeable, per-market ERC-1155 prediction-market vaults.
+The original V1 marketplace supports fixed-price, sell-only C2C listings;
+the later V2 test-site marketplace adds escrowed bids, automatic matching,
+and automatic claims. See [the V2 release and deployment status](docs/orderbook-autoclaim-release.md)
+for the currently served test-site environment and its contract-version boundary.
 
-The sole product authority is
+The original V1 product baseline is
 `/Users/undef1ned/Downloads/product-framework.md` v0.21 (2026-08-04), locked as
 31,449 bytes with SHA-256
 `5a76a9e0d98691ccc20a1faa37b1607a1d4afd2ca5b17563641cad707ff9aca4` in
 `manifests/requirements.lock`. The
 repository under `ref/` is ignored and may be consulted only for final-document
-presentation; it is not a product, architecture, or implementation source.
+presentation; it is not a product, architecture, or implementation source. The later
+V2 orderbook and automatic-claim requirements and their release status are recorded
+in `docs/orderbook-autoclaim-release.md`.
 
-This repository is under active implementation and is **not production-ready,
-externally audited, deployed, or safe for real funds** until every release gate
-in `docs/zh/00-delivery-status.md` is satisfied.
+This repository is under active implementation. An Arbitrum Sepolia **test-asset**
+site is deployed, but it is **not production-ready, externally audited, or safe
+for real funds**. The V1 formal release gates remain in
+`docs/zh/00-delivery-status.md`; test-site runtime evidence is tracked separately
+in `docs/orderbook-autoclaim-release.md`.
 
 ## Local build
 
@@ -69,8 +75,8 @@ The local secret scan covers cached and non-ignored untracked delivery files,
 but does not replace a release-time full-history scanner. `npm run check:artifacts` also rejects an
 incomplete or stale source manifest; regenerate only after the candidate source has been intentionally frozen.
 
-The single current-candidate status table and proof boundaries are recorded in
-`docs/zh/00-delivery-status.md`; tool details remain in their linked reports. Current Solidity
+The dated V1 formal-candidate status table and proof boundaries are recorded in
+`docs/zh/00-delivery-status.md`; tool details remain in their linked reports. In that V1 snapshot, Solidity
 coverage passes its production `src/**` gate (20 suites, 121/121 tests; 100% line, 100% function,
 99.13% branch), and the production-context gas/size gate passes 10/10. The ordinary off-chain lane
 has 73 passing tests and five PostgreSQL-conditional skips; the separate disposable PostgreSQL 17.10
@@ -126,6 +132,8 @@ npm run site:build
 ```
 
 部署、反向代理和真实钱包验收见 `docs/public-test-site-runbook.md`。
+当前 V2 测试站的合约、网页和后台版本及回退边界见
+`docs/orderbook-autoclaim-release.md`；Git 源码更新不等于链上合约升级。
 
 ## Arbitrum Sepolia direct deployment
 

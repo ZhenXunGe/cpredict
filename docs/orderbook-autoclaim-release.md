@@ -1,8 +1,25 @@
 # 求购、自动撮合与自动领取：V2 发布说明
 
+## 当前测试站快照（2026-09-23）
+
+当前公开入口仍是 `https://43.160.199.165/ctusd-orderbook-v2/markets`，使用 Arbitrum Sepolia 的 ctUSD 测试资产。以下是**组件分别核对**的运行状态，不代表正式审计、主网发布或真钱可用：
+
+| 组件 | 当前运行版本 | 2026-09-23 增量发布范围 |
+| --- | --- | --- |
+| 网页 | `cpredict-web-demo:main-fa27144-20260923` | 创建求购/挂卖、主动接单和一级购买在提交前读取实际可用资产或份额，余额不足时给出具体提示；自动撮合订单的最小成交量若会取整为零，页面给出提示。 |
+| 自动领取、自动撮合 | `cpredict-automation:main-fa27144-20260923` | 撮合候选在未消费时保留队列；领取候选输出前校验规范链快照，避免在扫描期间继续使用已失效的索引视图。两个服务仍使用独立 signer/nonce。 |
+| 应用、索引、规则服务 | 保持此前已部署镜像 | 本次未替换这些服务，不能把它们描述为运行 `fa271445`。 |
+| 链上 V2 合约 | 仍为 2026-09-18 已部署版本 | `fa271445afb0d0b23429ce79e746847e3a2e482b` 中的 `OrderbookMarketplaceV2.sol` 零金额最小成交保护**只在源码和生成产物中，尚未上链**。当前合约继续按其既有字节码执行。 |
+
+当前工厂的 Marketplace 地址只能绑定一次，不能把新交易合约替换到旧工厂。要使这次 Solidity 保护在新市场生效，须另外部署并核验新工厂、Marketplace 和权限策略，再单独安排新环境/市场入口切换。已存在的市场、订单和持仓仍受原合约约束；旧测试市场目前不提供站内入口，但链上资产不会因网页切换而消失。不得声称只更新网页和自动化镜像就升级了旧市场的链上规则。
+
+本次提交的本地验证：浏览器回归 184/184，PostgreSQL 46/46，含 Anvil 的 PostgreSQL/订单回归 56/56；前后端类型检查、前端构建、合约编译与 Forge 测试及生成物检查通过。云端 2026-09-23 切换后，公开页面返回 HTTP 200，七个业务容器健康，索引 `/readyz` 返回 200；回执 `pending=0`、`unresolved=0`，两个自动化队列 `pending=0`。索引落后数在发布采样中波动，后续采样为 0。公网页面冒烟检查不等于新补丁在真实钱包的完整已登录交易验收，也不证明尚未上链的合约分支。
+
+云端构建、发布与回退证据位于 `/home/ubuntu/cpredict-migration/review-fixes-20260923-fa27144/`，包含发布前 Compose/镜像清单、可校验的 PostgreSQL 备份、发布后 `deployment-acceptance.json` 和构建日志。需要回退网页或自动化时先核对该目录保留的原镜像与私有配置；不要重发结果未知的链上交易，也不要用数据库回滚覆盖发布后用户数据。本次文档提交不会更新云端镜像或链上合约。
+
 ## 交付范围与状态
 
-独立分支 `codex/orders-autoclaim-20260918`，基线 `release-2026-09-18` / `f16bf40f7d0fc6134feadd22c0f5ca7061c54f3a`。包含从独立 RPC 工作区复制的现用主备读取实现；原工作区、V1 合约和封版标签未修改。
+初始实现来自独立分支 `codex/orders-autoclaim-20260918`，基线 `release-2026-09-18` / `f16bf40f7d0fc6134feadd22c0f5ca7061c54f3a`；后续改动已进入 `main`。初始实现包含从独立 RPC 工作区复制的现用主备读取实现；原工作区、V1 合约和封版标签未修改。
 
 本批实现 V2 订单簿、权限策略、后台任务、账户设置、事件索引及页面。已进行本地 Solidity、PostgreSQL、真实签名 Anvil 演练及浏览器组件交互测试。**2026-09-18 已部署公网 Arbitrum Sepolia 测试环境并切换新加坡站点入口。** 真实 Kernel / ZeroDev 签名交易、云端自动撮合与自动领取已通过；公开页面及登录弹窗已检查。尚未通过浏览器执行完整的已登录交易流程，组件夹具与真实协议验收分别记录。
 
@@ -81,7 +98,7 @@ Compose 以云端已有 v5.5.1 CLI 对本地 base + automation 输入执行只�
 
 隔离演练使用随机临时签名账户、loopback Anvil 和一次性 PostgreSQL schema，结束删除，不读取真实钱包或公网凭据。验收文件位于 `reports/generated/orderbook/` 和本任务 `work/task-state/`。
 
-## 本次公网测试发布验收
+## 2026-09-18 首次公网测试发布验收（历史记录）
 
 - 入口：`https://43.160.199.165/ctusd-orderbook-v2/markets`；仅一个新版环境。旧 `/ctusd-platform-fees/` 返回 410。
 - Factory：`0x0BC9bd3794E4cf92aE5328B4851307D81Fad7552`；Marketplace：`0x2Aa0AaBa55BC3AA0b1a0eEAB08c2aF0483E3D97B`。13 笔部署和 2 笔 bootstrap 交易确认。部署状态仍为 sandbox `FINALIZED_PENDING_EVIDENCE_VERIFICATION`，不能声称 formal/mainnet 验证。
@@ -91,7 +108,7 @@ Compose 以云端已有 v5.5.1 CLI 对本地 base + automation 输入执行只�
 - 原钱包派生方式和 ctUSD 地址保持；两个 keeper 各有独立测试 Gas 账户，分别充值 0.01 ETH、日预算 0.005 ETH。
 - 三库在旧写入者停止后导出、校验 SHA256 和归档目录；五个旧容器已停止，旧卷及镜像保留。归档目录：`/home/ubuntu/cpredict-migration/orderbook-v2-20260918/final-old-backup`。
 - 公网网页检查确认新环境、完整市场地址、求购/挂卖说明、已结算市场及 Privy 登录入口。真实交易验证直接使用 Kernel/provider，未冒充已登录浏览器 E2E。
-- 源码为本分支未提交改动，云端构建清单记录 641 个输入文件及其哈希；现有封版标签不变。尚未 Git commit/push。
+- 在 2026-09-18 首次发布时，源码仍为当时分支的未提交改动；云端构建清单记录 641 个输入文件及其哈希。此句仅描述首次发布的历史状态，不代表上方 2026-09-23 的 `main` 提交及增量发布状态。现有封版标签不变。
 
 证据：`work/task-state/orderbook-automatic-claims-accepted.json`、`orderbook-public-https-acceptance.json`、`orderbook-live-acceptance-capture.txt`。云端对应目录还保存 `final-reconciliation.json`、`live-acceptance.json`、`cutover-complete.json`。定时巡检维持已删除状态。
 
