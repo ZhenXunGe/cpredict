@@ -12,6 +12,7 @@ import {
   useMarket,
   useMarketClock,
   useMarketLive,
+  useBalance,
   useRules,
 } from "./data.js";
 import { parseAssetAmount } from "./amounts.js";
@@ -192,6 +193,7 @@ export function OrderbookPanel({
   const { api, account, login } = useSession(),
     begin = useOperation(),
     live = useMarketLive(market),
+    paymentBalance = useBalance(),
     now = useMarketClock(),
     q = useOrders(market);
   const [side, setSide] = useState<"bid" | "ask">("bid"),
@@ -238,6 +240,15 @@ export function OrderbookPanel({
   } catch {
     // The existing price validation owns malformed values on submit.
   }
+  const requestedReserve =
+      requestedUnits !== null && requestedPrice !== null
+        ? bidReserve(requestedUnits, requestedPrice)
+        : null,
+    insufficientPayment =
+      side === "bid" &&
+      requestedReserve !== null &&
+      paymentBalance.data !== undefined &&
+      requestedReserve > paymentBalance.data;
   const primaryOpen =
       !terminal &&
       !!live.data &&
@@ -272,7 +283,14 @@ export function OrderbookPanel({
       if (!live.data || !verified || terminal)
         throw new Error("当前市场暂不能挂单");
       if (units < live.data.minimumC2C) throw new Error("低于市场最小挂单份额");
-      if (side === "ask") {
+      if (side === "bid") {
+        const currentBalance = await paymentBalance.refetch(),
+          reserve = bidReserve(units, unitPrice);
+        if (currentBalance.error || currentBalance.data === undefined)
+          throw new AppError("chain_query_unavailable", 503);
+        if (reserve > currentBalance.data)
+          throw new AppError("insufficient_balance", 400);
+      } else {
         const currentBalance = await shareBalance.refetch();
         if (currentBalance.error || currentBalance.data === undefined)
           throw new AppError("chain_query_unavailable", 503);
@@ -468,11 +486,31 @@ export function OrderbookPanel({
           <Field label={`每份价格（${asset}）`}>
             <input
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => {
+                setPrice(e.target.value);
+                setError(null);
+              }}
               inputMode="decimal"
               required
             />
           </Field>
+          {side === "bid" && (
+            <p className="small">
+              可用余额：
+              {!account
+                ? "登录后核对"
+                : paymentBalance.isPending
+                  ? "正在核对…"
+                  : paymentBalance.data === undefined
+                    ? "暂时无法读取"
+                    : `${formatUnits(paymentBalance.data, 6)} ${asset}`}
+            </p>
+          )}
+          {insufficientPayment && (
+            <Notice tone="warning">
+              {`余额不足：当前可用 ${formatUnits(paymentBalance.data!, 6)} ${asset}，本求购单需冻结 ${formatUnits(requestedReserve!, 6)} ${asset}，请调整份数或价格。`}
+            </Notice>
+          )}
           {premiumAsk && (
             <Notice tone="warning">
               当前挂卖价格高于一级购买每份 1 {asset}
@@ -499,6 +537,11 @@ export function OrderbookPanel({
             disabled={
               !verified ||
               !live.data ||
+              (side === "bid" &&
+                !!account &&
+                (paymentBalance.isPending ||
+                  !!paymentBalance.error ||
+                  insufficientPayment)) ||
               (side === "ask" &&
                 !!account &&
                 (shareBalance.isPending ||
@@ -511,7 +554,11 @@ export function OrderbookPanel({
         </form>
       )}
       <ErrorNotice
-        error={error ?? (side === "ask" ? shareBalance.error : null) ?? q.error}
+        error={
+          error ??
+          (side === "ask" ? shareBalance.error : paymentBalance.error) ??
+          q.error
+        }
       />
       {allItems.length === 0 && <p>暂无未完成订单</p>}
       {pagination.items.map((o) => (

@@ -885,6 +885,13 @@ class FixtureApi extends SiteApi {
         return 0n;
       if (
         functionName === "balanceOf" &&
+        address?.toLowerCase() ===
+          this.environment.deployment.paymentToken.toLowerCase() &&
+        new URLSearchParams(location.search).has("low-asset-balance")
+      )
+        return 500000n;
+      if (
+        functionName === "balanceOf" &&
         new URLSearchParams(location.search).has("no-shares")
       )
         return 0n;

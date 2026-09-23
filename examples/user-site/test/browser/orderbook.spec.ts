@@ -135,6 +135,30 @@ test("funded bid defaults matching on; confirmation includes outcome, exact rese
   });
   expect(f.errors).toEqual([]);
 });
+test("bid shows insufficient payment balance before opening confirmation", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.goto(
+    `/test/browser/fixture.html?orderbook-test=1&low-asset-balance=1#/ctusd-test/markets/${A(101)}`,
+  );
+  const panel = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+  });
+  await expect(
+    panel.getByText("可用余额：0.5 ctUSD", { exact: true }),
+  ).toBeVisible();
+  await panel.getByLabel("份数", { exact: true }).fill("2");
+  await panel.getByLabel("每份价格（ctUSD）", { exact: true }).fill("0.5");
+  await expect(panel).toContainText(
+    "余额不足：当前可用 0.5 ctUSD，本求购单需冻结 1 ctUSD，请调整份数或价格。",
+  );
+  await expect(
+    panel.getByRole("button", { name: "核对求购", exact: true }),
+  ).toBeDisabled();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(f.errors).toEqual([]);
+});
 test("sell order shows insufficient balance before opening confirmation", async ({
   page,
 }) => {
