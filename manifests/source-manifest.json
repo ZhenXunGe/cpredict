@@ -46,7 +46,7 @@
     },
     {
       "path": ".gitignore",
-      "sha256": "f4d34efa839258f6c91a770099f99c0641c6ecd852c685ee5ea267cca5a2c0a1"
+      "sha256": "bc8747c8f8f5087db11f2ef7d0e815910813458db301336018ffd5b6d3b05c6c"
     },
     {
       "path": "LICENSE",
@@ -226,7 +226,7 @@
     },
     {
       "path": "docs/orderbook-autoclaim-release.md",
-      "sha256": "1f0176e0cc8f668b581415643569817e0153ea9b577f135aa709a7f6f0c39dc6"
+      "sha256": "8ed6092e1007f1876d9c8550f3acfb065b0f120f24144cfe7245a88bff99f2e7"
     },
     {
       "path": "docs/public-test-site-acceptance.md",
@@ -350,7 +350,7 @@
     },
     {
       "path": "examples/user-site/src/App.tsx",
-      "sha256": "763f5861e8a7f6ec0a21be5439db60b5765fc826caaee29093d45e74a9308aef"
+      "sha256": "60cc6217576f0da6658767fa9ede5a9b566b96c4fa83e8fb10a5c3c827830c2e"
     },
     {
       "path": "examples/user-site/src/AutomaticClaims.tsx",
@@ -438,7 +438,7 @@
     },
     {
       "path": "examples/user-site/src/pages/Creator.tsx",
-      "sha256": "cf5e2eafea5ea491cc3c06063c6da83010a6a410f910b783248dff34412de1de"
+      "sha256": "83951824e6b7dbb44959afd3322b8f00ad68b9a4f1e995f83ab07b983a546920"
     },
     {
       "path": "examples/user-site/src/pages/Entitlements.tsx",
@@ -458,7 +458,7 @@
     },
     {
       "path": "examples/user-site/src/pages/MarketDetail.tsx",
-      "sha256": "5280aafbf92f1b52b05721d579825950d31f6c3b393f5edcb2008022bea67131"
+      "sha256": "bcef6eefaa04fad166e9e098a90b44d8fc87f13a2f94175ba1fdfe8c8f53583e"
     },
     {
       "path": "examples/user-site/src/pages/Markets.tsx",
@@ -550,7 +550,7 @@
     },
     {
       "path": "examples/user-site/test/browser/fixture.tsx",
-      "sha256": "2aade84cbf34f4e010f2fe3e601113627efd83446230561210e3765087ff21b1"
+      "sha256": "de6a0dcef21dea20623511323e72a115673deff4e804d5aa11b8248d925aa92a"
     },
     {
       "path": "examples/user-site/test/browser/gas-payment.spec.ts",
@@ -578,7 +578,7 @@
     },
     {
       "path": "examples/user-site/test/browser/public-site.spec.ts",
-      "sha256": "5002bc031ed5e515267c116a87c116b85356edfbd5a073bb9d85cb265ee4e76b"
+      "sha256": "0bf459e43892bae6fd77b96ce69463322100d92217ad16cc3ff4ad890690e078"
     },
     {
       "path": "examples/user-site/test/browser/report-fixture.ts",
@@ -598,7 +598,7 @@
     },
     {
       "path": "examples/user-site/test/browser/wallet-loading.spec.ts",
-      "sha256": "0b6789160a0cb7edc231ea27d462f4fe5ad875e2748f6b7941bbecc7df7e991d"
+      "sha256": "aff885109053a356c6d8bf3dcb75288a1d2046b4c000b4b035cb67a5f938ed53"
     },
     {
       "path": "examples/user-site/test/browser/wallet-runtime-fixture.tsx",
@@ -1042,7 +1042,7 @@
     },
     {
       "path": "offchain/app-core/test/environment.test.ts",
-      "sha256": "3a34163136e94ee7ba45ca1c661574672ff38f79dde476296c8697803da2fcee"
+      "sha256": "34d71d71b0a2171a57ded0f1e7d905ae52049368d79f6680b3c72e2a834af21f"
     },
     {
       "path": "offchain/app-core/test/fixtures.ts",
