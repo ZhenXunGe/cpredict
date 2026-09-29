@@ -188,6 +188,9 @@ const creatorSummary = new URLSearchParams(location.search).get(
 const creatorResolved = ["resolved", "multi", "unavailable"].includes(
   creatorSummary ?? "",
 );
+const zeroWinningSupply = new URLSearchParams(location.search).has(
+  "zero-winning-supply",
+);
 const creatorPrincipals =
   creatorSummary === "zero"
     ? [0n, 0n]
@@ -253,8 +256,8 @@ const market = {
   primaryFilledUnits: "0",
   primaryPayment: "0",
   creatorBond: "10000000",
-  state: creatorResolved ? 1 : 0,
-  voidReason: 0,
+  state: zeroWinningSupply ? 2 : creatorResolved ? 1 : 0,
+  voidReason: zeroWinningSupply ? 2 : 0,
   winningOutcome: creatorResolved
     ? creatorSummary === "multi"
       ? "2"
@@ -844,14 +847,16 @@ class FixtureApi extends SiteApi {
           creatorC2CFeeBps: 25,
           protocolTreasury: A(6),
         },
-        marketState: timeoutVoided
-          ? this.environment.deployment.protocolVersion === "legacy-v1"
-            ? 3
-            : 2
-          : creatorResolved
-            ? 1
-            : 0,
-        voidReason: timeoutVoided ? 3 : 0,
+        marketState: zeroWinningSupply
+          ? 2
+          : timeoutVoided
+            ? this.environment.deployment.protocolVersion === "legacy-v1"
+              ? 3
+              : 2
+            : creatorResolved
+              ? 1
+              : 0,
+        voidReason: zeroWinningSupply ? 2 : timeoutVoided ? 3 : 0,
         winningOutcome: creatorResolved
           ? creatorSummary === "multi"
             ? 2

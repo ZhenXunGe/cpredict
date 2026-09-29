@@ -9,6 +9,7 @@ import {
   sameAddress,
 } from "../../../../offchain/app-core/src/contracts.js";
 import { SHARE_SCALE } from "../../../../offchain/sdk/src/units.js";
+import { VOID_REASON } from "../../../../offchain/sdk/src/market-state.js";
 import { useSession } from "../wallets.js";
 import { useOperation } from "../operations.js";
 import {
@@ -169,7 +170,11 @@ function MarketContent({ marketAddress }: { marketAddress: Address }) {
             {(live.data?.state ?? market.state) === 2 && (
               <Notice tone="warning">
                 市场已作废，可退款权益按实际持仓与合约状态计算。
-                {(live.data?.voidReason ?? market.voidReason) === 3 &&
+                {(live.data?.voidReason ?? market.voidReason) ===
+                  VOID_REASON.NO_WINNING_SUPPLY &&
+                  "创建者提交结算时，所选获胜结果的总份额为 0，合约因此自动作废市场；不设赢家，所有结果的当前份额持有人按份额退还本金。"}
+                {(live.data?.voidReason ?? market.voidReason) ===
+                  VOID_REASON.TIMEOUT &&
                   "超时退款与押金罚没补偿分阶段领取。"}
               </Notice>
             )}

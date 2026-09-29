@@ -965,7 +965,11 @@ function CreatorMarket({ market }: { market: Address }) {
         { label: "证据哈希", value: evidenceHash },
       ],
       feeNote:
-        "终局操作不可撤回。合约按现有规则结算收益或退款，网络 Gas 可选择项目代付或自行支付 ETH。请自行保存并公开证据原文；链上只保存其哈希。",
+        "终局操作不可撤回。合约按现有规则结算收益或退款，网络 Gas 可选择项目代付或自行支付 ETH。" +
+        (kind === "resolve"
+          ? "若所选获胜结果的总份额为 0，即使提交正常结算，合约也会自动作废市场并按份额退还本金，不产生赢家收益。"
+          : "") +
+        "请自行保存并公开证据原文；链上只保存其哈希。",
     });
   };
   return (
@@ -1098,6 +1102,9 @@ function CreatorMarket({ market }: { market: Address }) {
               <p className="small">
                 结算须符合结果判断截止时间与结算窗口；实际执行由合约再次校验。
               </p>
+              <Notice tone="warning">
+                若所选获胜结果在结算时总份额为 0，合约会自动作废市场，不设赢家，并向所有结果的当前份额持有人退还本金。
+              </Notice>
             </>
           ) : (
             <Link to={`/${api.environment.id}/entitlements`}>
