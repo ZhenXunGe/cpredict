@@ -758,6 +758,41 @@ test("market lists identify pending timeouts and legacy timeouts remain terminal
   ).toHaveCount(0);
 });
 
+test("a zero-share winning choice explains automatic void without naming an unrecorded result", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto(
+    `${fixture}?zero-winning-supply=1#/ctusd-test/markets/${market}`,
+  );
+  await expect(page.locator(".status-voided")).toHaveText("已作废");
+  await expect(
+    page.getByText(/所选获胜结果的总份额为 0，合约因此自动作废市场/),
+  ).toBeVisible();
+  await expect(page.getByText(/^终局结果：/)).toHaveCount(0);
+
+  await page.goto(
+    `${fixture}?timeout-test=voided#/ctusd-test/markets/${market}`,
+  );
+  await expect(
+    page.getByText(/所选获胜结果的总份额为 0，合约因此自动作废市场/),
+  ).toHaveCount(0);
+
+  await page.goto(
+    `${fixture}?timeout-test=before#/ctusd-test/creator/${market}`,
+  );
+  await expect(
+    page.getByText(/若所选获胜结果在结算时总份额为 0，合约会自动作废市场/),
+  ).toBeVisible();
+  await page
+    .getByLabel("证据说明与公开链接")
+    .fill("测试结果依据：https://example.com/results");
+  await page.getByRole("button", { name: "核对结果并结算" }).click();
+  await expect(page.getByRole("dialog")).toContainText(
+    "若所选获胜结果的总份额为 0，即使提交正常结算",
+  );
+});
+
 test("long market lists stay bounded and navigate by page", async ({
   page,
 }) => {
