@@ -47,3 +47,4 @@ reports/web-demo/*.png
 .DS_Store
 .idea/
 .vscode/
+/.cursor/
