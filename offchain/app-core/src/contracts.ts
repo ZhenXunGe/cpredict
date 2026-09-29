@@ -79,6 +79,7 @@ export const deploymentSchema = z.strictObject({
   id,
   protocolVersion: z.enum(["legacy-v1", "time-v2"]).optional(),
   marketplaceVersion: z.enum(["fixed-v1", "orderbook-v2"]).optional(),
+  orderbookReceiverRecovery: z.boolean().optional(),
   manifestHash: hash,
   sourceCommit: z.string().regex(/^[\da-f]{40}$/),
   chainId: z.literal(421614),

@@ -53,6 +53,24 @@ describe("optional Privy WalletConnect project override", () => {
   });
 });
 
+it("accepts receiver recovery deployment metadata without relaxing unknown fields", () => {
+  const deployment = { ...env.deployment, orderbookReceiverRecovery: true };
+  const site = {
+    version: 1,
+    defaultEnvironment: env.id,
+    environments: [{ ...env, deployment }],
+  };
+  expect(siteConfigSchema.safeParse(site).success).toBe(true);
+  expect(
+    siteConfigSchema.safeParse({
+      ...site,
+      environments: [
+        { ...env, deployment: { ...deployment, unexpectedFlag: true } },
+      ],
+    }).success,
+  ).toBe(false);
+});
+
 describe("historical market isolation", () => {
   const historical = {
     ...env,

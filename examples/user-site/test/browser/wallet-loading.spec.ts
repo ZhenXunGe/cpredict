@@ -7,7 +7,16 @@ async function configure(page: Page) {
   );
   await page.route("**/site-config.json", (route) =>
     route.fulfill({
-      json: { version: 1, defaultEnvironment: env.id, environments: [env] },
+      json: {
+        version: 1,
+        defaultEnvironment: env.id,
+        environments: [
+          {
+            ...env,
+            deployment: { ...env.deployment, orderbookReceiverRecovery: true },
+          },
+        ],
+      },
     }),
   );
   await page.route("**/ctusd/indexer/public/v2/markets?*", (route) =>
@@ -38,6 +47,17 @@ async function configure(page: Page) {
     }),
   );
 }
+
+test("root redirects to the configured market with receiver recovery metadata", async ({
+  page,
+}) => {
+  await configure(page);
+  await page.goto("http://127.0.0.1:4207/", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(`http://127.0.0.1:4207/${env.id}/markets`);
+  await expect(
+    page.getByRole("heading", { name: "探索市场", exact: true }),
+  ).toBeVisible();
+});
 
 test("built public browsing and account gates do not wait for the wallet bundle", async ({
   page,
