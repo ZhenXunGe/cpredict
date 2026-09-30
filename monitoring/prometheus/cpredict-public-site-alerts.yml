@@ -48,3 +48,18 @@ groups:
         for: 5m
         annotations:
           summary: Unexpected application errors exceed the development capacity target
+      - alert: CpredictRpcReadUnavailable
+        expr: sum by (service) (cpredict_rpc_eligible{category="read"}) == 0
+        for: 2m
+        annotations:
+          summary: No qualified read RPC remains for this service
+      - alert: CpredictRpcCredentialRejected
+        expr: sum by (service, provider) (increase(cpredict_rpc_requests_total{outcome="auth"}[5m])) > 0
+        for: 0m
+        annotations:
+          summary: An RPC credential was rejected; inspect the private configuration without logging its URL
+      - alert: CpredictRpcQuotaExhausted
+        expr: sum by (service, provider) (increase(cpredict_rpc_requests_total{outcome="quota"}[5m])) > 0
+        for: 0m
+        annotations:
+          summary: An RPC provider exhausted quota and entered timed recovery checks

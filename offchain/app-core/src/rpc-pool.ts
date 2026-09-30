@@ -2,10 +2,29 @@ import { Counter, Gauge, Histogram, type Registry } from "prom-client";
 import { custom } from "viem";
 import { z } from "zod";
 
-const nodeName = z.enum(["alchemy", "alchemy-2", "alchemy-3", "ankr", "drpc"]);
+const nodeName = z.enum([
+  "alchemy",
+  "alchemy-2",
+  "alchemy-3",
+  "ankr",
+  "ankr-2",
+  "ankr-3",
+  "drpc",
+  "drpc-2",
+  "drpc-3",
+  "tenderly",
+  "thirdweb",
+  "tatum",
+  "zan",
+  "publicnode",
+]);
+const capabilitySchema = z.enum(["read", "history", "receipt", "logs"]);
+type Capability = z.infer<typeof capabilitySchema>;
+const capabilities: Capability[] = capabilitySchema.options;
 const endpoint = z.object({
   name: nodeName,
   initialCooldownSeconds: z.number().int().min(0).max(86400).optional(),
+  disabledCapabilities: z.array(capabilitySchema).max(4).optional(),
   url: z
     .string()
     .url()
@@ -35,6 +54,7 @@ export const rpcProbeSchema = z.object({
 export type RpcProbe = z.infer<typeof rpcProbeSchema>;
 export interface RpcFallbackConfig {
   primaryName?: z.infer<typeof nodeName>;
+  primaryDisabledCapabilities?: readonly Capability[];
   endpoints: z.infer<typeof endpoint>[];
   probe: RpcProbe;
 }
@@ -42,20 +62,41 @@ export function parseRpcFallbackConfig(
   env: Readonly<Record<string, string | undefined>>,
 ): RpcFallbackConfig | undefined {
   const value = env.CPREDICT_RPC_FALLBACKS_JSON;
-  if (!value?.trim() || value === "[]") return undefined;
+  if (!value?.trim() || value === "[]") {
+    if (env.CPREDICT_RPC_PRIMARY_DISABLED_CAPABILITIES_JSON?.trim())
+      throw new Error("invalid private RPC fallback configuration");
+    return undefined;
+  }
   try {
-    const endpoints = z.array(endpoint).min(1).max(4).parse(JSON.parse(value));
+    const endpoints = z.array(endpoint).min(1).max(12).parse(JSON.parse(value));
     const primaryName = nodeName.parse(
       env.CPREDICT_RPC_PRIMARY_NAME ?? "alchemy",
     );
+    const primaryDisabledCapabilities = z
+      .array(capabilitySchema)
+      .max(4)
+      .parse(
+        JSON.parse(
+          env.CPREDICT_RPC_PRIMARY_DISABLED_CAPABILITIES_JSON?.trim() || "[]",
+        ),
+      );
     if (
+      new Set(primaryDisabledCapabilities).size !==
+        primaryDisabledCapabilities.length ||
       new Set(endpoints.map((e) => e.name)).size !== endpoints.length ||
+      endpoints.some(
+        (e) =>
+          e.disabledCapabilities &&
+          new Set(e.disabledCapabilities).size !==
+            e.disabledCapabilities.length,
+      ) ||
       endpoints.some((e) => e.name === primaryName) ||
       new Set(endpoints.map((e) => e.url)).size !== endpoints.length
     )
       throw new Error();
     return {
       primaryName,
+      primaryDisabledCapabilities,
       endpoints,
       probe: rpcProbeSchema.parse(
         JSON.parse(env.CPREDICT_RPC_PROBE_JSON ?? ""),
@@ -87,13 +128,12 @@ export const READ_METHODS = new Set([
   "eth_call",
   "eth_estimateGas",
 ]);
-type Capability = "read" | "history" | "receipt" | "logs";
-const capabilities: Capability[] = ["read", "history", "receipt", "logs"];
 type Reason =
   | "network"
   | "timeout"
   | "rate_limit"
   | "quota"
+  | "auth"
   | "server"
   | "invalid_response"
   | "chain"
@@ -137,6 +177,7 @@ interface Node {
   name: string;
   url: string;
   logsOnly: boolean;
+  disabledCapabilities?: readonly Capability[] | undefined;
   head: bigint;
   states: Record<Capability, State>;
   checking?: Promise<void>;
@@ -238,6 +279,7 @@ export class RpcReadPool {
         name: options.fallback?.primaryName ?? "alchemy",
         url: options.url,
         logsOnly: false,
+        disabledCapabilities: options.fallback?.primaryDisabledCapabilities,
       },
       ...(options.fallback?.endpoints ?? []).map((e) => ({
         ...e,
@@ -322,6 +364,7 @@ export class RpcReadPool {
     const s = n.states[c];
     return (
       (!this.options.capabilities || this.options.capabilities.includes(c)) &&
+      !n.disabledCapabilities?.includes(c) &&
       (!n.logsOnly || c === "logs") &&
       s.qualified &&
       s.until <= this.now()
@@ -396,6 +439,7 @@ export class RpcReadPool {
     const immediate = [
       "rate_limit",
       "quota",
+      "auth",
       "chain",
       "stale",
       "capability",
@@ -405,23 +449,25 @@ export class RpcReadPool {
       s.until =
         this.now() +
         Math.max(
-          error.reason === "quota"
-            ? Math.min(
-                3_600_000,
-                900_000 * 2 ** Math.min(2, s.quotaFailures - 1),
-              )
-            : error.reason === "capability"
+          error.reason === "auth"
+            ? 86_400_000
+            : error.reason === "quota"
               ? Math.min(
                   3_600_000,
-                  300_000 * 2 ** Math.min(4, s.capabilityFailures - 1),
+                  900_000 * 2 ** Math.min(2, s.quotaFailures - 1),
                 )
-              : 60_000,
+              : error.reason === "capability"
+                ? Math.min(
+                    3_600_000,
+                    300_000 * 2 ** Math.min(4, s.capabilityFailures - 1),
+                  )
+                : 60_000,
           error.retryAfterMs,
         );
       s.nextProbe = s.until;
     }
     // Rate limits and transport failures apply to this provider across capabilities.
-    if (["rate_limit", "quota", "chain"].includes(error.reason))
+    if (["rate_limit", "quota", "auth", "chain"].includes(error.reason))
       for (const other of capabilities)
         if (other !== c)
           Object.assign(n.states[other], {
@@ -478,6 +524,12 @@ export class RpcReadPool {
       const retryAfter = Number.isFinite(parsedRetryAfter)
         ? parsedRetryAfter
         : 0;
+      // Invalid credentials cannot serve any capability. Do not parse or log
+      // the provider's response body, which may echo the private endpoint.
+      if (response.status === 401 || response.status === 403) {
+        await response.body?.cancel().catch(() => undefined);
+        throw new AttemptError("auth");
+      }
       // Bounded response, including streaming reads under the same timeout.
       let body: Record<string, unknown>;
       try {
@@ -516,6 +568,16 @@ export class RpcReadPool {
       const err = body.error as
         | { code?: unknown; message?: unknown; data?: unknown }
         | undefined;
+      if (
+        err &&
+        (err.code === 401 ||
+          err.code === 403 ||
+          (typeof err.message === "string" &&
+            /(?:invalid|expired|missing|unauthorized).{0,30}(?:api[ -]?key|access[ -]?token|credential|project[ -]?id)/i.test(
+              err.message,
+            )))
+      )
+        throw new AttemptError("auth");
       const reason = quotaReason(err?.code, err?.message);
       if (reason) throw new AttemptError(reason, retryAfter);
       if (response.status === 429)
@@ -670,6 +732,7 @@ export class RpcReadPool {
       let baseChecked = false;
       for (const c of capabilities) {
         const s = n.states[c];
+        if (n.disabledCapabilities?.includes(c)) continue;
         if (n.logsOnly && c !== "logs") continue;
         if (this.options.capabilities && !this.options.capabilities.includes(c))
           continue;

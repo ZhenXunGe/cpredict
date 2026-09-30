@@ -1,15 +1,35 @@
 # Read RPC failover
 
 The optional server-only `CPREDICT_RPC_FALLBACKS_JSON` is an ordered JSON array of
-`{name,url,initialCooldownSeconds?}` entries (at most four). The primary identity
+`{name,url,initialCooldownSeconds?,disabledCapabilities?}` entries (at most
+twelve). The primary identity
 is `CPREDICT_RPC_PRIMARY_NAME` (default `alchemy`); supported bounded names are
-`alchemy`, `alchemy-2`, `alchemy-3`, `ankr`, `drpc`. Array order defines fallback
+`alchemy`, `alchemy-2`, `alchemy-3`, `ankr`, `ankr-2`, `ankr-3`, `drpc`, `drpc-2`, `drpc-3`, `tenderly`, `thirdweb`,
+`tatum`, `zan`, `publicnode`. Array order defines fallback
 priority. Independent credentials need independent names, never duplicate URLs.
 `initialCooldownSeconds` (0..86400) keeps a known exhausted node out of startup
 probes and business traffic, then requires normal three-probe recovery admission.
 URLs must use HTTPS (loopback HTTP is allowed for tests).
 Names are bounded; duplicate endpoints are rejected. Never put real values in
 tracked files or browser configuration. Empty/unset retains single-provider mode.
+`CPREDICT_RPC_PRIMARY_DISABLED_CAPABILITIES_JSON` optionally excludes the
+configured primary from named read capabilities (`read`, `history`, `receipt`,
+`logs`) when fallbacks are configured. For an indexer with a metered primary,
+`["history"]` keeps explicit historical block and state reads on qualified
+backups while ordinary reads and receipts can use the primary. The primary is
+not probed or automatically readmitted for excluded capabilities. A backup
+failure returns RPC unavailable rather than silently spending the primary's
+metered quota. This is a per-service private setting; it does not change
+transaction submission or the official-first indexer log path. The `history`
+category also contains historical code, storage and hash lookups, not only
+`eth_getBlockByNumber`; latest-tag block reads remain in `read`.
+The same `disabledCapabilities` list on a fallback keeps a second metered
+credential out of history without removing it as an ordinary read/receipt
+backup. Excluded capabilities are never qualified or automatically restored.
+Credential-free public candidate URLs and dated capability observations are
+recorded separately in [public RPC candidates](public-rpc-candidates-20260928.md).
+That inventory is not a live configuration or a capacity guarantee; keep the
+runtime pool in private server configuration and revalidate it before use.
 
 `CPREDICT_RPC_PROBE_JSON` is required with backups. It contains a known canonical
 `blockNumber`, `blockHash`, `transactionHash`, `receiptBlockNumber`,
@@ -41,7 +61,10 @@ invalid parameters cannot. Every request uses one total caller budget, split
 between candidates, with at most one business attempt per provider. Normal
 failures open the circuit after two failures for 60s. Rate limits open it
 immediately, respecting Retry-After; repeated quota failures back off 15/30/60min.
-Unsupported capabilities back off 5/10/20/40/60min. Workers only qualify
+Unsupported capabilities back off 5/10/20/40/60min. HTTP 401/403 isolates an
+invalid credential for 24 hours across capabilities, without logging the
+upstream body; rotate or correct the private setting rather than waiting for
+recovery. Workers only qualify
 read/history/receipt; metadata only read/history. A recovered healthy backup stops
 probing after its third success even when it is not currently selected.
 Recovery uses one coalesced probe per node, three successes 30s apart, and at
@@ -58,12 +81,29 @@ route does not forward authorization/cookie headers to providers. Underlying
 errors expose only numeric code and validated hex revert data, never messages
 that may contain credentials.
 
+The claims and matching services may independently configure
+`CPREDICT_AUTOMATION_WRITE_RPC_URL` plus up to eight private URLs in
+`CPREDICT_AUTOMATION_WRITE_RPC_FALLBACKS_JSON`. Before preparing a new signed
+transaction, each lane probes writer candidates in order for the expected
+chain and a head no more than 120 blocks behind the qualified read pool,
+retrying failed candidates after bounded 1/5/15/60-minute
+backoff. This keeps monthly quota-reset candidates eligible for recovery. The selected
+writer receives the persisted signed transaction once. A send timeout or
+unknown result is **never** sent to another provider; the durable original hash
+must be reconciled first. `cpredict_automation_writer_selected` exposes the
+last preflight-qualified one-based writer index (zero after failed admission),
+without URLs. Read fallback settings do not implicitly become writer settings.
+
 Metrics `cpredict_rpc_requests_total`, `cpredict_rpc_duration_seconds`,
 `cpredict_rpc_switches_total`, `cpredict_rpc_eligible`, `cpredict_rpc_active`
 are exposed through each service's existing metrics endpoint (metadata adds
 `/metrics`). Request/latency labels include service/provider/category and bounded RPC method
 (`non_read` for other methods); request outcome and switch reason remain sanitized. Metrics do
-not imply a configured external notification receiver.
+not imply a configured external notification receiver. The public-site rule
+template alerts when a service has no eligible read node, a credential is
+rejected, or quota is exhausted. These rules send no notification until a
+Prometheus collector and Alertmanager receiver are configured and verified in
+the target environment.
 
 Rollout: retain private config and exact image rollback copies, verify the real
 provider preflight, build/test candidate images, test against disposable isolated
@@ -84,7 +124,7 @@ Identical contract reads share results only within the current scan at one pinne
 head. No cross-block RPC response cache or empty-result synthesis is used.
 Interrupted/failed scans and owners yielding actions never acquire an idle lease.
 
-Indexer per-block canonical headers, fixed log spans, hash/parent validation,
-receipt association and atomic projections remain unchanged. Lower HTTP counts
-from batching alone are not a billed-request saving; compare RPC attempts by
-method and use provider billing for actual CU accounting.
+Indexer canonical anchor, fixed log span, receipt association and atomic
+projection checks remain authoritative. Lower HTTP counts from batching alone
+are not a billed-request saving; compare RPC attempts by method and use
+provider billing for actual CU accounting.

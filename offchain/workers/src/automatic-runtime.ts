@@ -30,7 +30,10 @@ import { AutomaticClaimsWorker } from "./automatic-claims.js";
 import { PostgresAutomaticStore } from "./automatic-store.js";
 import { ViemAutomationChain } from "./automatic-chain.js";
 import { LedgerAutomaticSource } from "./automatic-source.js";
-import { submissionEndpointReady } from "./automatic-submission.js";
+import {
+  SubmissionEndpointPool,
+  parseSubmissionUrls,
+} from "./automatic-submission.js";
 import { MatchingSource } from "./matching-source.js";
 const databaseUrl = z
   .string()
@@ -51,6 +54,7 @@ export const automationConfigSchema = z.object({
   CPREDICT_AUTOMATION_EXPECTED_SIGNER: address,
   CPREDICT_AUTOMATION_RPC_URL: secureUrl,
   CPREDICT_AUTOMATION_WRITE_RPC_URL: secureUrl.optional(),
+  CPREDICT_AUTOMATION_WRITE_RPC_FALLBACKS_JSON: z.string().optional(),
   CPREDICT_AUTOMATION_DATABASE_URL: databaseUrl,
   CPREDICT_AUTOMATION_CONTROL_DATABASE_URL: databaseUrl,
   CPREDICT_AUTOMATION_DAILY_BUDGET_WEI: positive,
@@ -148,13 +152,31 @@ export async function startAutomaticService(
     chain: arbitrumSepolia,
     transport: pool.transport,
   });
-  const writer = http(
+  const writeUrls = parseSubmissionUrls(
     cfg.CPREDICT_AUTOMATION_WRITE_RPC_URL ?? cfg.CPREDICT_AUTOMATION_RPC_URL,
-    {
-      retryCount: 0,
-      timeout: 8000,
-    },
-  )({ chain: arbitrumSepolia });
+    cfg.CPREDICT_AUTOMATION_WRITE_RPC_FALLBACKS_JSON,
+  );
+  const writerSelected = new Gauge({
+    name: "cpredict_automation_writer_selected",
+    help: "Selected preflight-qualified writer (one-based index); zero means none",
+    registers: [registry],
+  });
+  const writer = new SubmissionEndpointPool(
+    writeUrls.map((url) => {
+      const transport = http(url, { retryCount: 0, timeout: 2500 })({
+        chain: arbitrumSepolia,
+      });
+      return {
+        request: (input: {
+          method: "eth_chainId" | "eth_blockNumber" | "eth_sendRawTransaction";
+          params?: readonly unknown[];
+        }) => transport.request(input as never),
+      };
+    }),
+    environment.deployment.chainId,
+    Date.now,
+    (index) => writerSelected.set(index === undefined ? 0 : index + 1),
+  );
   const wallet = createWalletClient({
     chain: arbitrumSepolia,
     account,
@@ -163,7 +185,11 @@ export async function startAutomaticService(
         request: async ({ method, params }) =>
           READ_METHODS.has(method)
             ? pool.request(method, (params as readonly unknown[]) ?? [])
-            : writer.request({ method, params } as never),
+            : method === "eth_sendRawTransaction"
+              ? writer.sendRaw((params as readonly string[])[0]!)
+              : Promise.reject(
+                  new Error("unsupported_automation_write_method"),
+                ),
       },
       { retryCount: 0 },
     ),
@@ -212,11 +238,10 @@ export async function startAutomaticService(
     source instanceof LedgerAutomaticSource
       ? (action) => source.stillEligible(action)
       : undefined,
-    () =>
-      submissionEndpointReady(
-        (input) => writer.request(input),
-        environment.deployment.chainId,
-      ),
+    async () => {
+      const head = await client.getBlockNumber();
+      return writer.ready(head > 120n ? head - 120n : 1n);
+    },
     maxTransactionCost,
   );
   const worker = new AutomaticClaimsWorker(

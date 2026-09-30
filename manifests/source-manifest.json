@@ -22,7 +22,7 @@
     },
     {
       "path": ".env.example",
-      "sha256": "c318e73da008889abe3286d062561cb7be2dc9ff820ba1480b8de9bdbcbbb34e"
+      "sha256": "26c732aaea642766958d2db5a8d3f1ad008cde524856ea47a64f337f11830bb9"
     },
     {
       "path": ".github/dependabot.yml",
@@ -62,7 +62,7 @@
     },
     {
       "path": "compose.public-site.yaml",
-      "sha256": "6a78f1566f277526fb881c596025cebedf974f2b4b80bf7eeaa40babb015d71d"
+      "sha256": "d493253edaf92fc12dd47ff555d6ec1936fc536aafdd603e8587c53ebc215544"
     },
     {
       "path": "compose.static-handoff.yaml",
@@ -74,7 +74,7 @@
     },
     {
       "path": "compose.yaml",
-      "sha256": "b60394474130ab4c31f1cfbbd5ed1100e189cc23617d2d98318fea9f7feebad4"
+      "sha256": "2cee728de26adfbec2221e07a3566c49c63bbda53e9642f6614b582e83e8978c"
     },
     {
       "path": "deploy/alerts/automation.yaml",
@@ -942,7 +942,7 @@
     },
     {
       "path": "monitoring/prometheus/cpredict-public-site-alerts.yml",
-      "sha256": "61a967e1e6c58e6f8bd15baa5f84528fe3825bdc972b5d180ee45a2d75b0b671"
+      "sha256": "8d0f95880d1758463af47502135f7cf1dded1bffbdc786bc40ffde4cc295a2d9"
     },
     {
       "path": "monitoring/prometheus/public-site-scrape.example.yml",
@@ -1010,7 +1010,7 @@
     },
     {
       "path": "offchain/app-core/src/rpc-pool.ts",
-      "sha256": "8d083adc071b6a32d79d251b9f3169e84478d2c7b3ea98ee2d1f256344b7945b"
+      "sha256": "5070e0a199e7d47ba4efda7c362858248f47aea3f41c99909e791a64147fe4c2"
     },
     {
       "path": "offchain/app-core/src/service-url.ts",
@@ -1066,7 +1066,7 @@
     },
     {
       "path": "offchain/app-core/test/rpc-pool.test.ts",
-      "sha256": "6cb96a1261ef6fc69477ddeb31bd1bbb5c2fd93b295be560338751ca780e7888"
+      "sha256": "5d7ce4c3e7e8d944eb12fccfdb6d69f8b3b27ab92ca353887bb52e803d6972bb"
     },
     {
       "path": "offchain/app-core/test/service-url.test.ts",
@@ -1890,7 +1890,7 @@
     },
     {
       "path": "offchain/workers/src/automatic-runtime.ts",
-      "sha256": "bf801739b10060ea70ad8242f67bca75b0fc98ed9652d0132ea983167ac71128"
+      "sha256": "1ceae312d836865831ac1565a79defe70846e4f908219e601c85389b57d2cc4a"
     },
     {
       "path": "offchain/workers/src/automatic-source.ts",
@@ -1902,7 +1902,7 @@
     },
     {
       "path": "offchain/workers/src/automatic-submission.ts",
-      "sha256": "61cad355b8141296a1d45ff6acc7ab8ca5266334921b3cced1730878865efa79"
+      "sha256": "bc4542f9c1de6cc7aad920c32d86870169cfe3e74a00acce59011001a5539cde"
     },
     {
       "path": "offchain/workers/src/config.ts",
@@ -1958,7 +1958,7 @@
     },
     {
       "path": "offchain/workers/test/automatic-submission.test.ts",
-      "sha256": "473710858b516ddb5fefc98fee686e6cfe79fc127de1b49e4e7da6b8c5114c66"
+      "sha256": "251a7f5e701d69abd3e54e16f092ed2540d1c46c66bed510bddbe90cc19d9dcd"
     },
     {
       "path": "offchain/workers/test/config.test.ts",

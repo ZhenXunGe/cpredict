@@ -35,6 +35,9 @@ afterEach(async () => {
 type Mode =
   | "ok"
   | "429"
+  | "401"
+  | "403"
+  | "auth_json"
   | "quota"
   | "500"
   | "disconnect"
@@ -93,6 +96,21 @@ async function fixture(overrides: Partial<RpcPoolOptions> = {}) {
       res.end(
         JSON.stringify({
           error: { code: 429, message: "too many requests private-url" },
+        }),
+      );
+      return;
+    }
+    if (mode === "401" || mode === "403") {
+      res.writeHead(Number(mode));
+      res.end("private endpoint denied");
+      return;
+    }
+    if (mode === "auth_json") {
+      res.end(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: input.id,
+          error: { code: -32000, message: "invalid API key private-secret" },
         }),
       );
       return;
@@ -279,6 +297,90 @@ describe("bounded RPC read pool", () => {
     f.advance(120_000);
     await f.pool.probe();
     expect(f.calls.filter((c) => c.name === "ankr")).toHaveLength(0);
+  });
+  it("requalifies a quota-exhausted provider after its monthly reset", async () => {
+    const f = await fixture({ timeoutMs: 1500 });
+    await f.start();
+    f.modes.alchemy = "quota";
+    await f.pool.request("eth_call", [{}]);
+    f.calls.length = 0;
+    f.advance(899_000);
+    await f.pool.probe();
+    expect(f.calls.some((c) => c.name === "alchemy")).toBe(false);
+    f.modes.alchemy = "ok";
+    f.advance(1_000);
+    await f.pool.probe();
+    f.advance(30_000);
+    await f.pool.probe();
+    f.advance(30_000);
+    await f.pool.probe();
+    f.calls.length = 0;
+    await f.pool.request("eth_call", [{}]);
+    expect(f.calls).toEqual([{ name: "alchemy", method: "eth_call" }]);
+  });
+  it.each(["401", "403", "auth_json"] as Mode[])(
+    "isolates a rejected credential across capabilities without repeated probes (%s)",
+    async (mode) => {
+      const f = await fixture({ timeoutMs: 1500 });
+      await f.start();
+      f.modes.alchemy = mode;
+      await f.pool.request("eth_call", [{}]);
+      f.calls.length = 0;
+      await f.pool.request("eth_getTransactionReceipt", [
+        probe.transactionHash,
+      ]);
+      f.advance(3_600_000);
+      await f.pool.probe();
+      expect(f.calls.some((c) => c.name === "alchemy")).toBe(false);
+      expect(await f.registry.metrics()).toContain('outcome="auth"');
+      f.modes.alchemy = "ok";
+      f.advance(82_800_000);
+      await f.pool.probe();
+      expect(
+        f.calls.some((c) => c.name === "alchemy" && c.method === "eth_chainId"),
+      ).toBe(true);
+    },
+  );
+  it("accepts all nine independent paid identities plus bounded public fallbacks", () => {
+    const names = [
+      "alchemy-2",
+      "alchemy-3",
+      "ankr",
+      "ankr-2",
+      "ankr-3",
+      "drpc",
+      "drpc-2",
+      "drpc-3",
+      "tenderly",
+      "thirdweb",
+    ];
+    const config = parseRpcFallbackConfig({
+      CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify(
+        names.map((name) => ({ name, url: `https://${name}.example.invalid` })),
+      ),
+      CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+    });
+    expect(config?.endpoints.map((endpoint) => endpoint.name)).toEqual(names);
+    expect(
+      parseRpcFallbackConfig({
+        CPREDICT_RPC_PRIMARY_DISABLED_CAPABILITIES_JSON: "",
+        CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify([
+          { name: "ankr", url: "https://ankr.example.invalid" },
+        ]),
+        CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+      })?.primaryDisabledCapabilities,
+    ).toEqual([]);
+    expect(() =>
+      parseRpcFallbackConfig({
+        CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify(
+          [...names, "tatum", "zan", "publicnode"].map((name) => ({
+            name,
+            url: `https://${name}.example.invalid`,
+          })),
+        ),
+        CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+      }),
+    ).toThrow("invalid private RPC fallback configuration");
   });
   it("requires three spaced successes and five minutes on backup before failback", async () => {
     const f = await fixture({ timeoutMs: 1500 });
@@ -630,5 +732,140 @@ describe("bounded RPC read pool", () => {
         CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
       }),
     ).toThrow();
+  });
+  it("accepts bounded names for qualified public RPC candidates", () => {
+    for (const name of [
+      "tenderly",
+      "thirdweb",
+      "tatum",
+      "zan",
+      "publicnode",
+      "drpc-2",
+    ]) {
+      expect(
+        parseRpcFallbackConfig({
+          CPREDICT_RPC_PRIMARY_NAME: name,
+          CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify([
+            { name: "drpc", url: "https://backup.example.invalid" },
+          ]),
+          CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+        })?.primaryName,
+      ).toBe(name);
+    }
+  });
+  it("keeps an excluded primary capability on a qualified backup", async () => {
+    const f = await fixture();
+    const fallback = parseRpcFallbackConfig({
+      CPREDICT_RPC_PRIMARY_NAME: "alchemy",
+      CPREDICT_RPC_PRIMARY_DISABLED_CAPABILITIES_JSON: '["history"]',
+      CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify([
+        { name: "ankr", url: f.url("ankr") },
+      ]),
+      CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+    })!;
+    const pool = new RpcReadPool({
+      url: f.url("alchemy"),
+      chainId: 421614,
+      service: "excluded-primary",
+      timeoutMs: 1000,
+      fallback,
+    });
+    pools.push(pool);
+    await pool.start();
+    expect(
+      f.calls.some(
+        (call) =>
+          call.name === "alchemy" &&
+          ["eth_getBlockByNumber", "eth_getCode"].includes(call.method),
+      ),
+    ).toBe(false);
+    f.calls.length = 0;
+    await pool.request("eth_getBlockByNumber", [probe.blockNumber, false]);
+    await pool.request("eth_call", [{}, "latest"]);
+    await pool.probe();
+    expect(
+      f.calls.filter((call) => call.method === "eth_getBlockByNumber"),
+    ).toEqual([{ name: "ankr", method: "eth_getBlockByNumber" }]);
+    expect(f.calls.filter((call) => call.method === "eth_call")).toEqual([
+      { name: "alchemy", method: "eth_call" },
+    ]);
+    expect(
+      f.calls.some(
+        (call) => call.name === "alchemy" && call.method === "eth_getCode",
+      ),
+    ).toBe(false);
+  });
+  it("rejects invalid or duplicate disabled capabilities", () => {
+    for (const disabled of ['["history","history"]', '["block"]']) {
+      expect(() =>
+        parseRpcFallbackConfig({
+          CPREDICT_RPC_PRIMARY_DISABLED_CAPABILITIES_JSON: disabled,
+          CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify([
+            { name: "drpc", url: "https://backup.example.invalid" },
+          ]),
+          CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+        }),
+      ).toThrow("invalid private RPC fallback configuration");
+    }
+  });
+  it("keeps an excluded paid fallback out of historical reads", async () => {
+    const f = await fixture();
+    const fallback = parseRpcFallbackConfig({
+      CPREDICT_RPC_PRIMARY_NAME: "drpc",
+      CPREDICT_RPC_PRIMARY_DISABLED_CAPABILITIES_JSON: '["history"]',
+      CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify([
+        {
+          name: "drpc-2",
+          url: f.url("ankr"),
+          disabledCapabilities: ["history"],
+        },
+        { name: "tenderly", url: f.url("alchemy-2") },
+      ]),
+      CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+    })!;
+    const pool = new RpcReadPool({
+      url: f.url("alchemy"),
+      chainId: 421614,
+      service: "two-metered",
+      timeoutMs: 1000,
+      fallback,
+    });
+    pools.push(pool);
+    await pool.start();
+    f.calls.length = 0;
+    await pool.request("eth_getBlockByNumber", [probe.blockNumber, false]);
+    await pool.request("eth_call", [{}, "latest"]);
+    expect(
+      f.calls.filter((call) => call.method === "eth_getBlockByNumber"),
+    ).toEqual([{ name: "alchemy-2", method: "eth_getBlockByNumber" }]);
+    expect(f.calls.filter((call) => call.method === "eth_call")).toEqual([
+      { name: "alchemy", method: "eth_call" },
+    ]);
+    f.calls.length = 0;
+    f.modes.alchemy = "429";
+    await pool.request("eth_call", [{}, "latest"]);
+    expect(f.calls.filter((call) => call.method === "eth_call")).toEqual([
+      { name: "alchemy", method: "eth_call" },
+      { name: "ankr", method: "eth_call" },
+    ]);
+    f.calls.length = 0;
+    await pool.request("eth_getBlockByNumber", [probe.blockNumber, false]);
+    expect(
+      f.calls.filter((call) => call.method === "eth_getBlockByNumber"),
+    ).toEqual([{ name: "alchemy-2", method: "eth_getBlockByNumber" }]);
+  });
+  it("rejects duplicate disabled capabilities on a fallback", () => {
+    expect(() =>
+      parseRpcFallbackConfig({
+        CPREDICT_RPC_FALLBACKS_JSON: JSON.stringify([
+          {
+            name: "drpc-2",
+            url: "https://backup.example.invalid",
+            disabledCapabilities: ["history", "history"],
+          },
+        ]),
+        CPREDICT_RPC_PROBE_JSON: JSON.stringify(probe),
+      }),
+    ).toThrow("invalid private RPC fallback configuration");
   });
 });
