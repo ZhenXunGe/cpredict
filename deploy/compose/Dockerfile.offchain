@@ -56,7 +56,7 @@ COPY package.json ./package.json
 USER node
 CMD ["node", "dist/offchain/paymaster-service/src/main.js"]
 
-FROM runtime-base AS metadata
+FROM runtime-deps AS metadata
 ARG CPREDICT_IMAGE_REVISION
 RUN printf '%s' "$CPREDICT_IMAGE_REVISION" | grep -Eq '^[0-9a-f]{40}$'
 LABEL org.opencontainers.image.revision="${CPREDICT_IMAGE_REVISION}"
@@ -64,7 +64,6 @@ ENV NODE_ENV=production
 WORKDIR /app
 RUN rm -rf /opt/yarn-v1.22.22 /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
     && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/yarn /usr/local/bin/yarnpkg
-COPY --from=runtime-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist/offchain/metadata-service ./dist/offchain/metadata-service
 COPY --from=build --chown=node:node /app/dist/offchain/app-core ./dist/offchain/app-core
 COPY --from=build --chown=node:node /app/dist/offchain/sdk ./dist/offchain/sdk
