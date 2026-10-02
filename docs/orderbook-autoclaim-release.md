@@ -71,8 +71,13 @@
 
 ## 可靠性与恢复
 
+- Keeper 在估算 Gas 后增加向上取整的 30% 限额余量，应对 Arbitrum L1 数据费用与执行估算在收录前的波动；费用预留、单笔和日预算均按增加后的最大费用核验。未用限额不计为实际支出。
+- 广播失败输出 `automation_submission_failed`，仅记录 lane、原交易 hash、nonce、固定原因和数字 RPC code，不输出节点地址、原错误消息或签名 bytes。广播失败仍进入 unknown，不因日志失败而重播。迁移 011 的 `automation_attempts` 在广播前落库并持久保存最终校验、广播及恢复诊断；仅允许固定原因、节点别名和 32 位 RPC code，禁止记录原始 RPC 错误。
 - PostgreSQL 会话 advisory lock 按 chain/signer 串行化 nonce；prepared 交易签名、hash、nonce 在网络发送前落库，CAS 后才广播。
-- broadcasting/unknown 只查原 hash，不自动重播、不分配新的 nonce。进程在“标记广播但尚未发送”的间隙崩溃会保守地保持未知，须运维核查；不能用删除记录解决。
+- broadcasting/unknown 默认只查询已登记哈希、不分配新 nonce。显式开启 `CPREDICT_AUTOMATION_AUTO_RECOVERY_ENABLED=true` 后，至少等待 120 秒，每分钟最多核查一次；三个可用节点须一致确认原交易及回执不存在、latest/pending nonce 未变化、共同规范区块哈希相同且头差不超过 120 块，才允许同 nonce 的一次替换。不可用节点不算不存在票；证据冲突、nonce 异常转人工。替换保持 chain/signer/to/calldata/value 不变，原权益人和权限不变，重新模拟、保留 30% Gas 余量，费用至少上调 25%，同时满足单笔、每日预算和余额。原始及替换签名在 CAS/广播前保存于私有数据库。
+- 正式广播前在同一选定 writer 校验签名、链/账户/nonce/调用/费用预留，按确定区块执行带实际 Gas 限额和费率的估算及模拟，重新核对区块哈希，再检查偏好、预算和余额。claim 返回值缺失、格式错误或零金额均拒绝；未触及广播的确定失败才取消 prepared，RPC 不可用仍保留 prepared。
+- 恢复记录准备后进程崩溃、CAS 后崩溃或广播结果未知均不自动再次发送；只查询原/替换哈希，任一规范最终回执可完成对账并清除两份签名，失败或持续未知留给人工。每个持久任务最多登记一个恢复，替换本身不重试。人工恢复须逐笔授权，禁止删除 unknown、改写为 prepared 或新 nonce 重发。
+- 两分钟卡单由独立于 RPC worker 的 15 秒数据库检查产生 `automation_alert_events` firing/resolved 事件；替换不重置计时，也不视为问题已解决。提供 oldest-pending、manual-recovery、alert-unsent/configured/delivery 指标及 Prometheus 两分钟规则。SMTP 邮箱留空时不发送，未发送事件持续保留，不能声称外部通知已接通。SMTP 配置有效时使用验证证书的 TLS、并发租约和退避重试；告警可能至少一次投递，稳定 Message-ID 用于去重。
 - prepared 且未广播时会重新核验偏好、链状态、日预算和余额；超时作废还会重新发现触发人的现存权益。已关闭或失效的未发送任务可取消。已发送交易在用户关闭后仍完成原回执查询。
 - 日预算按实际标记广播的 UTC 日期统计最大费用预留，保守计费；准备后隔夜发送会重新检查。可选的 `CPREDICT_AUTOMATION_MAX_TX_COST_WEI` 限制单笔估计最大 Gas 费用，缺省等于日预算；超额时保持排队并告警，不签署或发送新交易。confirmed/reverted 清除原始签名 bytes，保留哈希和 nonce。
 - 源索引不完整、明显滞后或区块哈希冲突时停止发现任务。链上余额在发送前再次模拟核验；手动抢先领取不会导致改收款人或重复经济执行。
@@ -123,3 +128,11 @@ Compose 以云端已有 v5.5.1 CLI 对本地 base + automation 输入执行只�
 证据：`work/task-state/orderbook-automatic-claims-accepted.json`、`orderbook-public-https-acceptance.json`、`orderbook-live-acceptance-capture.txt`。云端对应目录还保存 `final-reconciliation.json`、`live-acceptance.json`、`cutover-complete.json`。定时巡检维持已删除状态。
 
 回退：关闭 V2 新增下单和后台调度，保留新版订单撤销、资产退出、手动领取和历史查询；旧测试环境不自动恢复公开。不要回滚业务数据库，也不要把未知发送记录恢复到 prepared 或删除。
+
+## 有限恢复的运维边界（2026-10-02）
+
+新增迁移只添加控制表和列，旧业务数据及协议不变。先备份控制数据库，再使用表所有者/既有 migrator 的控制数据库连接运行 `node scripts/orderbook/migrate-control.mjs`，为受限 keeper 角色授予三个新增表的 SELECT/INSERT/UPDATE 和两个序列的 USAGE/SELECT。服务角色不得用于 ALTER TABLE，也不扩大其 DDL 权限；服务启动只检查迁移，不自行改库。首次仅在 claims 私有运行配置开启自动恢复，matching 默认关闭；缺少三个 writer 时启动拒绝。回退优先使用同一候选镜像关闭自动恢复，继续对账原/替换哈希，保留迁移及当前记录。尚未登记恢复时才可使用之前领取镜像；登记恢复后，旧镜像不认识双哈希，不能直接回退。已经替换或已到账的交易不能恢复成旧 hash。
+
+人工介入时先查看 `automation_transactions`、`automation_attempts`、`automation_recoveries` 及双方回执。节点冲突、nonce 已变化、调用或签名不一致、一次恢复已耗尽、替换持续未知及权限/权益失效均不具备再次自动发送条件。暂时 RPC 故障、原交易仍在节点中、用户关闭开关和预算不足只等待，不增加交易；原交易已到账自动补记。控制表含原始签名，备份和访问须按私有配置保护。
+
+外部邮件未配置；本地测试与部署证据以 `work/task-state/claims-recovery-20261002/checkpoint.md` 为准，文档不代表已部署。队列分片不在本批次内。

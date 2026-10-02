@@ -11,6 +11,7 @@ import type {
   CleanupQuotaReason,
 } from "./automatic-claims.js";
 import { automationEffect, CleanupQuotaExceeded } from "./automatic-claims.js";
+import type { SubmissionFailure } from "./automatic-diagnostics.js";
 export const cleanupQuotaLimits = {
   accountTotal24h: 8,
   accountRoutine24h: 4,
@@ -155,23 +156,78 @@ export class PostgresAutomaticStore implements AutomationStore {
       return "cleanup_market_quota_exceeded";
     return null;
   }
-  async markBroadcasting(id: string): Promise<boolean> {
-    const r = await this
-      .sql`UPDATE automation_transactions SET state='broadcasting',broadcast_at=now(),updated_at=now() WHERE id=${id} AND state='prepared' RETURNING id`;
-    return r.length === 1;
+  async operationalSchemaReady(): Promise<void> {
+    const [r] = await this
+      .sql`SELECT to_regclass('automation_attempts') AS attempts,to_regclass('automation_recoveries') AS recoveries,to_regclass('automation_alert_events') AS alerts`;
+    if (!r?.attempts || !r.recoveries || !r.alerts)
+      throw new Error("automation_operations_migration_required");
+  }
+  async validation(
+    tx: AutomationRecord,
+    provider: string,
+    failure?: SubmissionFailure,
+  ): Promise<void> {
+    await this
+      .sql`INSERT INTO automation_attempts(transaction_id,tx_hash,phase,outcome,provider,reason,rpc_code)
+      VALUES(${tx.id},${tx.hash},'validation',${failure ? "rejected" : "validated"},${provider},${failure?.reason ?? null},${failure?.rpcCode ?? null})`;
+  }
+  async markBroadcasting(
+    id: string,
+    provider = "writer-unknown",
+  ): Promise<boolean> {
+    return this.sql.begin(async (db) => {
+      const [r] =
+        await db`UPDATE automation_transactions SET state='broadcasting',broadcast_at=now(),first_broadcast_at=COALESCE(first_broadcast_at,now()),updated_at=now() WHERE id=${id} AND state='prepared' RETURNING tx_hash`;
+      if (!r) return false;
+      await db`INSERT INTO automation_attempts(transaction_id,tx_hash,phase,outcome,provider) VALUES(${id},${r.tx_hash},'broadcast','started',${provider})`;
+      return true;
+    });
   }
   async cancelPrepared(id: string): Promise<void> {
     await this
       .sql`UPDATE automation_transactions SET state='cancelled',nonce=NULL,raw_transaction=NULL,reserved_wei=0,updated_at=now() WHERE id=${id} AND state='prepared'`;
   }
-  async unknown(id: string): Promise<void> {
-    await this
-      .sql`UPDATE automation_transactions SET state='unknown',updated_at=now() WHERE id=${id} AND state='broadcasting'`;
+  async unknown(
+    id: string,
+    result?: {
+      outcome: "accepted" | "unknown";
+      provider: string;
+      failure?: SubmissionFailure;
+    },
+  ): Promise<void> {
+    await this.sql.begin(async (db) => {
+      const [r] =
+        await db`UPDATE automation_transactions SET state='unknown',updated_at=now() WHERE id=${id} AND state='broadcasting' RETURNING tx_hash`;
+      if (r && result)
+        await db`UPDATE automation_attempts SET outcome=${result.outcome},provider=${result.provider},reason=${result.failure?.reason ?? null},rpc_code=${result.failure?.rpcCode ?? null},updated_at=now() WHERE transaction_id=${id} AND tx_hash=${r.tx_hash} AND phase='broadcast'`;
+    });
   }
-  async finish(id: string, r: AutomationReceipt): Promise<void> {
+  async recoveryHashes(id: string): Promise<Hex[]> {
+    const rows = await this
+      .sql`SELECT original_hash FROM automation_recoveries WHERE transaction_id=${id} AND state IN ('broadcasting','unknown') ORDER BY created_at DESC LIMIT 16`;
+    return rows.map((r) => r.original_hash as Hex);
+  }
+  async recoveryCheckDue(tx: AutomationRecord): Promise<boolean> {
+    const rows = await this
+      .sql`UPDATE automation_transactions t SET recovery_checked_at=now() WHERE id=${tx.id} AND state IN ('broadcasting','unknown') AND COALESCE(first_broadcast_at,broadcast_at,created_at)<=now()-interval '2 minutes' AND (recovery_checked_at IS NULL OR recovery_checked_at<now()-interval '1 minute') AND NOT recovery_manual_required AND NOT EXISTS(SELECT 1 FROM automation_recoveries r WHERE r.transaction_id=t.id) RETURNING id`;
+    return rows.length === 1;
+  }
+  async finish(id: string, r: AutomationReceipt, hash?: Hex): Promise<void> {
     const success = r.status === "success";
-    await this
-      .sql`UPDATE automation_transactions SET state=${success ? "confirmed" : "reverted"},receipt_block=${r.blockNumber.toString()},receipt_hash=${r.blockHash},canonical_status=${success ? "canonical" : "unchecked"},canonical_checked_at=CASE WHEN ${success} THEN now() ELSE NULL END,raw_transaction=NULL,updated_at=now() WHERE id=${id}`;
+    await this.sql.begin(async (db) => {
+      const [t] =
+        await db`SELECT tx_hash FROM automation_transactions WHERE id=${id} FOR UPDATE`;
+      if (!t) throw new Error("automation_transaction_missing");
+      const actual = hash ?? t.tx_hash;
+      if (actual !== t.tx_hash) {
+        const allowed =
+          await db`SELECT id FROM automation_recoveries WHERE transaction_id=${id} AND original_hash=${actual} AND state IN ('broadcasting','unknown')`;
+        if (!allowed.length)
+          throw new Error("automation_receipt_hash_unregistered");
+      }
+      await db`UPDATE automation_transactions SET tx_hash=${actual},state=${success ? "confirmed" : "reverted"},receipt_block=${r.blockNumber.toString()},receipt_hash=${r.blockHash},canonical_status=${success ? "canonical" : "unchecked"},canonical_checked_at=CASE WHEN ${success} THEN now() ELSE NULL END,raw_transaction=NULL,updated_at=now() WHERE id=${id}`;
+      await db`UPDATE automation_recoveries SET state='confirmed',winning_hash=${actual},original_raw=NULL,replacement_raw=NULL,updated_at=now() WHERE transaction_id=${id} AND state IN ('prepared','broadcasting','unknown')`;
+    });
   }
   async spentToday(excludeId?: string): Promise<bigint> {
     const [r] = await this
@@ -282,7 +338,7 @@ export class PostgresAutomaticStore implements AutomationStore {
   }
   async oldestPendingSeconds(): Promise<number> {
     const [r] = await this
-      .sql`SELECT COALESCE(EXTRACT(EPOCH FROM now()-min(COALESCE(broadcast_at,created_at))),0)::float AS age
+      .sql`SELECT COALESCE(EXTRACT(EPOCH FROM now()-min(COALESCE(first_broadcast_at,broadcast_at,created_at))),0)::float AS age
       FROM automation_transactions WHERE chain_id=${this.chainId} AND signer=${this.signer.toLowerCase()} AND state IN ('prepared','broadcasting','unknown')`;
     return Number(r?.age ?? 0);
   }
@@ -424,9 +480,9 @@ export class PostgresAutomaticStore implements AutomationStore {
     // A blocked claims nonce stalls every beneficiary in this deployment. Return
     // only a generic queue reason; never expose another owner's transaction.
     const [queue] = await this
-      .sql`SELECT COALESCE(broadcast_at,created_at) AS since FROM automation_transactions
+      .sql`SELECT COALESCE(first_broadcast_at,broadcast_at,created_at) AS since FROM automation_transactions
       WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND requires_claim_preference=true
-        AND state IN ('broadcasting','unknown') AND COALESCE(broadcast_at,created_at)<now()-interval '120 seconds'
+        AND state IN ('broadcasting','unknown') AND COALESCE(first_broadcast_at,broadcast_at,created_at)<now()-interval '120 seconds'
       ORDER BY created_at LIMIT 1`;
     return {
       enabled: await this.enabled(owner),

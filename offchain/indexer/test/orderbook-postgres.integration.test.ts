@@ -72,6 +72,13 @@ describe.skipIf(!url)(
       await migration.unsafe(
         await readFile(
           "offchain/app-service/migrations/010_automation_cleanup_quotas.sql",
+
+          "utf8",
+        ),
+      );
+      await migration.unsafe(
+        await readFile(
+          "offchain/app-service/migrations/011_automation_operations.sql",
           "utf8",
         ),
       );
@@ -306,7 +313,7 @@ describe.skipIf(!url)(
       );
       await a.markBroadcasting(r.id);
       await a.unknown(r.id);
-      await sql`UPDATE automation_transactions SET broadcast_at=now()-interval '5 minutes' WHERE id=${r.id}`;
+      await sql`UPDATE automation_transactions SET broadcast_at=now()-interval '5 minutes',first_broadcast_at=now()-interval '5 minutes' WHERE id=${r.id}`;
       expect(await a.oldestPendingSeconds()).toBeGreaterThan(290);
       const status = await a.publicStatus(A(74));
       expect(status.reason).toBe("queue_blocked_unknown_transaction");
@@ -430,13 +437,15 @@ describe.skipIf(!url)(
         blockHash: H(2),
       });
       await sql`INSERT INTO ledger_facts(chain_id,block_number,transaction_hash,transaction_index,log_index,fact_index,occurred_at,kind,market,owner,counterparty,fact)
-        VALUES(${env.deployment.chainId},2,${hash},0,90,0,100,'winner-claimed',${vault.toLowerCase()},${trader.toLowerCase()},NULL,${sql.json({
-          market: vault.toLowerCase(),
-          owner: trader.toLowerCase(),
-          outcomeId: "1",
-          amount: "9632000",
-          units: "5000000",
-        })})`;
+        VALUES(${env.deployment.chainId},2,${hash},0,90,0,100,'winner-claimed',${vault.toLowerCase()},${trader.toLowerCase()},NULL,${sql.json(
+          {
+            market: vault.toLowerCase(),
+            owner: trader.toLowerCase(),
+            outcomeId: "1",
+            amount: "9632000",
+            units: "5000000",
+          },
+        )})`;
       await sql`INSERT INTO public_market_metadata(market,rules_hash,question,rules,verified)
         VALUES(${vault.toLowerCase()},${H(951)},'主播今晚直播间是否会超过30万人？',${sql.json({ outcomes: ["否", "是"] })},true)
         ON CONFLICT(market) DO UPDATE SET rules_hash=EXCLUDED.rules_hash,question=EXCLUDED.question,rules=EXCLUDED.rules,verified=true`;

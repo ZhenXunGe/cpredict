@@ -521,6 +521,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@types/ms@2.1.0:node_modules/@types/ms
 - npm:@types/node@12.20.55:node_modules/@solana/web3.js/node_modules/@types/node
 - npm:@types/node@22.20.1:node_modules/@types/node
+- npm:@types/nodemailer@8.0.2:node_modules/@types/nodemailer
 - npm:@types/react-dom@19.2.4:node_modules/@types/react-dom
 - npm:@types/react@19.2.18:node_modules/@types/react
 - npm:@types/trusted-types@2.0.7:node_modules/@types/trusted-types
@@ -1002,6 +1003,10 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - solidity:foundry@4072e48705af9d93e3c0f6e29e93b5e9a40caed8
 - tool:anvil@v1.7.1 / 4072e48705af9d93e3c0f6e29e93b5e9a40caed8
 - tool:foundry@v1.7.1 / 4072e48705af9d93e3c0f6e29e93b5e9a40caed8
+
+## MIT-0
+
+- npm:nodemailer@10.0.13:node_modules/nodemailer
 
 ## MPL-2.0
 

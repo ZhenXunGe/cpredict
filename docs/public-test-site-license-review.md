@@ -25,3 +25,5 @@
 供应商当前条款可能变化：Reown [服务条款](https://reown.com/terms-of-service)标注 2026-07-27 生效，§2.3、§3.7 涉及用量和应用类别。这里只据此标出待确认事项，不推定 ctUSD 测试站必然属于某类别。MetaMask 旧版本来源为[官方 npm 发布记录](https://registry.npmjs.org/@metamask%2feth-json-rpc-provider/1.0.1)及[官方仓库](https://github.com/MetaMask/eth-json-rpc-provider)。
 
 E07 保留具体未知条目与自定义条件核对。标准许可可直接使用；本地实现、测试和源码提交继续，不将常规副本补充扩大为等待供应商批准。若核对出明确不满足的条件，在受影响的使用或分发范围解决；不能把未确认的条件写成“已经全部通过”。本轮没有联系第三方、接受新合同、购买服务、升级钱包 SDK 或更改账户派生参数。
+
+2026-10-02：自动化邮件适配器锁定 Nodemailer 10.0.13（运行依赖，MIT-0）与 @types/nodemailer 8.0.2（构建类型，MIT）。已核对锁文件声明及随包 LICENSE；SBOM 保留 MIT-0 原声明，licenseConcluded 仍为 NOASSERTION，服务镜像继续携带原许可文件。本批次未改钱包依赖或浏览器入口。

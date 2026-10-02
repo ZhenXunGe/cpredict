@@ -28,6 +28,7 @@ export const migrationPaths = [
   "offchain/app-service/migrations/008_automation_status_scope.sql",
   "offchain/app-service/migrations/009_automation_canonical_audit.sql",
   "offchain/app-service/migrations/010_automation_cleanup_quotas.sql",
+  "offchain/app-service/migrations/011_automation_operations.sql",
 ];
 
 /** Existing migration registry and checksums, shared by maintenance commands. */

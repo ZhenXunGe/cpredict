@@ -15,6 +15,7 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 const pg = resolve(root, ".tools/postgresql-17.10/bin");
 const inventory = [
   "offchain/workers/test/automatic-store.integration.test.ts",
+  "offchain/workers/test/automatic-operations.integration.test.ts",
   "offchain/indexer/test/orderbook-postgres.integration.test.ts",
   "offchain/app-service/test/deployment-rollover.integration.test.ts",
   "offchain/app-service/test/postgres.integration.test.ts",
@@ -33,6 +34,10 @@ const focusedInventory = [
   {
     path: "offchain/workers/test/automatic-store.integration.test.ts",
     tests: 5,
+  },
+  {
+    path: "offchain/workers/test/automatic-operations.integration.test.ts",
+    tests: 13,
   },
 ];
 const lock = new Map(
@@ -170,6 +175,10 @@ try {
     {
       path: "offchain/workers/test/automatic-store.integration.test.ts",
       tests: 5,
+    },
+    {
+      path: "offchain/workers/test/automatic-operations.integration.test.ts",
+      tests: 13,
     },
   ];
   const allPath = resolve(

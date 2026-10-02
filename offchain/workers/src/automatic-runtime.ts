@@ -33,7 +33,14 @@ import { LedgerAutomaticSource } from "./automatic-source.js";
 import {
   SubmissionEndpointPool,
   parseSubmissionUrls,
+  type SubmissionEndpoint,
 } from "./automatic-submission.js";
+import {
+  AutomationRecovery,
+  PostgresRecoveryStore,
+  RecoveryQuorum,
+} from "./automatic-recovery.js";
+import { AutomationAlerts, smtpDelivery } from "./automatic-alerts.js";
 import { MatchingSource } from "./matching-source.js";
 const databaseUrl = z
   .string()
@@ -62,6 +69,9 @@ export const automationConfigSchema = z.object({
   CPREDICT_AUTOMATION_CONFIRMATIONS: z.coerce.number().int().min(1).max(1000),
   CPREDICT_AUTOMATION_LANE: z.enum(["claims", "matching"]),
   CPREDICT_AUTOMATION_PORT: z.coerce.number().int().min(1024).max(65535),
+  CPREDICT_AUTOMATION_AUTO_RECOVERY_ENABLED: z
+    .enum(["true", "false"])
+    .default("false"),
   CPREDICT_AUTOMATION_IDLE_POLL_MS: z.coerce
     .number()
     .int()
@@ -162,21 +172,30 @@ export async function startAutomaticService(
     registers: [registry],
   });
   const writer = new SubmissionEndpointPool(
-    writeUrls.map((url) => {
+    writeUrls.map((url, index) => {
       const transport = http(url, { retryCount: 0, timeout: 2500 })({
         chain: arbitrumSepolia,
       });
       return {
-        request: (input: {
-          method: "eth_chainId" | "eth_blockNumber" | "eth_sendRawTransaction";
-          params?: readonly unknown[];
-        }) => transport.request(input as never),
+        name: `writer-${index + 1}`,
+        request: (input: Parameters<SubmissionEndpoint["request"]>[0]) =>
+          transport.request(input as never),
       };
     }),
     environment.deployment.chainId,
     Date.now,
     (index) => writerSelected.set(index === undefined ? 0 : index + 1),
   );
+  const validationClient = createPublicClient({
+    chain: arbitrumSepolia,
+    transport: custom(
+      {
+        request: ({ method, params }) =>
+          writer.readSelected(method, (params as readonly unknown[]) ?? []),
+      },
+      { retryCount: 0 },
+    ),
+  });
   const wallet = createWalletClient({
     chain: arbitrumSepolia,
     account,
@@ -243,6 +262,25 @@ export async function startAutomaticService(
       return writer.ready(head > 120n ? head - 120n : 1n);
     },
     maxTransactionCost,
+    validationClient,
+    () => writer.provider(),
+  );
+  const recovery = new AutomationRecovery(
+    new PostgresRecoveryStore(store),
+    chain,
+    new RecoveryQuorum(
+      writeUrls.map((url, index) => ({
+        name: `writer-${index + 1}`,
+        client: createPublicClient({
+          chain: arbitrumSepolia,
+          transport: http(url, { retryCount: 0, timeout: 2500 }),
+        }),
+      })),
+      environment.deployment.chainId,
+      account.address,
+    ),
+    dailyBudget,
+    maxTransactionCost,
   );
   const worker = new AutomaticClaimsWorker(
     store,
@@ -251,33 +289,116 @@ export async function startAutomaticService(
     dailyBudget,
     20,
     maxTransactionCost,
+    (tx, failure) => {
+      console.warn(
+        JSON.stringify({
+          event: "automation_submission_failed",
+          lane: cfg.CPREDICT_AUTOMATION_LANE,
+          transactionHash: tx.hash,
+          nonce: tx.nonce.toString(),
+          ...failure,
+        }),
+      );
+    },
+    cfg.CPREDICT_AUTOMATION_AUTO_RECOVERY_ENABLED === "true"
+      ? (tx) => recovery.automatic(tx)
+      : undefined,
   );
   const pendingAge = new Gauge({
     name: "cpredict_automation_oldest_pending_seconds",
     help: "Age of oldest pending transaction; over 120 seconds blocks readiness",
     registers: [registry],
   });
+  const delivery = smtpDelivery(env);
+  const alerts = new AutomationAlerts(store, delivery);
+  const alertConfigured = new Gauge({
+    name: "cpredict_automation_alert_delivery_configured",
+    help: "One only when an email recipient and SMTP transport are configured",
+    registers: [registry],
+  });
+  alertConfigured.set(delivery ? 1 : 0);
+  const alertQueue = new Gauge({
+    name: "cpredict_automation_alert_unsent",
+    help: "Durable unsent notifications, including intentionally disabled email",
+    registers: [registry],
+  });
+  const alertDelivery = new Counter({
+    name: "cpredict_automation_alert_delivery_total",
+    help: "SMTP outbox delivery results",
+    labelNames: ["result"],
+    registers: [registry],
+  });
+  const autoRecovery = new Gauge({
+    name: "cpredict_automation_auto_recovery_enabled",
+    help: "Bounded same-nonce recovery enabled",
+    registers: [registry],
+  });
+  autoRecovery.set(
+    cfg.CPREDICT_AUTOMATION_AUTO_RECOVERY_ENABLED === "true" ? 1 : 0,
+  );
+  const manualRecovery = new Gauge({
+    name: "cpredict_automation_manual_recovery_required",
+    help: "Tasks with conflicting evidence or an exhausted replacement still pending after two minutes",
+    registers: [registry],
+  });
   const app = Fastify({ logger: false });
   let stopped = false,
     lastOk = 0,
-    oldestPending = 0;
+    oldestPending = 0,
+    lastMonitorOk = 0;
   let lastBlocked = "";
   let lastMissingFacts = "";
   let timer: ReturnType<typeof setTimeout> | undefined,
     active: Promise<void> | undefined;
+  let monitorTimer: ReturnType<typeof setTimeout> | undefined,
+    monitorActive: Promise<void> | undefined;
+  const monitor = async () => {
+    try {
+      oldestPending = await store.oldestPendingSeconds();
+      pendingAge.set(oldestPending);
+      pending.set((await store.pending()).length);
+      alertQueue.set(await alerts.sync());
+      const [r] =
+        await control`SELECT count(*)::int AS count FROM automation_transactions t WHERE chain_id=${store.chainId} AND signer=${store.signer.toLowerCase()} AND state IN ('broadcasting','unknown') AND (recovery_manual_required OR EXISTS(SELECT 1 FROM automation_recoveries r WHERE r.transaction_id=t.id AND r.broadcast_at<=now()-interval '2 minutes'))`;
+      manualRecovery.set(r?.count ?? 0);
+      const result = await alerts.sendOne();
+      if (result === "sent" || result === "failed")
+        alertDelivery.inc({ result });
+      lastMonitorOk = Date.now();
+    } catch {
+      console.warn(
+        JSON.stringify({
+          event: "automation_monitor_failed",
+          lane: store.lane,
+        }),
+      );
+    }
+    if (!stopped)
+      monitorTimer = setTimeout(() => {
+        monitorActive = monitor();
+      }, 15000);
+  };
   app.get("/metrics", async (_, reply) =>
     reply.type(registry.contentType).send(await registry.metrics()),
   );
   app.get("/readyz", async (_, reply) =>
     reply
       .code(
-        lastOk && Date.now() - lastOk < 120000 && oldestPending < 120
+        lastOk &&
+          Date.now() - lastOk < 120000 &&
+          lastMonitorOk &&
+          Date.now() - lastMonitorOk < 60000 &&
+          oldestPending < 120
           ? 200
           : 503,
       )
       .send({
         status:
-          lastOk && Date.now() - lastOk < 120000 && oldestPending < 120
+          lastOk &&
+          Date.now() - lastOk < 120000 &&
+          lastMonitorOk &&
+          Date.now() - lastMonitorOk < 60000 &&
+          oldestPending < 120
             ? "ready"
             : "not-ready",
       }),
@@ -344,7 +465,8 @@ export async function startAutomaticService(
   const stop = async () => {
     stopped = true;
     if (timer) clearTimeout(timer);
-    await active;
+    if (monitorTimer) clearTimeout(monitorTimer);
+    await Promise.all([active, monitorActive]);
     await app.close();
     pool.close();
     await sql.end({ timeout: 5 });
@@ -359,9 +481,16 @@ export async function startAutomaticService(
     const { environmentKey } = await import("../../app-core/src/contracts.js");
     if (identity?.identity !== environmentKey(environment))
       throw new Error("automation_deployment_database_mismatch");
+    await store.operationalSchemaReady();
+    if (
+      cfg.CPREDICT_AUTOMATION_AUTO_RECOVERY_ENABLED === "true" &&
+      writeUrls.length < 3
+    )
+      throw new Error("automation_recovery_requires_three_writers");
     await store.pending();
     await ledger.snapshot();
     await app.listen({ host: "127.0.0.1", port: cfg.CPREDICT_AUTOMATION_PORT });
+    monitorActive = monitor();
     active = tick();
     return stop;
   } catch (e) {

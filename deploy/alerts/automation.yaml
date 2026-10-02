@@ -8,11 +8,10 @@ groups:
         annotations:
           summary: "Automatic work is queued because the keeper gas cap, budget, balance or submission endpoint is unavailable"
       - alert: CpredictAutomationOutcomeUnknown
-        expr: cpredict_automation_blocked{reason="checking_original_transaction"} > 0
-        for: 10m
+        expr: cpredict_automation_oldest_pending_seconds >= 120
         labels: { severity: warning }
         annotations:
-          summary: "Query the saved transaction hash; never clear its journal or resend with a new nonce"
+          summary: "Inspect original and registered replacement hashes; never clear the journal or resend with a new nonce"
       - alert: CpredictAutomationFinalizedReorg
         expr: cpredict_automation_blocked{reason="rechecking_after_reorg"} > 0
         for: 1m

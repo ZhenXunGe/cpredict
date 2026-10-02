@@ -105,6 +105,9 @@ const TOOL_HASH_KEYS = {
   postgresql: "postgresql-archive-sha256",
 };
 const ACCEPTED_LICENSE_EXPRESSIONS = new Set([
+  // Nodemailer 10.0.13 declares MIT-0; its bundled LICENSE was inspected.
+  // Record the standard declaration without changing licenseConcluded.
+  "MIT-0",
   "(Apache-2.0 AND MIT)",
   "(MIT AND BSD-3-Clause)",
   "(MIT OR Apache-2.0)",

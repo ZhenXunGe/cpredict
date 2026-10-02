@@ -322,6 +322,7 @@ test.skipIf(
           "008_automation_status_scope.sql",
           "009_automation_canonical_audit.sql",
           "010_automation_cleanup_quotas.sql",
+          "011_automation_operations.sql",
         ])
           await migration.unsafe(
             await readFile(`offchain/app-service/migrations/${name}`, "utf8"),

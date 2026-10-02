@@ -2604,6 +2604,14 @@
       "sourceScope": "Node development dependency"
     },
     {
+      "identity": "npm:@types/nodemailer@8.0.2:node_modules/@types/nodemailer",
+      "kind": "development",
+      "declared": "MIT",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/@types/nodemailer\"]",
+      "sourceScope": "Node development dependency"
+    },
+    {
       "identity": "npm:@types/react-dom@19.2.4:node_modules/@types/react-dom",
       "kind": "runtime",
       "declared": "MIT",
@@ -5385,6 +5393,14 @@
       "declared": "MIT",
       "concluded": "NOASSERTION",
       "provenance": "package-lock.json#packages[\"node_modules/node-mock-http\"]",
+      "sourceScope": "Node runtime dependency"
+    },
+    {
+      "identity": "npm:nodemailer@10.0.13:node_modules/nodemailer",
+      "kind": "runtime",
+      "declared": "MIT-0",
+      "concluded": "NOASSERTION",
+      "provenance": "package-lock.json#packages[\"node_modules/nodemailer\"]",
       "sourceScope": "Node runtime dependency"
     },
     {

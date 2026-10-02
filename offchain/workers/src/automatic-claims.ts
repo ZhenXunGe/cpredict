@@ -1,4 +1,9 @@
 import { keccak256, zeroAddress, type Address, type Hex } from "viem";
+import {
+  submissionFailure,
+  FinalValidationError,
+  type SubmissionFailure,
+} from "./automatic-diagnostics.js";
 
 export type AutomationLane = "claims" | "matching";
 export type AutomationEffect =
@@ -78,10 +83,24 @@ export interface AutomationStore {
     action: AutomaticAction,
     prepared: PreparedAutomation,
   ): Promise<AutomationRecord>;
-  markBroadcasting(id: string): Promise<boolean>;
-  unknown(id: string): Promise<void>;
+  markBroadcasting(id: string, provider?: string): Promise<boolean>;
+  unknown(
+    id: string,
+    result?: {
+      outcome: "accepted" | "unknown";
+      provider: string;
+      failure?: SubmissionFailure;
+    },
+  ): Promise<void>;
+  validation?(
+    tx: AutomationRecord,
+    provider: string,
+    failure?: SubmissionFailure,
+  ): Promise<void>;
+  recoveryHashes?(id: string): Promise<Hex[]>;
+  recoveryCheckDue?(tx: AutomationRecord): Promise<boolean>;
   cancelPrepared(id: string): Promise<void>;
-  finish(id: string, receipt: AutomationReceipt): Promise<void>;
+  finish(id: string, receipt: AutomationReceipt, hash?: Hex): Promise<void>;
   spentToday(excludeId?: string): Promise<bigint>;
   status(owner: Address, reason: string): Promise<void>;
   cleanupQuota?(action: AutomaticAction): Promise<CleanupQuotaReason | null>;
@@ -96,6 +115,8 @@ export interface AutomationChain {
   canonicalFinal(receipt: AutomationReceipt): Promise<boolean>;
   balance(): Promise<bigint>;
   submissionReady?(): Promise<boolean>;
+  submissionProvider?(): string;
+  validate?(tx: AutomationRecord): Promise<void>;
 }
 export interface AutomationSource {
   candidates(): AsyncIterable<AutomaticAction>;
@@ -110,6 +131,11 @@ export class AutomaticClaimsWorker {
     readonly dailyBudget: bigint,
     readonly maxPerTick = 20,
     readonly maxTransactionCost = dailyBudget,
+    readonly onSubmissionFailure?: (
+      tx: AutomationRecord,
+      failure: SubmissionFailure,
+    ) => void,
+    readonly recover?: (tx: AutomationRecord) => Promise<void>,
   ) {
     if (
       dailyBudget <= 0n ||
@@ -126,9 +152,19 @@ export class AutomaticClaimsWorker {
         await this.setStatus(action, "rechecking_after_reorg");
       for (const tx of await this.store.pending()) {
         // Once persisted, ALWAYS reconcile the original hash, including after opt-out.
-        const receipt = await this.chain.receipt(tx.hash);
+        let confirmedHash = tx.hash;
+        let receipt = await this.chain.receipt(tx.hash);
+        if (!receipt)
+          for (const hash of (await this.store.recoveryHashes?.(tx.id)) ?? []) {
+            const oldReceipt = await this.chain.receipt(hash);
+            if (oldReceipt) {
+              receipt = oldReceipt;
+              confirmedHash = hash;
+              break;
+            }
+          }
         if (receipt && (await this.chain.canonicalFinal(receipt))) {
-          await this.store.finish(tx.id, receipt);
+          await this.store.finish(tx.id, receipt, confirmedHash);
           await this.setStatus(
             tx,
             receipt.status === "success" ? "received" : "transaction_reverted",
@@ -168,6 +204,12 @@ export class AutomaticClaimsWorker {
             tx,
             receipt ? "confirming" : "checking_original_transaction",
           );
+          if (
+            !receipt &&
+            this.recover &&
+            (await this.store.recoveryCheckDue?.(tx))
+          )
+            await this.recover(tx);
           return;
         }
       }
@@ -236,14 +278,58 @@ export class AutomaticClaimsWorker {
     return true;
   }
   private async broadcast(tx: AutomationRecord): Promise<void> {
-    if (!(await this.store.markBroadcasting(tx.id))) return;
+    const provider = this.chain.submissionProvider?.() ?? "writer-unknown";
+    try {
+      await this.chain.validate?.(tx);
+      // Opt-out/budget/balance may change while the exact-writer simulation runs.
+      if (tx.requiresClaimPreference && !(await this.store.enabled(tx.owner))) {
+        await this.store.cancelPrepared(tx.id);
+        return;
+      }
+      if (
+        tx.maximumCost > this.maxTransactionCost ||
+        (await this.store.spentToday(tx.id)) + tx.maximumCost > this.dailyBudget
+      ) {
+        await this.setStatus(tx, "daily_gas_budget_exhausted");
+        return;
+      }
+      if ((await this.chain.balance()) < tx.maximumCost) {
+        await this.setStatus(tx, "gas_balance_insufficient");
+        return;
+      }
+    } catch (error) {
+      await this.store.validation?.(tx, provider, submissionFailure(error));
+      // Proven local validation failure happened before CAS/broadcast. Safe to
+      // rediscover and sign again, including with this still-unused nonce.
+      if (error instanceof FinalValidationError)
+        await this.store.cancelPrepared(tx.id);
+      throw error;
+    }
+    await this.store.validation?.(tx, provider);
+    if (!(await this.store.markBroadcasting(tx.id, provider))) return;
+    let result: {
+      outcome: "accepted" | "unknown";
+      provider: string;
+      failure?: SubmissionFailure;
+    } = { outcome: "accepted", provider };
     try {
       const hash = await this.chain.send(tx.raw);
       if (hash.toLowerCase() !== tx.hash.toLowerCase())
         throw new Error("broadcast_hash_mismatch");
+    } catch (error) {
+      result = {
+        outcome: "unknown",
+        provider,
+        failure: submissionFailure(error),
+      };
+      // Diagnostics cannot change the durable unknown state or permit a retry.
+      try {
+        this.onSubmissionFailure?.(tx, submissionFailure(error));
+      } catch {}
+      throw error;
     } finally {
       // Even a connection error BEFORE a returned hash is submission-unknown, never retry with a new nonce.
-      await this.store.unknown(tx.id);
+      await this.store.unknown(tx.id, result);
     }
     await this.setStatus(tx, "confirming");
   }

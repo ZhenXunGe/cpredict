@@ -119,6 +119,55 @@ describe("durable automatic claims", () => {
     expect(f.chain.send).toHaveBeenCalledTimes(1);
     expect(f.chain.prepare).toHaveBeenCalledTimes(1);
   });
+  it("records safe send diagnostics while preserving the original unknown hash", async () => {
+    const f = fixture();
+    const report = vi.fn();
+    vi.mocked(f.chain.send).mockRejectedValue(
+      Object.assign(
+        new Error("secret provider https://private.test/key timed out"),
+        { code: -32000 },
+      ),
+    );
+    const worker = new AutomaticClaimsWorker(
+      f.store,
+      f.chain,
+      f.source,
+      100n,
+      20,
+      100n,
+      report,
+    );
+    await worker.tick();
+    expect(report).toHaveBeenCalledWith(
+      expect.objectContaining({ hash, nonce: 0n }),
+      { reason: "timeout", rpcCode: -32000 },
+    );
+    expect(JSON.stringify(report.mock.calls[0]?.[1])).not.toContain(
+      "private.test",
+    );
+    expect(f.rows[0]).toMatchObject({ state: "unknown", hash, nonce: 0n });
+    await worker.tick();
+    expect(f.chain.send).toHaveBeenCalledTimes(1);
+  });
+  it("a failing diagnostic sink cannot reset a submitted transaction", async () => {
+    const f = fixture();
+    vi.mocked(f.chain.send).mockRejectedValue(new Error("out of gas"));
+    const worker = new AutomaticClaimsWorker(
+      f.store,
+      f.chain,
+      f.source,
+      100n,
+      20,
+      100n,
+      () => {
+        throw new Error("sink failed");
+      },
+    );
+    await worker.tick();
+    await worker.tick();
+    expect(f.rows[0]?.state).toBe("unknown");
+    expect(f.chain.send).toHaveBeenCalledTimes(1);
+  });
   it("concurrent ticks share one nonce lane", async () => {
     const f = fixture();
     await Promise.all([f.worker.tick(), f.worker.tick()]);
@@ -390,5 +439,81 @@ describe("submission admission", () => {
     await f.worker.tick();
     expect(f.chain.send).toHaveBeenCalledTimes(1);
     expect(f.chain.submissionReady).not.toHaveBeenCalled();
+  });
+});
+
+describe("prewire validation and registered recovery reconciliation", () => {
+  it("persists validation failure before cancelling an unsigned admission failure", async () => {
+    const { FinalValidationError } = await import(
+      "../src/automatic-diagnostics.js"
+    );
+    const f = fixture();
+    f.store.validation = vi.fn(async () => {});
+    f.chain.validate = vi.fn(async () => {
+      throw new FinalValidationError("gas_limit");
+    });
+    await f.worker.tick();
+    expect(f.store.validation).toHaveBeenCalledWith(
+      expect.anything(),
+      "writer-unknown",
+      { reason: "gas_limit" },
+    );
+    expect(f.chain.send).not.toHaveBeenCalled();
+    expect(f.rows).toHaveLength(0);
+  });
+  it("an RPC failure keeps the original prepared hash, never calls send", async () => {
+    const f = fixture();
+    f.chain.validate = vi.fn(async () => {
+      throw new Error("secret RPC timed out");
+    });
+    f.store.validation = vi.fn(async () => {});
+    await f.worker.tick();
+    expect(f.rows[0]?.state).toBe("prepared");
+    expect(f.chain.send).not.toHaveBeenCalled();
+    expect(f.store.validation).toHaveBeenCalledWith(
+      expect.anything(),
+      "writer-unknown",
+      { reason: "timeout" },
+    );
+  });
+  it("registered original can win the replacement race without another broadcast", async () => {
+    const f = fixture();
+    await f.worker.tick();
+    const oldHash = keccak256("0xab");
+    f.store.recoveryHashes = vi.fn(async () => [oldHash]);
+    const receipt = {
+      status: "success" as const,
+      blockNumber: 10n,
+      blockHash: keccak256("0xcd"),
+    };
+    vi.mocked(f.chain.receipt).mockImplementation(async (h) =>
+      h === oldHash ? receipt : null,
+    );
+    vi.mocked(f.chain.eligible).mockResolvedValue(false);
+    await f.worker.tick();
+    expect(f.store.finish).toHaveBeenCalledWith("0", receipt, oldHash);
+    expect(f.chain.send).toHaveBeenCalledOnce();
+  });
+  it("automatic recovery only runs when durable two-minute check admits it", async () => {
+    const f = fixture();
+    await f.worker.tick();
+    const recover = vi.fn(async () => {});
+    f.store.recoveryCheckDue = vi.fn(async () => false);
+    const worker = new AutomaticClaimsWorker(
+      f.store,
+      f.chain,
+      f.source,
+      100n,
+      20,
+      100n,
+      undefined,
+      recover,
+    );
+    await worker.tick();
+    expect(recover).not.toHaveBeenCalled();
+    vi.mocked(f.store.recoveryCheckDue).mockResolvedValue(true);
+    await worker.tick();
+    expect(recover).toHaveBeenCalledOnce();
+    expect(f.chain.send).toHaveBeenCalledOnce();
   });
 });

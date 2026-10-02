@@ -48,8 +48,14 @@ export async function submissionEndpointReady(
 type SubmissionMethod =
   | "eth_chainId"
   | "eth_blockNumber"
+  | "eth_getBlockByNumber"
+  | "eth_getTransactionCount"
+  | "eth_gasPrice"
+  | "eth_estimateGas"
+  | "eth_call"
   | "eth_sendRawTransaction";
 export interface SubmissionEndpoint {
+  name?: string;
   request(input: {
     method: SubmissionMethod;
     params?: readonly unknown[];
@@ -101,12 +107,48 @@ export class SubmissionEndpointPool {
   async sendRaw(raw: string): Promise<unknown> {
     const index = this.selected;
     this.selected = undefined;
+    this.onSelected?.(undefined);
     if (index === undefined) throw new Error("submission_rpc_unavailable");
     // The original hash is persisted before this point. Even if the provider
     // times out, another endpoint must not receive the same raw transaction.
     return this.endpoints[index]!.request({
       method: "eth_sendRawTransaction",
       params: [raw],
+    });
+  }
+  provider(): string {
+    const name =
+      this.selected === undefined
+        ? undefined
+        : this.endpoints[this.selected]?.name;
+    return name && /^[a-z][a-z0-9-]{0,31}$/.test(name)
+      ? name
+      : this.selected === undefined
+        ? "writer-unavailable"
+        : `writer-${this.selected + 1}`;
+  }
+  /** Read-only admission on the exact selected writer; never reselect mid-check. */
+  async readSelected(
+    method: string,
+    params: readonly unknown[] = [],
+  ): Promise<unknown> {
+    if (
+      ![
+        "eth_chainId",
+        "eth_blockNumber",
+        "eth_getBlockByNumber",
+        "eth_getTransactionCount",
+        "eth_gasPrice",
+        "eth_estimateGas",
+        "eth_call",
+      ].includes(method)
+    )
+      throw new Error("unsupported_writer_validation_method");
+    if (this.selected === undefined)
+      throw new Error("submission_rpc_unavailable");
+    return this.endpoints[this.selected]!.request({
+      method: method as SubmissionMethod,
+      params,
     });
   }
 }
