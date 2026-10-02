@@ -3,7 +3,7 @@
   "dataLicense": "CC0-1.0",
   "SPDXID": "SPDXRef-DOCUMENT",
   "name": "cpredict-protocol-sbom",
-  "documentNamespace": "https://cpredict.example.invalid/spdx/1b7426755b08e9db6ffadf732e8893edf3da467a85b8e0992a4a390d9e74cb32",
+  "documentNamespace": "https://cpredict.example.invalid/spdx/5c33bf251e295b93d068bcaf3e992bff4c44935220cb0ccddef2542606d461e1",
   "creationInfo": {
     "created": "1970-01-01T00:00:00Z",
     "creators": [
@@ -7440,15 +7440,15 @@
       "comment": "Locked npm path node_modules/axios-retry; integrity verified against package-lock.json."
     },
     {
-      "SPDXID": "SPDXRef-Package-25f9f5f6abe9f5dcccb383e1",
+      "SPDXID": "SPDXRef-Package-882a2bbd09301912a78ec807",
       "name": "axios",
-      "versionInfo": "1.18.0",
-      "downloadLocation": "https://registry.npmjs.org/axios/-/axios-1.18.0.tgz",
+      "versionInfo": "1.20.0",
+      "downloadLocation": "https://registry.npmjs.org/axios/-/axios-1.20.0.tgz",
       "filesAnalyzed": false,
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "137d8dce960aa7ef96ed745ee76ac78975767a1c66877c1b7603bb30778533ebeac4b0581f3b74125922226b4e071b4e9b2a74ca80bc0bab8449557ce18dbf87"
+          "checksumValue": "afc68e87c8fd7062a981002aa73ad41e748873a6b9f58dd77ff72ff2ccb50eb1c29191f340612ea2ad6d01193aa92c8376d4064838296fd90596bbb33efae0c2"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -9429,15 +9429,15 @@
       "comment": "Locked npm path node_modules/fast-stable-stringify; integrity verified against package-lock.json."
     },
     {
-      "SPDXID": "SPDXRef-Package-590908357c775dea7d832560",
+      "SPDXID": "SPDXRef-Package-5779a901adc27e2ee7b4ec86",
       "name": "fast-uri",
-      "versionInfo": "3.1.6",
-      "downloadLocation": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.6.tgz",
+      "versionInfo": "3.1.7",
+      "downloadLocation": "https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.7.tgz",
       "filesAnalyzed": false,
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "ec871a975bc510caf4a276d5cc40c8ade336d88e24856f9fcf240fc2f005581a758b076c852651b0be238d1bcf1bd24fd6e8aa30746da3e614e91dbf0b30f3e5"
+          "checksumValue": "74ebd95738dd65dcfba6177dbfa8c26f0c6b056ddf2ba9fc45cd02b5d98ce1bba6ccc9f1cb005886ea61e89f35f51470fe4bbeacb6de9707ccba792dbb35551e"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -9446,15 +9446,15 @@
       "comment": "Locked npm path node_modules/fast-uri; integrity verified against package-lock.json."
     },
     {
-      "SPDXID": "SPDXRef-Package-ca4610eac9da51a06ce82f5b",
+      "SPDXID": "SPDXRef-Package-3a8949e401c76746fdb33be2",
       "name": "fast-uri",
-      "versionInfo": "4.1.3",
-      "downloadLocation": "https://registry.npmjs.org/fast-uri/-/fast-uri-4.1.3.tgz",
+      "versionInfo": "4.1.4",
+      "downloadLocation": "https://registry.npmjs.org/fast-uri/-/fast-uri-4.1.4.tgz",
       "filesAnalyzed": false,
       "checksums": [
         {
           "algorithm": "SHA512",
-          "checksumValue": "efeef61babcbb7b8e335ab3c4a64804f1daa7b24488f17aa3b78b82249834f196a61944a00d84e7b56e7a2f729e16666bec62ba7ad16caa3f21ea811897d325f"
+          "checksumValue": "74e0d7ac8c654bd25276002784850a3a8b0a575a0cb54d95b55c3ced045a1f3ca5e63c4edbdd088b9b4465f09fcdf58d1e2de3296c0149d423d2a232b2175975"
         }
       ],
       "licenseConcluded": "NOASSERTION",
@@ -18067,11 +18067,6 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-25f9f5f6abe9f5dcccb383e1"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
-      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-26083679a8160761119d54b5"
     },
     {
@@ -18363,6 +18358,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-3a6ec6895da37aef06557fc5"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-3a8949e401c76746fdb33be2"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -18857,6 +18857,11 @@
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-5779a901adc27e2ee7b4ec86"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-57ba90b74229ac0029e1cbf8"
     },
     {
@@ -18873,11 +18878,6 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-58e04975fcf69c664684a42e"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
-      "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-590908357c775dea7d832560"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -19583,6 +19583,11 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-8821e5023e35effe40b108d3"
+    },
+    {
+      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
+      "relationshipType": "DEPENDS_ON",
+      "relatedSpdxElement": "SPDXRef-Package-882a2bbd09301912a78ec807"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -20578,11 +20583,6 @@
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
       "relationshipType": "DEPENDS_ON",
       "relatedSpdxElement": "SPDXRef-Package-ca359e337f1ac7baa1a32c5d"
-    },
-    {
-      "spdxElementId": "SPDXRef-Package-cpredict-protocol",
-      "relationshipType": "DEPENDS_ON",
-      "relatedSpdxElement": "SPDXRef-Package-ca4610eac9da51a06ce82f5b"
     },
     {
       "spdxElementId": "SPDXRef-Package-cpredict-protocol",
@@ -21625,7 +21625,7 @@
       "annotationDate": "1970-01-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: cpredict-sbom-generator-1",
-      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/npm-license-evidence.json=757c2f1b76443b1431f05fd4348439f653cb67bfd1b790bb0a86a37a1364bb4d, manifests/npm-licenses/041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be.txt=041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be, manifests/npm-licenses/0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357.txt=0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357, manifests/npm-licenses/1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc.txt=1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc, manifests/npm-licenses/45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1.txt=45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1, manifests/npm-licenses/6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd.txt=6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd, manifests/npm-licenses/8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb.txt=8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb, manifests/npm-licenses/a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214.txt=a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214, manifests/npm-licenses/c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a.txt=c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a, manifests/npm-licenses/caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec.txt=caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec, manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt=d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41, manifests/npm-licenses/e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93.txt=e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=1cad940a03ba01ee9c1b8aa32036f38142967ef20a599c72a918527aab01f2e6, package.json=94eb9d88be919b57402ed58180d2e20ffecc431eff59bdce28597ca88ff882cf"
+      "comment": "Input locks SHA-256: manifests/binary-evidence.lock=eecea628bf51c26fa313124b555bda8eb8fa3f831593d7bb7eee700f6f298a67, manifests/dependencies.lock=df59da106dba0868052a16bb0b3c7d3565bc434f5489af2ed8fed02fa582df6f, manifests/halmos-wheels.lock=c34e0d91f18694f5c9916c5714ffa8fa37b42cb1c514bce89ee3d97d886dcedf, manifests/load-tools.lock=e41ad621addd69748118b7724c2520b9028a9ff7ac1ac0a634f2698824ea8d8b, manifests/npm-license-evidence.json=757c2f1b76443b1431f05fd4348439f653cb67bfd1b790bb0a86a37a1364bb4d, manifests/npm-licenses/041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be.txt=041cdeeed354af419dafdd6dbece369df4118f6f2cdd4db8d46a3e20a6b912be, manifests/npm-licenses/0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357.txt=0671bbe283d00991c3e7a4243bac153a12c6dbab41e95b9d1893e2624a463357, manifests/npm-licenses/1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc.txt=1cb6f8cfe21f54ab1105105717eaa2ba08343037a2a9c41dfd5ab09e3ce270fc, manifests/npm-licenses/45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1.txt=45d31799d0db956cc3eb5469346abbd9b7025babc5ff29fab10d7095da992ef1, manifests/npm-licenses/6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd.txt=6be9dfc4d2693e4f10434a1e0304665bb6a26edb8378701556dad6297bfb16bd, manifests/npm-licenses/8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb.txt=8a0365510187692533107783261ccc4c0e7cc2b23d3003a7d153a4665d72b2eb, manifests/npm-licenses/a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214.txt=a5f35901ee8b2039a7431144c23dd10bd47c1d07bcee0cd3a536421d86412214, manifests/npm-licenses/c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a.txt=c93277efbafa3f89b6c0da4e9c0f1067f407cc51f3e6e5371dae2016f9b23a4a, manifests/npm-licenses/caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec.txt=caecf721eb8d6c1d74e57a798ef53d9cbeb58fc637af1877741a5572455206ec, manifests/npm-licenses/d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41.txt=d9ca86670b0a4ca4a160fcf0196c544a8b9dffcb8529aa05b3b6bc1056933a41, manifests/npm-licenses/e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93.txt=e424cbb68485fe465f6e58959da4bf157e5a0e716c02cd8d9a2041a12520fb93, manifests/postgresql-tools.lock=ec145e99a7f0830ab4f6bf056f5b05617440da7ab7402546c1c3f95de7202689, manifests/requirements.lock=28d318d486f9cfc0d488f02c153ba113c09889d774eadab99dec67894cca88a0, manifests/security-tools.lock=cabcf4990431fb59269705e009ed3b73158b1df9f951d8d92da803b81a8ee2fc, manifests/solidity-skills.lock=ee403f591c8858a31872ee8b1bd93770a6ac634171307616fc1c90de88324f6b, package-lock.json=f57d5aa1c666d0d6c098ededa133344e7ff287089c69a57dfefe9760f92eaedc, package.json=a5397a1e5dae9abe9cd64d0dca1a07b793f9b90580b55c780520f2194281ab6b"
     }
   ]
 }

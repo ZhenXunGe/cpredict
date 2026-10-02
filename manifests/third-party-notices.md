@@ -128,8 +128,8 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:@lit/reactive-element@2.1.2:node_modules/@lit/reactive-element
 - npm:charenc@0.0.2:node_modules/charenc
 - npm:crypt@0.0.2:node_modules/crypt
-- npm:fast-uri@3.1.6:node_modules/fast-uri
-- npm:fast-uri@4.1.3:node_modules/fast-json-stringify/node_modules/fast-uri
+- npm:fast-uri@3.1.7:node_modules/fast-uri
+- npm:fast-uri@4.1.4:node_modules/fast-json-stringify/node_modules/fast-uri
 - npm:ieee754@1.2.1:node_modules/ieee754
 - npm:light-my-request@6.6.0:node_modules/light-my-request
 - npm:lit-element@4.2.2:node_modules/lit-element
@@ -583,7 +583,7 @@ Generated deterministically from locked dependency metadata. This is an inventor
 - npm:atomic-sleep@1.0.0:node_modules/atomic-sleep
 - npm:available-typed-arrays@1.0.7:node_modules/available-typed-arrays
 - npm:avvio@9.3.0:node_modules/avvio
-- npm:axios@1.18.0:node_modules/axios
+- npm:axios@1.20.0:node_modules/axios
 - npm:base-x@3.0.11:node_modules/@solana/web3.js/node_modules/base-x
 - npm:base-x@3.0.11:node_modules/borsh/node_modules/base-x
 - npm:base-x@5.0.1:node_modules/base-x

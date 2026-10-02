@@ -86,7 +86,7 @@
     },
     {
       "path": "deploy/compose/Dockerfile.offchain",
-      "sha256": "0237c29b2bdc839a106dbad1ffe20e062ca6b6d9e59d962fde85cbcf0bfa8613"
+      "sha256": "8a587a1883e4530cf091fb19689190ca5717a412054d151f5626ff8615d60c05"
     },
     {
       "path": "deploy/compose/nginx/default.conf.template",
@@ -830,7 +830,7 @@
     },
     {
       "path": "manifests/licenses.json",
-      "sha256": "dd48fd92ab3fbb1a31654a686cd20d3950b33625d932954ad2ed73d4f1178f36"
+      "sha256": "550e6dc613274afbbf38148e8d6e54cc0b968632b8c6c3d12706f22597586ae5"
     },
     {
       "path": "manifests/load-tools.lock",
@@ -926,7 +926,7 @@
     },
     {
       "path": "manifests/sbom.spdx.json",
-      "sha256": "89cd69068c7c00eff85305611c8362e45b9989b04bf31dee7de18b259e0579f1"
+      "sha256": "5002f79c7d98a3fb42e1d36bfc658628edd5be944519c525e26d659cc235f26e"
     },
     {
       "path": "manifests/sdk-declaration-patches.json",
@@ -946,7 +946,7 @@
     },
     {
       "path": "manifests/third-party-notices.md",
-      "sha256": "fc7e4570743d4edde20c163fb833f76941fa0701a0f6fc0ed856dc64aa2bafea"
+      "sha256": "f173773a4fbf730593e1fdaf3c7759f1163c460f7de86097ae9d20ce6ca90cb3"
     },
     {
       "path": "monitoring/README.md",
@@ -2082,11 +2082,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "1cad940a03ba01ee9c1b8aa32036f38142967ef20a599c72a918527aab01f2e6"
+      "sha256": "f57d5aa1c666d0d6c098ededa133344e7ff287089c69a57dfefe9760f92eaedc"
     },
     {
       "path": "package.json",
-      "sha256": "94eb9d88be919b57402ed58180d2e20ffecc431eff59bdce28597ca88ff882cf"
+      "sha256": "a5397a1e5dae9abe9cd64d0dca1a07b793f9b90580b55c780520f2194281ab6b"
     },
     {
       "path": "patches/@privy-io+react-auth++@privy-io+js-sdk-core+0.73.0.patch",

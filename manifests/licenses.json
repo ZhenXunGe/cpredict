@@ -3492,7 +3492,7 @@
       "sourceScope": "Node runtime dependency"
     },
     {
-      "identity": "npm:axios@1.18.0:node_modules/axios",
+      "identity": "npm:axios@1.20.0:node_modules/axios",
       "kind": "runtime",
       "declared": "MIT",
       "concluded": "NOASSERTION",
@@ -4428,7 +4428,7 @@
       "sourceScope": "Node development dependency"
     },
     {
-      "identity": "npm:fast-uri@3.1.6:node_modules/fast-uri",
+      "identity": "npm:fast-uri@3.1.7:node_modules/fast-uri",
       "kind": "runtime",
       "declared": "BSD-3-Clause",
       "concluded": "NOASSERTION",
@@ -4436,7 +4436,7 @@
       "sourceScope": "Node runtime dependency"
     },
     {
-      "identity": "npm:fast-uri@4.1.3:node_modules/fast-json-stringify/node_modules/fast-uri",
+      "identity": "npm:fast-uri@4.1.4:node_modules/fast-json-stringify/node_modules/fast-uri",
       "kind": "runtime",
       "declared": "BSD-3-Clause",
       "concluded": "NOASSERTION",
