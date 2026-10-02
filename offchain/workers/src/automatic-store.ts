@@ -11,6 +11,7 @@ import type {
   CleanupQuotaReason,
 } from "./automatic-claims.js";
 import { automationEffect, CleanupQuotaExceeded } from "./automatic-claims.js";
+import { PostgresClaimQueue } from "./automatic-queue.js";
 import type { SubmissionFailure } from "./automatic-diagnostics.js";
 export const cleanupQuotaLimits = {
   accountTotal24h: 8,
@@ -31,6 +32,8 @@ export class PostgresAutomaticStore implements AutomationStore {
     readonly lane: AutomationLane = "claims",
     readonly onCleanupQuotaDenied: (reason: CleanupQuotaReason) => void = () =>
       undefined,
+    readonly claimQueueEnabled = false,
+    readonly timing?: (phase: string, seconds: number) => void,
   ) {}
   async exclusive<T>(work: () => Promise<T>): Promise<T | undefined> {
     const db = await this.sql.reserve();
@@ -54,9 +57,22 @@ export class PostgresAutomaticStore implements AutomationStore {
     return r?.enabled !== false;
   }
   async setEnabled(owner: Address, enabled: boolean): Promise<void> {
-    await this
-      .sql`INSERT INTO automatic_claim_preferences(chain_id,owner,enabled) VALUES(${this.chainId},${owner.toLowerCase()},${enabled})
-      ON CONFLICT(chain_id,owner) DO UPDATE SET enabled=EXCLUDED.enabled,updated_at=now()`;
+    await this.sql.begin(async (db) => {
+      await db`INSERT INTO automatic_claim_preferences(chain_id,owner,enabled) VALUES(${this.chainId},${owner.toLowerCase()},${enabled})
+        ON CONFLICT(chain_id,owner) DO UPDATE SET enabled=EXCLUDED.enabled,updated_at=now()`;
+      const [schema] =
+        await db`SELECT to_regclass('automation_claim_scopes') AS scopes`;
+      if (!schema?.scopes) return;
+      if (enabled) {
+        await db`INSERT INTO automation_claim_scopes(chain_id,deployment_id,owner,scope,epoch,due_at,trigger_at,indexed_at)
+          SELECT ${this.chainId},${this.deploymentId},${owner.toLowerCase()},'*',epoch,now(),now(),now() FROM automation_discovery WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId}
+          ON CONFLICT(chain_id,deployment_id,owner,scope) DO UPDATE SET version=automation_claim_scopes.version+1,due_at=now(),reason=NULL,attempts=0,updated_at=now()`;
+      } else {
+        // Scope before candidate matches discovery's lock order.
+        await db`UPDATE automation_claim_scopes SET version=version+1,due_at=NULL,reason='owner_opted_out',updated_at=now() WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND owner=${owner.toLowerCase()}`;
+        await db`UPDATE automation_claim_candidates SET state='discarded',reason='owner_opted_out',updated_at=now() WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND owner=${owner.toLowerCase()} AND state IN ('ready','deferred')`;
+      }
+    });
   }
   async pending(): Promise<AutomationRecord[]> {
     const rows = await this
@@ -85,9 +101,16 @@ export class PostgresAutomaticStore implements AutomationStore {
     tx: PreparedAutomation,
   ): Promise<AutomationRecord> {
     const id = randomUUID();
-    if (isCleanup(action)) {
-      this.assertCleanupScope(action);
-      await this.sql.begin(async (db) => {
+    await this.sql.begin(async (db) => {
+      if (this.claimQueueEnabled) {
+        // Discovery/epoch reset and signing use the same d -> c lock order.
+        await db`SELECT epoch FROM automation_discovery WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} FOR UPDATE`;
+        const [candidate] =
+          await db`SELECT c.job_key FROM automation_claim_candidates c JOIN automation_discovery d USING(chain_id,deployment_id) WHERE c.chain_id=${this.chainId} AND c.deployment_id=${this.deploymentId} AND c.job_key=${action.key} AND c.epoch=d.epoch AND c.state IN ('ready','deferred') AND c.next_attempt_at<=now() FOR UPDATE OF c`;
+        if (!candidate) throw new Error("claims_candidate_changed");
+      }
+      if (isCleanup(action)) {
+        this.assertCleanupScope(action);
         // Both signer lanes take account then market locks, so quota checks and
         // reservations cannot race across workers.
         await db`SELECT pg_advisory_xact_lock(hashtextextended(${`cleanup:owner:${this.chainId}:${this.deploymentId}:${action.owner.toLowerCase()}`},0))`;
@@ -99,12 +122,22 @@ export class PostgresAutomaticStore implements AutomationStore {
         }
         await db`INSERT INTO automation_transactions(id,chain_id,deployment_id,job_key,owner,kind,target,calldata,signer,requires_claim_preference,nonce,tx_hash,raw_transaction,state,reserved_wei,cleanup_market,cleanup_priority)
           VALUES(${id},${this.chainId},${this.deploymentId},${action.key},${action.owner.toLowerCase()},${action.kind},${action.target.toLowerCase()},${action.data},${this.signer.toLowerCase()},${action.requiresClaimPreference},${tx.nonce.toString()},${tx.hash},${tx.raw},'prepared',${tx.maximumCost.toString()},${action.cleanupMarket!.toLowerCase()},${action.cleanupPriority!})`;
-      });
-    } else {
-      await this
-        .sql`INSERT INTO automation_transactions(id,chain_id,deployment_id,job_key,owner,kind,target,calldata,signer,requires_claim_preference,nonce,tx_hash,raw_transaction,state,reserved_wei)
+      } else {
+        await db`INSERT INTO automation_transactions(id,chain_id,deployment_id,job_key,owner,kind,target,calldata,signer,requires_claim_preference,nonce,tx_hash,raw_transaction,state,reserved_wei)
         VALUES(${id},${this.chainId},${this.deploymentId},${action.key},${action.owner.toLowerCase()},${action.kind},${action.target.toLowerCase()},${action.data},${this.signer.toLowerCase()},${action.requiresClaimPreference},${tx.nonce.toString()},${tx.hash},${tx.raw},'prepared',${tx.maximumCost.toString()})`;
-    }
+      }
+      if (this.claimQueueEnabled) {
+        const [timing] =
+          await db`SELECT extract(epoch FROM now()-queued_at)::float8 AS seconds FROM automation_claim_candidates WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND job_key=${action.key}`;
+        if (timing) {
+          try {
+            this.timing?.("queue", Math.max(0, timing.seconds));
+          } catch {}
+        }
+        await db`UPDATE automation_claim_candidates SET state='inflight',transaction_id=${id},reason=NULL,updated_at=now() WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND job_key=${action.key}`;
+        await db`UPDATE automation_discovery SET last_served_owner=${action.owner.toLowerCase()},last_served_at=now() WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId}`;
+      }
+    });
     return { ...action, ...tx, id, state: "prepared" };
   }
   private assertCleanupScope(action: AutomaticAction): void {
@@ -184,8 +217,12 @@ export class PostgresAutomaticStore implements AutomationStore {
     });
   }
   async cancelPrepared(id: string): Promise<void> {
-    await this
-      .sql`UPDATE automation_transactions SET state='cancelled',nonce=NULL,raw_transaction=NULL,reserved_wei=0,updated_at=now() WHERE id=${id} AND state='prepared'`;
+    await this.sql.begin(async (db) => {
+      const rows =
+        await db`UPDATE automation_transactions SET state='cancelled',nonce=NULL,raw_transaction=NULL,reserved_wei=0,updated_at=now() WHERE id=${id} AND state='prepared' RETURNING id`;
+      if (rows.length && this.claimQueueEnabled)
+        await db`UPDATE automation_claim_candidates SET state='deferred',transaction_id=NULL,next_attempt_at=now()+interval '2 seconds',updated_at=now() WHERE transaction_id=${id} AND state='inflight'`;
+    });
   }
   async unknown(
     id: string,
@@ -216,8 +253,11 @@ export class PostgresAutomaticStore implements AutomationStore {
     const success = r.status === "success";
     await this.sql.begin(async (db) => {
       const [t] =
-        await db`SELECT tx_hash FROM automation_transactions WHERE id=${id} FOR UPDATE`;
+        await db`SELECT tx_hash,extract(epoch FROM now()-COALESCE(broadcast_at,created_at))::float8 AS confirmation_seconds FROM automation_transactions WHERE id=${id} FOR UPDATE`;
       if (!t) throw new Error("automation_transaction_missing");
+      try {
+        this.timing?.("confirmation", Math.max(0, t.confirmation_seconds));
+      } catch {}
       const actual = hash ?? t.tx_hash;
       if (actual !== t.tx_hash) {
         const allowed =
@@ -226,6 +266,21 @@ export class PostgresAutomaticStore implements AutomationStore {
           throw new Error("automation_receipt_hash_unregistered");
       }
       await db`UPDATE automation_transactions SET tx_hash=${actual},state=${success ? "confirmed" : "reverted"},receipt_block=${r.blockNumber.toString()},receipt_hash=${r.blockHash},canonical_status=${success ? "canonical" : "unchecked"},canonical_checked_at=CASE WHEN ${success} THEN now() ELSE NULL END,raw_transaction=NULL,updated_at=now() WHERE id=${id}`;
+      if (this.claimQueueEnabled && r.blockTimestamp !== undefined) {
+        const [timing] =
+          await db`SELECT extract(epoch FROM to_timestamp(${r.blockTimestamp})-trigger_at)::float8 AS user_seconds,extract(epoch FROM to_timestamp(${r.blockTimestamp})-indexed_at)::float8 AS backend_seconds FROM automation_claim_candidates WHERE transaction_id=${id}`;
+        if (timing && success) {
+          try {
+            this.timing?.("event-to-payout", Math.max(0, timing.user_seconds));
+            this.timing?.(
+              "indexed-to-payout",
+              Math.max(0, timing.backend_seconds),
+            );
+          } catch {}
+        }
+      }
+      if (this.claimQueueEnabled)
+        await db`UPDATE automation_claim_candidates SET state=${success ? "done" : "deferred"},reason=${success ? null : "transaction_reverted"},transaction_id=NULL,next_attempt_at=now()+interval '2 seconds',updated_at=now() WHERE transaction_id=${id} AND state='inflight'`;
       await db`UPDATE automation_recoveries SET state='confirmed',winning_hash=${actual},original_raw=NULL,replacement_raw=NULL,updated_at=now() WHERE transaction_id=${id} AND state IN ('prepared','broadcasting','unknown')`;
     });
   }
@@ -486,6 +541,11 @@ export class PostgresAutomaticStore implements AutomationStore {
       ORDER BY created_at LIMIT 1`;
     return {
       enabled: await this.enabled(owner),
+      queue: await new PostgresClaimQueue(
+        this.sql,
+        this.chainId,
+        this.deploymentId,
+      ).summary(owner, queue ? "queue_blocked_unknown_transaction" : null),
       reason: queue
         ? "queue_blocked_unknown_transaction"
         : transactions[0]?.reorganized

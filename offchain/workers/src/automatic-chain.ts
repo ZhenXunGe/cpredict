@@ -38,6 +38,7 @@ export class ViemAutomationChain implements AutomationChain {
     readonly maxTransactionCost?: bigint,
     readonly validationClient: PublicClient = client,
     readonly selectedProvider?: () => string,
+    readonly receiptTime = false,
   ) {}
   async eligible(action: AutomaticAction): Promise<boolean> {
     if (this.eligibilityGuard && !(await this.eligibilityGuard(action)))
@@ -272,6 +273,14 @@ export class ViemAutomationChain implements AutomationChain {
         status: r.status,
         blockNumber: r.blockNumber,
         blockHash: r.blockHash,
+        ...(this.receiptTime
+          ? {
+              blockTimestamp: Number(
+                (await this.client.getBlock({ blockNumber: r.blockNumber }))
+                  .timestamp,
+              ),
+            }
+          : {}),
       };
     } catch (e) {
       if (e instanceof Error && e.name === "TransactionReceiptNotFoundError")

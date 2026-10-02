@@ -23,11 +23,24 @@ import {
   shortAddress,
 } from "./ui.js";
 
+import {
+  automaticQueueMessage,
+  automaticClaimsRefresh,
+} from "./automatic-claims-status.js";
+
 export function AutomaticClaimsPanel() {
   const { api, account } = useSession();
   const cache = useQueryClient();
   const scope = `${api.key}:${account?.id ?? "signed-out"}`;
   const [checked, setChecked] = useState(true);
+  const [visible, setVisible] = useState(
+    () => document.visibilityState !== "hidden",
+  );
+  useEffect(() => {
+    const update = () => setVisible(document.visibilityState !== "hidden");
+    document.addEventListener("visibilitychange", update);
+    return () => document.removeEventListener("visibilitychange", update);
+  }, []);
   const [pagination, setPagination] = useState<PaginationState>({
     scope,
     page: 0,
@@ -48,7 +61,9 @@ export function AutomaticClaimsPanel() {
         statusSchema,
         { auth: true },
       ),
-    refetchInterval: 5000,
+    refetchInterval: (query) =>
+      automaticClaimsRefresh(query.state.data?.queue, visible),
+    refetchIntervalInBackground: false,
   });
   const change = useMutation({
     mutationFn: (enabled: boolean) =>
@@ -147,10 +162,29 @@ export function AutomaticClaimsPanel() {
       {status.data && (
         <p role="status">
           {status.data.enabled
-            ? (reasons[status.data.reason] ?? "后台核验中")
-            : "自动领取已关闭；已提交的交易继续确认，你仍可手动领取。"}
+            ? (automaticQueueMessage(status.data.queue) ??
+              reasons[status.data.reason] ??
+              "后台核验中")
+            : `自动领取已关闭；${status.data.queue?.inFlightCount ? `正在确认 ${status.data.queue.inFlightCount} 笔已提交的领取交易，` : "已提交的交易继续确认，"}你仍可手动领取。`}
         </p>
       )}
+      {status.data?.enabled &&
+        status.data.queue &&
+        status.data.queue.state !== "queued" &&
+        status.data.queue.readyCount + status.data.queue.deferredCount > 0 && (
+          <p className="small muted">
+            有 {status.data.queue.readyCount + status.data.queue.deferredCount}{" "}
+            项权益等待自动领取
+          </p>
+        )}
+      {status.data?.enabled &&
+        status.data.queue &&
+        status.data.queue.state !== "confirming" &&
+        status.data.queue.inFlightCount > 0 && (
+          <p className="small muted">
+            正在确认 {status.data.queue.inFlightCount} 笔领取交易
+          </p>
+        )}
       {status.isPending && <Loading label="正在读取自动领取记录" />}
       {status.data?.transactions.length ? (
         <div role="region" aria-label="自动领取记录">
@@ -410,8 +444,10 @@ const reasons: Record<string, string> = {
     "自动领取暂缓：发送服务当前不可用，等待恢复；也可手动领取。",
   daily_gas_budget_exhausted: "今日代付额度已用完，等待恢复；也可手动领取",
   gas_balance_insufficient: "代付 Gas 余额不足，等待恢复；也可手动领取",
-  cleanup_account_quota_exceeded: "自动挂单清理已达账户配额；可手动撤单、取回资产或领取",
-  cleanup_market_quota_exceeded: "自动挂单清理已达市场配额；可手动撤单、取回资产或领取",
+  cleanup_account_quota_exceeded:
+    "自动挂单清理已达账户配额；可手动撤单、取回资产或领取",
+  cleanup_market_quota_exceeded:
+    "自动挂单清理已达市场配额；可手动撤单、取回资产或领取",
   retry_after_chain_check: "链上状态核验中",
   transaction_reverted: "上次领取未成功，正在重新核验",
   rechecking_after_reorg: "链上发生重组，原到账记录已撤回，后台正在重新核验",

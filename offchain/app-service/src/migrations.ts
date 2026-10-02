@@ -17,6 +17,7 @@ export const migrationPaths = [
     "009_sparse_canonical_ranges.sql",
     "010_orderbook_watermark.sql",
     "011_ledger_fact_revision.sql",
+    "012_claim_discovery_indexes.sql",
   ].map((n) => `offchain/indexer/migrations/${n}`),
   "offchain/app-service/migrations/001_application.sql",
   "offchain/app-service/migrations/002_operational_queries.sql",
@@ -29,6 +30,7 @@ export const migrationPaths = [
   "offchain/app-service/migrations/009_automation_canonical_audit.sql",
   "offchain/app-service/migrations/010_automation_cleanup_quotas.sql",
   "offchain/app-service/migrations/011_automation_operations.sql",
+  "offchain/app-service/migrations/012_automation_claim_queue.sql",
 ];
 
 /** Existing migration registry and checksums, shared by maintenance commands. */

@@ -672,3 +672,32 @@ test("deferred ask shares show a recoverable action and require a valid receiver
   await expect(page.getByText(A(87), { exact: true })).toBeVisible();
   expect(fixture.errors).toEqual([]);
 });
+
+test("automatic queue transitions, pause reasons and disabled in-flight transactions", async ({page},testInfo)=>{
+  const f=await setup(page);
+  let enabled=true;
+  let queue={state:'queued',readyCount:3,inFlightCount:0,deferredCount:0,oldestQueuedAt:new Date().toISOString(),updatedAt:new Date().toISOString(),reason:null as string|null};
+  let old=false;
+  await page.route('**/v1/automatic-claims**',async route=>{
+    if(route.request().method()==='POST') enabled=route.request().postDataJSON().enabled;
+    await route.fulfill({json:{enabled,reason:'waiting_for_entitlement',updatedAt:null,transactions:[],nextCursor:null,...(old?{}:{queue})}});
+  });
+  await page.goto('/test/browser/fixture.html?orderbook-test=1#/ctusd-test/entitlements');
+  await expect(page.getByText('有 3 项权益等待自动领取',{exact:true})).toBeVisible();
+  queue={...queue,state:'confirming',readyCount:2,inFlightCount:1};
+  await expect(page.getByText('正在确认 1 笔领取交易',{exact:true})).toBeVisible();
+  await page.screenshot({path:`reports/generated/public-site/automatic-queue-${testInfo.project.name}.png`,fullPage:true});
+  const checkbox=page.getByRole('checkbox',{name:'自动领取权益（默认开启）'});
+  await checkbox.uncheck();
+  await expect(page.getByText('自动领取已关闭；正在确认 1 笔已提交的领取交易，你仍可手动领取。',{exact:true})).toBeVisible();
+  await checkbox.check();
+  queue={...queue,state:'paused',inFlightCount:0,reason:'daily_gas_budget_exhausted'};
+  await expect(page.getByText('今日代付 Gas 预算已用完，领取任务已保留。',{exact:true})).toBeVisible();
+  queue={...queue,state:'unavailable',readyCount:0,reason:'queue_status_unavailable'};
+  await expect(page.getByText('自动领取队列状态暂不可用，后台正在恢复核验。',{exact:true})).toBeVisible();
+  await expect(page.getByText('当前没有待自动领取的权益',{exact:true})).toHaveCount(0);
+  old=true;await page.reload();
+  await expect(checkbox).toBeChecked();
+  await expect(page.getByText('自动领取队列状态暂不可用，后台正在恢复核验。',{exact:true})).toHaveCount(0);
+  expect(f.errors).toEqual([]);
+});

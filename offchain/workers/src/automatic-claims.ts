@@ -73,6 +73,7 @@ export interface AutomationReceipt {
   status: "success" | "reverted";
   blockNumber: bigint;
   blockHash: Hex;
+  blockTimestamp?: number;
 }
 export interface AutomationStore {
   // Session-level lock scoped to chain + signer. Lock connection must remain reserved until return.
@@ -120,6 +121,7 @@ export interface AutomationChain {
 }
 export interface AutomationSource {
   candidates(): AsyncIterable<AutomaticAction>;
+  reject?(action: AutomaticAction, reason: string): Promise<void>;
 }
 
 /** A dedicated signer has a single durable nonce lane. Unknown outcomes block new submissions. */
@@ -136,6 +138,11 @@ export class AutomaticClaimsWorker {
       failure: SubmissionFailure,
     ) => void,
     readonly recover?: (tx: AutomationRecord) => Promise<void>,
+    readonly observe?: (
+      phase: string,
+      seconds: number,
+      result: "ok" | "error",
+    ) => void,
   ) {
     if (
       dailyBudget <= 0n ||
@@ -219,22 +226,35 @@ export class AutomaticClaimsWorker {
         if (
           action.requiresClaimPreference &&
           !(await this.store.enabled(action.owner))
-        )
+        ) {
+          await this.source.reject?.(action, "owner_opted_out");
           continue;
+        }
         try {
-          if (!(await this.chain.eligible(action))) continue;
+          if (
+            !(await this.timed("chain-validation", () =>
+              this.chain.eligible(action),
+            ))
+          ) {
+            await this.source.reject?.(action, "no_entitlement");
+            continue;
+          }
           // Recheck preference immediately before creating a signed task.
           if (
             action.requiresClaimPreference &&
             !(await this.store.enabled(action.owner))
-          )
+          ) {
+            await this.source.reject?.(action, "owner_opted_out");
             continue;
+          }
           if ((await this.chain.balance()) === 0n) {
             await this.setStatus(action, "gas_balance_insufficient");
             break;
           }
           if (!(await this.canSubmit(action))) break;
-          const prepared = await this.chain.prepare(action);
+          const prepared = await this.timed("prepare", () =>
+            this.chain.prepare(action),
+          );
           if (keccak256(prepared.raw) !== prepared.hash)
             throw new Error("signed_hash_mismatch");
           if (prepared.maximumCost > this.maxTransactionCost)
@@ -263,6 +283,10 @@ export class AutomaticClaimsWorker {
               : error instanceof AutomationGasCapExceeded
                 ? error.message
                 : "retry_after_chain_check",
+            error instanceof CleanupQuotaExceeded ||
+              error instanceof AutomationGasCapExceeded
+              ? undefined
+              : `chain_check_${submissionFailure(error).reason}`,
           );
           if ((await this.store.pending()).length) return;
           continue;
@@ -277,10 +301,27 @@ export class AutomaticClaimsWorker {
     }
     return true;
   }
+  private async timed<T>(phase: string, work: () => Promise<T>): Promise<T> {
+    const start = performance.now();
+    try {
+      const result = await work();
+      try {
+        this.observe?.(phase, (performance.now() - start) / 1000, "ok");
+      } catch {}
+      return result;
+    } catch (error) {
+      try {
+        this.observe?.(phase, (performance.now() - start) / 1000, "error");
+      } catch {}
+      throw error;
+    }
+  }
   private async broadcast(tx: AutomationRecord): Promise<void> {
     const provider = this.chain.submissionProvider?.() ?? "writer-unknown";
     try {
-      await this.chain.validate?.(tx);
+      await this.timed("pre-broadcast-validation", async () =>
+        this.chain.validate?.(tx),
+      );
       // Opt-out/budget/balance may change while the exact-writer simulation runs.
       if (tx.requiresClaimPreference && !(await this.store.enabled(tx.owner))) {
         await this.store.cancelPrepared(tx.id);
@@ -313,7 +354,7 @@ export class AutomaticClaimsWorker {
       failure?: SubmissionFailure;
     } = { outcome: "accepted", provider };
     try {
-      const hash = await this.chain.send(tx.raw);
+      const hash = await this.timed("broadcast", () => this.chain.send(tx.raw));
       if (hash.toLowerCase() !== tx.hash.toLowerCase())
         throw new Error("broadcast_hash_mismatch");
     } catch (error) {
@@ -336,6 +377,7 @@ export class AutomaticClaimsWorker {
   private async setStatus(
     action: AutomaticAction,
     reason: string,
+    queueReason?: string,
   ): Promise<void> {
     const effect = automationEffect(action.kind);
     const subject = ["market-maintenance", "matching", "unknown"].includes(
@@ -354,5 +396,14 @@ export class AutomaticClaimsWorker {
               : "operation_completed"
         : reason;
     await this.store.status(subject, finalReason);
+    if (
+      ![
+        "received",
+        "confirming",
+        "checking_original_transaction",
+        "rechecking_after_reorg",
+      ].includes(reason)
+    )
+      await this.source.reject?.(action, queueReason ?? finalReason);
   }
 }

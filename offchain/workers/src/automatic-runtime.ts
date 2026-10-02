@@ -3,7 +3,7 @@ import { pathToFileURL } from "node:url";
 import { z } from "zod";
 import postgres from "postgres";
 import Fastify from "fastify";
-import { Registry, Counter, Gauge } from "prom-client";
+import { Registry, Counter, Gauge, Histogram } from "prom-client";
 import {
   createPublicClient,
   createWalletClient,
@@ -41,6 +41,12 @@ import {
   RecoveryQuorum,
 } from "./automatic-recovery.js";
 import { AutomationAlerts, smtpDelivery } from "./automatic-alerts.js";
+import { PostgresClaimQueue } from "./automatic-queue.js";
+import {
+  AutomaticClaimDiscovery,
+  discoveryFailure,
+} from "./automatic-discovery.js";
+import { AutomaticReadLimit, claimPollDelay } from "./automatic-read-limit.js";
 import { MatchingSource } from "./matching-source.js";
 const databaseUrl = z
   .string()
@@ -158,9 +164,53 @@ export async function startAutomaticService(
     fallback: parseRpcFallbackConfig(env),
     registry,
   });
+  let rpcReadCount = 0,
+    lastDiscoveryRpcCount = 0;
+  const rpcReads = new Counter({
+    name: "cpredict_automation_read_requests_total",
+    help: "All keeper RPC reads, including failing requests",
+    registers: [registry],
+  });
+  const queueCounts = new Gauge({
+    name: "cpredict_automation_claim_queue",
+    help: "Unsigned claim candidates by durable state",
+    labelNames: ["state"],
+    registers: [registry],
+  });
+  const queueAge = new Gauge({
+    name: "cpredict_automation_oldest_queued_seconds",
+    help: "Age of oldest unsigned candidate; errors do not clear the value",
+    registers: [registry],
+  });
+  const cursorBlock = new Gauge({
+    name: "cpredict_automation_discovery_block",
+    help: "Last atomically processed complete ledger block",
+    registers: [registry],
+  });
+  const readLimit = new AutomaticReadLimit(4);
+  const limitedRead = <T>(work: () => Promise<T>, priority = 1) => {
+    rpcReads.inc();
+    rpcReadCount++;
+    return cfg.CPREDICT_AUTOMATION_LANE === "claims"
+      ? readLimit.run(work, priority)
+      : work();
+  };
   const client = createPublicClient({
     chain: arbitrumSepolia,
-    transport: pool.transport,
+    transport:
+      cfg.CPREDICT_AUTOMATION_LANE === "claims"
+        ? custom(
+            {
+              request: ({ method, params }) =>
+                limitedRead(
+                  () =>
+                    pool.request(method, (params as readonly unknown[]) ?? []),
+                  method === "eth_getTransactionReceipt" ? 0 : 1,
+                ),
+            },
+            { retryCount: 0 },
+          )
+        : pool.transport,
   });
   const writeUrls = parseSubmissionUrls(
     cfg.CPREDICT_AUTOMATION_WRITE_RPC_URL ?? cfg.CPREDICT_AUTOMATION_RPC_URL,
@@ -179,7 +229,9 @@ export async function startAutomaticService(
       return {
         name: `writer-${index + 1}`,
         request: (input: Parameters<SubmissionEndpoint["request"]>[0]) =>
-          transport.request(input as never),
+          READ_METHODS.has(input.method)
+            ? limitedRead(() => transport.request(input as never), 0)
+            : transport.request(input as never),
       };
     }),
     environment.deployment.chainId,
@@ -203,7 +255,11 @@ export async function startAutomaticService(
       {
         request: async ({ method, params }) =>
           READ_METHODS.has(method)
-            ? pool.request(method, (params as readonly unknown[]) ?? [])
+            ? limitedRead(
+                () =>
+                  pool.request(method, (params as readonly unknown[]) ?? []),
+                0,
+              )
             : method === "eth_sendRawTransaction"
               ? writer.sendRaw((params as readonly string[])[0]!)
               : Promise.reject(
@@ -222,6 +278,19 @@ export async function startAutomaticService(
     max: 4,
     connect_timeout: 5,
     onnotice: () => undefined,
+  });
+  const stages = new Histogram({
+    name: "cpredict_automation_stage_seconds",
+    help: "Keeper phase duration, including failed cycles",
+    labelNames: ["phase", "result"],
+    buckets: [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60, 120],
+    registers: [registry],
+  });
+  const discovered = new Counter({
+    name: "cpredict_automation_discovery_items_total",
+    help: "Discovery items processed",
+    labelNames: ["kind"],
+    registers: [registry],
   });
   const store = new PostgresAutomaticStore(
     control,
@@ -243,9 +312,11 @@ export async function startAutomaticService(
         quotaLogAt.set(reason, now);
       }
     },
+    cfg.CPREDICT_AUTOMATION_LANE === "claims",
+    (phase, seconds) => stages.observe({ phase, result: "ok" }, seconds),
   );
   const ledger = new PostgresFinancialLedger(sql, environment);
-  const source =
+  const legacySource =
     cfg.CPREDICT_AUTOMATION_LANE === "claims"
       ? new LedgerAutomaticSource(ledger, client, store)
       : new MatchingSource(sql, client, environment, Date.now, 30000, store);
@@ -254,8 +325,8 @@ export async function startAutomaticService(
     wallet,
     account,
     BigInt(cfg.CPREDICT_AUTOMATION_CONFIRMATIONS),
-    source instanceof LedgerAutomaticSource
-      ? (action) => source.stillEligible(action)
+    legacySource instanceof LedgerAutomaticSource
+      ? (action) => legacySource.stillEligible(action)
       : undefined,
     async () => {
       const head = await client.getBlockNumber();
@@ -264,6 +335,7 @@ export async function startAutomaticService(
     maxTransactionCost,
     validationClient,
     () => writer.provider(),
+    cfg.CPREDICT_AUTOMATION_LANE === "claims",
   );
   const recovery = new AutomationRecovery(
     new PostgresRecoveryStore(store),
@@ -273,7 +345,19 @@ export async function startAutomaticService(
         name: `writer-${index + 1}`,
         client: createPublicClient({
           chain: arbitrumSepolia,
-          transport: http(url, { retryCount: 0, timeout: 2500 }),
+          transport: custom(
+            {
+              request: (input) =>
+                limitedRead(
+                  () =>
+                    http(url, { retryCount: 0, timeout: 2500 })({
+                      chain: arbitrumSepolia,
+                    }).request(input as never),
+                  0,
+                ),
+            },
+            { retryCount: 0 },
+          ),
         }),
       })),
       environment.deployment.chainId,
@@ -282,6 +366,57 @@ export async function startAutomaticService(
     dailyBudget,
     maxTransactionCost,
   );
+  const claimQueue =
+    cfg.CPREDICT_AUTOMATION_LANE === "claims"
+      ? new PostgresClaimQueue(
+          control,
+          environment.deployment.chainId,
+          environment.deployment.id,
+        )
+      : undefined;
+  const discovery =
+    claimQueue && legacySource instanceof LedgerAutomaticSource
+      ? new AutomaticClaimDiscovery(
+          claimQueue,
+          ledger,
+          legacySource,
+          (phase, seconds, counts) => {
+            stages.observe({ phase, result: "ok" }, seconds);
+            for (const [kind, count] of Object.entries(counts))
+              if (
+                ["events", "accounts", "markets", "candidates"].includes(kind)
+              )
+                discovered.inc({ kind }, count);
+            if (counts.events || counts.candidates)
+              console.info(
+                JSON.stringify({
+                  event: "automation_discovery_progress",
+                  phase,
+                  seconds,
+                  ...counts,
+                  sharedRpcRequests: rpcReadCount - lastDiscoveryRpcCount,
+                }),
+              );
+            if (phase !== "index-lag") lastDiscoveryRpcCount = rpcReadCount;
+          },
+        )
+      : undefined;
+  const source =
+    claimQueue && discovery
+      ? {
+          async *candidates() {
+            const snapshot = await discovery.assertCurrent();
+            const [progress] =
+              await control`SELECT epoch::text FROM automation_discovery WHERE chain_id=${claimQueue.chainId} AND deployment_id=${claimQueue.deploymentId}`;
+            if (progress?.epoch !== snapshot.epoch) return;
+            yield* claimQueue.candidates();
+          },
+          reject: (
+            action: Parameters<PostgresClaimQueue["reject"]>[0],
+            reason: string,
+          ) => claimQueue.reject(action, reason),
+        }
+      : legacySource;
   const worker = new AutomaticClaimsWorker(
     store,
     chain,
@@ -303,6 +438,7 @@ export async function startAutomaticService(
     cfg.CPREDICT_AUTOMATION_AUTO_RECOVERY_ENABLED === "true"
       ? (tx) => recovery.automatic(tx)
       : undefined,
+    (phase, seconds, result) => stages.observe({ phase, result }, seconds),
   );
   const pendingAge = new Gauge({
     name: "cpredict_automation_oldest_pending_seconds",
@@ -345,13 +481,43 @@ export async function startAutomaticService(
   let stopped = false,
     lastOk = 0,
     oldestPending = 0,
-    lastMonitorOk = 0;
+    lastMonitorOk = 0,
+    lastDiscoveryOk = 0;
+  let consuming = false;
   let lastBlocked = "";
   let lastMissingFacts = "";
   let timer: ReturnType<typeof setTimeout> | undefined,
     active: Promise<void> | undefined;
   let monitorTimer: ReturnType<typeof setTimeout> | undefined,
     monitorActive: Promise<void> | undefined;
+  let discoveryTimer: ReturnType<typeof setTimeout> | undefined,
+    discoveryActive: Promise<void> | undefined;
+  const discoverTick = async () => {
+    const started = performance.now();
+    try {
+      await discovery!.tick();
+      lastDiscoveryOk = Date.now();
+      if ((await claimQueue!.workPending()) && !stopped && !consuming) {
+        if (timer) clearTimeout(timer);
+        active = tick();
+      }
+    } catch (error) {
+      stages.observe(
+        { phase: "discovery", result: "error" },
+        (performance.now() - started) / 1000,
+      );
+      console.warn(
+        JSON.stringify({
+          event: "automation_discovery_failed",
+          reason: discoveryFailure(error),
+        }),
+      );
+    }
+    if (!stopped)
+      discoveryTimer = setTimeout(() => {
+        discoveryActive = discoverTick();
+      }, 2000);
+  };
   const monitor = async () => {
     try {
       oldestPending = await store.oldestPendingSeconds();
@@ -364,6 +530,20 @@ export async function startAutomaticService(
       const result = await alerts.sendOne();
       if (result === "sent" || result === "failed")
         alertDelivery.inc({ result });
+      if (claimQueue) {
+        const rows =
+          await control`SELECT state,count(*)::int AS count,extract(epoch FROM now()-min(queued_at))::float8 AS age FROM automation_claim_candidates WHERE chain_id=${store.chainId} AND deployment_id=${store.deploymentId} AND state IN ('ready','deferred') GROUP BY state`;
+        queueCounts.reset();
+        for (const state of ["ready", "deferred"])
+          queueCounts.set(
+            { state },
+            rows.find((r) => r.state === state)?.count ?? 0,
+          );
+        queueAge.set(Math.max(0, ...rows.map((r) => r.age)));
+        const [progress] =
+          await control`SELECT cursor_block FROM automation_discovery WHERE chain_id=${store.chainId} AND deployment_id=${store.deploymentId}`;
+        if (progress) cursorBlock.set(Number(progress.cursor_block));
+      }
       lastMonitorOk = Date.now();
     } catch {
       console.warn(
@@ -388,6 +568,8 @@ export async function startAutomaticService(
           Date.now() - lastOk < 120000 &&
           lastMonitorOk &&
           Date.now() - lastMonitorOk < 60000 &&
+          (!discovery ||
+            (lastDiscoveryOk > 0 && Date.now() - lastDiscoveryOk < 120000)) &&
           oldestPending < 120
           ? 200
           : 503,
@@ -398,13 +580,19 @@ export async function startAutomaticService(
           Date.now() - lastOk < 120000 &&
           lastMonitorOk &&
           Date.now() - lastMonitorOk < 60000 &&
+          (!discovery ||
+            (lastDiscoveryOk > 0 && Date.now() - lastDiscoveryOk < 120000)) &&
           oldestPending < 120
             ? "ready"
             : "not-ready",
       }),
   );
   const tick = async () => {
-    let pendingCount = 0;
+    consuming = true;
+    let pendingCount: number | null = null,
+      busy: boolean | null = null,
+      failed = false;
+    const started = performance.now();
     try {
       await worker.tick();
       pendingCount = (await store.pending()).length;
@@ -450,23 +638,48 @@ export async function startAutomaticService(
         lastMissingFacts = missingWarning;
       }
       lastOk = Date.now();
+      stages.observe(
+        { phase: "consume", result: "ok" },
+        (performance.now() - started) / 1000,
+      );
       ticks.inc({ lane: cfg.CPREDICT_AUTOMATION_LANE, result: "ok" });
-    } catch {
+    } catch (error) {
+      failed = true;
+      stages.observe(
+        { phase: "consume", result: "error" },
+        (performance.now() - started) / 1000,
+      );
+      console.warn(
+        JSON.stringify({
+          event: "automation_cycle_failed",
+          lane: store.lane,
+          reason: discoveryFailure(error),
+        }),
+      );
       ticks.inc({ lane: cfg.CPREDICT_AUTOMATION_LANE, result: "error" });
     }
+    try {
+      pendingCount = (await store.pending()).length;
+      busy = claimQueue ? await claimQueue.workPending() : false;
+    } catch {
+      pendingCount = null;
+      busy = null;
+    }
+    consuming = false;
     if (!stopped)
       timer = setTimeout(
         () => {
           active = tick();
         },
-        pendingCount ? 2000 : idlePollMs,
+        claimPollDelay(pendingCount, busy, failed, idlePollMs),
       );
   };
   const stop = async () => {
     stopped = true;
     if (timer) clearTimeout(timer);
     if (monitorTimer) clearTimeout(monitorTimer);
-    await Promise.all([active, monitorActive]);
+    if (discoveryTimer) clearTimeout(discoveryTimer);
+    await Promise.all([active, monitorActive, discoveryActive]);
     await app.close();
     pool.close();
     await sql.end({ timeout: 5 });
@@ -482,6 +695,7 @@ export async function startAutomaticService(
     if (identity?.identity !== environmentKey(environment))
       throw new Error("automation_deployment_database_mismatch");
     await store.operationalSchemaReady();
+    await claimQueue?.ready();
     if (
       cfg.CPREDICT_AUTOMATION_AUTO_RECOVERY_ENABLED === "true" &&
       writeUrls.length < 3
@@ -492,6 +706,7 @@ export async function startAutomaticService(
     await app.listen({ host: "127.0.0.1", port: cfg.CPREDICT_AUTOMATION_PORT });
     monitorActive = monitor();
     active = tick();
+    if (discovery) discoveryActive = discoverTick();
     return stop;
   } catch (e) {
     await stop();

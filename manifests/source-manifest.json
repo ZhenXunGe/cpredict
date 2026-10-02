@@ -226,7 +226,7 @@
     },
     {
       "path": "docs/orderbook-autoclaim-release.md",
-      "sha256": "67a960c52e01b262b85c966b8c851483cd3bec994882f1251e5d0f821d6b37f9"
+      "sha256": "b32355bcc4138cdd4af7a646f4bf6723cbaaac807794408a9655530c9c9a8e59"
     },
     {
       "path": "docs/public-test-site-acceptance.md",
@@ -354,7 +354,7 @@
     },
     {
       "path": "examples/user-site/src/AutomaticClaims.tsx",
-      "sha256": "dd4be5649563290d75a824e6c218abbbfff441aee0a07568d2f3ce83dcafbabc"
+      "sha256": "ef7eab639a090a8d27a833ea1131888829888aacf2f61ad846337f97dd173633"
     },
     {
       "path": "examples/user-site/src/DepositHistory.tsx",
@@ -383,6 +383,10 @@
     {
       "path": "examples/user-site/src/api.ts",
       "sha256": "caaf966172f8c807372d092d0f8ba6c26f04bb8aabd8bb6deef5a09c90382721"
+    },
+    {
+      "path": "examples/user-site/src/automatic-claims-status.ts",
+      "sha256": "380aff689f93ebbc4fa2f569625245a038c4cb24913a4f36cd19197f581b310d"
     },
     {
       "path": "examples/user-site/src/connected-wallets.tsx",
@@ -517,6 +521,10 @@
       "sha256": "23ef0aae5a99d0f22d37fd03aedff3949efe7b4ee33b700efac8930246e67ca4"
     },
     {
+      "path": "examples/user-site/test/automatic-claims-status.test.ts",
+      "sha256": "ed59befd30a2ef843e382b6efd6b20050187887e9da38dcf94190f72365f6fde"
+    },
+    {
       "path": "examples/user-site/test/browser/c2c-close-guidance.spec.ts",
       "sha256": "99a8b1c2775ebdd77d89c8bd5119a2b6166b5fb00d1de3e7be2b951fb43c85c8"
     },
@@ -570,7 +578,7 @@
     },
     {
       "path": "examples/user-site/test/browser/orderbook.spec.ts",
-      "sha256": "a8ef2900f438aedd452bb1a3bd3a2d3fa22cfa6cfc38b9a1d37c97bab136c94e"
+      "sha256": "a19523cab919fc1f61dcfb1d9e0294c49444cd4f1de1ac0b2ba055b224e1624e"
     },
     {
       "path": "examples/user-site/test/browser/playwright.config.ts",
@@ -658,7 +666,7 @@
     },
     {
       "path": "generated/public-site/contracts.json",
-      "sha256": "587d2376253fd923a16279e3f2271e94a6d964dd6cddae38cf2e4661baea1d56"
+      "sha256": "247616220f9b1918a728762c4db90210b7d0bd6e04a9cae798dcee629a7136f3"
     },
     {
       "path": "load/README.md",
@@ -990,7 +998,7 @@
     },
     {
       "path": "offchain/app-core/src/orderbook-contracts.ts",
-      "sha256": "c39db06016d40eb65cb6c84e64a31c7d0dab9d4c2135be31581b86e442cc9aba"
+      "sha256": "6a8504a88749f966b8ce015154b62051fc1d77ff6b8a1a79fa570ec4fef33e39"
     },
     {
       "path": "offchain/app-core/src/pnl.ts",
@@ -1117,6 +1125,10 @@
       "sha256": "03ba939d455b2306c38dced8c9526432f646b583a15979c2cea30497b5a4e0cc"
     },
     {
+      "path": "offchain/app-service/migrations/012_automation_claim_queue.sql",
+      "sha256": "cc6b663ce15daf14610cd58869e23d466f46709fb214fb9882ca437699b03f5b"
+    },
+    {
       "path": "offchain/app-service/src/auth.ts",
       "sha256": "3578d94e8f65a21d5f8fcb660605d10bfaa788e4c19f7f0e19984ed18fcf4ee2"
     },
@@ -1174,7 +1186,7 @@
     },
     {
       "path": "offchain/app-service/src/migrations.ts",
-      "sha256": "7188e0d7352355208d443847b797c7cbf6b4ff60c70d93d4462fd5aafda6a562"
+      "sha256": "848c2bb1514d3a69a8b45afa8a284c46d46748dc8d8e76c5ceb3e928113c57e0"
     },
     {
       "path": "offchain/app-service/src/operations.ts",
@@ -1345,6 +1357,10 @@
       "sha256": "458781789433d7d438c3419a2707c205c00f780f7c62f42da178046d3a398642"
     },
     {
+      "path": "offchain/indexer/migrations/012_claim_discovery_indexes.sql",
+      "sha256": "449c0477ca7240cb969cc5707f0e8a5d1cc46756c4d23f1d233a8196283306ed"
+    },
+    {
       "path": "offchain/indexer/src/api-main.ts",
       "sha256": "9a7c5797a17d30ac5d2105e8827f48517cd20ced8166ebb0a309086049d8d220"
     },
@@ -1382,7 +1398,7 @@
     },
     {
       "path": "offchain/indexer/src/financial-store.ts",
-      "sha256": "79e7648f404da70b5d20fa0a5e199e43065db47ecb9d35c2dc5dfa323c2d7d41"
+      "sha256": "26518f3d8ef8f0ad84f15a788439f7306fe9f41fde45b152acb9311cf1fceb85"
     },
     {
       "path": "offchain/indexer/src/indexer.ts",
@@ -1446,7 +1462,7 @@
     },
     {
       "path": "offchain/indexer/src/rights-reader.ts",
-      "sha256": "db27a0b3a583e595604cd59f36cf95c30d2f1254babd1d95a56ea78aaf0cc331"
+      "sha256": "bca6413e976f211c075b4c64a317ae7c3898f1b0e7b3d7917cb360e86d6863f2"
     },
     {
       "path": "offchain/indexer/src/rpc-client.ts",
@@ -1890,15 +1906,27 @@
     },
     {
       "path": "offchain/workers/src/automatic-chain.ts",
-      "sha256": "11f1df5576d127958a4980118ce0e27f0f6952ef87c3a16e2d5137fa3ca4a6cb"
+      "sha256": "1c8921f7df70a1cacc8387886f572eb18043b683f2fe8a5761b51f9cf38e9427"
     },
     {
       "path": "offchain/workers/src/automatic-claims.ts",
-      "sha256": "fdfaf0612aa976192d4d9560a3c569ffd55799608f54093e053d72b108a3c115"
+      "sha256": "cf8740f34cf5a08c16d020e5f19e03dee8595b235d03514a0f77d0bcb2cce74a"
     },
     {
       "path": "offchain/workers/src/automatic-diagnostics.ts",
       "sha256": "190e8c4a6764acafdd172af21543960ec50ab6f1bf6f3bdcc124ae0d8f9433c4"
+    },
+    {
+      "path": "offchain/workers/src/automatic-discovery.ts",
+      "sha256": "cf7632b3e5d2143ac58fee936156bcafb48114538225d27a23d23920d1ad3756"
+    },
+    {
+      "path": "offchain/workers/src/automatic-queue.ts",
+      "sha256": "9fc098dc6e354ec9bf91957c5788f121acd093a9cf4b574237c6415ced529d72"
+    },
+    {
+      "path": "offchain/workers/src/automatic-read-limit.ts",
+      "sha256": "da1eda7d2f8b0704fa9c2e3043ffa5a81ed8d8d894e4d9fd5f83c306632a7a58"
     },
     {
       "path": "offchain/workers/src/automatic-recovery.ts",
@@ -1906,15 +1934,15 @@
     },
     {
       "path": "offchain/workers/src/automatic-runtime.ts",
-      "sha256": "a1c090a899b40950387782d6a871855e727c056d20de68459576f5cdf6c6727c"
+      "sha256": "a996fb02cefdfaf5711a506c831d55733833dcb579723df7710ffbbd290c0024"
     },
     {
       "path": "offchain/workers/src/automatic-source.ts",
-      "sha256": "59cce62a8258b054041c2698c6919642203ec211e1d8a9a031b74032a88672f9"
+      "sha256": "12fc76578607fac08938dda78483864d91ad009aa228fa33384597788a2b41d2"
     },
     {
       "path": "offchain/workers/src/automatic-store.ts",
-      "sha256": "15e6a9947fa1d50a45bd3f1a918505a202309789676616381569c6257972c312"
+      "sha256": "b61861b1f806901864cefda6ffb9c1efac5088a06faed2be3aa5de12ded0c8c6"
     },
     {
       "path": "offchain/workers/src/automatic-submission.ts",
@@ -1977,12 +2005,20 @@
       "sha256": "ecfa148d382a00ef3273a8d86f07e1efd05ed67615bc0f6b7138625e1785548b"
     },
     {
+      "path": "offchain/workers/test/automatic-queue.integration.test.ts",
+      "sha256": "a3e52096aff20ec0c9731ae4a889861d80725b4ef5a96313f3b2cc3c4b7004c3"
+    },
+    {
+      "path": "offchain/workers/test/automatic-read-limit.test.ts",
+      "sha256": "1aff2f8566f898c022ff207f78fba9e14a200ceac380b2fdbab4e2f7fabf2dee"
+    },
+    {
       "path": "offchain/workers/test/automatic-recovery.test.ts",
       "sha256": "318d4b38aa98feced46cfcfa485787720ec08b3bd662e2a5fd3cd771840f5edd"
     },
     {
       "path": "offchain/workers/test/automatic-source.test.ts",
-      "sha256": "2276bd5f2fe64f0ee09ed9306475c4a35c966855cb0d43e07614280053e64625"
+      "sha256": "9b54860cb0d51edf88927cfd67f9acb357f16e871c2f36b0cf423d8a940da89b"
     },
     {
       "path": "offchain/workers/test/automatic-store.integration.test.ts",
@@ -2006,7 +2042,7 @@
     },
     {
       "path": "offchain/workers/test/orderbook-anvil.integration.test.ts",
-      "sha256": "714917eb7c5e85d86573315cc9016011f47ace5874a694bd27b5bd5d97927e07"
+      "sha256": "2250267442615b090a7336b02a2bf5abcdcced789a112016d0e6da67aaa43d1c"
     },
     {
       "path": "offchain/workers/test/postgres-state.integration.test.ts",
@@ -2314,7 +2350,7 @@
     },
     {
       "path": "scripts/orderbook/migrate-control.mjs",
-      "sha256": "c9df332f38023b02a763ce89625d7a2518f10c85dcaa45889b02c7e89622f210"
+      "sha256": "c4ffaa5045cc0c34a8481c711582eea50ef4566c8516d7992aa185270276e334"
     },
     {
       "path": "scripts/orderbook/prepare-environment.mjs",
@@ -2322,7 +2358,7 @@
     },
     {
       "path": "scripts/orderbook/test-postgres.mjs",
-      "sha256": "19c36854c8d81d0af965828ace3de7de0389117d2945f72c03306c9f17791e05"
+      "sha256": "1232289e3f7770cdb05f51e05978c6cf3641f336ddaeaad68931b8eec67766a9"
     },
     {
       "path": "scripts/postgres-assert-vitest-report.mjs",

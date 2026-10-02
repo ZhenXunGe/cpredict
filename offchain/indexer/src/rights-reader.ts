@@ -32,8 +32,10 @@ export class OnchainRightsReader implements RightsReader {
     private readonly client: PublicClient,
     private readonly environment: Environment,
     private readonly blockNumber: bigint,
+    private readonly automatic = false,
   ) {}
   async market(address: Address, owner: Address): Promise<MarketRights> {
+    if (this.automatic) return this.automaticMarket(address, owner);
     const shared = { address, abi: rightsAbi, blockNumber: this.blockNumber };
     const [
       state,
@@ -128,6 +130,77 @@ export class OnchainRightsReader implements RightsReader {
       timeoutTotalUnits,
       ownerTimeoutUnits,
     };
+  }
+  /** Same rights contract with state-specific reads, used only by the claims worker. */
+  private async automaticMarket(
+    address: Address,
+    owner: Address,
+  ): Promise<MarketRights> {
+    const read = (functionName: string, args?: readonly unknown[]) =>
+      this.client.readContract({
+        address,
+        abi: rightsAbi,
+        blockNumber: this.blockNumber,
+        functionName,
+        ...(args ? { args } : {}),
+      } as never) as Promise<bigint>;
+    const state = Number(await read("marketState"));
+    const voidReason =
+      this.environment.deployment.protocolVersion === "legacy-v1"
+        ? 0
+        : Number(await read("voidReason"));
+    const normalized = publicMarketState(
+      this.environment.deployment.protocolVersion,
+      state,
+      voidReason,
+    );
+    const outcomes = Number(await read("outcomeCount"));
+    if (outcomes < 2 || outcomes > 32)
+      throw new Error("invalid market outcome count");
+    const balances = await Promise.all(
+      Array.from({ length: outcomes }, (_, i) =>
+        read("balanceOf", [owner, BigInt(i)]),
+      ),
+    );
+    const [ownerEarlyScore, ownerTimeoutUnits] = await Promise.all([
+      read("earlyBirdScore", [owner]),
+      read("timeoutBonusUnits", [owner]),
+    ]);
+    const result: MarketRights = {
+      ...normalized,
+      winningOutcome: 0n,
+      balances,
+      ownerEarlyScore,
+      ownerTimeoutUnits,
+      winnerPool: 0n,
+      winningUnits: 0n,
+      earlyPool: 0n,
+      earlyScore: 0n,
+      timeoutFunded: false,
+      timeoutPool: 0n,
+      timeoutTotalUnits: 0n,
+    };
+    if (normalized.state === 1) {
+      result.winningOutcome = BigInt(await read("winningOutcome"));
+      if ((balances[Number(result.winningOutcome)] ?? 0n) > 0n)
+        [result.winnerPool, result.winningUnits] = await Promise.all([
+          read("remainingWinnerPool"),
+          read("remainingWinningUnits"),
+        ]);
+      if (ownerEarlyScore > 0n)
+        [result.earlyPool, result.earlyScore] = await Promise.all([
+          read("remainingEarlyBirdPool"),
+          read("remainingEarlyBirdScore"),
+        ]);
+    } else if (normalized.state === 2 && normalized.voidReason === 3) {
+      result.timeoutFunded = Boolean(await read("timeoutBonusFunded"));
+      if (result.timeoutFunded)
+        [result.timeoutPool, result.timeoutTotalUnits] = await Promise.all([
+          read("remainingTimeoutBonusPool"),
+          read("remainingTimeoutBonusUnits"),
+        ]);
+    }
+    return result;
   }
   async listing(listingId: Hex, owner: Address) {
     if (this.environment.deployment.marketplaceVersion === "orderbook-v2") {

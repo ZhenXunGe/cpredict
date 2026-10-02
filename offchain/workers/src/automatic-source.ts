@@ -44,11 +44,20 @@ export class LedgerAutomaticSource implements AutomationSource {
     // A timeout affects the whole market. Re-discover the triggering holder on the
     // latest chain state, including when a prepared transaction survives a restart.
     if (action.kind !== "void-timeout") return true;
-    for await (const current of this.candidates(true))
+    const market = action.key.split(":")[1]!;
+    for await (const current of this.candidates(true, {
+      owner: action.owner,
+      scope: market,
+    }))
       if (current.key === action.key) return true;
     return false;
   }
-  async *candidates(force = false): AsyncIterable<AutomaticAction> {
+  async *candidates(
+    force = false,
+    scope?: { owner: Address; scope: string },
+    sharedReads?: Map<string, Promise<unknown>>,
+    onDeadline?: (timestamp: bigint) => void,
+  ): AsyncIterable<AutomaticAction> {
     const snapshot = await this.ledger.snapshot();
     if (!snapshot.complete)
       throw new Error("automatic_claims_index_incomplete");
@@ -66,10 +75,12 @@ export class LedgerAutomaticSource implements AutomationSource {
       .sql`SELECT fact_revision::text AS revision FROM ledger_environment WHERE singleton`;
     if (!progress) throw new Error("automatic_claims_ledger_unavailable");
     const fingerprint = `${snapshot.epoch}:${progress.revision}`;
-    if (fingerprint !== this.fingerprint) {
+    if (!scope && fingerprint !== this.fingerprint) {
       const [marketRows, ownerRows] = await Promise.all([
-        this.ledger.sql`SELECT DISTINCT market FROM ledger_facts WHERE market IS NOT NULL`,
-        this.ledger.sql`SELECT owner FROM (SELECT owner FROM ledger_facts UNION SELECT counterparty AS owner FROM ledger_facts) a WHERE owner IS NOT NULL ORDER BY owner`,
+        this.ledger
+          .sql`SELECT DISTINCT market FROM ledger_facts WHERE market IS NOT NULL`,
+        this.ledger
+          .sql`SELECT owner FROM (SELECT owner FROM ledger_facts UNION SELECT counterparty AS owner FROM ledger_facts) a WHERE owner IS NOT NULL ORDER BY owner`,
       ]);
       this.marketAddresses = marketRows.map((row) => String(row.market));
       this.owners = ownerRows.map((row) => row.owner as Address);
@@ -77,7 +88,7 @@ export class LedgerAutomaticSource implements AutomationSource {
       this.fingerprint = fingerprint;
     }
     // Only identical reads at this single pinned head share results; no stale RPC cache.
-    const contractReads = new Map<string, Promise<unknown>>();
+    const contractReads = sharedReads ?? new Map<string, Promise<unknown>>();
     const readClient = new Proxy(this.client, {
       get: (target, property) =>
         property === "readContract"
@@ -104,8 +115,13 @@ export class LedgerAutomaticSource implements AutomationSource {
     for (const market of this.marketAddresses)
       excluded.add(market.toLowerCase());
     const emitted = new Set<string>();
-    for (const owner of this.owners) {
+    for (const owner of scope ? [scope.owner] : this.owners) {
       if (excluded.has(owner.toLowerCase())) continue;
+      if (scope) {
+        const [vault] = await this.ledger
+          .sql`SELECT EXISTS(SELECT 1 FROM ledger_facts WHERE chain_id=${d.chainId} AND market=${owner.toLowerCase()} LIMIT 1) AS vault`;
+        if (vault?.vault) continue;
+      }
       if (!(await this.preferences.enabled(owner))) {
         this.idleUntil.delete(owner);
         continue;
@@ -113,14 +129,22 @@ export class LedgerAutomaticSource implements AutomationSource {
       if (!force && (this.idleUntil.get(owner) ?? 0n) > head.timestamp)
         continue;
       let nextWake = head.timestamp + 600n;
+      let deadlineWake: bigint | undefined;
       let hasAction = false;
-      const facts = await this.ledger.accountFacts(owner, snapshot);
+      const facts = scope
+        ? await this.ledger.accountScopeFacts(owner, snapshot, scope.scope)
+        : await this.ledger.accountFacts(owner, snapshot);
       const candidates = discoverEntitlements(
         owner,
         facts,
         computePnl(owner, facts, { coverageComplete: snapshot.complete }),
       );
-      const reader = new OnchainRightsReader(readClient, env, head.number);
+      const reader = new OnchainRightsReader(
+        readClient,
+        env,
+        head.number,
+        !!scope,
+      );
       const reads = new Map<string, ReturnType<typeof reader.market>>();
       const readMarket = reader.market.bind(reader);
       reader.market = (market, account) => {
@@ -133,7 +157,11 @@ export class LedgerAutomaticSource implements AutomationSource {
         return value;
       };
       const markets = [
-        ...new Set(candidates.flatMap((e) => (e.market ? [e.market] : []))),
+        ...new Set(
+          candidates.flatMap((e) =>
+            e.market && e.status !== "claimed" ? [e.market] : [],
+          ),
+        ),
       ];
       const action = async (
         target: Address,
@@ -187,6 +215,11 @@ export class LedgerAutomaticSource implements AutomationSource {
             functionName: "resolutionDeadline",
             blockNumber: head.number,
           });
+          if (
+            deadline > head.timestamp &&
+            (deadlineWake === undefined || deadline < deadlineWake)
+          )
+            deadlineWake = deadline;
           if (deadline > head.timestamp && deadline < nextWake)
             nextWake = deadline;
           if (head.timestamp >= deadline && !emitted.has(`void:${market}`)) {
@@ -214,6 +247,8 @@ export class LedgerAutomaticSource implements AutomationSource {
         }
       }
       const hydrated = await hydrateEntitlements(owner, candidates, reader);
+      if (scope && hydrated.some((e) => e.reason === "chain_read_unavailable"))
+        throw new Error("automatic_claims_read_unavailable");
       // Return terminal escrow BEFORE winner/refund claims. Ordinary live asks are not cancelled.
       const ordered = [
         ...hydrated.filter((e) => e.kind === "escrow"),
@@ -283,6 +318,7 @@ export class LedgerAutomaticSource implements AutomationSource {
         );
       }
       await this.ledger.assertSnapshot(snapshot);
+      if (deadlineWake !== undefined) onDeadline?.(deadlineWake);
       // Generator cancellation after a yielded action must never put that owner to sleep.
       if (!force && !hasAction) {
         this.idleUntil.set(owner, nextWake);

@@ -19,6 +19,24 @@ export const orderPageSchema = z.object({
   nextCursor: uint.nullable(),
 });
 export const automaticClaimsStatusSchema = z.object({
+  queue: z
+    .object({
+      state: z.enum([
+        "idle",
+        "discovering",
+        "queued",
+        "confirming",
+        "paused",
+        "unavailable",
+      ]),
+      readyCount: z.number().int().nonnegative(),
+      inFlightCount: z.number().int().nonnegative(),
+      deferredCount: z.number().int().nonnegative(),
+      oldestQueuedAt: z.string().nullable(),
+      updatedAt: z.string().nullable(),
+      reason: z.string().nullable(),
+    })
+    .optional(),
   enabled: z.boolean(),
   reason: z.string(),
   updatedAt: z.string().nullable(),

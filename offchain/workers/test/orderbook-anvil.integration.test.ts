@@ -7,6 +7,7 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  custom,
   decodeEventLog,
   maxUint256,
   zeroAddress,
@@ -18,7 +19,7 @@ import {
 } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { arbitrumSepolia } from "viem/chains";
-import { env, H } from "../../app-core/test/fixtures.js";
+import { env, H, A } from "../../app-core/test/fixtures.js";
 import { marketFactoryAbi, marketVaultAbi } from "../../sdk/src/abis.js";
 import { orderbookAbi } from "../../sdk/src/orderbook.js";
 import { PostgresEventStore } from "../../indexer/src/postgres-store.js";
@@ -27,6 +28,8 @@ import { PostgresAutomaticStore } from "../src/automatic-store.js";
 import { ViemAutomationChain } from "../src/automatic-chain.js";
 import { AutomaticClaimsWorker } from "../src/automatic-claims.js";
 import { LedgerAutomaticSource } from "../src/automatic-source.js";
+import { PostgresClaimQueue } from "../src/automatic-queue.js";
+import { AutomaticClaimDiscovery } from "../src/automatic-discovery.js";
 import { MatchingSource } from "../src/matching-source.js";
 
 // Owned loopback chain and disposable PostgreSQL schema only. No public RPC or real wallet.
@@ -55,13 +58,23 @@ test.skipIf(
       ],
       { stdio: "ignore" },
     );
-    const url = `http://127.0.0.1:${port}`,
-      client = createPublicClient({
-        chain: arbitrumSepolia,
-        transport: http(url, { retryCount: 0 }),
-        cacheTime: 0,
-        pollingInterval: 20,
-      });
+    let contractReads = 0;
+    const url = `http://127.0.0.1:${port}`;
+    const transport = http(url, { retryCount: 0 })({ chain: arbitrumSepolia });
+    const client = createPublicClient({
+      chain: arbitrumSepolia,
+      transport: custom(
+        {
+          request: async (input) => {
+            if (input.method === "eth_call") contractReads++;
+            return transport.request(input as never);
+          },
+        },
+        { retryCount: 0 },
+      ),
+      cacheTime: 0,
+      pollingInterval: 20,
+    });
     const accounts = Array.from({ length: 5 }, () =>
       privateKeyToAccount(generatePrivateKey()),
     );
@@ -313,6 +326,7 @@ test.skipIf(
           "008_orderbook",
           "009_sparse_canonical_ranges",
           "011_ledger_fact_revision",
+          "012_claim_discovery_indexes",
         ])
           await migration.unsafe(
             await readFile(`offchain/indexer/migrations/${n}.sql`, "utf8"),
@@ -323,6 +337,7 @@ test.skipIf(
           "009_automation_canonical_audit.sql",
           "010_automation_cleanup_quotas.sql",
           "011_automation_operations.sql",
+          "012_automation_claim_queue.sql",
         ])
           await migration.unsafe(
             await readFile(`offchain/app-service/migrations/${name}`, "utf8"),
@@ -413,6 +428,9 @@ test.skipIf(
         421614,
         environment.deployment.id,
         keeper.address,
+        "claims",
+        () => {},
+        true,
       );
       const source = new LedgerAutomaticSource(
           eventStore.financial!,
@@ -426,12 +444,23 @@ test.skipIf(
           1n,
           (action) => source.stillEligible(action),
         );
-      let worker = new AutomaticClaimsWorker(store, chain, source, 10n ** 18n);
+      const queue = new PostgresClaimQueue(
+        sql,
+        421614,
+        environment.deployment.id,
+      );
+      const discovery = new AutomaticClaimDiscovery(
+        queue,
+        eventStore.financial!,
+        source,
+      );
+      let worker = new AutomaticClaimsWorker(store, chain, queue, 10n ** 18n);
       for (const a of [governor, alice, bob])
         await store.setEnabled(a.address, false);
       await rpc("evm_setNextBlockTimestamp", [Number(now + 87000n)]);
       await rpc("evm_mine");
       await index();
+      await discovery.tick();
       await worker.tick();
       expect(await store.pending()).toHaveLength(0);
       expect(
@@ -442,9 +471,10 @@ test.skipIf(
         }),
       ).toBe(0);
       await store.setEnabled(bob.address, true);
+      await discovery.tick();
       await worker.tick();
       expect(await store.pending()).toHaveLength(1);
-      worker = new AutomaticClaimsWorker(store, chain, source, 10n ** 18n); // process restart with the same durable journal
+      worker = new AutomaticClaimsWorker(store, chain, queue, 10n ** 18n); // process restart with the same durable journal
       for (const a of [governor, alice])
         await store.setEnabled(a.address, true);
       // Terminal market state does not emit an orderbook event. Advance the
@@ -454,10 +484,12 @@ test.skipIf(
         await rpc("evm_mine");
         await index();
         await matching.tick();
+        await discovery.tick();
         await worker.tick();
       }
       await rpc("evm_mine");
       await index();
+      await discovery.tick();
       await worker.tick();
       expect(
         await client.readContract({
@@ -501,6 +533,215 @@ test.skipIf(
           args: [bob.address],
         }),
       ).toBe(1005000000n);
+      await mkdir("reports/generated/orderbook", { recursive: true });
+      // Actual signed batches on an owned, automining Anvil. Historical rows are
+      // synthetic database fixtures; payout balances and receipts are real contracts.
+      const performanceBatches: {
+        markets: number;
+        owners: number;
+        round: number;
+        seconds: number;
+        reads: number;
+        transactions: number;
+      }[] = [];
+      for (const [marketCount, ownerCount, rounds] of [
+        [38, 53, 20],
+        [200, 500, 20],
+        [0, 0, 1],
+      ]) {
+        if (marketCount === 0)
+          await method("ProtocolConfigV1", "setProtocolTreasury", [
+            matcher.address,
+          ]);
+        const recipients =
+          marketCount === 0
+            ? [governor, alice, bob, matcher]
+            : [governor, alice, bob];
+        const expectedTransactions = marketCount === 0 ? 8 : 7;
+        await sql`DELETE FROM ledger_facts WHERE log_index=999`;
+        const snapshot = await eventStore.financial!.snapshot();
+        for (let i = 0; i < ownerCount!; i++) {
+          const historicalOwner = A(10000 + i),
+            historicalMarket = A(20000 + (i % marketCount!));
+          const fact = {
+            id: `perf:${i}`,
+            kind: "primary-buy",
+            blockNumber: snapshot.blockNumber,
+            blockHash: snapshot.blockHash,
+            transactionHash: H(10000 + i),
+            transactionIndex: 0,
+            logIndex: 999,
+            factIndex: 0,
+            timestamp: snapshot.timestamp,
+            market: historicalMarket,
+            owner: historicalOwner,
+            counterparty: null,
+            outcomeId: "0",
+            listingId: null,
+            units: "10",
+            amount: "10",
+            extra: { score: "1" },
+          };
+          await sql`INSERT INTO ledger_facts(chain_id,block_number,transaction_hash,transaction_index,log_index,fact_index,occurred_at,kind,market,owner,fact) VALUES(421614,${snapshot.blockNumber},${H(10000 + i)},0,999,0,${snapshot.timestamp},'primary-buy',${historicalMarket.toLowerCase()},${historicalOwner.toLowerCase()},${sql.json(fact)})`;
+        }
+        await queue.progress(snapshot, "1");
+        await sql`UPDATE automation_discovery SET cursor_block=${snapshot.blockNumber},cursor_hash=${snapshot.blockHash},backstop_due=now()+interval '1 day'`;
+        await sql`UPDATE automation_claim_scopes SET due_at=NULL`;
+        for (let round = 0; round < rounds!; round++) {
+          const ts = (await client.getBlock()).timestamp,
+            close = ts + 600n;
+          const r = await send(factory, marketFactoryAbi, "createMarket", [
+            {
+              rulesHash: H(11),
+              metadataURI: "https://example.invalid/perf.json",
+              resolutionSourceHash: H(12),
+              resolutionSourceURI: "https://example.invalid/source",
+              outcomeCount: 2,
+              closeAt: close,
+              eventStartsAt: 0n,
+              outcomeDeadlineAt: close,
+              creatorTreasury: governor.address,
+              deploymentMode: 0,
+              featureFlags: 1n,
+              creatorRakeBps: 500,
+              creatorC2CFeeBps: 100,
+              perUserPrimaryCap: 100000000n,
+              marketPrimaryCap: 100000000n,
+              minimumPrimaryUnits: 10000n,
+              minimumC2CUnits: 10000n,
+              creatorBond: 10000000n,
+            },
+            H(20000 + marketCount! * 100 + round),
+          ]);
+          const target = r.logs.flatMap((log) => {
+            try {
+              const e = decodeEventLog({
+                abi: marketFactoryAbi,
+                data: log.data,
+                topics: log.topics,
+              });
+              return e.eventName === "MarketCreated" ? [e.args.market] : [];
+            } catch {
+              return [];
+            }
+          })[0]!;
+          for (const participant of [alice, bob]) {
+            await send(
+              token,
+              tokenAbi,
+              "approve",
+              [target, maxUint256],
+              participant,
+            );
+            await send(
+              target,
+              marketVaultAbi,
+              "buy",
+              [0n, 10000000n, 10000000n, 10000000n, close],
+              participant,
+            );
+          }
+          await index();
+          await queue.progress(await eventStore.financial!.snapshot(), "1");
+          // Seed only this new event range, not the database-only unrelated history.
+          await sql`UPDATE automation_discovery SET cursor_block=${through.toString()},cursor_hash=${(await client.getBlock({ blockNumber: through })).hash}`;
+          const before = (await Promise.all(
+            recipients.map((a) =>
+              client.readContract({
+                address: token,
+                abi: tokenAbi,
+                functionName: "balanceOf",
+                args: [a.address],
+              }),
+            ),
+          )) as bigint[];
+          await rpc("evm_setNextBlockTimestamp", [Number(close + 1n)]);
+          const started = performance.now(),
+            readsBefore = contractReads;
+          await send(target, marketVaultAbi, "resolve", [0n, H(30)], governor);
+          await index();
+          const [initial] =
+            await sql`SELECT count(*)::int AS n FROM automation_transactions WHERE signer=${keeper.address.toLowerCase()}`;
+          let complete = false;
+          for (let step = 0; step < 30; step++) {
+            await discovery.tick();
+            await worker.tick();
+            await rpc("evm_mine");
+            await index();
+            const [n] =
+              await sql`SELECT count(*)::int AS n FROM automation_transactions WHERE signer=${keeper.address.toLowerCase()} AND state='confirmed'`;
+            if (
+              n!.n >= initial!.n + expectedTransactions &&
+              (await store.pending()).length === 0
+            ) {
+              complete = true;
+              break;
+            }
+          }
+          const seconds = (performance.now() - started) / 1000;
+          expect(complete).toBe(true);
+          expect(seconds).toBeLessThanOrEqual(30);
+          const [count] =
+            await sql`SELECT count(*)::int AS n FROM automation_transactions WHERE signer=${keeper.address.toLowerCase()}`;
+          expect(count!.n - initial!.n).toBe(expectedTransactions);
+          const after = (await Promise.all(
+            recipients.map((a) =>
+              client.readContract({
+                address: token,
+                abi: tokenAbi,
+                functionName: "balanceOf",
+                args: [a.address],
+              }),
+            ),
+          )) as bigint[];
+          expect(
+            after.reduce((sum, value, i) => sum + value - before[i]!, 0n),
+          ).toBe(30000000n);
+          if (marketCount === 0)
+            expect(after[3]! - before[3]!).toBeGreaterThan(0n);
+          for (const a of [alice, bob])
+            expect(
+              await client.readContract({
+                address: target,
+                abi: parseAbi([
+                  "function balanceOf(address,uint256) view returns(uint256)",
+                ]),
+                functionName: "balanceOf",
+                args: [a.address, 0n],
+              }),
+            ).toBe(0n);
+          performanceBatches.push({
+            markets: marketCount!,
+            owners: ownerCount!,
+            round,
+            seconds,
+            reads: contractReads - readsBefore,
+            transactions: expectedTransactions,
+          });
+        }
+      }
+      const small = performanceBatches.filter((b) => b.markets === 38),
+        large = performanceBatches.filter((b) => b.markets === 200);
+      expect(Math.max(...large.map((b) => b.reads))).toBeLessThanOrEqual(
+        Math.max(...small.map((b) => b.reads)) * 1.5,
+      );
+      await writeFile(
+        "reports/generated/orderbook/claims-performance.json",
+        JSON.stringify(
+          {
+            scope:
+              "owned-automining-anvil-real-postgres-synthetic-unrelated-history",
+            polling:
+              "explicit integration ticks; scheduler timing verified separately",
+            batches: performanceBatches.filter((b) => b.markets > 0),
+            distinctProtocolBeneficiary: performanceBatches.find(
+              (b) => b.markets === 0,
+            ),
+          },
+          null,
+          2,
+        ),
+      );
       const txs =
         await sql`SELECT kind,state,tx_hash,nonce,signer FROM automation_transactions ORDER BY created_at`;
       expect(

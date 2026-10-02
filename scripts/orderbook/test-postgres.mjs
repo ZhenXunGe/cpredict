@@ -15,6 +15,7 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 const pg = resolve(root, ".tools/postgresql-17.10/bin");
 const inventory = [
   "offchain/workers/test/automatic-store.integration.test.ts",
+  "offchain/workers/test/automatic-queue.integration.test.ts",
   "offchain/workers/test/automatic-operations.integration.test.ts",
   "offchain/indexer/test/orderbook-postgres.integration.test.ts",
   "offchain/app-service/test/deployment-rollover.integration.test.ts",
@@ -24,6 +25,10 @@ const inventory = [
   "offchain/indexer/test/reports-postgres.integration.test.ts",
 ];
 const focusedInventory = [
+  {
+    path: "offchain/workers/test/automatic-queue.integration.test.ts",
+    tests: 15,
+  },
   ...PUBLIC_SITE_POSTGRES_INVENTORY.filter((entry) =>
     inventory.includes(entry.path),
   ),
@@ -147,6 +152,10 @@ try {
     `Public-site PostgreSQL: ${focused.passed}/${focused.tests} passed, no skipped tests.\n`,
   );
   const allInventory = [
+    {
+      path: "offchain/workers/test/automatic-queue.integration.test.ts",
+      tests: 15,
+    },
     ...PUBLIC_SITE_POSTGRES_INVENTORY,
     {
       path: "offchain/app-service/test/historical-deployment.integration.test.ts",

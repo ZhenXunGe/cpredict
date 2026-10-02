@@ -360,6 +360,25 @@ export class PostgresFinancialLedger {
       );
     return rows.map((r) => ledgerFactSchema.parse(r.fact));
   }
+  /** Claims-only scope: retain the authoritative fact folding, exclude unrelated markets. */
+  async accountScopeFacts(
+    owner: Address,
+    snapshot: LedgerSnapshot,
+    scope: string,
+  ): Promise<LedgerFact[]> {
+    if (scope === "*") return this.accountFacts(owner, snapshot);
+    await this.assertSnapshot(snapshot);
+    const rows = await this.sql<
+      { fact: unknown }[]
+    >`SELECT fact FROM ledger_facts
+      WHERE chain_id=${this.environment.deployment.chainId} AND block_number<=${snapshot.blockNumber}
+      AND ((market=${scope} AND (owner=${owner.toLowerCase()} OR counterparty=${owner.toLowerCase()} OR kind IN ('market-resolved','market-voided','timeout-funded','bond-timeout-funded','economic-snapshot')))
+        OR (owner=${owner.toLowerCase()} AND kind IN ('fee-accrued','fee-claimed','bond-credited','bond-claimed')))
+      ORDER BY block_number,transaction_index,log_index,fact_index LIMIT 100001`;
+    if (rows.length > 100000)
+      throw new AppError("history_capacity_exceeded", 503);
+    return rows.map((r) => ledgerFactSchema.parse(r.fact));
+  }
   async pnl(
     owner: Address,
     options: Omit<PnlOptions, "coverageComplete"> = {},

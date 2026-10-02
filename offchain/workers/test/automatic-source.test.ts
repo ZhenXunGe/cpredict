@@ -54,6 +54,7 @@ function setup(state = 0, enabled = true, now = 2000n) {
     }),
     assertSnapshot: vi.fn(async () => {}),
     accountFacts: async () => facts,
+    accountScopeFacts: async () => facts,
     sql: async (s: TemplateStringsArray) => {
       const query = s.join("");
       queries.push(query);
@@ -183,12 +184,19 @@ describe("historical automatic entitlement discovery", () => {
     f.prefs.cleanupQuota = quota;
     f.prefs.status = status;
     const actions = await f.actions();
-    expect(actions.some((action) => action.kind.startsWith("return-listing:"))).toBe(false);
-    expect(status).toHaveBeenCalledWith(trader, "cleanup_account_quota_exceeded");
-    expect(quota).toHaveBeenCalledWith(expect.objectContaining({
-      cleanupMarket: vault,
-      cleanupPriority: "terminal-blocking",
-    }));
+    expect(
+      actions.some((action) => action.kind.startsWith("return-listing:")),
+    ).toBe(false);
+    expect(status).toHaveBeenCalledWith(
+      trader,
+      "cleanup_account_quota_exceeded",
+    );
+    expect(quota).toHaveBeenCalledWith(
+      expect.objectContaining({
+        cleanupMarket: vault,
+        cleanupPriority: "terminal-blocking",
+      }),
+    );
     expect(actions.some((action) => action.kind === "fees")).toBe(true);
   });
   it("idle holders sleep while block/hash checks continue, and business events wake them", async () => {
@@ -203,12 +211,32 @@ describe("historical automatic entitlement discovery", () => {
     }
     expect(vi.mocked(f.client.readContract).mock.calls.length).toBe(first);
     expect(vi.mocked(f.client.getBlock).mock.calls.length).toBe(40);
-    expect(f.queries.filter((query) => query.includes("SELECT DISTINCT market"))).toHaveLength(1);
-    expect(f.queries.filter((query) => query.includes("SELECT owner FROM"))).toHaveLength(1);
+    expect(
+      f.queries.filter((query) => query.includes("SELECT DISTINCT market")),
+    ).toHaveLength(1);
+    expect(
+      f.queries.filter((query) => query.includes("SELECT owner FROM")),
+    ).toHaveLength(1);
     f.revision.factRevision = "3"; // Also covers owner-less resolution/fee events.
     f.values.creditOf = 2n;
     expect((await f.actions()).some((a) => a.kind === "fees")).toBe(true);
-    expect(f.queries.filter((query) => query.includes("SELECT DISTINCT market"))).toHaveLength(2);
+    expect(
+      f.queries.filter((query) => query.includes("SELECT DISTINCT market")),
+    ).toHaveLength(2);
+  });
+  it("persists a distant scoped deadline instead of requiring another business event", async () => {
+    const f = setup(0, true, 1000n);
+    f.values.creditOf = 0n;
+    f.values.resolutionDeadline = 100000n;
+    const deadline = vi.fn();
+    for await (const _ of f.source.candidates(
+      true,
+      { owner: trader, scope: vault.toLowerCase() },
+      undefined,
+      deadline,
+    )) {
+    }
+    expect(deadline).toHaveBeenCalledWith(100000n);
   });
   it("deadline wakes idle holders without any new event", async () => {
     const f = setup(0, true, 1999n);
