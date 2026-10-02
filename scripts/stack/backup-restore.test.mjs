@@ -4,10 +4,28 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { backupColumnsSql, backupDatabaseInventory, buildBackupManifest, buildSnapshotSql, createStackBackup } from "./backup.mjs";
-import { compareSnapshots, snapshotTables, validateBackupFiles } from "./restore-drill.mjs";
+import { compareSnapshots, snapshotTables, validateBackupFiles, verifyMigrations } from "./restore-drill.mjs";
 import { readSourceRevision } from "./source-revision.mjs";
 
 const sha = "a".repeat(64);
+
+test("restore verifies registered SQL without replaying superseded views and still runs pending migrations", async () => {
+  const { createHash } = await import("node:crypto");
+  const path = "offchain/app-service/migrations/004_deployment_carryover.sql";
+  const digest = createHash("sha256").update(await readFile(path)).digest("hex");
+  const inventory = [{ database: "restored", kind: "indexer" }];
+  let registry = [{ path, digest }], executions = 0;
+  const run = async (_command, args) => ({ code: 0, stdout: args.at(-1).includes("to_regclass") ? "t\n" : JSON.stringify(registry) });
+  const pipe = async () => { executions++; return { code: 0 }; };
+  await verifyMigrations(run, pipe, "fixture", {}, [{ path, sha256: digest }], inventory);
+  assert.equal(executions, 0);
+  registry = [{ path, digest: "b".repeat(64) }];
+  await assert.rejects(verifyMigrations(run, pipe, "fixture", {}, [{ path, sha256: digest }], inventory), /checksum changed/);
+  registry = [];
+  await verifyMigrations(run, pipe, "fixture", {}, [{ path, sha256: digest }], inventory);
+  assert.equal(executions, 1);
+  await assert.rejects(verifyMigrations(async () => ({ code: 1 }), pipe, "fixture", {}, [{ path, sha256: digest }], inventory), /registry lookup failed/);
+});
 
 test("backup manifest binds deployment, migrations, dumps and snapshots", () => {
   const result = buildBackupManifest({

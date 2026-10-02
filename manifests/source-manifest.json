@@ -2690,7 +2690,7 @@
     },
     {
       "path": "scripts/stack/backup-restore.test.mjs",
-      "sha256": "99d6ef14e6f03c7d9a8a0ad20f9ab09763c1d2de16e3bbc73ba1f852ce7523d0"
+      "sha256": "fc647ee0204af6c1fc47d8e4d5d9abde3e99c06c97db34678f88fedee36b1c07"
     },
     {
       "path": "scripts/stack/backup.mjs",
@@ -2834,7 +2834,7 @@
     },
     {
       "path": "scripts/stack/restore-drill.mjs",
-      "sha256": "fd286a59a092fd01a73ddfee937b30a492b9d2f292dc36e0c21cb4a1e2f3162c"
+      "sha256": "4d249d6abb1364fc383f50bd5f8975de01e30dbb04dc37540e25ff739b4f024d"
     },
     {
       "path": "scripts/stack/scan-site-bundle.mjs",

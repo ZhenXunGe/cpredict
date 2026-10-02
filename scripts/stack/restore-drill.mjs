@@ -122,7 +122,7 @@ export async function runRestoreDrill({
     for (const { name, database, kind } of inventory) snapshots[name] = await snapshot(run, container, env, database, kind, manifest.snapshots[name]);
     // Compare the restored backup before additive migrations introduce new tables.
     compareSnapshots(manifest.snapshots, snapshots);
-    await verifyMigrations(pipe, container, env, manifest.migrations, inventory);
+    await verifyMigrations(run, pipe, container, env, manifest.migrations, inventory);
     const after = {};
     for (const { name, database, kind } of inventory) after[name] = await snapshot(run, container, env, database, kind, manifest.snapshots[name]);
     compareSnapshots(manifest.snapshots, after);
@@ -223,7 +223,21 @@ async function waitForPostgres(run, container, env) {
   throw new Error("disposable PostgreSQL did not become ready");
 }
 
-async function verifyMigrations(pipe, container, env, migrations, inventory) {
+export async function verifyMigrations(run, pipe, container, env, migrations, inventory) {
+  const applied = new Map();
+  for (const { database } of inventory) {
+    const args = ["exec", "-e", "PGPASSWORD", container, "psql", "-XAt", "-U", "restore_admin", "-d", database, "--set=ON_ERROR_STOP=1", "-c"];
+    const present = await run("docker", [...args, "SELECT to_regclass('public_site_migrations') IS NOT NULL"], { cwd: ROOT, env });
+    if (present.code !== 0) throw new Error(`${database} migration registry lookup failed`);
+    let rows = [];
+    if (present.stdout.trim() === "t") {
+      const result = await run("docker", [...args, "SELECT COALESCE(json_agg(json_build_object('path',path,'digest',digest)),'[]'::json) FROM public_site_migrations"], { cwd: ROOT, env });
+      if (result.code !== 0) throw new Error(`${database} migration registry read failed`);
+      rows = JSON.parse(result.stdout);
+      if (!Array.isArray(rows) || rows.some(row => typeof row.path !== "string" || !/^[a-f0-9]{64}$/.test(row.digest))) throw new Error(`${database} invalid migration registry`);
+    } else if (present.stdout.trim() !== "f") throw new Error(`${database} invalid migration registry lookup`);
+    applied.set(database, new Map(rows.map(row => [row.path, row.digest])));
+  }
   for (const migration of migrations) {
     if (!/^offchain\/(indexer|app-service|paymaster-service|metadata-service)\/migrations\/[0-9]{3}_[a-z0-9_]+\.sql$/.test(migration.path)) throw new Error("unsafe migration path in backup");
     const kind = migration.path.includes("paymaster-service")
@@ -235,6 +249,13 @@ async function verifyMigrations(pipe, container, env, migrations, inventory) {
     if ((await sha256File(path)) !== migration.sha256)
       throw new Error(`${migration.path} source hash drifted`);
     for (const { database } of inventory.filter((entry) => entry.kind === kind)) {
+    // Match the normal migration runner: later migrations may extend a view,
+    // so replaying its earlier definition against the restored schema is invalid.
+    const existing = applied.get(database).get(migration.path);
+    if (existing !== undefined) {
+      if (existing !== migration.sha256) throw new Error(`${migration.path} applied migration checksum changed`);
+      continue;
+    }
     const result = await pipe(
       "docker",
       [
