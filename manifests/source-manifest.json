@@ -1922,7 +1922,7 @@
     },
     {
       "path": "offchain/workers/src/automatic-queue.ts",
-      "sha256": "9fc098dc6e354ec9bf91957c5788f121acd093a9cf4b574237c6415ced529d72"
+      "sha256": "2fa2b2f40b9857af866feb14972222fc2024426064ea61d2340362cf2932b86b"
     },
     {
       "path": "offchain/workers/src/automatic-read-limit.ts",
@@ -2006,7 +2006,7 @@
     },
     {
       "path": "offchain/workers/test/automatic-queue.integration.test.ts",
-      "sha256": "a3e52096aff20ec0c9731ae4a889861d80725b4ef5a96313f3b2cc3c4b7004c3"
+      "sha256": "9932c8de83b9d2f95b819a4947f0696b7d110570790091fccf8483b4f75c0c99"
     },
     {
       "path": "offchain/workers/test/automatic-read-limit.test.ts",
@@ -2358,7 +2358,7 @@
     },
     {
       "path": "scripts/orderbook/test-postgres.mjs",
-      "sha256": "1232289e3f7770cdb05f51e05978c6cf3641f336ddaeaad68931b8eec67766a9"
+      "sha256": "0334356580b6e9deeec72f5571f2a2a00f6786c76b9fe397c69714fc0721d76b"
     },
     {
       "path": "scripts/postgres-assert-vitest-report.mjs",

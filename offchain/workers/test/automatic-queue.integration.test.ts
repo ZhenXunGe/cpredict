@@ -237,6 +237,65 @@ describe.skipIf(!url)("persistent incremental claims queue", () => {
     const summary = await queue.summary(owner);
     expect(summary.state).toBe("paused");
   });
+  it("starts a fresh event clock when waking a dormant future deadline", async () => {
+    const old = new Date(1000),
+      current = new Date();
+    await queue.ingest("1", "0", "10", H(10), [
+      { owner, scope: market, triggerAt: old, indexedAt: old },
+    ]);
+    await queue.discovered(
+      (await queue.dueScopes())[0]!,
+      [],
+      new Date(Date.now() + 3600000),
+    );
+    await queue.ingest("1", "10", "10", H(10), [
+      { owner, scope: market, triggerAt: current, indexedAt: current },
+    ]);
+    const scope = (await queue.dueScopes())[0]!;
+    expect(scope.trigger_at).toEqual(current);
+    expect(scope.indexed_at).toEqual(current);
+    await queue.discovered(scope, [action], null);
+    const [candidate] =
+      await sql`SELECT trigger_at,indexed_at FROM automation_claim_candidates`;
+    expect(candidate!.trigger_at).toEqual(current);
+    expect(candidate!.indexed_at).toEqual(current);
+  });
+  it("retains the original clock for a failed scope despite its future retry", async () => {
+    const old = new Date(1000);
+    await queue.ingest("1", "0", "10", H(10), [
+      { owner, scope: market, triggerAt: old, indexedAt: old },
+    ]);
+    await queue.failedScope(
+      (await queue.dueScopes())[0]!,
+      "chain_check_rate_limit",
+    );
+    await queue.ingest("1", "10", "10", H(10), [
+      { owner, scope: market, triggerAt: new Date() },
+    ]);
+    const scope = (await queue.dueScopes())[0]!;
+    expect(scope.trigger_at).toEqual(old);
+    expect(scope.indexed_at).toEqual(old);
+  });
+  it("preserves an already queued candidate's clock when its scope has a deadline", async () => {
+    const old = new Date(1000);
+    await queue.ingest("1", "0", "10", H(10), [
+      { owner, scope: market, triggerAt: old, indexedAt: old },
+    ]);
+    await queue.discovered(
+      (await queue.dueScopes())[0]!,
+      [action],
+      new Date(Date.now() + 3600000),
+    );
+    await queue.ingest("1", "10", "10", H(10), [
+      { owner, scope: market, triggerAt: new Date() },
+    ]);
+    await queue.discovered((await queue.dueScopes())[0]!, [action], null);
+    const rows =
+      await sql`SELECT trigger_at,indexed_at FROM automation_claim_candidates`;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.trigger_at).toEqual(old);
+    expect(rows[0]!.indexed_at).toEqual(old);
+  });
   it("reports only the current owner, includes global blocking without private hashes", async () => {
     await ready();
     expect(await queue.summary(A(200))).toMatchObject({

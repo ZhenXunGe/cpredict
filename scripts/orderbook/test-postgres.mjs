@@ -27,7 +27,7 @@ const inventory = [
 const focusedInventory = [
   {
     path: "offchain/workers/test/automatic-queue.integration.test.ts",
-    tests: 15,
+    tests: 18,
   },
   ...PUBLIC_SITE_POSTGRES_INVENTORY.filter((entry) =>
     inventory.includes(entry.path),
@@ -154,7 +154,7 @@ try {
   const allInventory = [
     {
       path: "offchain/workers/test/automatic-queue.integration.test.ts",
-      tests: 15,
+      tests: 18,
     },
     ...PUBLIC_SITE_POSTGRES_INVENTORY,
     {

@@ -88,9 +88,12 @@ export class PostgresClaimQueue {
     epoch: string,
     priority = 0,
   ) {
+    // A future deadline with no failed validation is dormant work. A new event
+    // starts its latency clock; retry backoffs retain the original clock. An
+    // already queued candidate retains its earlier origin in discovered().
     await db`INSERT INTO automation_claim_scopes(chain_id,deployment_id,owner,scope,epoch,due_at,priority,trigger_at,indexed_at)
       VALUES(${this.chainId},${this.deploymentId},${wake.owner.toLowerCase()},${wake.scope.toLowerCase()},${epoch},now(),${priority},${wake.triggerAt},${wake.indexedAt ?? new Date()})
-      ON CONFLICT(chain_id,deployment_id,owner,scope) DO UPDATE SET version=automation_claim_scopes.version+1,epoch=EXCLUDED.epoch,due_at=now(),priority=LEAST(automation_claim_scopes.priority,EXCLUDED.priority),trigger_at=CASE WHEN automation_claim_scopes.due_at IS NULL THEN EXCLUDED.trigger_at ELSE LEAST(automation_claim_scopes.trigger_at,EXCLUDED.trigger_at) END,indexed_at=CASE WHEN automation_claim_scopes.due_at IS NULL THEN EXCLUDED.indexed_at ELSE LEAST(automation_claim_scopes.indexed_at,EXCLUDED.indexed_at) END,attempts=0,reason=NULL,updated_at=now()`;
+      ON CONFLICT(chain_id,deployment_id,owner,scope) DO UPDATE SET version=automation_claim_scopes.version+1,epoch=EXCLUDED.epoch,due_at=now(),priority=LEAST(automation_claim_scopes.priority,EXCLUDED.priority),trigger_at=CASE WHEN automation_claim_scopes.due_at IS NULL OR (automation_claim_scopes.due_at>now() AND automation_claim_scopes.attempts=0) THEN EXCLUDED.trigger_at ELSE LEAST(automation_claim_scopes.trigger_at,EXCLUDED.trigger_at) END,indexed_at=CASE WHEN automation_claim_scopes.due_at IS NULL OR (automation_claim_scopes.due_at>now() AND automation_claim_scopes.attempts=0) THEN EXCLUDED.indexed_at ELSE LEAST(automation_claim_scopes.indexed_at,EXCLUDED.indexed_at) END,attempts=0,reason=NULL,updated_at=now()`;
   }
   async ingest(
     epoch: string,
