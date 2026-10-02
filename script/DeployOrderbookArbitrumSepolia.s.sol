@@ -289,6 +289,7 @@ contract DeployOrderbookArbitrumSepolia is Script {
         string memory root = "cpredict-orderbook-v2-arbitrum-sepolia";
         vm.serializeUint(root, "chainId", block.chainid);
         vm.serializeString(root, "marketplaceVersion", "orderbook-v2");
+        vm.serializeUint(root, "orderbookFillPolicyVersion", 1);
         vm.serializeAddress(root, "tradingSessionPolicy", address(deployed.tradingSessionPolicy));
         vm.serializeAddress(root, "tradingSessionPaymaster", inputs.tradingSessionPaymaster);
         vm.serializeBytes32(

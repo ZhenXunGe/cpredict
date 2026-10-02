@@ -1,4 +1,5 @@
 import { automaticClaimsSettings } from "./automatic-claims.js";
+import { accountEvidenceStore } from "./account-evidence.js";
 import {
   RpcReadPool,
   RpcResponseError,
@@ -37,6 +38,11 @@ export async function startApplicationService(
       )
     : undefined;
   const metrics = new ApplicationMetrics();
+  const evidence = accountEvidenceStore(
+    config.databaseUrl,
+    runtime.environment,
+    config.automationDatabaseUrl,
+  );
   const management = config.management
     ? new ZeroDevManagementReader(config.management, (ok) =>
         metrics.observeDependency("management", ok),
@@ -86,6 +92,7 @@ export async function startApplicationService(
   try {
     await rpcPool.start();
     await store.ready();
+    await evidence.store.ready();
     await verifyDeployment(client, runtime.environment);
     const operations = new OperationService(
       runtime,
@@ -104,6 +111,7 @@ export async function startApplicationService(
       runtime.confirmations,
     );
     const app = await createApplicationServer({
+      accountEvidence: evidence.store,
       ...(claims ? { automaticClaims: claims.store } : {}),
       operations,
       recovery,
@@ -179,11 +187,13 @@ export async function startApplicationService(
       await app.close();
       await activeTick;
       await claims?.close();
+      await evidence.close();
       await reports.close();
       await store.close();
     };
   } catch (error) {
     await claims?.close();
+    await evidence.close();
     rpcPool.close();
     await management?.stop();
     await reports.close();

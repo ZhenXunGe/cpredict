@@ -28,6 +28,7 @@ contract OrderbookInvariantTest is OrderbookTestBase {
         uint128 price = uint128(bound(priceSeed, 100, 2e6));
         uint256 mode = seed % 4;
         if (mode == 0) {
+            marketplace.setDefaultAllowPartialFills(seed % 16 < 8);
             vm.prank(actor);
             try marketplace.createOrder(
                 address(market),
@@ -46,6 +47,14 @@ contract OrderbookInvariantTest is OrderbookTestBase {
             try marketplace.cancelOrder(id) { } catch { }
         } else if (mode == 2) {
             try marketplace.matchOrders(address(market), 0, 3) { } catch { }
+            if (marketplace.nextOrderId() > 1) {
+                uint256 id = 1 + seed % (marketplace.nextOrderId() - 1);
+                (,, uint128 remaining,,,,,,,) = marketplace.orders(id);
+                if (remaining > 0) {
+                    try marketplace.matchOrdersForUnits(address(market), 0, remaining, 3) { }
+                        catch { }
+                }
+            }
         } else if (marketplace.nextOrderId() > 1) {
             uint256 id = 1 + seed % (marketplace.nextOrderId() - 1);
             (,,,,,, Book.Side side,,,) = marketplace.orders(id);
@@ -87,6 +96,27 @@ contract OrderbookInvariantTest is OrderbookTestBase {
                 assertEq(locked, 0);
             }
             if (autoMatch) {
+                uint256 quantityHead =
+                    marketplace.bestOrderForUnits(address(market), 0, side, remaining);
+                assertTrue(quantityHead != 0);
+                (,, uint128 headUnits, uint128 headPrice,,, Book.Side headSide,, bool headActive,) =
+                    marketplace.orders(quantityHead);
+                assertTrue(headActive);
+                assertEq(headUnits, remaining);
+                assertTrue(headSide == side);
+                if (side == Book.Side.Bid) assertGe(headPrice, price);
+                else assertLe(headPrice, price);
+                if (headPrice == price) assertLe(quantityHead, id);
+                if (marketplace.orderAllowsPartialFills(id)) {
+                    uint256 partialHead = marketplace.bestPartialOrder(address(market), 0, side);
+                    assertTrue(marketplace.orderAllowsPartialFills(partialHead));
+                    (,,, uint128 partialPrice,,,,, bool partialActive,) =
+                        marketplace.orders(partialHead);
+                    assertTrue(partialActive);
+                    if (side == Book.Side.Bid) assertGe(partialPrice, price);
+                    else assertLe(partialPrice, price);
+                    if (partialPrice == price) assertLe(partialHead, id);
+                }
                 if (side == Book.Side.Bid && (bestBid == 0 || price > bidPrice)) {
                     bestBid = id;
                     bidPrice = price;

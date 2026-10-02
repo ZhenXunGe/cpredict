@@ -31,6 +31,7 @@ export const migrationPaths = [
   "offchain/app-service/migrations/010_automation_cleanup_quotas.sql",
   "offchain/app-service/migrations/011_automation_operations.sql",
   "offchain/app-service/migrations/012_automation_claim_queue.sql",
+  "offchain/app-service/migrations/013_actual_automation_gas.sql",
 ];
 
 /** Existing migration registry and checksums, shared by maintenance commands. */

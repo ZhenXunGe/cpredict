@@ -1,4 +1,5 @@
 import { AutomaticClaimsPanel } from "../AutomaticClaims.js";
+import { AccountEvidencePanel } from "../AccountEvidence.js";
 import { useEffect, useState } from "react";
 import { formatUnits, getAddress, isAddress, zeroAddress } from "viem";
 import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
@@ -290,7 +291,19 @@ export function EntitlementsPage() {
         description="仅显示当前持仓和待处理权益。领取完成并同步后自动移除，历史记录可在交易历史中查看。"
       />
       <AccountGate />
-      <AutomaticClaimsPanel />
+      <AutomaticClaimsPanel
+        showHistory={!api.environment.features.accountEvidence}
+      />
+      {api.environment.features.accountEvidence && (
+        <AccountEvidencePanel
+          active={
+            syncing ||
+            operations.some((o) =>
+              ["submitted", "confirming", "unknown"].includes(o.state),
+            )
+          }
+        />
+      )}
       {account && (
         <>
           <div className="stats-grid">
@@ -742,12 +755,11 @@ function ListingAction({
       : null
     : entitlementIntent(item, api.environment.deployment.marketplaceVersion);
   const progress = entitlementProgress(item, operations, snapshot);
-  const label =
-    deferred
-      ? "取回暂存份额"
-      : item.reason === "return_terminal_listing"
-        ? "取回终局挂单份额"
-        : "撤销挂单";
+  const label = deferred
+    ? "取回暂存份额"
+    : item.reason === "return_terminal_listing"
+      ? "取回终局挂单份额"
+      : "撤销挂单";
   return (
     <div className="stack" key={item.id}>
       <span className="small muted" title={item.listingId ?? undefined}>
@@ -813,18 +825,18 @@ function ListingAction({
                 intent.kind === "withdraw-order-shares"
                   ? "原地址拒收，份额仍在订单合约托管。确认后仅将这笔订单的暂存份额转给上方地址；若接收地址也拒收，交易回滚，份额仍保留。"
                   : intent.kind === "cancel-listing"
-                  ? "撤销这笔挂单并取回尚未成交的份额，已成交部分不受影响。实际取回数量以链上执行时剩余份额为准，不产生已实现收益。"
-                  : "市场已终局，先取回这笔挂单尚未成交的托管份额，再按市场结果领取权益。实际数量以链上交易为准。",
+                    ? "撤销这笔挂单并取回尚未成交的份额，已成交部分不受影响。实际取回数量以链上执行时剩余份额为准，不产生已实现收益。"
+                    : "市场已终局，先取回这笔挂单尚未成交的托管份额，再按市场结果领取权益。实际数量以链上交易为准。",
             });
           }}
         >
           {deferred && !recipient
             ? "请输入有效接收地址"
             : operationsReady
-            ? label
-            : operationsError
-              ? "暂不可操作"
-              : "正在核对操作"}
+              ? label
+              : operationsError
+                ? "暂不可操作"
+                : "正在核对操作"}
         </Button>
       ) : (
         <span>{states[item.status]}</span>

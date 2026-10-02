@@ -4,6 +4,7 @@ import { z } from "zod";
 import postgres from "postgres";
 import Fastify from "fastify";
 import { Registry, Counter, Gauge, Histogram } from "prom-client";
+import { backfillAutomaticGas } from "./automatic-gas.js";
 import {
   createPublicClient,
   createWalletClient,
@@ -492,6 +493,32 @@ export async function startAutomaticService(
     monitorActive: Promise<void> | undefined;
   let discoveryTimer: ReturnType<typeof setTimeout> | undefined,
     discoveryActive: Promise<void> | undefined;
+  let gasTimer: ReturnType<typeof setTimeout> | undefined;
+  let gasActive: Promise<void> | undefined;
+  const gasTick = async () => {
+    const started = performance.now();
+    try {
+      if (
+        !(await store.pending()).length &&
+        !(claimQueue && (await claimQueue.workPending()))
+      ) {
+        await backfillAutomaticGas(store, chain, sql);
+        stages.observe(
+          { phase: "gas-evidence", result: "ok" },
+          (performance.now() - started) / 1000,
+        );
+      }
+    } catch {
+      stages.observe(
+        { phase: "gas-evidence", result: "error" },
+        (performance.now() - started) / 1000,
+      );
+    }
+    if (!stopped)
+      gasTimer = setTimeout(() => {
+        gasActive = gasTick();
+      }, 30000);
+  };
   const discoverTick = async () => {
     const started = performance.now();
     try {
@@ -679,7 +706,8 @@ export async function startAutomaticService(
     if (timer) clearTimeout(timer);
     if (monitorTimer) clearTimeout(monitorTimer);
     if (discoveryTimer) clearTimeout(discoveryTimer);
-    await Promise.all([active, monitorActive, discoveryActive]);
+    if (gasTimer) clearTimeout(gasTimer);
+    await Promise.all([active, monitorActive, discoveryActive, gasActive]);
     await app.close();
     pool.close();
     await sql.end({ timeout: 5 });
@@ -707,6 +735,9 @@ export async function startAutomaticService(
     monitorActive = monitor();
     active = tick();
     if (discovery) discoveryActive = discoverTick();
+    gasTimer = setTimeout(() => {
+      gasActive = gasTick();
+    }, 30000);
     return stop;
   } catch (e) {
     await stop();

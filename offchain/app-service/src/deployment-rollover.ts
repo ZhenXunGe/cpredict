@@ -30,7 +30,14 @@ export function assertDeploymentRollover(
   )
     throw new AppError("rollover_account_or_asset_changed");
   if (
-    previous.deployment.protocolVersion !== "legacy-v1" ||
+    !(
+      previous.deployment.protocolVersion === "legacy-v1" ||
+      (previous.deployment.protocolVersion === "time-v2" &&
+        previous.deployment.marketplaceVersion === "orderbook-v2" &&
+        previous.deployment.orderbookFillPolicyVersion === undefined &&
+        next.deployment.marketplaceVersion === "orderbook-v2" &&
+        next.deployment.orderbookFillPolicyVersion === 1)
+    ) ||
     next.deployment.protocolVersion !== "time-v2" ||
     previous.deployment.id === next.deployment.id ||
     BigInt(next.deployment.deploymentBlock) <=
@@ -62,6 +69,7 @@ export async function rolloverDeployment(
   previous: Environment,
   next: Environment,
   apply = false,
+  control: Sql = sql,
 ) {
   assertDeploymentRollover(previous, next);
   const oldIdentity = environmentKey(previous),
@@ -104,7 +112,14 @@ export async function rolloverDeployment(
     { count: string }[]
   >`SELECT count(*)::text AS count FROM app_deposits
     WHERE operation_id IS NULL AND state <> 'cancelled' AND expires_at > now()`;
-  if (pending[0]!.count !== "0" || deposits[0]!.count !== "0")
+  const automation = await control<
+    { count: string }[]
+  >`SELECT count(*)::text AS count FROM automation_transactions WHERE state IN ('prepared','broadcasting','unknown')`;
+  if (
+    pending[0]!.count !== "0" ||
+    deposits[0]!.count !== "0" ||
+    automation[0]!.count !== "0"
+  )
     throw new AppError("rollover_operations_need_recovery", 409);
   const accounts = await sql<
     { record: unknown }[]
@@ -145,6 +160,13 @@ export async function rolloverDeployment(
       "rollover_schema_already_exists_inspect_before_retry",
       409,
     );
+  if (control !== sql) {
+    const connections = await control<
+      { count: string }[]
+    >`SELECT count(*)::text AS count FROM pg_stat_activity WHERE datname=current_database() AND usename=current_user AND pid<>pg_backend_pid()`;
+    if (connections[0]?.count !== "0")
+      throw new AppError("rollover_stop_control_writers_first", 409);
+  }
   // Reuse the normal migration runner and registry in a private staging schema.
   // A failure leaves the live schema and every old row untouched.
   await sql`CREATE SCHEMA ${sql(staging)}`;
@@ -155,7 +177,7 @@ export async function rolloverDeployment(
     await sql`SELECT set_config('search_path',${active},false)`;
   }
   await sql.begin(async (tx) => {
-    await tx`LOCK TABLE app_accounts,app_account_subjects,app_operations,app_deposits IN ACCESS EXCLUSIVE MODE`;
+    await tx`LOCK TABLE app_accounts,app_account_subjects,app_operations,app_deposits,automation_transactions IN ACCESS EXCLUSIVE MODE`;
     const currentAccounts = await tx<
       { record: unknown }[]
     >`SELECT record FROM app_accounts ORDER BY id`;
@@ -171,7 +193,10 @@ export async function rolloverDeployment(
       OR (state IN ('confirmed','reverted') AND coalesce(record->>'finality','pending') <> 'finalized') LIMIT 1`;
     const newDeposits =
       await tx`SELECT FROM app_deposits WHERE operation_id IS NULL AND state <> 'cancelled' AND expires_at>now() LIMIT 1`;
-    if (changed.length || newDeposits.length)
+    const changedAutomation = await (control === sql
+      ? tx
+      : control)`SELECT FROM automation_transactions WHERE state IN ('prepared','broadcasting','unknown') LIMIT 1`;
+    if (changed.length || newDeposits.length || changedAutomation.length)
       throw new AppError("rollover_operations_need_recovery", 409);
     await tx`INSERT INTO ${tx(staging)}.cpredict_environment_identity(singleton,identity) VALUES(true,${newIdentity})`;
     await tx`INSERT INTO ${tx(staging)}.app_environment(singleton,identity) VALUES(true,${newIdentity})`;

@@ -1,4 +1,5 @@
 import type { AutomaticClaimsSettings } from "./automatic-claims.js";
+import type { AccountEvidence } from "./account-evidence.js";
 import type { RpcReadPool } from "../../app-core/src/rpc-pool.js";
 import { registerRpcCompatibility } from "./rpc-compatibility.js";
 import { RpcAdmission, type RpcAdmissionConfig } from "./rpc-admission.js";
@@ -39,6 +40,7 @@ import type { ZeroDevManagementReader } from "./provider-management.js";
 
 export async function createApplicationServer(options: {
   automaticClaims?: AutomaticClaimsSettings;
+  accountEvidence?: AccountEvidence;
   operations: OperationService;
   auth: IdentityVerifier;
   gateway: AuthenticatedAAGateway;
@@ -313,6 +315,31 @@ export async function createApplicationServer(options: {
       ),
     };
   });
+  for (const [path, method] of [
+    ["claim-receipts", "claimReceipts"],
+    ["sponsored-gas", "sponsoredGas"],
+  ] as const) {
+    app.get(`/v1/${path}`, async (request) => {
+      const { accountId, cursor, limit } = z
+        .strictObject({
+          accountId: z.string().uuid(),
+          cursor: z.string().max(2048).optional(),
+          limit: z.coerce.number().int().min(1).max(20).default(10),
+        })
+        .parse(request.query);
+      const account = await service.controlledAccount(
+        await authenticate(request),
+        accountId,
+        false,
+      );
+      if (!options.accountEvidence)
+        throw new AppError("account_evidence_unavailable", 503);
+      return options.accountEvidence[method](account.address, {
+        limit,
+        ...(cursor ? { cursor } : {}),
+      });
+    });
+  }
   app.get("/v1/automatic-claims", async (request) => {
     const { accountId, cursor, limit } = z
       .strictObject({

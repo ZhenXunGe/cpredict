@@ -90,7 +90,7 @@ async function setup(page: Page) {
               },
             ]
           : []),
-      ].filter(
+      ].map(o=>new URL(page.url()).searchParams.has("whole-orders-test")?{...o,allowPartialFills:false}:o).filter(
         (order) =>
           (!requestUrl.searchParams.get("owner") ||
             order.owner === requestUrl.searchParams.get("owner")) &&
@@ -700,4 +700,33 @@ test("automatic queue transitions, pause reasons and disabled in-flight transact
   await expect(checkbox).toBeChecked();
   await expect(page.getByText('自动领取队列状态暂不可用，后台正在恢复核验。',{exact:true})).toHaveCount(0);
   expect(f.errors).toEqual([]);
+});
+
+test("whole order take quantity is fixed and new order confirmation uses the current contract default", async ({
+  page,
+}) => {
+  const f = await setup(page);
+  await page.goto(
+    `/test/browser/fixture.html?orderbook-test=1&whole-orders-test=1#/ctusd-test/markets/${A(101)}`,
+  );
+  const panel = page
+    .locator("section")
+    .filter({
+      has: page.getByRole("heading", { name: "求购 / 挂卖", exact: true }),
+    });
+  await expect(
+    panel.getByLabel("接单份数", { exact: true }).first(),
+  ).toBeDisabled();
+  await expect(
+    panel.getByLabel("接单份数", { exact: true }).first(),
+  ).toHaveValue("2");
+  await expect(panel.getByText(/整单成交/).first()).toBeVisible();
+  await panel.getByLabel("份数", { exact: true }).fill("2");
+  await panel.getByRole("button", { name: "核对求购", exact: true }).click();
+  await expect(page.getByRole("dialog")).toContainText("整单成交");
+  expect(f.errors).toEqual([]);
+  await page.screenshot({
+    path: `/tmp/cpredict-whole-${test.info().project.name}.png`,
+    fullPage: true,
+  });
 });

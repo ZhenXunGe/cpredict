@@ -74,6 +74,8 @@ export interface AutomationReceipt {
   blockNumber: bigint;
   blockHash: Hex;
   blockTimestamp?: number;
+  gasUsed?: bigint;
+  effectiveGasPrice?: bigint;
 }
 export interface AutomationStore {
   // Session-level lock scoped to chain + signer. Lock connection must remain reserved until return.

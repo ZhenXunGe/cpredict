@@ -16,7 +16,10 @@ import {
   useRules,
 } from "./data.js";
 import { parseAssetAmount } from "./amounts.js";
-import { bidReserve } from "../../../offchain/sdk/src/orderbook.js";
+import {
+  bidReserve,
+  orderbookAbi,
+} from "../../../offchain/sdk/src/orderbook.js";
 import { SHARE_SCALE } from "../../../offchain/sdk/src/units.js";
 import {
   Amount,
@@ -222,6 +225,19 @@ export function OrderbookPanel({
     refetchInterval: 15000,
     staleTime: 5000,
   });
+  const fillDefault = useQuery({
+    queryKey: [api.key, "order-fill-default"],
+    enabled: api.environment.deployment.orderbookFillPolicyVersion === 1,
+    queryFn: () =>
+      api
+        .publicClient()
+        .readContract({
+          address: api.environment.deployment.marketplace,
+          abi: orderbookAbi,
+          functionName: "defaultAllowPartialFills",
+        }),
+    refetchInterval: 5000,
+  });
   const asset = api.environment.asset;
   let requestedUnits: bigint | null = null;
   try {
@@ -304,6 +320,11 @@ export function OrderbookPanel({
         if (units > currentBalance.data)
           throw new AppError("insufficient_shares", 400);
       }
+      const allowPartial =
+        api.environment.deployment.orderbookFillPolicyVersion === 1
+          ? (await fillDefault.refetch()).data
+          : true;
+      if (allowPartial === undefined) throw new Error("正在核验新订单成交规则");
       begin({
         intent: {
           kind: "create-order",
@@ -318,6 +339,10 @@ export function OrderbookPanel({
         summary: [
           ...summary(outcome, units, unitPrice),
           { label: "订单类型", value: side === "bid" ? "求购" : "挂卖" },
+          {
+            label: "成交规则",
+            value: allowPartial ? "允许部分成交" : "整单成交",
+          },
           { label: "有效期", value: `${expiry}小时` },
           {
             label: "自动撮合",
@@ -343,7 +368,7 @@ export function OrderbookPanel({
             : []),
         ],
         feeNote:
-          "按先挂订单的价格撮合。成交手续费由卖家承担；未成交部分可以撤销。",
+          "按先挂订单的价格撮合。成交手续费由卖家承担。成交规则以订单创建时的链上设置为准，未成交订单可以撤销。",
       });
     } catch (e) {
       setError(e);
@@ -358,9 +383,17 @@ export function OrderbookPanel({
     }
     try {
       if (!live.data) throw new Error("正在核验市场");
-      const units = parseAssetAmount(
-          take[o.id] ?? formatUnits(BigInt(o.remainingUnits), 6),
-        ),
+      if (
+        api.environment.deployment.orderbookFillPolicyVersion === 1 &&
+        o.allowPartialFills === undefined
+      )
+        throw new Error("订单成交规则同步中");
+      const units =
+          o.allowPartialFills === false
+            ? BigInt(o.remainingUnits)
+            : parseAssetAmount(
+                take[o.id] ?? formatUnits(BigInt(o.remainingUnits), 6),
+              ),
         gross = (units * BigInt(o.unitPrice)) / 1_000_000n;
       if (units > BigInt(o.remainingUnits)) throw new Error("超过订单剩余份额");
       if (gross === 0n) throw new Error("本次成交金额为零，请增加接单份数");
@@ -595,7 +628,13 @@ export function OrderbookPanel({
           <p>
             剩余 {formatUnits(BigInt(o.remainingUnits), 6)} 份 · 每份{" "}
             {formatUnits(BigInt(o.unitPrice), 6)} {asset} ·{" "}
-            {o.autoMatch ? "自动撮合" : "等待接单"}
+            {o.autoMatch ? "自动撮合" : "等待接单"} ·{" "}
+            {o.allowPartialFills === false
+              ? "整单成交"
+              : o.allowPartialFills === true ||
+                  api.environment.deployment.orderbookFillPolicyVersion !== 1
+                ? "允许部分成交"
+                : "成交规则同步中"}
           </p>
           {o.side === "ask" &&
             primaryOpen &&
@@ -632,8 +671,17 @@ export function OrderbookPanel({
               <>
                 <Field label="接单份数">
                   <input
+                    disabled={
+                      o.allowPartialFills === false ||
+                      (api.environment.deployment.orderbookFillPolicyVersion ===
+                        1 &&
+                        o.allowPartialFills === undefined)
+                    }
                     value={
-                      take[o.id] ?? formatUnits(BigInt(o.remainingUnits), 6)
+                      o.allowPartialFills === false
+                        ? formatUnits(BigInt(o.remainingUnits), 6)
+                        : (take[o.id] ??
+                          formatUnits(BigInt(o.remainingUnits), 6))
                     }
                     onChange={(e) => {
                       setTake({ ...take, [o.id]: e.target.value });
@@ -647,7 +695,14 @@ export function OrderbookPanel({
                   <Notice tone="warning">{acceptWarning.message}</Notice>
                 )}
                 <Button
-                  disabled={!verified || !live.data || checkingOrderId === o.id}
+                  disabled={
+                    !verified ||
+                    !live.data ||
+                    checkingOrderId === o.id ||
+                    (api.environment.deployment.orderbookFillPolicyVersion ===
+                      1 &&
+                      o.allowPartialFills === undefined)
+                  }
                   onClick={() => void accept(o)}
                 >
                   {checkingOrderId === o.id

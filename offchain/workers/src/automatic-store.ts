@@ -194,6 +194,30 @@ export class PostgresAutomaticStore implements AutomationStore {
       .sql`SELECT to_regclass('automation_attempts') AS attempts,to_regclass('automation_recoveries') AS recoveries,to_regclass('automation_alert_events') AS alerts`;
     if (!r?.attempts || !r.recoveries || !r.alerts)
       throw new Error("automation_operations_migration_required");
+    await this
+      .sql`SELECT actual_gas_cost_wei FROM automation_transactions LIMIT 0`;
+  }
+  async missingGasReceipts(
+    limit = 2,
+    epoch?: string,
+  ): Promise<{ id: string; hash: Hex; blockHash: Hex }[]> {
+    const rows = await this
+      .sql`UPDATE automation_transactions SET gas_checked_at=now() WHERE id IN (
+      SELECT id FROM automation_transactions WHERE chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND signer=${this.signer.toLowerCase()}
+      AND state IN ('confirmed','reverted') AND canonical_status<>'orphaned' AND (actual_gas_cost_wei IS NULL OR (${epoch ?? null}::numeric IS NOT NULL AND gas_anchor_epoch IS DISTINCT FROM ${epoch ?? null}::numeric)) AND receipt_hash IS NOT NULL
+      AND (gas_checked_at IS NULL OR gas_checked_at<now()-interval '60 seconds') ORDER BY gas_checked_at NULLS FIRST,created_at LIMIT ${limit}
+      FOR UPDATE SKIP LOCKED) RETURNING id,tx_hash,receipt_hash`;
+    return rows.map((r) => ({
+      id: r.id,
+      hash: r.tx_hash as Hex,
+      blockHash: r.receipt_hash as Hex,
+    }));
+  }
+  async saveReceiptGas(id: string, hash: Hex, r: AutomationReceipt, anchor?: {epoch:string;block:string;hash:Hex}) {
+    if (r.gasUsed === undefined || r.effectiveGasPrice === undefined) return;
+    await this
+      .sql`UPDATE automation_transactions SET actual_gas_used=${r.gasUsed.toString()},effective_gas_price=${r.effectiveGasPrice.toString()},actual_gas_cost_wei=${(r.gasUsed * r.effectiveGasPrice).toString()},gas_checked_at=now(),gas_anchor_epoch=${anchor?.epoch ?? null},gas_anchor_block=${anchor?.block ?? null},gas_anchor_hash=${anchor?.hash ?? null},actual_gas_timestamp=${r.blockTimestamp ?? null}
+      WHERE id=${id} AND chain_id=${this.chainId} AND deployment_id=${this.deploymentId} AND signer=${this.signer.toLowerCase()} AND tx_hash=${hash} AND receipt_hash=${r.blockHash} AND receipt_block=${r.blockNumber.toString()} AND state IN ('confirmed','reverted') AND canonical_status<>'orphaned'`;
   }
   async validation(
     tx: AutomationRecord,
@@ -265,7 +289,7 @@ export class PostgresAutomaticStore implements AutomationStore {
         if (!allowed.length)
           throw new Error("automation_receipt_hash_unregistered");
       }
-      await db`UPDATE automation_transactions SET tx_hash=${actual},state=${success ? "confirmed" : "reverted"},receipt_block=${r.blockNumber.toString()},receipt_hash=${r.blockHash},canonical_status=${success ? "canonical" : "unchecked"},canonical_checked_at=CASE WHEN ${success} THEN now() ELSE NULL END,raw_transaction=NULL,updated_at=now() WHERE id=${id}`;
+      await db`UPDATE automation_transactions SET tx_hash=${actual},state=${success ? "confirmed" : "reverted"},receipt_block=${r.blockNumber.toString()},receipt_hash=${r.blockHash},canonical_status=${success ? "canonical" : "unchecked"},canonical_checked_at=CASE WHEN ${success} THEN now() ELSE NULL END,actual_gas_used=${r.gasUsed?.toString() ?? null},effective_gas_price=${r.effectiveGasPrice?.toString() ?? null},actual_gas_cost_wei=${r.gasUsed !== undefined && r.effectiveGasPrice !== undefined ? (r.gasUsed * r.effectiveGasPrice).toString() : null},gas_checked_at=now(),gas_anchor_epoch=NULL,gas_anchor_block=NULL,gas_anchor_hash=NULL,actual_gas_timestamp=${r.blockTimestamp ?? null},raw_transaction=NULL,updated_at=now() WHERE id=${id}`;
       if (this.claimQueueEnabled && r.blockTimestamp !== undefined) {
         const [timing] =
           await db`SELECT extract(epoch FROM to_timestamp(${r.blockTimestamp})-trigger_at)::float8 AS user_seconds,extract(epoch FROM to_timestamp(${r.blockTimestamp})-indexed_at)::float8 AS backend_seconds FROM automation_claim_candidates WHERE transaction_id=${id}`;
@@ -338,7 +362,7 @@ export class PostgresAutomaticStore implements AutomationStore {
           continue;
         }
         if (row.moved_block && row.moved_hash) {
-          await db`UPDATE automation_transactions SET receipt_block=${row.moved_block},receipt_hash=${row.moved_hash},canonical_status='canonical',canonical_checked_at=now(),updated_at=now() WHERE id=${row.id}`;
+          await db`UPDATE automation_transactions SET receipt_block=${row.moved_block},receipt_hash=${row.moved_hash},canonical_status='canonical',canonical_checked_at=now(),actual_gas_used=NULL,effective_gas_price=NULL,actual_gas_cost_wei=NULL,gas_checked_at=NULL,gas_anchor_epoch=NULL,gas_anchor_block=NULL,gas_anchor_hash=NULL,actual_gas_timestamp=NULL,updated_at=now() WHERE id=${row.id}`;
           continue;
         }
         if (

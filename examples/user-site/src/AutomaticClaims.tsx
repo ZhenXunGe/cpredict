@@ -28,7 +28,9 @@ import {
   automaticClaimsRefresh,
 } from "./automatic-claims-status.js";
 
-export function AutomaticClaimsPanel() {
+export function AutomaticClaimsPanel({
+  showHistory = true,
+}: { showHistory?: boolean } = {}) {
   const { api, account } = useSession();
   const cache = useQueryClient();
   const scope = `${api.key}:${account?.id ?? "signed-out"}`;
@@ -137,6 +139,14 @@ export function AutomaticClaimsPanel() {
       ? "正在读取市场名称"
       : `名称暂不可用（${shortAddress(market)}）`);
 
+  const displayTransactions = (status.data?.transactions ?? []).filter(
+    (t) =>
+      showHistory ||
+      ["prepared", "broadcasting", "unknown"].includes(t.state) ||
+      (t.state === "confirmed" &&
+        !t.context &&
+        PERSONAL_CLAIM_KINDS.has(t.kind)),
+  );
   if (!account || !api.environment.features.automaticClaims) return null;
   return (
     <section className="card" aria-label="自动领取">
@@ -186,8 +196,11 @@ export function AutomaticClaimsPanel() {
           </p>
         )}
       {status.isPending && <Loading label="正在读取自动领取记录" />}
-      {status.data?.transactions.length ? (
-        <div role="region" aria-label="自动领取记录">
+      {displayTransactions.length ? (
+        <div
+          role="region"
+          aria-label={showHistory ? "自动领取记录" : "领取处理中"}
+        >
           <DataTable
             headers={[
               "类型",
@@ -198,7 +211,7 @@ export function AutomaticClaimsPanel() {
               "链上记录",
             ]}
           >
-            {status.data.transactions.map((transaction) => {
+            {displayTransactions.map((transaction) => {
               const market = transaction.context?.market ?? transaction.market;
               const amount = transaction.context?.amount ?? transaction.amount;
               const relatedMarkets = transaction.context?.relatedMarkets ?? [];
@@ -290,7 +303,11 @@ export function AutomaticClaimsPanel() {
                     {transaction.state === "confirmed" &&
                       !transaction.context &&
                       PERSONAL_CLAIM_KINDS.has(transaction.kind) && (
-                        <div className="small muted">链上明细索引中</div>
+                        <div className="small muted">
+                          {showHistory
+                            ? "链上明细索引中"
+                            : "交易已确认，到账明细同步中"}
+                        </div>
                       )}
                   </td>
                   <td>
@@ -312,29 +329,33 @@ export function AutomaticClaimsPanel() {
           </DataTable>
         </div>
       ) : null}
-      <PaginationControls
-        ariaLabel="自动领取记录分页"
-        page={activePagination.page}
-        hasPrevious={activePagination.page > 0}
-        hasNext={!!status.data?.nextCursor}
-        busy={status.isFetching}
-        onPrevious={() =>
-          setPagination((current) => {
-            const value = current.scope === scope ? current : activePagination;
-            return { ...value, page: Math.max(0, value.page - 1) };
-          })
-        }
-        onNext={() => {
-          const nextCursor = status.data?.nextCursor;
-          if (!nextCursor) return;
-          setPagination((current) => {
-            const value = current.scope === scope ? current : activePagination;
-            const cursors = value.cursors.slice(0, value.page + 1);
-            cursors[value.page + 1] = nextCursor;
-            return { ...value, page: value.page + 1, cursors };
-          });
-        }}
-      />
+      {showHistory && (
+        <PaginationControls
+          ariaLabel="自动领取记录分页"
+          page={activePagination.page}
+          hasPrevious={activePagination.page > 0}
+          hasNext={!!status.data?.nextCursor}
+          busy={status.isFetching}
+          onPrevious={() =>
+            setPagination((current) => {
+              const value =
+                current.scope === scope ? current : activePagination;
+              return { ...value, page: Math.max(0, value.page - 1) };
+            })
+          }
+          onNext={() => {
+            const nextCursor = status.data?.nextCursor;
+            if (!nextCursor) return;
+            setPagination((current) => {
+              const value =
+                current.scope === scope ? current : activePagination;
+              const cursors = value.cursors.slice(0, value.page + 1);
+              cursors[value.page + 1] = nextCursor;
+              return { ...value, page: value.page + 1, cursors };
+            });
+          }}
+        />
+      )}
       {(status.error || change.error || marketQueries.find((q) => q.error)) && (
         <ErrorNotice
           error={

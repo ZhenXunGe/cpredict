@@ -15,6 +15,10 @@ import { ProtocolTypes } from "../libraries/ProtocolTypes.sol";
 
 /// @notice Funded bids and escrowed asks. Deploy with a NEW factory; V1 markets are unchanged.
 /// @dev Each (vault, outcome, side) automatic book is a price/time min-heap. No holder scans.
+interface IOrderbookFactoryGovernance {
+    function governance() external view returns (address);
+}
+
 contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
     using SafeERC20 for IERC20;
     enum Side {
@@ -64,6 +68,12 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
     mapping(uint256 => uint256) public pendingShares;
     mapping(bytes32 => uint256[]) private books;
     mapping(uint256 => uint256) private positions; // one-based heap offsets
+    bool public defaultAllowPartialFills;
+    mapping(uint256 => bool) public orderAllowsPartialFills;
+    mapping(bytes32 => uint256[]) private unitBooks;
+    mapping(uint256 => uint256) private unitPositions;
+    mapping(bytes32 => uint256[]) private partialBooks;
+    mapping(uint256 => uint256) private partialPositions;
     bytes32 private expectedReceipt;
 
     error InvalidOrder();
@@ -76,6 +86,10 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
     error Paused();
     error UnexpectedTransfer();
     error InexactTransfer();
+    error Unauthorized();
+    error WholeOrderRequired();
+    event DefaultAllowPartialFillsUpdated(bool allowed);
+    event OrderFillPolicySnapshotted(uint256 indexed orderId, bool allowPartialFills);
 
     event OrderCreated(
         uint256 indexed orderId,
@@ -153,6 +167,18 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         permit2 = permit2_;
     }
 
+    function fillPolicyVersion() external pure returns (uint256) {
+        return 1;
+    }
+
+    function setDefaultAllowPartialFills(bool allowed) external {
+        if (msg.sender != IOrderbookFactoryGovernance(address(factory)).governance()) {
+            revert Unauthorized();
+        }
+        defaultAllowPartialFills = allowed;
+        emit DefaultAllowPartialFillsUpdated(allowed);
+    }
+
     function createOrder(
         address vault,
         uint8 outcomeId,
@@ -182,6 +208,7 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         orders[id] = Order(
             vault, msg.sender, units, unitPrice, expiresAt, outcomeId, side, autoMatch, true, locked
         );
+        orderAllowsPartialFills[id] = defaultAllowPartialFills;
         if (autoMatch) _insert(id);
         if (side == Side.Bid) {
             totalLockedPayment += locked;
@@ -195,6 +222,7 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         emit OrderCreated(
             id, vault, msg.sender, outcomeId, side, units, unitPrice, expiresAt, autoMatch, locked
         );
+        emit OrderFillPolicySnapshotted(id, orderAllowsPartialFills[id]);
     }
 
     /// @param paymentLimit For buying an ask: maximum gross; for selling to a bid: minimum net
@@ -213,6 +241,10 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         if (msg.sender == o.owner) revert InvalidOrder();
         units = Math.min(desiredUnits, o.remainingUnits);
         if (
+            !orderAllowsPartialFills[id]
+                && (desiredUnits != o.remainingUnits || minUnits != o.remainingUnits)
+        ) revert WholeOrderRequired();
+        if (
             units == 0 || units < minUnits
                 || (units < IMarketVaultV1(o.vault).minimumC2CUnits() && units != o.remainingUnits)
         ) revert FillMinimum();
@@ -224,6 +256,7 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
                 : gross - fees.platform - fees.creator < paymentLimit) revert PriceLimit();
         address buyer = o.side == Side.Bid ? o.owner : msg.sender;
         address seller = o.side == Side.Ask ? o.owner : msg.sender;
+        _remove(id);
         o.remainingUnits -= uint128(units);
         if (o.side == Side.Bid) _spendBid(o, gross);
         else _pull(buyer, gross);
@@ -267,11 +300,39 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         nonReentrant
         returns (uint256 fills)
     {
+        return _matchOrders(vault, outcomeId, 0, maxSteps);
+    }
+
+    function matchOrdersForUnits(address vault, uint8 outcomeId, uint128 units, uint256 maxSteps)
+        external
+        nonReentrant
+        returns (uint256 fills)
+    {
+        if (units == 0) revert InvalidOrder();
+        return _matchOrders(vault, outcomeId, units, maxSteps);
+    }
+
+    function _matchOrders(address vault, uint8 outcomeId, uint128 groupUnits, uint256 maxSteps)
+        private
+        returns (uint256 fills)
+    {
         _unpaused(ProtocolTypes.PAUSE_LISTING_FILL);
         if (maxSteps == 0 || maxSteps > MAX_MATCH_STEPS) revert InvalidOrder();
         for (uint256 step; step < maxSteps; ++step) {
-            uint256 bidId = bestOrder(vault, outcomeId, Side.Bid);
-            uint256 askId = bestOrder(vault, outcomeId, Side.Ask);
+            uint256 bidId = groupUnits == 0
+                ? bestPartialOrder(vault, outcomeId, Side.Bid)
+                : bestOrderForUnits(vault, outcomeId, Side.Bid, groupUnits);
+            uint256 askId = groupUnits == 0
+                ? bestPartialOrder(vault, outcomeId, Side.Ask)
+                : bestOrderForUnits(vault, outcomeId, Side.Ask, groupUnits);
+            if (
+                groupUnits == 0 && bidId != 0 && askId != 0
+                    && orders[bidId].remainingUnits == orders[askId].remainingUnits
+            ) {
+                uint128 equalUnits = orders[bidId].remainingUnits;
+                bidId = bestOrderForUnits(vault, outcomeId, Side.Bid, equalUnits);
+                askId = bestOrderForUnits(vault, outcomeId, Side.Ask, equalUnits);
+            }
             if (bidId != 0 && _stale(bidId)) {
                 _releaseStale(bidId);
                 continue;
@@ -291,6 +352,10 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
             uint256 makerId = bidId < askId ? bidId : askId;
             uint256 price = orders[makerId].unitPrice;
             uint256 units = Math.min(bid.remainingUnits, ask.remainingUnits);
+            if (
+                (!orderAllowsPartialFills[bidId] || !orderAllowsPartialFills[askId])
+                    && bid.remainingUnits != ask.remainingUnits
+            ) revert WholeOrderRequired();
             uint256 gross = Math.mulDiv(units, price, ProtocolTypes.SHARE_SCALE);
             if (gross == 0) break;
             Fees memory fees = _fees(vault, gross);
@@ -299,13 +364,15 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
             if (IERC1155(vault).balanceOf(address(this), outcomeId) < units) {
                 revert InexactTransfer();
             }
-            try this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(
+            try this.transferEscrowedShares{ gas: RECEIVER_TRANSFER_GAS_LIMIT }(
                 vault, bid.owner, outcomeId, units
-            ) {}
+            ) { }
             catch {
                 _release(bidId, ReleaseReason.UnfillableReceiver);
                 continue;
             }
+            _remove(bidId);
+            _remove(askId);
             bid.remainingUnits -= uint128(units);
             ask.remainingUnits -= uint128(units);
             _spendBid(bid, gross);
@@ -381,9 +448,12 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
 
     /// @dev try/catch can isolate a receiver callback only across an external call.
     /// This entry point cannot be used by anyone outside this contract.
-    function transferEscrowedShares(address vault, address recipient, uint8 outcomeId, uint256 units)
-        external
-    {
+    function transferEscrowedShares(
+        address vault,
+        address recipient,
+        uint8 outcomeId,
+        uint256 units
+    ) external {
         if (msg.sender != address(this)) revert InvalidOrder();
         IERC1155(vault).safeTransferFrom(address(this), recipient, outcomeId, units, "");
     }
@@ -391,6 +461,32 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
     function bestOrder(address vault, uint8 outcomeId, Side side) public view returns (uint256) {
         uint256[] storage heap = books[keccak256(abi.encode(vault, outcomeId, side))];
         return heap.length == 0 ? 0 : heap[0];
+    }
+
+    function bestOrderForUnits(address vault, uint8 outcomeId, Side side, uint128 units)
+        public
+        view
+        returns (uint256)
+    {
+        uint256[] storage heap = unitBooks[_unitsKey(vault, outcomeId, side, units)];
+        return heap.length == 0 ? 0 : heap[0];
+    }
+
+    function bestPartialOrder(address vault, uint8 outcomeId, Side side)
+        public
+        view
+        returns (uint256)
+    {
+        uint256[] storage heap = partialBooks[keccak256(abi.encode(vault, outcomeId, side))];
+        return heap.length == 0 ? 0 : heap[0];
+    }
+
+    function _unitsKey(address vault, uint8 outcomeId, Side side, uint128 units)
+        private
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(vault, outcomeId, side, units));
     }
 
     function bookSize(address vault, uint8 outcomeId, Side side) external view returns (uint256) {
@@ -455,6 +551,7 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
                 emit BidExcessReturned(id, o.owner, excess);
             }
         }
+        if (o.active && o.autoMatch) _insert(id);
     }
 
     function _release(uint256 id, ReleaseReason reason) private {
@@ -462,10 +559,10 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         if (!o.active) revert InactiveOrder();
         uint256 units = o.remainingUnits;
         uint256 payment = o.lockedPayment;
+        _remove(id);
         o.active = false;
         o.remainingUnits = 0;
         o.lockedPayment = 0;
-        _remove(id);
         if (o.side == Side.Bid) {
             totalLockedPayment -= payment;
             if (payment != 0) paymentToken.safeTransfer(o.owner, payment);
@@ -473,9 +570,9 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
             if (IERC1155(o.vault).balanceOf(address(this), o.outcomeId) < units) {
                 revert InexactTransfer();
             }
-            try this.transferEscrowedShares{gas: RECEIVER_TRANSFER_GAS_LIMIT}(
+            try this.transferEscrowedShares{ gas: RECEIVER_TRANSFER_GAS_LIMIT }(
                 o.vault, o.owner, o.outcomeId, units
-            ) {}
+            ) { }
             catch {
                 pendingShares[id] = units;
                 emit OrderSharesDeferred(id, o.owner, units);
@@ -519,38 +616,67 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
         return x.side == Side.Bid ? x.unitPrice > y.unitPrice : x.unitPrice < y.unitPrice;
     }
 
-    function _swap(uint256[] storage heap, uint256 a, uint256 b) private {
+    function _swap(
+        uint256[] storage heap,
+        mapping(uint256 => uint256) storage offsets,
+        uint256 a,
+        uint256 b
+    ) private {
         (heap[a], heap[b]) = (heap[b], heap[a]);
-        positions[heap[a]] = a + 1;
-        positions[heap[b]] = b + 1;
+        offsets[heap[a]] = a + 1;
+        offsets[heap[b]] = b + 1;
     }
 
     function _insert(uint256 id) private {
-        uint256[] storage heap = books[_key(orders[id])];
+        Order storage o = orders[id];
+        _insertInto(books[_key(o)], positions, id);
+        _insertInto(
+            unitBooks[_unitsKey(o.vault, o.outcomeId, o.side, o.remainingUnits)], unitPositions, id
+        );
+        if (orderAllowsPartialFills[id]) _insertInto(partialBooks[_key(o)], partialPositions, id);
+    }
+
+    function _insertInto(
+        uint256[] storage heap,
+        mapping(uint256 => uint256) storage offsets,
+        uint256 id
+    ) private {
         heap.push(id);
         uint256 i = heap.length - 1;
-        positions[id] = i + 1;
+        offsets[id] = i + 1;
         while (i != 0 && _better(heap[i], heap[(i - 1) / 2])) {
             uint256 p = (i - 1) / 2;
-            _swap(heap, i, p);
+            _swap(heap, offsets, i, p);
             i = p;
         }
     }
 
     function _remove(uint256 id) private {
-        uint256 pos = positions[id];
+        Order storage o = orders[id];
+        _removeFrom(books[_key(o)], positions, id);
+        _removeFrom(
+            unitBooks[_unitsKey(o.vault, o.outcomeId, o.side, o.remainingUnits)], unitPositions, id
+        );
+        if (orderAllowsPartialFills[id]) _removeFrom(partialBooks[_key(o)], partialPositions, id);
+    }
+
+    function _removeFrom(
+        uint256[] storage heap,
+        mapping(uint256 => uint256) storage offsets,
+        uint256 id
+    ) private {
+        uint256 pos = offsets[id];
         if (pos == 0) return;
-        uint256[] storage heap = books[_key(orders[id])];
         uint256 i = pos - 1;
         uint256 last = heap.length - 1;
-        if (i != last) _swap(heap, i, last);
+        if (i != last) _swap(heap, offsets, i, last);
         heap.pop();
-        delete positions[id];
+        delete offsets[id];
         if (i >= heap.length) return;
         if (i != 0 && _better(heap[i], heap[(i - 1) / 2])) {
             while (i != 0 && _better(heap[i], heap[(i - 1) / 2])) {
                 uint256 p = (i - 1) / 2;
-                _swap(heap, i, p);
+                _swap(heap, offsets, i, p);
                 i = p;
             }
         } else {
@@ -558,7 +684,7 @@ contract OrderbookMarketplaceV2 is ReentrancyGuard, ERC1155Holder {
                 uint256 child = 2 * i + 1;
                 if (child + 1 < heap.length && _better(heap[child + 1], heap[child])) ++child;
                 if (!_better(heap[child], heap[i])) break;
-                _swap(heap, i, child);
+                _swap(heap, offsets, i, child);
                 i = child;
             }
         }

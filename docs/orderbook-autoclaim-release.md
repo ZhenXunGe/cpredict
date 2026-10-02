@@ -1,5 +1,34 @@
 # 求购、自动撮合与自动领取：V2 发布说明
 
+## 2026-10-02 整单规则与账户到账证据候选
+
+本节描述新的源代码能力，尚不表示旧不可升级合约或线上环境已切换。旧部署没有 `orderbookFillPolicyVersion: 1` 时继续沿用原部分成交接口；下方日期记录属于对应历史版本。
+
+- 新 Marketplace `defaultAllowPartialFills` 默认 false。仅 Factory.governance 可修改；每笔订单创建时以 `orderAllowsPartialFills` 固定快照，并发出 `OrderFillPolicySnapshotted`。旧 orders 查询元组及用户创建订单参数保持不变。新部署通过 `fillPolicyVersion() == 1` 核验能力。
+- 整单手动接单要求 desiredUnits、minUnits 都等于剩余数量。按数量的堆与部分成交堆均由合约维护，数量组内价格优先、同价 FIFO。`matchOrdersForUnits` 只成交同剩余数量的订单；原 `matchOrders` 在新能力下只处理允许部分成交的队列。相等数量可跨模式成交，数量不等时双方均须允许部分成交。不能拼多个对手单。
+- 成交前移除旧数量索引，部分成交后重建剩余数量索引；撤单、到期、终局、自成交、拒收账户同步释放索引。后台轮转数量组，事件游标和索引 epoch 驱动活跃订单缓存，重组后重新建立缓存。发送仍使用现有单 nonce、确认与恢复通道及费用限制。
+- `GET /v1/claim-receipts` 为认证、账户归属检查接口，金额来自当前部署规范 ledger_facts；每个事实独立保留。后台交易从控制库匹配，手动操作从应用库与对应 UserOperationEvent 区间匹配，无法可靠关联的 AA 操作显示来源待核验。确认未索引与实际到账分开展示。
+- `GET /v1/sponsored-gas` 返回本环境已核实个人代付、公共撮合/维护代付、待核验数及完整性。AA 使用 actualGasCost 加服务端 sponsored 证据；EOA 使用规范回执 gasUsed × effectiveGasPrice，按哈希去重，失败执行也计入。Arbitrum 数据发布成本已折为链上 Gas，不再重复增加 L1 字段：[官方费用说明](https://docs.arbitrum.io/how-arbitrum-works/deep-dives/gas-and-fees)。未知费用为 null，预算预留不作为费用。
+- app-core Zod 为接口权威源；`features.accountEvidence` 启用统一到账页面，未开启仍兼容旧展示。控制库和应用/索引库可以分离；启动检查 migration013，费用补核验独立低优先级，活跃领取期间不抢占通道。稀疏索引缺失无日志回执块时，补核验同时检查规范索引 checkpoint 与回执，并保存 epoch/区块锚点；epoch 变化撤销旧费用证明并重新核验。页面只显示 ETH，个人明细不泄露其他账户交易。
+
+### 当前 time-v2 环境重置与发布边界
+
+这次只允许旧 time-v2/orderbook-v2（无整单能力标识）到新 fillPolicyVersion1 的明确过渡，保留既有 legacy-v1 → time-v2 工具兼容。不允许任意地址/资产/账户派生修改。候选生成可使用原 `--id` 加新的 `--deployment-id`；旧交易及恢复记录不复制为新任务。
+
+上线前必须单独授权 Git 推送、新合约交易、线上重置和服务切换，旧批次授权不扩大到本批。当前工作只生成本地候选，不访问真实账户签名或发送公链测试交易。
+
+1. 保存旧服务镜像、完整配置、签名者在途记录、规范合约地址/代码哈希以及应用/索引/控制库备份；使用现有 verified-backup 与 restore-drill 工具核验并恢复演练。关闭新操作入口，停止 app、indexer、claims、matching、RPC 操作接收者。对账全部在途 UserOperation 和 keeper；unknown/prepared/broadcasting 阻止切换。
+2. 新 Factory/Marketplace/FeeVault/BondEscrow 使用新地址，支付 Token、登录项目与账户派生参数保持原值。部署入口独立 orderbook-v2 pending 状态，候选核验代码、依赖接线、治理及默认 false。既有链上托管资产保持原合约，不自动迁移或返还。
+3. 通过 maintenance rollover 干跑与明确 apply 执行应用/索引 schema 归档，只携带身份与防滥用预算。必须提供 `CPREDICT_AUTOMATION_CONTROL_DATABASE_URL`；工具检查独立控制库 unresolved 记录及停机连接。控制库旧记录、nonce 恢复与预算证据原样保留并备份，队列和累计接口均按新 deploymentId 隔离，不删除旧交易。
+4. 显式执行新增迁移（含控制库013）；worker 只检查 schema。服务及网页用同一最终源版本，依次启动新索引与 metadata、app、matching/claims、RPC 与网页，验证登录/账户派生与新空市场/空订单后开放入口。不得用旧合约 ABI 推断整单能力。
+5. 公网验证 10 对 5 不成交、10 对 10 成交，手动抢先领取到账记录，个人/公共费用分离与新批次 ≤30秒；观察至少30分钟。本地自动挖矿 Anvil 的性能结果只证明隔离环境，不能替代公网验收。
+6. 回退保留所有新旧交易；新部署出现用户资产后暂停新操作，通过兼容镜像继续支持撤单、领取、恢复，不能直接切回旧库或地址。未完成真实账户验收时报告线上验收待完成。
+
+### 本批静态分析审阅
+
+Slither 原 `books` 未初始化候选随显式 storage 参数堆操作消失；既有 `reentrancy-no-eth` 报告从 matchOrders 转到私有 _matchOrders。该函数只能由两个 nonReentrant 公开入口调用，外部转份额入口只允许 msg.sender == address(this)。原 fillOrder 警告保持，经济写入与恢复顺序沿用原模型；整单恶意接收者、回调重入及混合模式状态不变量测试覆盖新增入口。其余 High/Medium 基线保持原逐项匹配，未隐藏新增检测器或降低门槛。
+
+
 ## 2026-10-02 自动领取队列与发布验收
 
 实施基线为 `4fe4e0bd7c361cda65cb6f55a9db5607f8b05672`，实施分支为 `fix/automatic-claims-queue-20261002`，通过 `main` 交付；app-service、claims 和网页使用同一发布提交构建。合约、经济规则、收款地址、撮合规则、signer、nonce 并发策略、Gas 预算及清理配额保持原有约束。发布提交、镜像 digest 和运行核对记录保存在本地 `reports/generated/orderbook/claims-queue-deployment.json` 及云端本次发布证据目录。线上小批次从结算到最后到账不超过 30 秒、争取 20 秒，是发布后的验收目标；本地 Anvil 的即时出块耗时不能作为线上结果。

@@ -12,6 +12,7 @@ try {
     "010_automation_cleanup_quotas.sql",
     "011_automation_operations.sql",
     "012_automation_claim_queue.sql",
+    "013_actual_automation_gas.sql",
   ])
     await sql.unsafe(
       await readFile(

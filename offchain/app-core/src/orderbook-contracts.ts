@@ -1,5 +1,46 @@
 import { z } from "zod";
 import { address, uint, hash } from "./contracts.js";
+import { ledgerFactSchema, snapshotSchema } from "./ledger-contracts.js";
+
+export const claimReceiptsSchema = z.object({
+  items: z.array(
+    z.object({
+      fact: ledgerFactSchema,
+      source: z.enum(["automatic", "manual", "direct", "unknown"]),
+      marketQuestion: z.string().nullable(),
+      actualGasCostWei: uint.nullable(),
+      gasPayment: z.enum(["sponsored", "self-funded", "unknown"]),
+    }),
+  ),
+  nextCursor: z.string().nullable(),
+  snapshot: snapshotSchema,
+});
+export const sponsoredGasSchema = z.object({
+  scope: z.literal("current-environment"),
+  currency: z.literal("ETH"),
+  knownActualWei: uint,
+  totalActualWei: uint.nullable(),
+  missingCount: z.number().int().nonnegative(),
+  pendingCount: z.number().int().nonnegative(),
+  shared: z.object({
+    knownActualWei: uint,
+    totalActualWei: uint.nullable(),
+    missingCount: z.number().int().nonnegative(),
+  }),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      kind: z.string(),
+      source: z.enum(["user-operation", "automation"]),
+      transactionHash: hash,
+      timestamp: z.string(),
+      state: z.enum(["confirmed", "reverted"]),
+      actualGasCostWei: uint.nullable(),
+    }),
+  ),
+  nextCursor: z.string().nullable(),
+  snapshot: snapshotSchema,
+});
 export const orderSchema = z.object({
   id: uint,
   market: address,
@@ -9,6 +50,7 @@ export const orderSchema = z.object({
   unitPrice: uint,
   expiresAt: uint,
   autoMatch: z.boolean(),
+  allowPartialFills: z.boolean().optional(),
   remainingUnits: uint,
   lockedPayment: uint,
   active: z.boolean(),

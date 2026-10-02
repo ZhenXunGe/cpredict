@@ -270,3 +270,10 @@ describe("same nonce recovery signing", () => {
     ).rejects.toMatchObject({ reason: "intent_mismatch" });
   });
 });
+
+it("keeps the canonical Arbitrum receipt fee components without adding an L1 fee twice",async()=>{
+ const client={getTransactionReceipt:async()=>({status:"reverted",blockNumber:20n,blockHash:keccak256("0xab"),gasUsed:300n,effectiveGasPrice:7n,l1Fee:9999n})} as unknown as PublicClient;
+ const chain=new ViemAutomationChain(client,{} as WalletClient,account,1n);
+ expect(await chain.receipt(keccak256("0xaa"))).toMatchObject({status:"reverted",gasUsed:300n,effectiveGasPrice:7n});
+ expect(await chain.receipt(keccak256("0xaa"))).not.toHaveProperty("l1Fee");
+});

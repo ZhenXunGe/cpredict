@@ -79,8 +79,9 @@ const env = orderbookTest
         ...ctEnv.deployment,
         marketplaceVersion: "orderbook-v2" as const,
         orderbookReceiverRecovery: true,
+        orderbookFillPolicyVersion: new URLSearchParams(location.search).has("whole-orders-test") ? 1 as const : undefined,
       },
-      features: { ...ctEnv.features, automaticClaims: true },
+      features: { ...ctEnv.features, automaticClaims: true, accountEvidence: new URLSearchParams(location.search).has("account-evidence-test") },
     }
   : historyView
     ? {
@@ -307,7 +308,7 @@ class FixtureApi extends SiteApi {
   ): Promise<T> {
     if (
       orderbookTest &&
-      (path.startsWith("/v2/orders") || path.startsWith("/v1/automatic-claims"))
+      (path.startsWith("/v2/orders") || path.startsWith("/v1/automatic-claims") || path.startsWith("/v1/claim-receipts") || path.startsWith("/v1/sponsored-gas"))
     )
       return super.request(path, schema, _options);
     // Exercise the real HTTP/error boundary with intercepted local responses only.
@@ -810,6 +811,7 @@ class FixtureApi extends SiteApi {
       args?: unknown[];
       blockNumber?: bigint;
     }) => {
+      if (functionName === "defaultAllowPartialFills") return false;
       if (functionName === "listings")
         return [A(101), A(99), 0n, 1500000n, 1999999999n, 1, false];
       if (this.slow) await new Promise((r) => setTimeout(r, 600));

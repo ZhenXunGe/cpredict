@@ -233,6 +233,22 @@ test.skipIf(
           a,
         );
       }
+      expect(
+        await client.readContract({
+          address: book,
+          abi: orderbookAbi,
+          functionName: "defaultAllowPartialFills",
+        }),
+      ).toBe(false);
+      expect(
+        await client.readContract({
+          address: book,
+          abi: orderbookAbi,
+          functionName: "fillPolicyVersion",
+        }),
+      ).toBe(1n);
+      // Legacy lifecycle below deliberately exercises allowed partial fills;
+      // whole-order signed execution is covered separately by quantity groups.
       const now = (await client.getBlock()).timestamp;
       const created = await send(factory, marketFactoryAbi, "createMarket", [
         {
@@ -291,6 +307,81 @@ test.skipIf(
         [book, true],
         alice,
       );
+      const wholeSnapshot = await rpc("evm_snapshot");
+      await send(
+        book,
+        orderbookAbi,
+        "createOrder",
+        [market, 0, 1, 4000000n, 750000n, now + 200000n, true],
+        alice,
+      );
+      await send(
+        book,
+        orderbookAbi,
+        "createOrder",
+        [market, 0, 0, 2000000n, 1000000n, now + 200000n, true],
+        bob,
+      );
+      await send(
+        book,
+        orderbookAbi,
+        "matchOrdersForUnits",
+        [market, 0, 4000000n, 1n],
+        matcher,
+      );
+      expect(
+        (
+          await client.readContract({
+            address: book,
+            abi: orderbookAbi,
+            functionName: "orders",
+            args: [1n],
+          })
+        )[2],
+      ).toBe(4000000n);
+      await expect(
+        send(
+          book,
+          orderbookAbi,
+          "fillOrder",
+          [1n, 2000000n, 2000000n, 4000000n, now + 60n],
+          bob,
+        ),
+      ).rejects.toThrow();
+      await send(
+        book,
+        orderbookAbi,
+        "createOrder",
+        [market, 0, 0, 4000000n, 1000000n, now + 200000n, true],
+        bob,
+      );
+      await send(
+        book,
+        orderbookAbi,
+        "matchOrdersForUnits",
+        [market, 0, 4000000n, 1n],
+        matcher,
+      );
+      expect(
+        await client.readContract({
+          address: market,
+          abi: parseAbi([
+            "function balanceOf(address,uint256) view returns(uint256)",
+          ]),
+          functionName: "balanceOf",
+          args: [bob.address, 0n],
+        }),
+      ).toBe(4000000n);
+      expect(
+        await client.readContract({
+          address: book,
+          abi: orderbookAbi,
+          functionName: "bestOrderForUnits",
+          args: [market, 0, 0, 2000000n],
+        }),
+      ).toBe(2n);
+      await rpc("evm_revert", [wholeSnapshot]);
+      await send(book, orderbookAbi, "setDefaultAllowPartialFills", [true]);
       await send(
         book,
         orderbookAbi,
@@ -338,6 +429,7 @@ test.skipIf(
           "010_automation_cleanup_quotas.sql",
           "011_automation_operations.sql",
           "012_automation_claim_queue.sql",
+          "013_actual_automation_gas.sql",
         ])
           await migration.unsafe(
             await readFile(`offchain/app-service/migrations/${name}`, "utf8"),
@@ -351,6 +443,7 @@ test.skipIf(
         deployment: {
           ...env.deployment,
           marketplaceVersion: "orderbook-v2" as const,
+          orderbookFillPolicyVersion: 1 as const,
           protocolVersion: "time-v2" as const,
           factory,
           marketplace: book,

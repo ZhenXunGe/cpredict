@@ -14,6 +14,7 @@ import { verifyInPlaceUpgrade } from "../stack/in-place-upgrade-proof.mjs";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const pg = resolve(root, ".tools/postgresql-17.10/bin");
 const inventory = [
+  "offchain/app-service/test/account-evidence.integration.test.ts",
   "offchain/workers/test/automatic-store.integration.test.ts",
   "offchain/workers/test/automatic-queue.integration.test.ts",
   "offchain/workers/test/automatic-operations.integration.test.ts",

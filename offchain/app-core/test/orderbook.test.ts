@@ -143,9 +143,51 @@ describe("V2 order intents", () => {
       1000n,
     );
     expect(calls).toHaveLength(1);
-    expect(decodeFunctionData({ abi: orderbookAbi, data: calls[0]!.data })).toMatchObject({
+    expect(
+      decodeFunctionData({ abi: orderbookAbi, data: calls[0]!.data }),
+    ).toMatchObject({
       functionName: "withdrawOrderShares",
       args: [7n, A(22)],
     });
   });
+});
+
+it("enforces a new deployment's whole-order snapshot before sponsoring a manual fill", async () => {
+  const environment = {
+    ...v2,
+    deployment: { ...v2.deployment, orderbookFillPolicyVersion: 1 as const },
+  };
+  const strictReader = {
+    ...reader,
+    order: async () => ({
+      market: A(1),
+      owner: A(99),
+      side: 1,
+      outcomeId: 0,
+      active: true,
+      units: 10n,
+      allowPartialFills: false,
+    }),
+  };
+  const intent = {
+    kind: "fill-order" as const,
+    orderId: "1",
+    side: "ask" as const,
+    units: "5",
+    minUnits: "5",
+    paymentLimit: "20",
+    deadline: "1100",
+  };
+  await expect(
+    buildBusinessCalls(environment, A(3), intent, strictReader, 1000n),
+  ).rejects.toMatchObject({ code: "whole_order_required" });
+  await expect(
+    buildBusinessCalls(
+      environment,
+      A(3),
+      { ...intent, units: "10", minUnits: "10" },
+      strictReader,
+      1000n,
+    ),
+  ).resolves.toHaveLength(4);
 });

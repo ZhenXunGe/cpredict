@@ -70,6 +70,16 @@ export class ProtocolAdmissionReader implements AdmissionReader {
       outcomeId: o[5],
       active: o[8],
       pendingShares,
+      units: o[2],
+      allowPartialFills:
+        this.environment.deployment.orderbookFillPolicyVersion === 1
+          ? await this.client.readContract({
+              address: this.environment.deployment.marketplace,
+              abi: orderbookAbi,
+              functionName: "orderAllowsPartialFills",
+              args: [id],
+            })
+          : true,
     };
   }
   registeredMarket(market: Address): Promise<boolean> {

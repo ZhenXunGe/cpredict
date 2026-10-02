@@ -74,6 +74,7 @@ describe.skipIf(!url)("persistent incremental claims queue", () => {
       "010_automation_cleanup_quotas",
       "011_automation_operations",
       "012_automation_claim_queue",
+      "013_actual_automation_gas",
     ])
       await migrations.unsafe(
         await readFile(`offchain/app-service/migrations/${name}.sql`, "utf8"),

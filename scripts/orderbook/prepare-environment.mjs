@@ -15,10 +15,13 @@ import { validatePendingManifest } from "../deployment/deploy-arbitrum-sepolia.m
 
 const factoryAbi = parseAbi([
   "function active() view returns(bool)",
+  "function governance() view returns(address)",
   "function activationFingerprint() view returns(bytes32)",
 ]);
 const recoveryAbi = parseAbi([
   "function receiverRecoveryVersion() pure returns(uint256)",
+  "function fillPolicyVersion() pure returns(uint256)",
+  "function defaultAllowPartialFills() view returns(bool)",
 ]);
 const policyAbi = parseAbi([
   "function factory() view returns(address)",
@@ -39,6 +42,7 @@ export function buildCandidate({
   id,
   prefix,
   codeHashes,
+  deploymentId = id,
 }) {
   const previous = environmentSchema.parse(template);
   validatePendingManifest(pending);
@@ -59,7 +63,19 @@ export function buildCandidate({
     )
   )
     throw Error("distinct_service_prefix_required");
-  if (id === previous.id) throw Error("distinct_environment_id_required");
+  if (
+    id === previous.id &&
+    !(
+      previous.deployment.protocolVersion === "time-v2" &&
+      previous.deployment.marketplaceVersion === "orderbook-v2" &&
+      previous.deployment.orderbookFillPolicyVersion === undefined &&
+      pending.orderbookFillPolicyVersion === 1 &&
+      deploymentId !== previous.deployment.id
+    )
+  )
+    throw Error("distinct_environment_id_required");
+  if (deploymentId === previous.deployment.id)
+    throw Error("distinct_deployment_id_required");
   for (const value of [
     pending.factory,
     pending.marketplace,
@@ -77,10 +93,11 @@ export function buildCandidate({
     historical: false,
     deployment: {
       ...previous.deployment,
-      id,
+      id: deploymentId,
       protocolVersion: "time-v2",
       marketplaceVersion: "orderbook-v2",
       orderbookReceiverRecovery: true,
+      orderbookFillPolicyVersion: pending.orderbookFillPolicyVersion,
       sourceCommit,
       deploymentBlock,
       manifestHash: `0x${sha(pending)}`,
@@ -98,6 +115,7 @@ export function buildCandidate({
     features: {
       ...previous.features,
       automaticClaims: true,
+      accountEvidence: true,
       newExposure: false,
       faucet: false,
     },
@@ -126,6 +144,7 @@ async function main(args) {
         "source-commit",
         "deployment-block",
         "id",
+        "deployment-id",
         "prefix",
         "output",
       ].includes(key) ||
@@ -135,7 +154,7 @@ async function main(args) {
       throw Error("invalid_candidate_arguments");
     options[key] = value;
   }
-  if (Object.keys(options).length !== 7)
+  if (Object.keys(options).length !== (options["deployment-id"] ? 8 : 7))
     throw Error("all_candidate_arguments_required");
   const rpcUrl = secureUrl.parse(process.env.CPREDICT_ORDERBOOK_VERIFY_RPC_URL);
   const client = createPublicClient({
@@ -179,6 +198,35 @@ async function main(args) {
     })) !== 1n
   )
     throw Error("receiver_recovery_contract_required");
+  if (pending.orderbookFillPolicyVersion === 1) {
+    if (
+      !sameAddress(
+        await client.readContract({
+          address: pending.factory,
+          abi: factoryAbi,
+          functionName: "governance",
+          blockNumber: head.number,
+        }),
+        pending.timelock,
+      )
+    )
+      throw Error("factory_governance_mismatch");
+    if (
+      (await client.readContract({
+        address: pending.marketplace,
+        abi: recoveryAbi,
+        functionName: "fillPolicyVersion",
+        blockNumber: head.number,
+      })) !== 1n ||
+      (await client.readContract({
+        address: pending.marketplace,
+        abi: recoveryAbi,
+        functionName: "defaultAllowPartialFills",
+        blockNumber: head.number,
+      }))
+    )
+      throw Error("whole_order_default_contract_required");
+  }
   if (
     !(await client.readContract({
       address: pending.factory,
@@ -228,6 +276,7 @@ async function main(args) {
     sourceCommit: options["source-commit"],
     deploymentBlock: options["deployment-block"],
     id: options.id,
+    deploymentId: options["deployment-id"],
     prefix: options.prefix,
     codeHashes,
   });

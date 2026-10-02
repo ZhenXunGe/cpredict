@@ -176,3 +176,57 @@ test("V2 entrypoint rejects a legacy manifest instead of silently using its ABI"
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /marketplaceVersion/);
 });
+
+test("whole-policy reset preserves the environment identity and requires a fresh deployment id", () => {
+  const current = {
+    ...template,
+    deployment: {
+      ...template.deployment,
+      protocolVersion: "time-v2",
+      marketplaceVersion: "orderbook-v2",
+    },
+  };
+  const p = {
+    ...pending(),
+    usdc: template.deployment.paymentToken,
+    paymentTokenKind: "sandbox-test-token",
+    orderbookFillPolicyVersion: 1,
+  };
+  const codeHashes = Object.fromEntries(
+    [
+      p.factory,
+      p.marketplace,
+      p.bondEscrow,
+      p.feeVault,
+      p.usdc,
+      p.tradingSessionPolicy,
+    ].map((a) => [a.toLowerCase(), hash(55)]),
+  );
+  const args = {
+    template: current,
+    pending: p,
+    sourceCommit: "a".repeat(40),
+    deploymentBlock: "123",
+    id: current.id,
+    deploymentId: "whole-policy-new",
+    prefix: "/whole-test",
+    codeHashes,
+  };
+  const result = buildCandidate(args);
+  assert.equal(result.id, current.id);
+  assert.equal(result.deployment.id, "whole-policy-new");
+  assert.equal(result.deployment.orderbookFillPolicyVersion, 1);
+  assert.equal(result.features.accountEvidence, true);
+  assert.throws(
+    () => buildCandidate({ ...args, deploymentId: current.deployment.id }),
+    /distinct_environment_id_required|distinct_deployment_id_required/,
+  );
+  assert.throws(
+    () =>
+      buildCandidate({
+        ...args,
+        pending: { ...p, orderbookFillPolicyVersion: undefined },
+      }),
+    /distinct_environment_id_required/,
+  );
+});

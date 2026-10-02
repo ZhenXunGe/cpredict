@@ -150,8 +150,8 @@ async function setup(page: Page, paginated = false) {
   });
   return state;
 }
-async function open(page: Page) {
-  await page.goto(fixture);
+async function open(page: Page, url=fixture) {
+  await page.goto(url);
   await expect(page).toHaveTitle(/Cpredict/);
   await expect(page).toHaveURL(/ctusd-test\/entitlements$/);
   await expect(
@@ -742,4 +742,20 @@ test("completed pages are skipped and only current holdings and unfinished right
     path: test.info().outputPath("active-rights-only.png"),
     fullPage: true,
   });
+});
+
+test("a manually confirmed claim appears once in unified receipts after index synchronization",async({page})=>{
+ const state=await setup(page);
+ await page.route("**/v1/automatic-claims**",r=>r.fulfill({json:{enabled:true,reason:"waiting_for_entitlement",updatedAt:null,transactions:[],nextCursor:null}}));
+ await page.route("**/v1/claim-receipts**",r=>r.fulfill({json:{items:state.rightsBlock>=105?[{fact:{id:"manual-receipt",kind:"early-bird-claimed",blockNumber:"105",blockHash:H(105),transactionHash:H(205),transactionIndex:0,logIndex:1,factIndex:0,timestamp:"1789142400",market:A(101),owner:appAccount.address,counterparty:null,outcomeId:null,listingId:null,units:null,amount:"40000",extra:{}},source:"manual",marketQuestion:"手动领取到账市场",actualGasCostWei:null,gasPayment:"unknown"}]:[],nextCursor:null,snapshot:snapshot(state.rightsBlock)}}));
+ await page.route("**/v1/sponsored-gas**",r=>r.fulfill({json:{scope:"current-environment",currency:"ETH",knownActualWei:"0",totalActualWei:"0",missingCount:0,pendingCount:0,shared:{knownActualWei:"0",totalActualWei:"0",missingCount:0},items:[],nextCursor:null,snapshot:snapshot(state.rightsBlock)}}));
+ await open(page,"/test/browser/fixture.html?entitlements-test=1&orderbook-test=1&account-evidence-test=1#/ctusd-test/entitlements");
+ const received=page.getByRole("region",{name:"已到账记录"});await expect(received).toContainText("暂无已到账记录");
+ await row(page).getByRole("button",{name:"领取",exact:true}).click();
+ const dialog=page.getByRole("dialog");await dialog.getByRole("button",{name:"确认并继续",exact:true}).click();await expect(dialog).toContainText("已确认");
+ await dialog.locator(".dialog-footer").getByRole("button",{name:"关闭",exact:true}).click();
+ await expect(row(page)).toContainText("已确认，等待同步");await expect(received.getByRole("row")).toHaveCount(0);
+ state.rightsBlock=105;state.pnlBlock=105;await tick(page);
+ await expect(received.getByRole("row")).toHaveCount(2);await expect(received.getByRole("cell",{name:"手动领取",exact:true})).toHaveCount(1);await expect(row(page)).toHaveCount(0);
+ await tick(page);await expect(received.getByRole("row")).toHaveCount(2);
 });

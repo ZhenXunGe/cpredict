@@ -12,6 +12,8 @@ const schemas = {
   Order: orders.orderSchema,
   OrderPage: orders.orderPageSchema,
   AutomaticClaimsStatus: orders.automaticClaimsStatusSchema,
+  ClaimReceipts: orders.claimReceiptsSchema,
+  SponsoredGas: orders.sponsoredGasSchema,
   TradingSession: sessions.tradingSessionSchema,
   TradingSessionPage: sessions.tradingSessionPageSchema,
   TradingSessionPrepare: sessions.sessionPrepareSchema,

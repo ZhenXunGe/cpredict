@@ -16,6 +16,7 @@ const tokenOwnerAbi = parseAbi([
 ]);
 const receiverRecoveryAbi = parseAbi([
   "function receiverRecoveryVersion() pure returns(uint256)",
+  "function fillPolicyVersion() pure returns(uint256)",
 ]);
 
 export async function verifyDeployment(
@@ -35,6 +36,15 @@ export async function verifyDeployment(
     })) !== 1n
   )
     throw new AppError("orderbook_receiver_recovery_mismatch", 503);
+  if (
+    d.orderbookFillPolicyVersion === 1 &&
+    (await client.readContract({
+      address: d.marketplace,
+      abi: receiverRecoveryAbi,
+      functionName: "fillPolicyVersion",
+    })) !== 1n
+  )
+    throw new AppError("orderbook_fill_policy_mismatch", 503);
   const contracts = [
     d.factory,
     d.marketplace,

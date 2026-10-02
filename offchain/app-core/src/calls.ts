@@ -30,15 +30,15 @@ const feeAbi = parseAbi([
 export const FAUCET_AMOUNT = 1_000_000_000n;
 export interface AdmissionReader {
   registeredMarket(market: Address): Promise<boolean>;
-  order?(
-    id: bigint,
-  ): Promise<{
+  order?(id: bigint): Promise<{
     market: Address;
     owner: Address;
     side: number;
     outcomeId: number;
     active: boolean;
     pendingShares?: bigint;
+    units?: bigint;
+    allowPartialFills?: boolean;
   }>;
   verifiedRules(market: Address): Promise<boolean>;
   listing(
@@ -106,7 +106,10 @@ export async function buildBusinessCalls(
   let order:
     | Awaited<ReturnType<NonNullable<AdmissionReader["order"]>>>
     | undefined;
-  if (intent.kind.endsWith("-order") || intent.kind === "withdraw-order-shares") {
+  if (
+    intent.kind.endsWith("-order") ||
+    intent.kind === "withdraw-order-shares"
+  ) {
     if (d.marketplaceVersion !== "orderbook-v2")
       throw new AppError("orderbook_not_supported", 400);
     if ("orderId" in intent) {
@@ -128,6 +131,16 @@ export async function buildBusinessCalls(
         !sameAddress(order.owner, account)
       )
         throw new AppError("order_owner_mismatch", 403);
+      if (intent.kind === "fill-order" && d.orderbookFillPolicyVersion === 1) {
+        if (order.allowPartialFills === undefined || order.units === undefined)
+          throw new AppError("orderbook_reader_unavailable", 503);
+        if (
+          !order.allowPartialFills &&
+          (BigInt(intent.units) !== order.units ||
+            BigInt(intent.minUnits) !== order.units)
+        )
+          throw new AppError("whole_order_required", 409);
+      }
       if (intent.kind === "fill-order" && sameAddress(order.owner, account))
         throw new AppError("self_trade_not_sponsored");
     }

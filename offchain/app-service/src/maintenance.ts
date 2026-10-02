@@ -1,4 +1,7 @@
-import { RpcReadPool, parseRpcFallbackConfig } from "../../app-core/src/rpc-pool.js";
+import {
+  RpcReadPool,
+  parseRpcFallbackConfig,
+} from "../../app-core/src/rpc-pool.js";
 import { applyPublicSiteMigrations } from "./migrations.js";
 import { prepareHistoricalSuccessor } from "./historical-deployment.js";
 import { rolloverDeployment } from "./deployment-rollover.js";
@@ -128,33 +131,73 @@ async function run() {
     connect_timeout: 5,
     onnotice: () => undefined,
   });
+  let control: ReturnType<typeof postgres> | undefined;
   let store: PostgresEventStore | undefined;
   let rpcPool: RpcReadPool | undefined;
   const chainClient = async () => {
-    rpcPool = new RpcReadPool({url: secureUrl.parse(required(process.env.CPREDICT_MAINTENANCE_RPC_URL, "maintenance_rpc_url")), chainId: env.deployment.chainId, timeoutMs: 10_000, service: "maintenance", fallback: parseRpcFallbackConfig(process.env)});
+    rpcPool = new RpcReadPool({
+      url: secureUrl.parse(
+        required(
+          process.env.CPREDICT_MAINTENANCE_RPC_URL,
+          "maintenance_rpc_url",
+        ),
+      ),
+      chainId: env.deployment.chainId,
+      timeoutMs: 10_000,
+      service: "maintenance",
+      fallback: parseRpcFallbackConfig(process.env),
+    });
     await rpcPool.start();
-    return createPublicClient({chain: arbitrumSepolia, transport: rpcPool.transport});
+    return createPublicClient({
+      chain: arbitrumSepolia,
+      transport: rpcPool.transport,
+    });
   };
   try {
     if (command === "rollover" || command === "prepare-history") {
       const previous = appRuntimeSchema.parse(
         await readJson(required(values.input, "previous_config")),
       );
-      await verifyDeployment(
-        await chainClient(),
-        env,
-      );
-      console.log(
-        JSON.stringify(
-          await (
-            command === "rollover"
-              ? rolloverDeployment
-              : prepareHistoricalSuccessor
-          )(sql, previous.environment, env, values.apply),
-          null,
-          2,
-        ),
-      );
+      await verifyDeployment(await chainClient(), env);
+      if (command === "rollover") {
+        // The control DB may be separate; never infer an empty keeper lane from
+        // the application's local compatibility tables.
+        const url = required(
+          process.env.CPREDICT_AUTOMATION_CONTROL_DATABASE_URL,
+          "automation_control_database_url",
+        );
+        control = postgres(url, {
+          max: 1,
+          prepare: false,
+          connect_timeout: 5,
+          onnotice: () => undefined,
+        });
+        console.log(
+          JSON.stringify(
+            await rolloverDeployment(
+              sql,
+              previous.environment,
+              env,
+              values.apply,
+              control,
+            ),
+            null,
+            2,
+          ),
+        );
+      } else
+        console.log(
+          JSON.stringify(
+            await prepareHistoricalSuccessor(
+              sql,
+              previous.environment,
+              env,
+              values.apply,
+            ),
+            null,
+            2,
+          ),
+        );
       return;
     }
     const exists = (
@@ -366,6 +409,7 @@ async function run() {
   } finally {
     rpcPool?.close();
     await store?.close();
+    await control?.end({ timeout: 5 });
     await sql.end({ timeout: 5 });
   }
 }

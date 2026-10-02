@@ -80,6 +80,7 @@ export const deploymentSchema = z.strictObject({
   protocolVersion: z.enum(["legacy-v1", "time-v2"]).optional(),
   marketplaceVersion: z.enum(["fixed-v1", "orderbook-v2"]).optional(),
   orderbookReceiverRecovery: z.boolean().optional(),
+  orderbookFillPolicyVersion: z.literal(1).optional(),
   manifestHash: hash,
   sourceCommit: z.string().regex(/^[\da-f]{40}$/),
   chainId: z.literal(421614),
@@ -126,6 +127,7 @@ export const environmentSchema = z
       .optional(),
     features: z.strictObject({
       automaticClaims: z.boolean().optional(),
+      accountEvidence: z.boolean().optional(),
       newExposure: z.boolean(),
       faucet: z.boolean(),
       leaderboard: z.boolean(),

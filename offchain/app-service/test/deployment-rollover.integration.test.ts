@@ -144,6 +144,62 @@ describe.skipIf(!url)("ctUSD deployment rollover", () => {
       }),
     ).toThrow();
   });
+  it("permits only the explicit time-v2 orderbook to whole-policy transition", () => {
+    const current = {
+      ...previous,
+      deployment: {
+        ...previous.deployment,
+        protocolVersion: "time-v2" as const,
+        marketplaceVersion: "orderbook-v2" as const,
+      },
+    };
+    expect(() => assertDeploymentRollover(current, next)).toThrow();
+    expect(() =>
+      assertDeploymentRollover(current, {
+        ...next,
+        deployment: {
+          ...next.deployment,
+          marketplaceVersion: "orderbook-v2",
+          orderbookFillPolicyVersion: 1,
+        },
+      }),
+    ).not.toThrow();
+  });
+  it("blocks unknown signed keeper transactions without archiving their recovery records", async () => {
+    await sql`INSERT INTO automation_transactions(id,chain_id,deployment_id,signer,owner,job_key,kind,target,calldata,nonce,tx_hash,raw_transaction,reserved_wei,state) VALUES(${randomUUID()},421614,${previous.deployment.id},${A(70)},${appAccount.address},'unresolved-test','winner',${A(50)},'0x',0,${H(70)},'0xab',1,'unknown')`;
+    await expect(
+      rolloverDeployment(sql, previous, next, true),
+    ).rejects.toMatchObject({ code: "rollover_operations_need_recovery" });
+    expect(
+      (
+        await sql`SELECT raw_transaction FROM automation_transactions WHERE job_key='unresolved-test'`
+      )[0]?.raw_transaction,
+    ).toBe("0xab");
+    const controlSchema = `${schema}_control`;
+    await admin`CREATE SCHEMA ${admin(controlSchema)}`;
+    const u = new URL(url!);
+    u.searchParams.set("options", `-csearch_path=${controlSchema}`);
+    const control = postgres(u.toString(), {
+      max: 1,
+      onnotice: () => undefined,
+    });
+    try {
+      await control`CREATE TABLE automation_transactions (LIKE ${control(schema)}.automation_transactions INCLUDING ALL)`;
+      await control`INSERT INTO automation_transactions SELECT * FROM ${control(schema)}.automation_transactions WHERE job_key='unresolved-test'`;
+      await sql`DELETE FROM automation_transactions WHERE job_key='unresolved-test'`;
+      await expect(
+        rolloverDeployment(sql, previous, next, true, control),
+      ).rejects.toMatchObject({ code: "rollover_operations_need_recovery" });
+      expect(
+        (
+          await control`SELECT raw_transaction FROM automation_transactions WHERE job_key='unresolved-test'`
+        )[0]?.raw_transaction,
+      ).toBe("0xab");
+    } finally {
+      await control.end();
+      await admin`DROP SCHEMA ${admin(controlSchema)} CASCADE`;
+    }
+  });
   it("keeps live history untouched while an unknown result or nonfinal receipt needs recovery", async () => {
     await sql`UPDATE app_operations SET state='unknown'`;
     await expect(

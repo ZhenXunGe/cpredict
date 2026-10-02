@@ -82,6 +82,12 @@ describe.skipIf(!url)(
           "utf8",
         ),
       );
+      await migration.unsafe(
+        await readFile(
+          "offchain/app-service/migrations/013_actual_automation_gas.sql",
+          "utf8",
+        ),
+      );
       migration.release();
       store = new PostgresEventStore(u.toString(), 3, v2);
       await store.ready();
@@ -117,6 +123,13 @@ describe.skipIf(!url)(
             3,
             0,
           ),
+          raw(
+            "OrderFillPolicySnapshotted",
+            env.deployment.marketplace,
+            { orderId: 1n, allowPartialFills: false },
+            3,
+            1,
+          ),
         ],
         [block(3)],
         block(3),
@@ -135,6 +148,7 @@ describe.skipIf(!url)(
         lockedPayment: "100",
         remainingUnits: "100",
         active: true,
+        allowPartialFills: false,
       });
       const trade = {
         orderId: 1n,

@@ -230,6 +230,20 @@
     ]
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "DefaultAllowPartialFillsUpdated",
+    "signature": "DefaultAllowPartialFillsUpdated(bool)",
+    "selector": "0xf59adf9be83fc23e542492c8322db0cc91368303fa77b156b0f8ad86c668682a",
+    "inputs": [
+      {
+        "name": "allowed",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
+      }
+    ]
+  },
+  {
     "contract": "CloneMarketVaultV1",
     "name": "EarlyBirdClaimed",
     "signature": "EarlyBirdClaimed(address,address,uint256,uint256)",
@@ -1798,6 +1812,26 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "OrderFillPolicySnapshotted",
+    "signature": "OrderFillPolicySnapshotted(uint256,bool)",
+    "selector": "0xb68a54054285e3e704dea93eee579faffcf066a262c1017c6a21a0c56a026f38",
+    "inputs": [
+      {
+        "name": "orderId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "allowPartialFills",
+        "type": "bool",
+        "indexed": false,
+        "internalType": "bool"
       }
     ]
   },

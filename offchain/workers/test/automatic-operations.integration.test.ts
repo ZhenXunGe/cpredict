@@ -38,6 +38,7 @@ describe.skipIf(!url)("durable automation operations", () => {
         "009_automation_canonical_audit.sql",
         "010_automation_cleanup_quotas.sql",
         "011_automation_operations.sql",
+        "013_actual_automation_gas.sql",
       ])
         await migration.unsafe(
           await readFile(

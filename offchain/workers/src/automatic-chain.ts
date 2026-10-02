@@ -273,6 +273,8 @@ export class ViemAutomationChain implements AutomationChain {
         status: r.status,
         blockNumber: r.blockNumber,
         blockHash: r.blockHash,
+        gasUsed: r.gasUsed,
+        effectiveGasPrice: r.effectiveGasPrice,
         ...(this.receiptTime
           ? {
               blockTimestamp: Number(

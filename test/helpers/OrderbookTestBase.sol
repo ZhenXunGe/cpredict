@@ -63,6 +63,9 @@ abstract contract OrderbookTestBase is Test {
         marketplace = new OrderbookMarketplaceV2(
             address(factory), address(emergency), address(feeVault), address(usdc), address(0)
         );
+        // Existing economic/receiver suites explicitly exercise partial mode.
+        // New whole-order suites independently verify the deployment default.
+        marketplace.setDefaultAllowPartialFills(true);
         factory.setMarketplace(address(marketplace));
         factory.activate(factory.dependencyFingerprint());
 

@@ -698,6 +698,11 @@ export function validatePendingManifest(value, { profile } = {}) {
     fail(`pending.chainId must equal ${CHAIN_ID}`);
   if (ORDERBOOK && value.marketplaceVersion !== "orderbook-v2")
     fail("pending.marketplaceVersion must equal orderbook-v2");
+  if (
+    value.orderbookFillPolicyVersion !== undefined &&
+    value.orderbookFillPolicyVersion !== 1
+  )
+    fail("pending.orderbookFillPolicyVersion must equal 1");
   if (value.marketplaceVersion === "orderbook-v2") {
     value.tradingSessionPolicy = normalizeAddress(
       value.tradingSessionPolicy,

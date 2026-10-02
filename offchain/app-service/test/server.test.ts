@@ -20,6 +20,7 @@ import type { ReportingStore } from "../src/reports.js";
 async function setup(
   trusted = false,
   automaticClaims?: import("../src/automatic-claims.js").AutomaticClaimsSettings,
+  accountEvidence?: import("../src/account-evidence.js").AccountEvidence,
 ) {
   const store = new MemoryApplicationStore();
   store.accountRows.set(appAccount.id, appAccount);
@@ -61,6 +62,7 @@ async function setup(
   } satisfies ReportingStore;
   const server = await createApplicationServer({
     ...(automaticClaims ? { automaticClaims } : {}),
+    ...(accountEvidence ? { accountEvidence } : {}),
     operations: service,
     auth: {
       verify: async (token) => ({
@@ -371,3 +373,55 @@ it("bounds automatic claim history pagination and passes its cursor", async () =
     await server.close();
   }
 });
+
+for (const [path, method] of [
+  ["claim-receipts", "claimReceipts"],
+  ["sponsored-gas", "sponsoredGas"],
+] as const) {
+  it(`${path} verifies authentication and ownership before reading personal evidence`, async () => {
+    const evidence = {
+      claimReceipts: vi.fn(async () => ({ items: [] })),
+      sponsoredGas: vi.fn(async () => ({ knownActualWei: "0" })),
+    };
+    const { server } = await setup(false, undefined, evidence);
+    try {
+      const url = `/v1/${path}?accountId=${appAccount.id}&limit=7`;
+      expect((await server.inject({ method: "GET", url })).statusCode).toBe(
+        401,
+      );
+      expect(
+        (
+          await server.inject({
+            method: "GET",
+            url,
+            headers: { authorization: "Bearer other" },
+          })
+        ).statusCode,
+      ).toBe(404);
+      expect(evidence[method]).not.toHaveBeenCalled();
+      expect(
+        (
+          await server.inject({
+            method: "GET",
+            url,
+            headers: { authorization: "Bearer owner" },
+          })
+        ).statusCode,
+      ).toBe(200);
+      expect(evidence[method]).toHaveBeenCalledWith(appAccount.address, {
+        limit: 7,
+      });
+      expect(
+        (
+          await server.inject({
+            method: "GET",
+            url: url.replace("limit=7", "limit=100"),
+            headers: { authorization: "Bearer owner" },
+          })
+        ).statusCode,
+      ).toBe(400);
+    } finally {
+      await server.close();
+    }
+  });
+}

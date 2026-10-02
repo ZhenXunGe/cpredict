@@ -35,38 +35,39 @@ export async function orderbookPage(
   cursor = "0",
 ) {
   const rows =
-    await sql`WITH projected AS (SELECT c.order_id::text AS id,c.args AS created,COALESCE(s.args,c.args) AS latest,s.event_name AS last_event
+    await sql`WITH projected AS (SELECT c.order_id::text AS id,c.args AS created,COALESCE(s.args,c.args) AS latest,s.event_name AS last_event,p.args AS policy
  FROM orderbook_events c LEFT JOIN LATERAL (
    SELECT args,event_name FROM orderbook_events s WHERE s.chain_id=c.chain_id AND s.marketplace=c.marketplace AND s.order_id=c.order_id
     AND s.event_name IN ('OrderFilled','OrderReleased') ORDER BY s.block_number DESC,s.transaction_index DESC,s.log_index DESC LIMIT 1
- ) s ON true WHERE c.chain_id=${chainId} AND c.marketplace=${marketplace.toLowerCase()} AND c.event_name='OrderCreated'
+ ) s ON true LEFT JOIN LATERAL (
+   SELECT args FROM orderbook_events p WHERE p.chain_id=c.chain_id AND p.marketplace=c.marketplace AND p.order_id=c.order_id AND p.event_name='OrderFillPolicySnapshotted' LIMIT 1
+ ) p ON true WHERE c.chain_id=${chainId} AND c.marketplace=${marketplace.toLowerCase()} AND c.event_name='OrderCreated'
    AND (${market?.toLowerCase() ?? null}::text IS NULL OR lower(c.args->>'vault')=${market?.toLowerCase() ?? null})
    AND (${owner?.toLowerCase() ?? null}::text IS NULL OR lower(c.args->>'owner')=${owner?.toLowerCase() ?? null})
  ), totals AS (SELECT *,sum(CASE WHEN last_event='OrderReleased' THEN 0 ELSE COALESCE((latest->>'lockedPayment')::numeric,(created->>'lockedPayment')::numeric,0) END) OVER ()::text AS total_locked FROM projected)
  SELECT * FROM totals WHERE id::numeric>${cursor}::numeric ORDER BY id::numeric LIMIT 51`;
-  const items = rows
-    .slice(0, 50)
-    .map((r) => ({
-      id: r.id,
-      market: r.created.vault,
-      owner: r.created.owner,
-      outcomeId: String(r.created.outcomeId),
-      side: Number(r.created.side) === 0 ? "bid" : "ask",
-      unitPrice: r.created.unitPrice,
-      expiresAt: r.created.expiresAt,
-      autoMatch: r.created.autoMatch,
-      remainingUnits:
-        r.last_event === "OrderReleased"
-          ? "0"
-          : (r.latest.remainingUnits ?? r.created.units),
-      lockedPayment:
-        r.last_event === "OrderReleased"
-          ? "0"
-          : (r.latest.lockedPayment ?? r.created.lockedPayment),
-      active:
-        r.last_event !== "OrderReleased" &&
-        (r.latest.remainingUnits ?? r.created.units) !== "0",
-    }));
+  const items = rows.slice(0, 50).map((r) => ({
+    id: r.id,
+    market: r.created.vault,
+    owner: r.created.owner,
+    outcomeId: String(r.created.outcomeId),
+    side: Number(r.created.side) === 0 ? "bid" : "ask",
+    unitPrice: r.created.unitPrice,
+    expiresAt: r.created.expiresAt,
+    autoMatch: r.created.autoMatch,
+    ...(r.policy ? { allowPartialFills: r.policy.allowPartialFills } : {}),
+    remainingUnits:
+      r.last_event === "OrderReleased"
+        ? "0"
+        : (r.latest.remainingUnits ?? r.created.units),
+    lockedPayment:
+      r.last_event === "OrderReleased"
+        ? "0"
+        : (r.latest.lockedPayment ?? r.created.lockedPayment),
+    active:
+      r.last_event !== "OrderReleased" &&
+      (r.latest.remainingUnits ?? r.created.units) !== "0",
+  }));
   return {
     items,
     totalLockedPayment: rows[0]?.total_locked ?? "0",

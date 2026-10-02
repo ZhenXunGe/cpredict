@@ -1682,6 +1682,13 @@
     "inputs": []
   },
   {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "Unauthorized",
+    "signature": "Unauthorized()",
+    "selector": "0x82b42900",
+    "inputs": []
+  },
+  {
     "contract": "BondEscrowV1",
     "name": "Unauthorized",
     "signature": "Unauthorized(address)",
@@ -2008,6 +2015,13 @@
         "internalType": "uint256"
       }
     ]
+  },
+  {
+    "contract": "OrderbookMarketplaceV2",
+    "name": "WholeOrderRequired",
+    "signature": "WholeOrderRequired()",
+    "selector": "0x2bf2ac6c",
+    "inputs": []
   },
   {
     "contract": "BondEscrowV1",
